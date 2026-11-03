@@ -279,8 +279,10 @@ proteção: um padrão errado imprime o segredo inteiro.
 - **O texto do GitHub não passa por varredura.** Título e corpo de PR,
   issue, comentário e mensagem de commit ficam fora do hook e do
   `Public scan`; o secret scanning do GitHub só reconhece tokens de
-  provedores. Releia esses textos antes de publicar: neles vale a mesma
-  regra de dado real.
+  provedores. Antes de publicar, grave-os em arquivo, rode
+  `node scripts/scan-public-text.mjs <arquivos>`, que aplica as mesmas
+  regras sem os nomes restritos, e releia: neles vale a mesma regra de dado
+  real.
 - **Se vazar, diga.** Avise o dono do projeto no mesmo turno, com o que vazou
   e onde, e peça a revogação da credencial. Não reescreva o histórico por
   conta própria.

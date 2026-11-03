@@ -144,6 +144,11 @@ Per `AGENTS.md`:
 - Write PR bodies to a UTF-8 file and pass `--body-file`; commit messages use
   `git commit -F <file>`. Pass titles as a literal argument or structured tool
   field, preserving accented text without building another shell command.
+- Before filing or editing, write the title to a file too and run
+  `node scripts/scan-public-text.mjs <title-file> <body-file>`. It applies the
+  `Public scan` rules to text the pre-push hook never sees and prints only
+  file, line and kind. Rewrite every finding with synthetic data, then reread
+  for client and person names, which the script does not catch.
 - Write the body **one paragraph per line, with no hard wrap**. GitHub renders PR, issue and
   comment bodies with hard line breaks on, so every newline in the file becomes a `<br>` and the
   paragraph breaks off where you stopped typing instead of where the container ends. The 80-column
@@ -154,6 +159,12 @@ Per `AGENTS.md`:
 
 Use draft status when requested or when the delivery is still incomplete.
 Otherwise, file a ready-for-review PR after the relevant validation.
+
+**An issue only closes on merge through an English keyword in the body:**
+`Closes #123` (or `Fixes`/`Resolves`). `Fecha #123`, `Resolve a issue #123`
+and a bare `#123` leave it open. Before filing, check that each issue this PR
+fully resolves has its own `Closes #N` line; see
+[Automatic issue closure](#automatic-issue-closure).
 
 ```bash
 gh pr create --base <base-confirmada> --title "<título>" --body-file <file>
