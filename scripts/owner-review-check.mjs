@@ -1,5 +1,5 @@
-// Antecipa o gate de revisão do dono do `deploy.yml` (#51): roda ao lado do `validate`, sem
-// credenciais de produção, e reprova a publicação em segundos em vez de depois da validação. Não
+// Antecipa o gate de revisão do dono do `deploy.yml` (#51): roda antes do `validate`, sem
+// credenciais de produção, e reprova a publicação em segundos, sem gastar a validação. Não
 // substitui o gate: o publicador o repete no preflight, contra a revisão publicada naquele momento.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";

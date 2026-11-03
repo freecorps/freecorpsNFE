@@ -405,14 +405,36 @@ it("o workflow publica atualizações da main após CI e conserva bootstrap manu
   );
   expect(publishers).toHaveLength(1);
   const publish = publishers[0]!;
-  expect([publish.needs].flat()).toEqual(["validate", "owner_review"]);
-  // A revisão antecipada do dono (#51) só roda onde a validação roda, sem segredo de produção.
-  const review = workflow.jobs.owner_review!;
-  expect(expression(review.if)).toBe(expression(workflow.jobs.validate!.if));
-  expect(review.environment).toBeUndefined();
-  expect(review.steps!.at(-1)!.run?.trim()).toBe("node scripts/owner-review-check.mjs");
-  expect(JSON.stringify(review)).not.toContain("secrets.");
-  expect(expression(publish.if)).toBe("needs.validate.outputs.tested_sha==github.sha");
+  expect([publish.needs].flat()).toEqual(["preflight", "validate"]);
+  // A revisão antecipada do dono (#51) roda antes da validação, sem segredo de produção, e só no
+  // push procura a validação da PR com a mesma árvore; achada, o `validate` não roda.
+  const preflight = workflow.jobs.preflight!;
+  const validate = workflow.jobs.validate!;
+  const runs = (preflight.steps ?? []).map((step) => step.run?.trim()).filter(Boolean);
+  expect(runs).toEqual([
+    "node scripts/owner-review-check.mjs",
+    "node scripts/validation-reuse.mjs",
+  ]);
+  const reuse = preflight.steps!.at(-1)! as Step & { id?: string; if?: string };
+  expect(reuse.id).toBe("reuse");
+  expect(expression(reuse.if)).toBe("github.event_name=='push'");
+  expect(preflight.outputs).toEqual({ tested_sha: "${{ steps.reuse.outputs.tested_sha }}" });
+  expect(preflight.permissions).toEqual({
+    contents: "read",
+    "pull-requests": "read",
+    actions: "read",
+  });
+  expect(preflight.environment).toBeUndefined();
+  expect(JSON.stringify(preflight)).not.toContain("secrets.");
+  expect([validate.needs].flat()).toEqual(["preflight"]);
+  expect(expression(validate.if)).toBe(
+    `${expression(preflight.if)}&&needs.preflight.outputs.tested_sha==''`,
+  );
+  // Com o `validate` pulado não há success() implícito: a condição nomeia o que aceita.
+  const tested = "(needs.preflight.outputs.tested_sha||needs.validate.outputs.tested_sha)";
+  expect(expression(publish.if)).toBe(
+    `!cancelled()&&needs.preflight.result=='success'&&${tested}==github.sha`,
+  );
   expect(publish.concurrency).toEqual({ group: "production", "cancel-in-progress": false });
   const steps = publish.steps!;
   const checkout = steps.findIndex((step) => step.uses?.startsWith("actions/checkout@"));
@@ -421,12 +443,12 @@ it("o workflow publica atualizações da main após CI e conserva bootstrap manu
   );
   expect(checkout).toBeGreaterThanOrEqual(0);
   expect(checkout).toBeLessThan(release);
-  expect(expression(steps[checkout]!.with?.ref)).toBe("needs.validate.outputs.tested_sha");
+  expect(expression(steps[checkout]!.with?.ref)).toBe(tested.slice(1, -1));
   const env = Object.fromEntries(
     Object.entries(steps[release]!.env ?? {}).map(([key, value]) => [key, expression(value)]),
   );
   expect(env).toMatchObject({
-    CI_TESTED_SHA: "needs.validate.outputs.tested_sha",
+    CI_TESTED_SHA: tested.slice(1, -1),
     RELEASE_OPERATION: "github.event_name=='push'&&'release'||inputs.operation",
     RELEASE_APPROVED_SHA: "github.event_name=='push'&&github.sha||inputs.approved_sha",
     RELEASE_PLAN_HASH:
