@@ -678,7 +678,7 @@ export const findingAllowlist = [
   // Decisão 1 de 28/10: o login fica onde o processo exige uma pessoa nomeada
   // e o código o lê; no resto da cópia, o mantenedor é citado pelo papel.
   ...[
-    [".github/CODEOWNERS", 63, "Dono dos caminhos que o gate de revisão da publicação lê"],
+    [".github/CODEOWNERS", 65, "Dono dos caminhos que o gate de revisão da publicação lê"],
     // Só o teste que lê o CODEOWNERS real (título e as cinco asserções de dono)
     // e a linha que soma um segundo dono a ele; o resto do arquivo é sintético.
     ["scripts/owner-review.test.ts", 8, "Teste do gate do dono contra o CODEOWNERS real"],
