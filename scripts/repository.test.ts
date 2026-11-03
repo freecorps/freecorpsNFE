@@ -10,19 +10,18 @@ import {
 import { requireIntegrationWriter } from "./lib/validation.mjs";
 import { checkPublication, requireRehearsalWindow } from "./lib/validation-deploy.mjs";
 
-// Até a virada (decisão 6 de docs/v1.0/ACCEPTANCE.md), os workflows rodam no
-// arquivo e, depois, no público: as duas origens valem, e nenhuma outra.
+// Desde a virada de 03/11/2026 (decisão 6 de docs/v1.0/ACCEPTANCE.md), só o
+// repositório público é origem aceita; o arquivado é recusado como qualquer outro.
 const sha = "a".repeat(40);
 const other = "external/freecorpsNFE";
+const archived = "freecorps/freecorpsNFE-arquivo";
 
 describe("nomes do repositório do projeto", () => {
-  it("aceita o público e o arquivo, e mais nenhum", () => {
-    expect(PROJECT_REPOSITORIES).toEqual([
-      "freecorps/freecorpsNFE",
-      "freecorps/freecorpsNFE-arquivo",
-    ]);
+  it("aceita só o repositório público", () => {
+    expect(PROJECT_REPOSITORIES).toEqual(["freecorps/freecorpsNFE"]);
+    expect(LOCAL_REPOSITORY).toBe("freecorps/freecorpsNFE");
     for (const name of PROJECT_REPOSITORIES) expect(isProjectRepository(name)).toBe(true);
-    for (const name of [other, "freecorps/freecorpsnfe", "", undefined])
+    for (const name of [other, archived, "freecorps/freecorpsnfe", "", undefined])
       expect(isProjectRepository(name)).toBe(false);
   });
 
@@ -45,7 +44,7 @@ describe.each(PROJECT_REPOSITORIES)("guardas de origem em %s", (repository) => {
       GITHUB_WORKFLOW_REF: `${repository}/.github/workflows/deploy-validation.yml@refs/heads/main`,
     };
     expect(publicationSha(env, sha)).toBe(sha);
-    const elsewhere = PROJECT_REPOSITORIES.find((name) => name !== repository);
+    const elsewhere = archived;
     expect(
       publicationSha(
         {

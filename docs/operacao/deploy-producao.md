@@ -65,6 +65,13 @@ de uma destas aprovações:
   Com um dono só, que também é o autor dos commits, este caminho não passa;
   fica para quando houver outro dono.
 
+Se a produção serve uma revisão que não existe neste histórico, como a do
+repositório arquivado antes da virada de 03/11/2026, o gate não tem a faixa
+para conferir. A revisão publicada conta então como desconhecida: só o
+dispatch de um dono publica, e o log diz `production serves <sha>, outside
+this history`. Depois da primeira publicação feita daqui, a faixa volta a ser
+conferida normalmente.
+
 Um push na `main` não aprova nada. Um merge que traga um commit protegido
 falha em `failed-before-publication`, nada é publicado e o log nomeia o
 commit, os caminhos e o autor. Os pushes seguintes também falham, porque a
