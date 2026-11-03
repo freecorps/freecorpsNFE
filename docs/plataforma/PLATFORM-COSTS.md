@@ -25,7 +25,7 @@ e de configuração real dos fundos.** Em 28/10/2026, o dono do projeto
 decidiu financiar a guarda de organizações abertas pela custódia fria com
 reidratação sob IDs novos ([ADR 0009](../adr/0009-custodia-fria-de-organizacoes-abertas.md));
 ela está implementada, mas segue desligada e sem prova operacional completa,
-conforme a [consolidação de 30/10 na #549](https://github.com/freecorps/freecorpsNFE/issues/549#issuecomment-6530738648).
+conforme a [consolidação de 30/10 na #549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549#issuecomment-6530738648).
 
 Em 29/10/2026, o dono do projeto decidiu reduzir o banco quente em vez de
 espaçar o backup: o conteúdo derivado do XML vai para blobs imutáveis, e as
@@ -654,7 +654,7 @@ Também conferir todos os caminhos de admissão, ausência de plano, isolamento,
 estoque antigo, múltiplas contas gratuitas e orçamento global. O contador
 lógico não substitui a reconciliação com o banco físico e a fatura.
 Desde 27/10/2026, esses gates de lançamento são acompanhados na
-[#549](https://github.com/freecorps/freecorpsNFE/issues/549).
+[#549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549).
 
 A retenção e os direitos de acesso permanecem. Não reduzir segurança, RPO ou
 guarda para fechar a conta. Spending limits e usage limits do provedor são

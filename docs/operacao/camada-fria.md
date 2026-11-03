@@ -2,11 +2,11 @@
 
 Este guia descreve a passagem do conteúdo das notas para a camada fria da
 [ADR 0010](../adr/0010-guarda-em-camadas-e-custo-dos-planos.md), fase C1
-([#689](https://github.com/freecorps/freecorpsNFE/issues/689)). **A passagem
+([#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689)). **A passagem
 está ligada em produção** (`elated-possum-295`) desde 02/11/2026, por
 autorização do dono registrada na #689, com o bucket
 `freecorpsnfe-cold-documents` e regras de lock até 2033. A extensão anual das
-regras está na [#739](https://github.com/freecorps/freecorpsNFE/issues/739). As provas em caminho real
+regras está na [#739](https://github.com/freecorps/freecorpsNFE-arquivo/issues/739). As provas em caminho real
 (passagem, leitura, backup, expurgo e reidratação só da janela) estão em
 docs/v1.0/evidence/689.
 
@@ -159,7 +159,7 @@ banco a chave, o SHA-256 e o tamanho do objeto (`contentObjectSha256` e
 `contentObjectSize`), e cada original frio, os campos `objectKey`,
 `objectSha256` e `objectSize` de `documentArtifacts`. O banco cifrado vai no
 snapshot. O backup e o pacote da ADR 0009 reconhecem os originais frios por
-esses campos na [#740](https://github.com/freecorps/freecorpsNFE/pull/740). O manifesto do
+esses campos na [#740](https://github.com/freecorps/freecorpsNFE-arquivo/pull/740). O manifesto do
 formato 2 amarra a lista ordenada desses objetos em `coldDocuments`, com o
 bucket, a contagem e um digest
 ([backup.md](backup.md#documentos-frios-da-adr-0010)).

@@ -16,7 +16,7 @@ execução e muda a cada janela autorizada.
 
 ## Fase 3, produção restrita
 
-Issue [#197](https://github.com/freecorps/freecorpsNFE/issues/197). O
+Issue [#197](https://github.com/freecorps/freecorpsNFE-arquivo/issues/197). O
 perfil hospedado é o deployment Convex `prod:elated-possum-295`
 (`APP_ENV=installation`, `PRODUCT_ENV=sandbox`, `FISCAL_ENV=disabled`,
 `FNFE_CRONS=off`); o tipo `prod` do Convex não o torna produção fiscal. Abrir
@@ -371,7 +371,7 @@ a série 2 a partir de 100002.
 
 ## Fase 4, produção fiscal
 
-Issue [#198](https://github.com/freecorps/freecorpsNFE/issues/198); decisões dos
+Issue [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198); decisões dos
 sócios na [ADR 0004, §8](../adr/0004-motor-de-emissao-nfse.md#8-ambientes-e-gates)
 e suas três emendas de 21/10/2026. Hoje **nenhum deployment é produção
 fiscal**. A `main` já tem o código que recusa a emissão real fora desse
@@ -674,7 +674,7 @@ feito.
 ### Pré-condições para ligar o gate
 
 As pré-condições e os critérios de aceite estão na
-[#198](https://github.com/freecorps/freecorpsNFE/issues/198). Em resumo, antes
+[#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198). Em resumo, antes
 do primeiro `enable`:
 
 1. a prova da exportação na Sefin restrita a partir de 01/11/2026, pelo
@@ -729,7 +729,7 @@ produção fiscal, em Environment Variables, tirar o id da empresa de
 `FNFE_NFSE_PRODUCTION_COMPANIES` (ou apagar a variável, se ela for a única).
 O efeito é o do corte total descrito acima, não o do gate desligado:
 cancelamento e consulta também param. Depois, registre na
-[#198](https://github.com/freecorps/freecorpsNFE/issues/198) quem fez, quando,
+[#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198) quem fez, quando,
 o motivo e o valor anterior da variável; devolver a empresa à lista é a
 mesma mudança ao contrário, também registrada.
 

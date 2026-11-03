@@ -63,7 +63,7 @@ esse prazo de uma garantia de apagamento instantâneo de todas as cópias.
 ## Metadados de limitação de requisições
 
 Complemento conferido em
-[`6e92497`](https://github.com/freecorps/freecorpsNFE/commit/6e924978e71e0b4a4942c815d6612038b792d4af),
+[`6e92497`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/6e924978e71e0b4a4942c815d6612038b792d4af),
 publicado em validação após a revisão inicial. O patch de
 `@convex-dev/rate-limiter` adiciona `partitions` dentro do componente
 `rateLimiter`. Cada registro identifica o orçamento por `name` e `key`
@@ -86,7 +86,7 @@ remoção deve preservar a aplicação das cotas e não substitui o tratamento
 dos eventos comerciais idempotentes em `usageEvents`.
 
 A revisão
-[`cc02903`](https://github.com/freecorps/freecorpsNFE/commit/cc02903a28a9e29a1a9895624286a75341e4a481),
+[`cc02903`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/cc02903a28a9e29a1a9895624286a75341e4a481),
 conferida no patch e nos SHAs públicos do backend e console de validação,
 inclui `kind` e `start` opcionais no layout para distinguir token bucket e
 janela fixa. São metadados da regra e de sua janela, sob a mesma classe de
@@ -158,7 +158,7 @@ significa que sua aplicação, backup ou atendimento já foram comprovados.
 
 Aprovada para implementação em 06/10/2026 pelo mantenedor,
 com a manifestação "aprovado, eu assumo", registrada na
-[#80](https://github.com/freecorps/freecorpsNFE/issues/80).
+[#80](https://github.com/freecorps/freecorpsNFE-arquivo/issues/80).
 Ele assume operação,
 atendimento a direitos e fiscal/privacidade do piloto. Em 07/10 o mantenedor
 designou um substituto, o outro sócio; ver as

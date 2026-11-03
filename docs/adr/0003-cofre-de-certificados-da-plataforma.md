@@ -3,7 +3,7 @@
 ## Situação em 21/10/2026
 
 > O cofre legado citado aqui (`convex/vault.ts`, `convex/nfceVault.ts`)
-> foi removido pela PR [#373](https://github.com/freecorps/freecorpsNFE/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE/commit/e1156c58a126bcc664403163e63bd69c17e3b611). O cofre da plataforma
+> foi removido pela PR [#373](https://github.com/freecorps/freecorpsNFE-arquivo/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/e1156c58a126bcc664403163e63bd69c17e3b611). O cofre da plataforma
 > é o único em uso.
 > O código histórico continua no Git: `git show e1156c5^:<caminho>` mostra
 > cada arquivo como era antes da remoção. O texto abaixo registra a decisão

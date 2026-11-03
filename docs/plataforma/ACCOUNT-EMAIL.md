@@ -8,7 +8,7 @@ Na instalação (`prod:elated-possum-295`), o remetente passou a ser
 `acesso@nfe.freecorps.com.br` em 29/10/2026 (#428), no subdomínio `nfe`
 habilitado no Email Sending desde a caixa de privacidade, para os clientes não
 receberem e-mails de um domínio de validação. O teste de alerta da captura do
-[run 40935388761](https://github.com/freecorps/freecorpsNFE/actions/runs/40935388761)
+[run 40935388761](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/40935388761)
 saiu por ele com `delivery: "sent"`. O endereço não tem regra de recebimento:
 uma resposta volta ao remetente.
 O recibo de preparação está em evidence/63.

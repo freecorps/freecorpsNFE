@@ -1,7 +1,7 @@
 # E-mail de operação
 
 Caixa interna da Freecorps para os alertas da captura fiscal, acompanhada
-pela [#463](https://github.com/freecorps/freecorpsNFE/issues/463). O
+pela [#463](https://github.com/freecorps/freecorpsNFE-arquivo/issues/463). O
 endereço é `operacao@nfe.freecorps.com.br`, no mesmo subdomínio das outras
 caixas. A caixa é lida em `/console/operacao`.
 
@@ -54,11 +54,11 @@ A caixa está ativa.
   Routing de `operacao@nfe.freecorps.com.br`.
 - Passo 3: `FNFE_CAPTURE_ALERT_EMAIL=operacao@nfe.freecorps.com.br` gravada
   no site.
-- Passo 4: o [run 40701209624](https://github.com/freecorps/freecorpsNFE/actions/runs/40701209624)
+- Passo 4: o [run 40701209624](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/40701209624)
   de `capture-alert-test.yml` passou com `delivery: "sent"` às 13:57:30 UTC.
   A conversa com o run no assunto entrou na caixa `operation` às
   13:57:35 UTC
-  ([registro na #463](https://github.com/freecorps/freecorpsNFE/issues/463#issuecomment-6470963411)).
+  ([registro na #463](https://github.com/freecorps/freecorpsNFE-arquivo/issues/463#issuecomment-6470963411)).
   O teste não foi feito com alerta de empresa, e a recusa para operador de
   outra caixa e para conta cliente fica com os testes automáticos da #582.
 

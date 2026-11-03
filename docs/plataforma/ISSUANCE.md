@@ -1,7 +1,7 @@
 # Emissão NFS-e
 
 Fase 2 da [ADR 0004](../adr/0004-motor-de-emissao-nfse.md) (issue
-[#196](https://github.com/freecorps/freecorpsNFE/issues/196)). A plataforma
+[#196](https://github.com/freecorps/freecorpsNFE-arquivo/issues/196)). A plataforma
 aceita pedidos de emissão e cancelamento de NFS-e pela [API REST](#api-rest)
 (`/v1/issuances`), pelo SDK, pelo [console](#console), com sessão Better Auth,
 e por funções internas do Convex (`platform/convex/issuance.ts`), e avisa as
@@ -74,7 +74,7 @@ A emissão real fica num deployment Convex próprio, separado do sandbox
 hospedado, que atende várias organizações, com console e API em domínios
 próprios. A decisão dos sócios está na
 [ADR 0004, §8](../adr/0004-motor-de-emissao-nfse.md#8-ambientes-e-gates)
-(fase 4, [#198](https://github.com/freecorps/freecorpsNFE/issues/198)). O nome
+(fase 4, [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198)). O nome
 e a URL do deployment ficam versionados em `deploy/issuance-production.json`;
 hoje `deployment` e `url` valem `null` e nenhum deployment é produção fiscal.
 Uma variável de ambiente sozinha nunca transforma um deployment em produção:
@@ -657,7 +657,7 @@ regime e subitem dá o início da obrigação, com fonte.
   no endereço do tomador no País (Anexo VII), e o `cIndOp`, o CST e o
   `cClassTrib` da exportação imune ainda não têm fonte oficial (veja
   [Exportação e E0187](#canal-de-campinas) e a
-  [#198](https://github.com/freecorps/freecorpsNFE/issues/198)). O pedido é
+  [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198)). O pedido é
   recusado antes de reservar número com `ISSUANCE_EXPORT_IBSCBS_UNSUPPORTED`,
   em qualquer canal, inclusive o de Campinas. Esse é o código das funções
   internas (console e Stripe). A API REST responde `409 NFSE_ROUTE_UNSUPPORTED`
@@ -815,7 +815,7 @@ Anexo I, mas o `cIndOp` que ela leva contraria o Anexo VII.
 A plataforma não muda a DPS sem resposta oficial: a pergunta sobre o
 `cIndOp`, o CST e o `cClassTrib` da exportação imune do 1.05 está na consulta
 à Prefeitura e à contadora da
-[#198](https://github.com/freecorps/freecorpsNFE/issues/198). Para a
+[#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198). Para a
 Freecorps, isso vale até 31/10/2026: a partir de 01/11, o Simples exporta
 pela Sefin, sem o grupo `IBSCBS` (o Ato só o exige do Simples em 2027) e,
 portanto, sem `cIndOp`. A exportação do Simples pela IMA, até 31/10, segue

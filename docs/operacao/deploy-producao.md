@@ -102,7 +102,7 @@ e este é um limite conhecido: sem revisão anterior, o gate lê só o
 `CODEOWNERS` do SHA novo e não confere commit a commit, então quem esse
 arquivo lista como dono publica tudo o que veio desde a última revisão
 conhecida. Desde a
-[#525](https://github.com/freecorps/freecorpsNFE/issues/525), o `bootstrap`
+[#525](https://github.com/freecorps/freecorpsNFE-arquivo/issues/525), o `bootstrap`
 pelo workflow passa pelo gate como o `release`; depois de um reset a
 revisão publicada costuma ser desconhecida, e então só o dispatch de um dono
 publica. O `--operator`, rodado localmente com as credenciais de produção,

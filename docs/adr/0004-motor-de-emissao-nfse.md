@@ -6,7 +6,7 @@ um dos sócios em 08/10/2026)
 ## Situação em 21/10/2026
 
 > O motor legado de `convex/engine/`, descrito abaixo como existente e
-> congelado, foi removido pela PR [#373](https://github.com/freecorps/freecorpsNFE/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE/commit/e1156c58a126bcc664403163e63bd69c17e3b611), junto com
+> congelado, foi removido pela PR [#373](https://github.com/freecorps/freecorpsNFE-arquivo/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/e1156c58a126bcc664403163e63bd69c17e3b611), junto com
 > o restante de `src/` e `convex/`. O porte para `packages/fiscal-nfse` é o
 > único motor NFS-e do repositório. As divergências com o legado registradas
 > abaixo continuam como histórico do porte.
@@ -252,7 +252,7 @@ não foi confirmado em fonte oficial nesta pesquisa.
 - `producao`: a emissão real fica atrás de um gate de servidor desligado por
   padrão, ligado por empresa depois da prova em produção restrita (fase 3).
 
-**Emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE/issues/198)).**
+**Emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198)).**
 Decisão dos sócios da Freecorps (decisão registrada pelo mantenedor em
 21/10/2026). Ela detalha o `producao` acima sem mudar as demais decisões:
 
@@ -265,7 +265,7 @@ Decisão dos sócios da Freecorps (decisão registrada pelo mantenedor em
   self-review_: são sempre duas pessoas distintas. O registro guarda o
   operador (`github.actor`, quem disparou), o aprovador e o id do run.
 
-**Segunda emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE/issues/198)).**
+**Segunda emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198)).**
 Decisão dos sócios da Freecorps (decisão registrada pelo mantenedor em
 21/10/2026). Ela substitui a forma de desligar e o que o registro guarda,
 descritos acima, e mantém a de ligar:
@@ -292,7 +292,7 @@ GitHub antes de chamar o gate. Separar uma chave para ligar e outra para
 desligar não resolve, porque o Convex não restringe uma chave de deploy a uma
 função (a conferir no provisionamento).
 
-**Terceira emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE/issues/198)).**
+**Terceira emenda de 21/10/2026 (fase 4, [#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198)).**
 Decisão dos sócios da Freecorps (decisão registrada pelo mantenedor em
 21/10/2026). Ela define o efeito do gate e da lista de empresas do deployment
 de produção fiscal:
@@ -315,12 +315,12 @@ O contrato e os limites de cada parte estão em
 ## Fases
 
 Acompanhamento na épica
-[#194](https://github.com/freecorps/freecorpsNFE/issues/194); fases 1 a 5 em
-[#195](https://github.com/freecorps/freecorpsNFE/issues/195),
-[#196](https://github.com/freecorps/freecorpsNFE/issues/196),
-[#197](https://github.com/freecorps/freecorpsNFE/issues/197),
-[#198](https://github.com/freecorps/freecorpsNFE/issues/198) e
-[#199](https://github.com/freecorps/freecorpsNFE/issues/199).
+[#194](https://github.com/freecorps/freecorpsNFE-arquivo/issues/194); fases 1 a 5 em
+[#195](https://github.com/freecorps/freecorpsNFE-arquivo/issues/195),
+[#196](https://github.com/freecorps/freecorpsNFE-arquivo/issues/196),
+[#197](https://github.com/freecorps/freecorpsNFE-arquivo/issues/197),
+[#198](https://github.com/freecorps/freecorpsNFE-arquivo/issues/198) e
+[#199](https://github.com/freecorps/freecorpsNFE-arquivo/issues/199).
 
 | Fase | Entrega                                                                                      | Critério de aceite resumido                                                                                                               |
 | ---- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -337,7 +337,7 @@ Acompanhamento na épica
   mesmo núcleo atende Sefin Nacional e o webservice de Campinas.
 - O porte duplica código por um período; o legado continua congelado até o
   corte descrito em
-  [#84](https://github.com/freecorps/freecorpsNFE/issues/84).
+  [#84](https://github.com/freecorps/freecorpsNFE-arquivo/issues/84).
 - O roteamento depende de normas que ainda mudam. Uma linha sem fonte ou
   vencida bloqueia a emissão, em vez de escolher um canal por suposição.
 - A Fase 4 depende de um fator externo: a habilitação de Campinas no Emissor
