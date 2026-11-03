@@ -65,6 +65,15 @@ de uma destas aprovações:
   Com um dono só, que também é o autor dos commits, este caminho não passa;
   fica para quando houver outro dono.
 
+O job `Owner review` do `deploy.yml` antecipa esse gate
+(`scripts/owner-review-check.mjs`, #51). Ele roda ao lado do `validate`, sem
+environment nem secrets, só com o `GITHUB_TOKEN` de leitura, e o
+`Publish production` depende dele: um commit sem aprovação reprova a
+publicação em segundos, em vez de depois de 3 a 4 minutos de validação. O
+preflight do publicador continua chamando o mesmo gate
+(`scripts/lib/owner-review-gate.mjs`), contra a revisão servida no momento da
+publicação; o job antecipado não substitui essa conferência.
+
 Se a produção serve uma revisão que não existe neste histórico, como a do
 repositório arquivado antes da virada de 03/11/2026, o gate não tem a faixa
 para conferir. A revisão publicada conta então como desconhecida: só o

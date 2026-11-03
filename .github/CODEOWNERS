@@ -29,6 +29,8 @@
 /scripts/lib/platform-release.mjs @wolf-stievano
 /scripts/lib/platform-unchanged.mjs @wolf-stievano
 /scripts/lib/owner-review.mjs @wolf-stievano
+/scripts/lib/owner-review-gate.mjs @wolf-stievano
+/scripts/owner-review-check.mjs @wolf-stievano
 # Everything deploy-platform.mjs imports runs in the process that holds the production keys, and
 # the build scripts it spawns run as the same user, which can read that process environment.
 # scripts/owner-review.test.ts fails if a module of those import graphs is left out.

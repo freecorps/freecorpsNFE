@@ -48,8 +48,13 @@ jobs:
           cache: false
       - name: Install locked dependencies
         run: vp install --frozen-lockfile
+      # Browser only: the Blacksmith image already has every library Chromium
+      # links against (#51). --with-deps went through apt and added CJK and
+      # Thai fonts, Xvfb and library upgrades the headless M0 journeys do not
+      # use, 4 of the 11 minutes of the run on a slow mirror. A missing library
+      # fails the launch in the journeys, not silently.
       - name: Install Chromium for the published M0 journeys
-        run: node apps/console/node_modules/playwright/cli.js install --with-deps chromium
+        run: node apps/console/node_modules/playwright/cli.js install chromium
       - name: Publish the approved revision and verify both services
         env:
           CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}

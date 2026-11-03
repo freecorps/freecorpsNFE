@@ -22,8 +22,8 @@ import { operatorAuthorization, verifyOperatorRevision } from "./lib/platform-op
 import { projectRepository } from "./lib/repository.mjs";
 import { smokePlatform } from "./lib/platform-smoke.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { publishedRevision, unchangedPublication } from "./lib/platform-unchanged.mjs";
-import { dispatcherOf, ownerReview } from "./lib/owner-review.mjs";
+import { unchangedPublication } from "./lib/platform-unchanged.mjs";
+import { reviewGate } from "./lib/owner-review-gate.mjs";
 import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -66,66 +66,6 @@ function run(script, args, env = baseEnv, cwd = root) {
   });
   // Provider output may contain credentials; keep it out of publication receipts.
   if (result.status !== 0) throw new Error(`Publication subprocess failed: ${script}`);
-}
-// Every commit since the published revision that touches a CODEOWNERS path needs an owner's
-// approval, by a merged pull request approved by an owner who is not its author or by the owner's
-// own dispatch, before anything is built or written (scripts/lib/owner-review.mjs, #424).
-async function reviewGate() {
-  const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: "pipe" });
-  let published = await publishedRevision(target);
-  // Production may serve a revision of the archived repository, outside this history (the
-  // cutover of 03/11/2026): the range cannot be checked, so it counts as unknown and only an
-  // owner dispatch publishes, as ownerReview requires for an unknown revision.
-  if (
-    published &&
-    spawnSync("git", ["cat-file", "-e", `${published}^{commit}`], { cwd: root }).status !== 0
-  ) {
-    console.log(
-      `owner review: production serves ${published}, outside this history; only an owner dispatch publishes`,
-    );
-    published = null;
-  }
-  // Unreadable at a known published revision stays null, and ownerReview refuses the range.
-  let previous = null;
-  try {
-    if (published) previous = git(["show", `${published}:.github/CODEOWNERS`]);
-  } catch {
-    previous = null;
-  }
-  const github = async (path) => {
-    const response = await fetch(`https://api.github.com/repos/${projectRepository()}/${path}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.GH_TOKEN}`,
-        Accept: "application/vnd.github+json",
-      },
-      redirect: "error",
-      signal: AbortSignal.timeout(30000),
-    });
-    assert.ok(response.ok, `GitHub API ${path}: ${response.status}`);
-    return response.json();
-  };
-  let result;
-  try {
-    result = await ownerReview({
-      from: published,
-      to: sha,
-      run: git,
-      github,
-      codeowners: { from: previous, to: readFileSync(join(root, ".github/CODEOWNERS"), "utf8") },
-      dispatcher: dispatcherOf(process.env),
-    });
-  } catch (error) {
-    // The publisher reports only the failed phase; the cause belongs in the log of the run.
-    console.error(`owner review failed: ${error.message}`);
-    throw error;
-  }
-  for (const proof of result.checked)
-    console.log(
-      `owner review: ${proof.sha.slice(0, 7)} ${proof.via === "pull" ? `PR #${proof.pull}` : "dispatch"}, approved by ${proof.approvers.join(", ")}`,
-    );
-  if (result.note) console.log(`owner review: ${result.note}`);
-  for (const problem of result.problems) console.error(`owner review blocked: ${problem}`);
-  assert.deepEqual(result.problems, [], "Owner review missing; nothing was published");
 }
 const workerConfig = join(output, "wrangler.json"),
   hostedConfig = join(output, "hosted.json");
@@ -179,7 +119,10 @@ const published = await (operation === "bootstrap" ? bootstrapRevision : publish
       );
       assert.ok(actual.BETTER_AUTH_SECRET?.length >= 32);
       assert.deepEqual(await query("_system/frontend/listCronJobs"), []);
-      if (ownerReviewRequired({ operation, operator })) await reviewGate();
+      // Every commit since the published revision that touches a CODEOWNERS path needs an
+      // owner's approval before anything is built or written (scripts/lib/owner-review.mjs, #424).
+      if (ownerReviewRequired({ operation, operator }))
+        await reviewGate({ root, sha, target, env: process.env });
     },
     // Only the automatic release of a push to main skips a revision that changes nothing
     // published; an operator, a dispatch and the bootstrap always publish.

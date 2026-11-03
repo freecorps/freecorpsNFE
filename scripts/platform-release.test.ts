@@ -405,7 +405,13 @@ it("o workflow publica atualizações da main após CI e conserva bootstrap manu
   );
   expect(publishers).toHaveLength(1);
   const publish = publishers[0]!;
-  expect([publish.needs].flat()).toEqual(["validate"]);
+  expect([publish.needs].flat()).toEqual(["validate", "owner_review"]);
+  // A revisão antecipada do dono (#51) só roda onde a validação roda, sem segredo de produção.
+  const review = workflow.jobs.owner_review!;
+  expect(expression(review.if)).toBe(expression(workflow.jobs.validate!.if));
+  expect(review.environment).toBeUndefined();
+  expect(review.steps!.at(-1)!.run?.trim()).toBe("node scripts/owner-review-check.mjs");
+  expect(JSON.stringify(review)).not.toContain("secrets.");
   expect(expression(publish.if)).toBe("needs.validate.outputs.tested_sha==github.sha");
   expect(publish.concurrency).toEqual({ group: "production", "cancel-in-progress": false });
   const steps = publish.steps!;
