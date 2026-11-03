@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import {
+  CAPTURE_WORKFLOW,
   CAPTURE_WORKFLOWS,
   CONVEX_REFUSALS,
   captureCall,
@@ -100,11 +101,43 @@ describe("alvo e entradas", () => {
         JSON.stringify(env),
       ).toBe("INPUT_INVALID");
   });
-  it("a parada geral só recebe o motivo; a empresa informada é ignorada", () => {
-    for (const action of ["halt", "resume"])
-      expect(captureInputs({ ...ids, ...reason }, action)).toEqual({ reason: reason.GATE_REASON });
+  it("a parada geral só recebe o motivo; uma empresa informada recusa a parada", () => {
+    for (const action of ["halt", "resume"]) {
+      expect(captureInputs({ ...reason }, action)).toEqual({ reason: reason.GATE_REASON });
+      // One form serves every operation (#57): an id given to halt means the person meant one
+      // company, so the stop of every company is refused instead of running without it.
+      for (const env of [
+        { ...ids, ...reason },
+        { GATE_COMPANY: ids.GATE_COMPANY, ...reason },
+        { GATE_ORGANIZATION_ID: ids.GATE_ORGANIZATION_ID, ...reason },
+      ])
+        expect(
+          code(() => captureInputs(env, action)),
+          JSON.stringify(env),
+        ).toBe("INPUT_UNEXPECTED");
+    }
+    // Empty inputs of the form are not given ones.
+    expect(
+      captureInputs({ GATE_COMPANY: "", GATE_ORGANIZATION_ID: " ", ...reason }, "halt"),
+    ).toEqual({ reason: reason.GATE_REASON });
     expect(code(() => captureInputs({ GATE_REASON: "curto" }, "halt"))).toBe("INPUT_INVALID");
     expect(code(() => captureInputs({ ...reason }, "release"))).toBe("ACTION_INVALID");
+  });
+  it("a lista e o e-mail de teste não recebem entrada nenhuma", () => {
+    for (const action of ["list", "alert_test"]) {
+      expect(
+        captureInputs({ GATE_COMPANY: "", GATE_ORGANIZATION_ID: "", GATE_REASON: "" }, action),
+      ).toEqual({});
+      for (const env of [
+        { ...ids },
+        { ...reason },
+        { GATE_ORGANIZATION_ID: ids.GATE_ORGANIZATION_ID },
+      ])
+        expect(
+          code(() => captureInputs(env, action)),
+          JSON.stringify(env),
+        ).toBe("INPUT_UNEXPECTED");
+    }
   });
   it("health ruim: as paradas seguem com aviso; desbloquear e religar recusam", () => {
     const good = { status: "ok", appEnv: "installation", productEnv: "sandbox" };
@@ -208,22 +241,20 @@ describe("run, aprovação e chamada", () => {
       });
     }
     for (const action of ["halt", "resume"] as const)
-      expect(
-        captureCall(action, captureInputs({ ...ids, ...reason }, action), verify(action)),
-      ).toEqual({
+      expect(captureCall(action, captureInputs({ ...reason }, action), verify(action))).toEqual({
         type: "mutation",
         path: "captureRelease:setHalt",
         args: { kind: action, ...person },
       });
     // The internal view (#422) takes no input and records no person.
-    expect(captureInputs({ ...ids, ...reason }, "list")).toEqual({});
+    expect(captureInputs({}, "list")).toEqual({});
     expect(captureCall("list", {}, verify("list"))).toEqual({
       type: "mutation",
       path: "captureSupervisor:survey",
       args: {},
     });
     // The test e-mail (#463) takes no input; the run names it, and it is the only action.
-    expect(captureInputs({ ...ids, ...reason }, "alert_test")).toEqual({});
+    expect(captureInputs({}, "alert_test")).toEqual({});
     expect(captureCall("alert_test", {}, verify("alert_test"))).toEqual({
       type: "action",
       path: "captureSupervisor:sendTestAlert",
@@ -355,7 +386,7 @@ describe("run, aprovação e chamada", () => {
   });
 });
 
-describe("workflows", () => {
+describe("workflow", () => {
   type Step = { uses?: string; run?: string; env?: Record<string, string> };
   type Job = {
     if?: string;
@@ -364,58 +395,88 @@ describe("workflows", () => {
     "runs-on"?: string;
     steps: Step[];
   };
-  const workflowOf = (file: string) =>
-    parse(read(file)) as {
-      on: Record<string, unknown>;
-      permissions: Record<string, string>;
-      concurrency: { group: string };
-      jobs: Record<string, Job>;
-    };
+  type Input = { required: boolean; type: string; default?: string; options?: string[] };
+  const workflow = parse(read(CAPTURE_WORKFLOW)) as {
+    on: { workflow_dispatch: { inputs: Record<string, Input> } };
+    permissions: Record<string, string>;
+    concurrency: { group: string; "cancel-in-progress": boolean };
+    jobs: Record<string, Job>;
+  };
   const expression = (value?: string) => value?.replace(/\$\{\{|\}\}|\s/g, "");
+  const jobs = Object.values(workflow.jobs);
+  const job = jobs[0]!;
+  const runner = job.steps.find((step) => step.run?.startsWith("node scripts/"))!;
 
-  it.each(Object.entries(CAPTURE_WORKFLOWS))(
-    "%s: só dispatch na main, um job com o environment, entradas por env",
-    (action, { file, environment }) => {
-      const workflow = workflowOf(file);
-      expect(Object.keys(workflow.on)).toEqual(["workflow_dispatch"]);
-      expect(workflow.permissions).toEqual({ contents: "read" });
-      const jobs = Object.values(workflow.jobs);
-      expect(jobs).toHaveLength(1);
-      const job = jobs[0]!;
-      expect(expression(job.if)).toBe("github.ref=='refs/heads/main'");
-      expect(job.environment).toBe(environment);
-      expect(job.permissions).toEqual({ contents: "read", actions: "read" });
-      for (const step of job.steps) {
-        if (step.uses) expect(step.uses).toMatch(/^[\w-]+\/[\w-]+@[0-9a-f]{40}$/);
-        if (step.run) expect(step.run).not.toContain("${{");
-      }
-      const runner = job.steps.filter((step) => step.run?.startsWith("node scripts/"));
-      expect(runner.map((step) => step.run!.trim())).toEqual([
-        `node scripts/capture-release.mjs ${action}`,
-      ]);
-      expect(expression(runner[0]!.env?.CONVEX_DEPLOY_KEY)).toBe("secrets.FNFE_SITE_DEPLOY_KEY");
-    },
-  );
-  it("rodam num runner do GitHub, sem depender de download, cada um na sua fila", () => {
-    const groups = Object.values(CAPTURE_WORKFLOWS).map(({ file }) => {
-      const workflow = workflowOf(file);
-      const job = Object.values(workflow.jobs)[0]!;
-      expect(job["runs-on"]).toBe("ubuntu-24.04");
-      expect(job.steps.map((step) => step.uses?.split("@")[0]).filter(Boolean)).toEqual([
-        "actions/checkout",
-        "actions/upload-artifact",
-      ]);
-      return workflow.concurrency.group;
+  it("todas as operações passam por um workflow, com o environment dele", () => {
+    // One file since #57; the run check still confirms it.
+    expect(new Set(Object.values(CAPTURE_WORKFLOWS).map(({ file }) => file))).toEqual(
+      new Set([CAPTURE_WORKFLOW]),
+    );
+    expect(new Set(Object.values(CAPTURE_WORKFLOWS).map(({ environment }) => environment))).toEqual(
+      new Set([job.environment]),
+    );
+  });
+  it("só dispatch na main, um job com o environment, entradas por env", () => {
+    expect(Object.keys(workflow.on)).toEqual(["workflow_dispatch"]);
+    expect(workflow.permissions).toEqual({ contents: "read" });
+    expect(jobs).toHaveLength(1);
+    expect(expression(job.if)).toBe("github.ref=='refs/heads/main'");
+    expect(job.permissions).toEqual({ contents: "read", actions: "read" });
+    for (const step of job.steps) {
+      if (step.uses) expect(step.uses).toMatch(/^[\w-]+\/[\w-]+@[0-9a-f]{40}$/);
+      if (step.run) expect(step.run).not.toContain("${{");
+    }
+    expect(job.steps.filter((step) => step.run?.startsWith("node scripts/"))).toHaveLength(1);
+    // The operation reaches the runner through the environment, never through the shell text.
+    expect(runner.run!.trim()).toBe('node scripts/capture-release.mjs "$CAPTURE_OPERATION"');
+    expect(expression(runner.env!.CAPTURE_OPERATION)).toBe("inputs.operation");
+    expect(expression(runner.env!.CONVEX_DEPLOY_KEY)).toBe("secrets.FNFE_SITE_DEPLOY_KEY");
+  });
+  it("a operação é uma escolha entre as ações do runner, com a lista como padrão", () => {
+    const operation = workflow.on.workflow_dispatch.inputs.operation!;
+    expect(operation).toMatchObject({ type: "choice", required: true });
+    expect([...operation.options!].sort()).toEqual(Object.keys(CAPTURE_WORKFLOWS).sort());
+    // A dispatch without a choice changes nothing.
+    expect(operation.default).toBe("list");
+    expect(CAPTURE_WORKFLOWS.list.scope).toBe("read");
+  });
+  it("as entradas do workflow são as que o runner lê, opcionais no formulário", () => {
+    const inputs = workflow.on.workflow_dispatch.inputs;
+    expect(Object.keys(inputs).sort()).toEqual(
+      ["company", "operation", "organization_id", "reason"].sort(),
+    );
+    // captureInputs requires each one per operation and refuses the ones it does not take.
+    for (const name of ["company", "organization_id", "reason"])
+      expect(inputs[name], name).toMatchObject({ required: false, type: "string" });
+    expect(
+      Object.fromEntries(
+        Object.entries(runner.env!)
+          .filter(([name]) => name.startsWith("GATE_"))
+          .map(([name, value]) => [name, expression(value)]),
+      ),
+    ).toEqual({
+      GATE_COMPANY: "inputs.company",
+      GATE_ORGANIZATION_ID: "inputs.organization_id",
+      GATE_REASON: "inputs.reason",
     });
-    expect(new Set(groups).size).toBe(groups.length);
+  });
+  it("roda num runner do GitHub, sem depender de download, numa fila por operação", () => {
+    expect(job["runs-on"]).toBe("ubuntu-24.04");
+    expect(job.steps.map((step) => step.uses?.split("@")[0]).filter(Boolean)).toEqual([
+      "actions/checkout",
+      "actions/upload-artifact",
+    ]);
+    // An unblock, a resume, a list or a test never queues an emergency withdraw or the stop.
+    expect(expression(workflow.concurrency.group)).toBe("capture-fiscal-inputs.operation");
+    expect(workflow.concurrency["cancel-in-progress"]).toBe(false);
     // The company releases in the console: no workflow releases the capture.
     expect(() => read(".github/workflows/capture-release.yml")).toThrow();
   });
   it("nenhum outro workflow recebe a chave do site para a liberação nem chama captureRelease", () => {
     const directory = new URL("../.github/workflows/", import.meta.url);
-    const own = Object.values(CAPTURE_WORKFLOWS).map(({ file }) => file.split("/").at(-1));
+    const own = CAPTURE_WORKFLOW.split("/").at(-1);
     for (const name of readdirSync(directory).filter((n) => /\.ya?ml$/.test(n))) {
-      if (own.includes(name)) continue;
+      if (name === own) continue;
       const text = readFileSync(new URL(name, directory), "utf8");
       expect(text, name).not.toContain("FNFE_SITE_DEPLOY_KEY");
       expect(text, name).not.toContain("capture-release.mjs");
@@ -445,36 +506,4 @@ describe("workflows", () => {
     for (const path of paths.filter((p) => !p.endsWith("/")))
       expect(() => read(path.slice(1)), `${path} existe`).not.toThrow();
   });
-  it.each(Object.entries(CAPTURE_WORKFLOWS))(
-    "%s: as entradas do workflow são as que o runner lê",
-    (_action, { file, scope }) => {
-      const workflow = workflowOf(file);
-      const runner = Object.values(workflow.jobs)[0]!.steps.find((step) =>
-        step.run?.startsWith("node scripts/"),
-      )!;
-      if (scope === "read" || scope === "alert") {
-        // The list and the test e-mail take no input at all.
-        expect(workflow.on.workflow_dispatch).toBeNull();
-        expect(Object.keys(runner.env!).filter((name) => name.startsWith("GATE_"))).toEqual([]);
-        return;
-      }
-      const inputs = (
-        workflow.on.workflow_dispatch as { inputs: Record<string, { required: boolean }> }
-      ).inputs;
-      if (scope === "deployment") {
-        expect(Object.keys(inputs)).toEqual(["reason"]);
-        expect(Object.keys(runner.env!).filter((name) => name.startsWith("GATE_"))).toEqual([
-          "GATE_REASON",
-        ]);
-        return;
-      }
-      expect(inputs).toMatchObject({
-        company: { required: true },
-        organization_id: { required: false },
-        reason: { required: true },
-      });
-      expect(expression(runner.env!.GATE_COMPANY)).toBe("inputs.company");
-      expect(expression(runner.env!.GATE_ORGANIZATION_ID)).toBe("inputs.organization_id");
-    },
-  );
 });

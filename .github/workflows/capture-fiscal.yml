@@ -1,0 +1,117 @@
+name: Fiscal capture
+run-name: "Fiscal capture: ${{ inputs.operation }}"
+
+# The Freecorps operations over the fiscal capture of the hosted site (ADR 0007, amendment of
+# 22/10/2026, #422, #424 and #463), one workflow since #57, each operation chosen in `operation`:
+# - list: internal view of every company with a release record, its stream, certificate and
+#   latest alerts (`captureSupervisor:survey`). Changes no release, stream or customer record; it
+#   only arms the supervision of a released company that has none scheduled. No other input.
+# - alert_test: one test e-mail of the capture alerts to FNFE_CAPTURE_ALERT_EMAIL
+#   (`captureSupervisor:sendTestAlert`), at most one per run attempt, whose subject names the run.
+#   No other input.
+# - emergency_withdraw: withdraws the capture of one company and blocks it from releasing it again
+#   in the console; the reading and export of what was captured stay. company and reason.
+# - unblock: lifts that block, so the company's manager may release the capture again; it releases
+#   nothing by itself and is refused for a company that is not blocked. company and reason.
+# - halt: stops the capture of every company at once, recording the persisted general stop
+#   (`captureFiscalHalts`): the vault refuses every production capture query and the gate
+#   postpones each one by an hour, with no attention or webhook for the customer. reason only.
+# - resume: lifts the general stop; each stream queries again at its next check, within an hour.
+#   It opens nothing by itself and is refused when the capture is not stopped. reason only.
+# Without approval, and only a person in authorizedActors of deploy/issuance-gate.json may trigger
+# it. The Convex call of each operation is fixed in scripts/lib/capture-release.mjs; the runner
+# refuses an input the chosen operation does not take, so a company id never reaches halt. The
+# company comes only by its Convex id, because the inputs of a run are public. A /health that does
+# not confirm the site only warns for the stops (emergency_withdraw, halt) and refuses the others.
+# If GitHub or Actions is down, the alternative is removing the transport variable of the site in
+# the Convex dashboard (docs/operacao/captura-fiscal.md); a test keeps workflows from naming it.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "list or alert_test: no other input. emergency_withdraw or unblock: one company, with company and reason. halt or resume: every company, with reason only."
+        required: true
+        type: choice
+        # The read-only view first, as the default: a dispatch without a choice changes nothing.
+        default: list
+        options:
+          - list
+          - alert_test
+          - emergency_withdraw
+          - unblock
+          - halt
+          - resume
+      company:
+        description: "emergency_withdraw and unblock only: Convex id of the company (not its CNPJ, the inputs of a run are public)"
+        required: false
+        type: string
+      organization_id:
+        description: "emergency_withdraw and unblock only, optional: Convex id of the organization, to cross-check the company"
+        required: false
+        type: string
+      reason:
+        description: "Every operation except list and alert_test: 10 to 500 characters. Public: no customer name, CNPJ or personal data."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# One group per operation: an unblock, a resume, a list or a test never queues an emergency
+# withdraw or the general stop.
+concurrency:
+  group: capture-fiscal-${{ inputs.operation }}
+  cancel-in-progress: false
+
+jobs:
+  # One job on a GitHub-hosted runner, without a download the action depends on, like the NFS-e emergency.
+  operate:
+    name: ${{ inputs.operation }}
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: capture-fiscal-emergency
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The Node of the runner image runs the executor, which only uses Node built-in modules
+      # (fetch and AbortSignal.timeout need 20 or newer); the action downloads nothing it depends on.
+      # Seals the full receipt for the custodians (scripts/lib/sealed-receipt.mjs). It never
+      # blocks the action: without age, the public receipt records sealed.state "unavailable".
+      - name: Install pinned age for the sealed receipt
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+      - name: Check the Node.js of the runner image
+        run: node -e 'const major = Number(process.versions.node.split(".")[0]); if (!(major >= 20)) { console.error("Node " + process.versions.node + " is older than 20"); process.exit(1); }'
+      - name: Check the run, the authorized person and the inputs, then act
+        env:
+          CAPTURE_OPERATION: ${{ inputs.operation }}
+          GATE_COMPANY: ${{ inputs.company }}
+          GATE_ORGANIZATION_ID: ${{ inputs.organization_id }}
+          GATE_REASON: ${{ inputs.reason }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_SITE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/capture-release.mjs "$CAPTURE_OPERATION"
+      - name: Record the result or the refusal
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: capture-fiscal-${{ inputs.operation }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/capture-release/receipt.json
+            .ci-results/capture-release/receipt.full.json.age
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

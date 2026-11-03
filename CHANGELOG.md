@@ -2,6 +2,14 @@
 
 ## Não publicado
 
+- Os seis workflows da captura fiscal viram um, **Fiscal capture**
+  (`capture-fiscal.yml`, #57), com a operação escolhida em `operation`:
+  `list`, que é o padrão, `alert_test`, `emergency_withdraw`, `unblock`,
+  `halt` e `resume`. Mesmo environment, mesmas pessoas autorizadas e uma fila
+  por operação. Como o formulário mostra todas as entradas, o runner recusa
+  com `INPUT_UNEXPECTED` uma entrada que a operação não recebe: um id de
+  empresa em `halt` não para todas as empresas. Runbook em
+  [captura-fiscal.md](docs/operacao/captura-fiscal.md).
 - Repositório público (#267): desde 03/11/2026 o código está em
   https://github.com/freecorps/freecorpsNFE, sem o histórico anterior, que
   fica num repositório arquivado e privado. Guias, landing e documentação
@@ -43,7 +51,7 @@
 - Caixa de operação (#463) no fluxo da privacidade, em `/console/operacao`:
   `operacao@nfe.freecorps.com.br` recebe os alertas da captura fiscal no
   console, com operadores próprios em `FNFE_OPERATION_OPERATOR_EMAILS`, em vez
-  de caixas pessoais. O workflow `capture-alert-test.yml` manda um e-mail de
+  de caixas pessoais. O workflow `capture-fiscal.yml`, operação `alert_test`, manda um e-mail de
   teste pelo mesmo envio dos alertas, sem alerta de empresa. Ativada em 28/10/2026,
   com a entrega comprovada pelo teste.
 

@@ -476,7 +476,7 @@ export function alertMail(alert: Infer<typeof mailAlert>) {
     `Stream: ${alert.streamId ?? "-"}`,
     `Registrado em: ${date}`,
     "",
-    "Confira a lista com o workflow capture-release-list.yml e siga docs/operacao/captura-fiscal.md.",
+    "Confira a lista com o workflow capture-fiscal.yml, operação list, e siga docs/operacao/captura-fiscal.md.",
   ].join("\n");
   return { subject, text };
 }
