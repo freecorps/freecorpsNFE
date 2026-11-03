@@ -13,7 +13,7 @@ import {
   renderDanfe,
 } from "./src/danfe";
 import { code128Bars, code128Widths } from "./src/danfe/code128";
-import { processNfe } from "./src/index";
+import { breakLines } from "./src/danfe/draw";
 import { splitDateTime } from "./src/danfe/format";
 import { accessKey, eventXml, nfeXml, type FixtureOptions } from "./tests/danfeFixtures";
 
@@ -633,30 +633,50 @@ describe("DANFE em PDF", () => {
 });
 
 /**
- * Tempo do gerador sem a verificação da importação: `processNfe` (XSD e assinatura) é medido à
- * parte e descontado, porque o seu custo cresce com o XML e não depende do leiaute.
+ * Mede como o laço de quebra de linha cresce sem depender do relógio: conta os caracteres que ele
+ * pede para medir. A medida de mentira dá 1 a cada caractere.
  */
-async function layoutTime(xml: string) {
-  let started = performance.now();
-  processNfe(new TextEncoder().encode(xml));
-  const verification = performance.now() - started;
-  started = performance.now();
-  const bytes = await renderDanfe(xml);
-  return { layout: performance.now() - started - verification, verification, bytes };
+function measuredWrap(text: string, width: number) {
+  let measured = 0;
+  const lines = breakLines(text, width, (part) => {
+    measured += part.length;
+    return part.length;
+  });
+  return { lines, measured };
 }
 
 describe("desempenho da quebra de linha", () => {
-  it("infCpl de 5.000 caracteres sem espaço", async () => {
-    const { layout, bytes } = await layoutTime(xmlWith({ infCpl: "A".repeat(5000) }));
-    expect(layout).toBeLessThan(2_000);
+  // Hoje cada palavra é medida inteira e, se for cortada, cada caractere dela mais uma vez: duas
+  // medidas por caractere. Medir a linha crescente a cada caractere custa de 18 a 53 por caractere
+  // nesses casos, e procurar o maior prefixo que cabe custa de 1.500 a 43 mil.
+  const BUDGET = 3;
+
+  it.each([
+    { name: "infCpl de 5.000 caracteres sem espaço", text: "A".repeat(5000), width: 100 },
+    { name: "infAdProd de 500 caracteres sem espaço", text: "B".repeat(500), width: 30 },
+    { name: "texto de 5.000 palavras", text: "palavra ".repeat(5000), width: 100 },
+  ])(`$name mede cada caractere no máximo ${BUDGET} vezes`, ({ text, width }) => {
+    const { lines, measured } = measuredWrap(text, width);
+    expect(measured).toBeLessThanOrEqual(BUDGET * text.length);
+    expect(lines.every((line) => line.length <= width)).toBe(true);
+    expect(lines.join("").replaceAll(" ", "")).toBe(text.replaceAll(" ", ""));
+  });
+
+  it("o custo dobra quando o texto dobra", () => {
+    const small = measuredWrap("C".repeat(5000), 100).measured;
+    const large = measuredWrap("C".repeat(10_000), 100).measured;
+    expect(large).toBeLessThanOrEqual(2 * small + 1);
+  });
+
+  it("infCpl de 5.000 caracteres sem espaço sai inteiro no PDF", async () => {
+    const bytes = await renderDanfe(xmlWith({ infCpl: "A".repeat(5000) }));
     const pages = await inspectPdf(bytes);
     const printed = pages.flatMap((p) => p.boxes).filter((b) => /^A+$/.test(b.str));
     expect(printed.reduce((total, b) => total + b.str.length, 0)).toBe(5000);
   });
 
-  it("600 itens com infAdProd de 500 caracteres sem espaço", async () => {
-    const { layout, bytes } = await layoutTime(xmlWith({ items: 600, itemExtra: "B".repeat(500) }));
-    expect(layout).toBeLessThan(2_000);
+  it("600 itens com infAdProd de 500 caracteres sem espaço geram o PDF", async () => {
+    const bytes = await renderDanfe(xmlWith({ items: 600, itemExtra: "B".repeat(500) }));
     expect(bytes.byteLength).toBeGreaterThan(0);
   }, 60_000);
 });

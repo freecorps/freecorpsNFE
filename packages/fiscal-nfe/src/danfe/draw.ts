@@ -52,13 +52,23 @@ export function textWidth(text: string, font: PDFFont, size: number): number {
   return total * size;
 }
 
-/**
- * Quebra em linhas que cabem em `width`; palavra maior que a linha é cortada caractere a
- * caractere. Cada caractere é medido uma vez: o custo é linear no tamanho do texto.
- */
+/** Quebra em linhas que cabem em `width`, medindo com a fonte e o corpo dados. */
 export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+  return breakLines(text, width, (part) => textWidth(part, font, size));
+}
+
+/**
+ * Quebra em linhas cuja largura, segundo `measure`, cabe em `width`; palavra maior que a linha é
+ * cortada caractere a caractere. Cada palavra é medida inteira uma vez e, se for cortada, cada
+ * caractere dela mais uma: o custo é linear no tamanho do texto.
+ */
+export function breakLines(
+  text: string,
+  width: number,
+  measure: (part: string) => number,
+): string[] {
   const lines: string[] = [];
-  const space = textWidth(" ", font, size);
+  const space = measure(" ");
   for (const paragraph of text.split("\n")) {
     let current = "";
     let currentWidth = 0;
@@ -69,7 +79,7 @@ export function wrap(text: string, font: PDFFont, size: number, width: number): 
     };
     for (const word of paragraph.replace(/\s+/g, " ").trim().split(" ")) {
       if (!word) continue;
-      const wordWidth = textWidth(word, font, size);
+      const wordWidth = measure(word);
       if (current && currentWidth + space + wordWidth <= width) {
         current += " " + word;
         currentWidth += space + wordWidth;
@@ -83,7 +93,7 @@ export function wrap(text: string, font: PDFFont, size: number, width: number): 
       }
       // Palavra maior que a linha: pedaços tão longos quanto couberem, ao menos um caractere.
       for (const char of word) {
-        const charWidth = textWidth(char, font, size);
+        const charWidth = measure(char);
         if (current && currentWidth + charWidth > width) push();
         current += char;
         currentWidth += charWidth;
