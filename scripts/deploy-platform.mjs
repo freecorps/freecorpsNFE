@@ -72,7 +72,19 @@ function run(script, args, env = baseEnv, cwd = root) {
 // own dispatch, before anything is built or written (scripts/lib/owner-review.mjs, #424).
 async function reviewGate() {
   const git = (args) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: "pipe" });
-  const published = await publishedRevision(target);
+  let published = await publishedRevision(target);
+  // Production may serve a revision of the archived repository, outside this history (the
+  // cutover of 03/11/2026): the range cannot be checked, so it counts as unknown and only an
+  // owner dispatch publishes, as ownerReview requires for an unknown revision.
+  if (
+    published &&
+    spawnSync("git", ["cat-file", "-e", `${published}^{commit}`], { cwd: root }).status !== 0
+  ) {
+    console.log(
+      `owner review: production serves ${published}, outside this history; only an owner dispatch publishes`,
+    );
+    published = null;
+  }
   // Unreadable at a known published revision stays null, and ownerReview refuses the range.
   let previous = null;
   try {
