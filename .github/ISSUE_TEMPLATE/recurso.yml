@@ -1,0 +1,35 @@
+name: Pedido de recurso
+description: Uma capacidade nova ou uma mudança de comportamento.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esta issue é pública. Descreva o problema com exemplos inventados, sem dado real de cliente nem documento fiscal real.
+        Antes de pedir, veja a [cobertura e os limites](https://github.com/freecorps/freecorpsNFE/blob/main/docs/v1.0/ACCEPTANCE.md): emissão real e alguns modelos fiscais têm condições próprias.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: O que você tenta fazer hoje e onde a plataforma não atende.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+      description: O comportamento que resolveria, do ponto de vista de quem integra ou opera.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto fiscal
+      description: Modelo de documento, ambiente (sandbox, homologação, produção) e norma ou nota técnica que se aplica, se houver.
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Dados
+      options:
+        - label: Confirmo que esta issue não contém dado real de cliente, credencial nem documento fiscal real.
+          required: true

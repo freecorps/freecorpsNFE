@@ -1,0 +1,11 @@
+# Updates of the pinned GitHub Actions (each one by full SHA). npm dependencies follow
+# docs/desenvolvimento and the dependency-maintenance skill (lockfile, patches and inventory
+# together), so they are not opened here; security alerts stay on in the repository settings.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    labels: [dependencies]

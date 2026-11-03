@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vulnerabilidade
+    url: https://github.com/freecorps/freecorpsNFE/security/advisories/new
+    about: Relate em privado; issues são públicas.
+  - name: Documentação
+    url: https://nfe.freecorps.com.br/docs
+    about: Guias da API, do SDK e da instalação própria.

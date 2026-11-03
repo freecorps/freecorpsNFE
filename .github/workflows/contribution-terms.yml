@@ -1,0 +1,42 @@
+name: Contribution terms
+
+# Blocks the merge of an external contribution until its author accepts the contribution terms
+# in the PR body (CONTRIBUTING.md, CONTRIBUICOES.md). Owners, members, collaborators and bots
+# pass. pull_request_target runs the workflow and the script of the base branch, so a PR cannot
+# change the check that judges it, and it needs no approval to run for a fork. It never checks
+# out, builds or runs the PR's code, has no secret and only reads the event: author association,
+# author type and body, passed by env.
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contribution-terms-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  terms:
+    name: Contribution terms
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      # The base revision, never the PR head.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            CONTRIBUICOES.md
+            scripts/contribution-terms.mjs
+          sparse-checkout-cone-mode: false
+      - name: Check the acceptance of the contribution terms
+        env:
+          PR_AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/contribution-terms.mjs
