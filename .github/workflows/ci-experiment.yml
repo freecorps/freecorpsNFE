@@ -1,0 +1,85 @@
+name: CI experiment (temporary)
+
+# Measurement only, removed before merge: Chromium without --with-deps and
+# Validate on 8 vCPU. No secrets.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    name: Chromium without system deps
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Install Chromium only
+        run: node apps/console/node_modules/playwright/cli.js install chromium
+      - name: Missing system packages
+        run: |
+          cmd=$(node apps/console/node_modules/playwright/cli.js install-deps --dry-run chromium | grep -o 'apt-get install.*' | tail -1)
+          echo "$cmd"
+          missing=""
+          for p in $(echo "$cmd" | tr ' ' '\n' | grep -vE '^(apt-get|install|-y|--no-install-recommends)$'); do
+            dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || missing="$missing $p"
+          done
+          echo "missing:${missing:- none}"
+          for b in ~/.cache/ms-playwright/*/chrome*/chrome ~/.cache/ms-playwright/*/chrome*/chrome-headless-shell; do
+            [ -f "$b" ] && { echo "ldd $b"; ldd "$b" | grep "not found" || echo "  all libraries found"; }
+          done
+      - name: Launch and render
+        working-directory: apps/console
+        run: |
+          node --input-type=module -e '
+            import { chromium } from "playwright";
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage();
+            await page.setContent("<p style=\"font-family:sans-serif\">Olá, ação ç</p>");
+            console.log("text:", await page.textContent("p"));
+            await page.screenshot({ path: "/tmp/shot.png" });
+            await browser.close();
+            console.log("launch ok");
+          '
+
+  validate8:
+    name: Validate 8 vCPU (maxWorkers ${{ matrix.workers }})
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        workers: [3, 6]
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: node scripts/ci.mjs identity
+      - run: vp install --frozen-lockfile
+      - name: Set test workers
+        env:
+          WORKERS: ${{ matrix.workers }}
+        run: sed -i "s/--maxWorkers=3/--maxWorkers=$WORKERS/" scripts/ci.mjs && grep -n maxWorkers scripts/ci.mjs
+      - name: Build, check and test
+        env:
+          CONTRACT_BASE: ${{ github.event.pull_request.base.sha }}
+        run: vp run --no-cache --log grouped validate
