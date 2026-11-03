@@ -2,15 +2,21 @@
 
 ## Problema
 
-<!-- O que motiva a mudança. -->
+<!-- O problema de quem usa, em linguagem simples, antes da solução. Não comece pela lista do que foi implementado. -->
 
 ## O que muda
 
-<!-- O comportamento resultante, do ponto de vista de quem usa. -->
+<!-- O comportamento resultante, do ponto de vista de quem usa. Num diff grande, diga em quais arquivos o comportamento é decidido e o que é mecânico ou gerado. -->
 
 ## Prova
 
-<!-- Os comandos e testes que mostram o comportamento (veja "Verificando" no AGENTS.md) e o que ficou sem prova. -->
+<!-- Os comandos e testes que mostram o comportamento (veja "Verificando" no AGENTS.md), com o antes e o depois de uma correção quando houver, e o que ficou sem prova. Mudança visual leva captura. -->
+
+## Risco e reversão
+
+<!-- Só quando houver: contrato, dados persistidos, consumidores afetados e se reverter é barato ou exige recuperação. Apague a seção numa mudança pequena. -->
+
+<!-- Para fechar uma issue no merge, use a palavra em inglês: "Closes #123". Trabalho parcial: "Relacionado a #123". -->
 
 ## Termos de contribuição
 
