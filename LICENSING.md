@@ -12,7 +12,9 @@ Em 01/11/2026 o mantenedor aceitou e publicou no npm `@freecorps/sdk`,
 `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse`
 0.1.0, por pacote, versão e hash (recibo).
 Os demais manifests continuam `private: true`, inclusive `@freecorps/contracts`.
-Não houve abertura pública do repositório, tag ou release.
+Em 03/11/2026 o código passou ao repositório público
+https://github.com/freecorps/freecorpsNFE, sem o histórico anterior, que fica
+num repositório arquivado e privado. Não houve tag nem release.
 
 Esta revisão distingue o código próprio dos materiais incorporados. A licença
 do projeto não concede direitos sobre dependências, schemas, dados, marcas ou

@@ -37,7 +37,7 @@ it("requires real evidence files for delivered modules and exposes future covera
     expect(["delivered", "pending"]).toContain(module.status);
     if (module.status === "delivered") expect(module.evidence.length).toBeGreaterThan(0);
     if (module.status === "pending") expect(module.evidence).toEqual([]);
-    // Cópia pública: os recibos (docs/v1.0/evidence/) ficam no repositório privado.
+    // Repositório público: os recibos (docs/v1.0/evidence/) ficam no repositório arquivado.
     for (const file of module.evidence.filter((f) => !f.startsWith("docs/v1.0/evidence/")))
       expect(existsSync(new URL(`../${file}`, import.meta.url))).toBe(true);
   }

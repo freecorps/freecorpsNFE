@@ -91,6 +91,11 @@ possível; e a liberação manual por empresa não escala. O risco de 656 e de
 LGPD passa a ser declarado e aceito pela empresa nos termos, como em
 qualquer integração que ela mesma configura.
 
+> Nota de 03/11/2026: o repositório passou a público, e o plano Free oferece
+> revisores obrigatórios de environment em repositório público. A decisão
+> acima não muda: a empresa liga e desliga a captura no console, sem
+> aprovação no run.
+
 ### 3. Escopo do ambiente fiscal no site
 
 No site hospedado, `production` cobre:
@@ -245,6 +250,16 @@ Compensação proposta, para decisão dos sócios:
    Ele reduz o risco, não o elimina; por isso a opção 1 vem primeiro.
 
 Nenhuma das duas foi implementada nesta nota.
+
+> Nota de 03/11/2026: o código passou ao repositório público, e as chamadas
+> acima respondem 200. A `main` tem um ruleset, sem bypass, que exige PR, os
+> checks `Validate` e `Public scan` e conversas resolvidas, e recusa
+> force-push e exclusão. Ele exige 0 aprovações, então o `CODEOWNERS` ainda
+> não impede o merge sem revisão. `nfse-production-gate` e
+> `nfse-production-release` têm revisores obrigatórios com _Prevent
+> self-review_; os environments da captura não têm, e todos aceitam só a
+> `main`. O estado conferido está em
+> [emissao-nfse.md](../operacao/emissao-nfse.md#proteções-do-github).
 
 ## Adendo de 23/10/2026: lacunas, recuperação em lote e perda aceita
 

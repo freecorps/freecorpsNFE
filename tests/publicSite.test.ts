@@ -44,6 +44,11 @@ const issuanceClaims = [
   /primeira nota real/i,
   /\b\d{1,2}\/(11|12)\/2026\b|(novembro|dezembro) de 2026/i,
 ];
+// The repository is public since 03/11/2026 (#267). Neither the landing nor the guides call it
+// private or condition access to it; "privado" next to a package (`@freecorps/contracts`) is not
+// about the repository.
+const repositoryPrivate =
+  /reposit[oó]rio[^.\n]{0,40}\bprivad|\bprivad[^.\n]{0,40}reposit[oó]rio|GitHub \(privado\)|404 sem acesso/i;
 const contract = (component: FC) =>
   parse(
     renderToStaticMarkup(
@@ -219,66 +224,45 @@ describe("distribuição pública estática", () => {
       ...issuanceClaims,
     ])
       expect(text).not.toMatch(claim);
-    // The SDK is on npm since 01/11/2026 (#83); the repository link says it is private.
+    // The SDK is on npm since 01/11/2026 (#83), and the repository is public since 03/11/2026
+    // (#267): the landing links it without the private label and never calls it private.
     expect(text).toMatch(/SDK TypeScript, publicado no npm/);
     expect(text).not.toMatch(/tarball privado/);
-    for (const link of doc.querySelectorAll("a[href^='https://github.com/']"))
-      expect(link.textContent).toMatch(/privado/);
+    expect(text).not.toMatch(repositoryPrivate);
+    const repositoryLinks = Array.from(doc.querySelectorAll("a[href^='https://github.com/']"));
+    expect(repositoryLinks.length).toBeGreaterThan(0);
+    for (const link of repositoryLinks) expect(link.textContent).not.toMatch(/privad/i);
   });
 
-  // The repository is still private (PUBLIC.md, owner's revision of 26/10/2026, #518): each clone
-  // or repository link in the guides comes after a Callout that says so, in the same section, and
-  // the guides' GitHub link is labelled private like the landing's. The packages went to npm on
-  // 01/11/2026 (#83): their install commands need no Callout, and no guide says they are not there.
-  it("condiciona nos guias cada clone e link do repositório privado", () => {
-    for (const [name, source] of Object.entries(guides))
+  // The repository is public since 03/11/2026 (PUBLIC.md, #267): the guides link it and show the
+  // clone as a working command, with no Callout or phrase saying it is private, and the guides' top
+  // bar labels it "GitHub". The packages went to npm on 01/11/2026 (#83): no guide says they are
+  // not there. `@freecorps/contracts` stays private on npm; that is a package, not the repository.
+  it("apresenta nos guias o repositório público, sem condição de acesso", () => {
+    for (const [name, source] of Object.entries(guides)) {
       expect(source, `${name}.mdx diz que um pacote publicado não está no npm`).not.toMatch(
         /ainda não (?:está |estão )?(?:publicad[oa]s? )?no npm/,
       );
-    // Each private artifact, how the guides expose it and the Callout title that conditions it.
-    const artifacts = [
-      {
-        // Links, autolinks, bare URLs, SSH and gh clones of the repository.
-        name: "repositório",
-        exposed: /github\.com[:/]freecorps\/|gh repo clone freecorps\//,
-        title: "Repositório ainda privado",
-      },
-    ];
-    const rule = "PUBLIC.md (revisão de 26/10/2026, #518)";
-    const seen = new Set<string>();
-    for (const [name, source] of Object.entries(guides)) {
-      const lines = source.split("\n");
-      lines.forEach((line, index) => {
-        // The section runs from the last ##..###### heading above the line down to the line.
-        let start = index;
-        while (start > 0 && !/^#{2,6} /.test(lines[start - 1]!)) start--;
-        const section = lines.slice(start, index).join("\n");
-        const titles = Array.from(section.matchAll(/<Callout[^>]*title="([^"]*)"/g), (m) => m[1]);
-        for (const artifact of artifacts) {
-          if (!artifact.exposed.test(line)) continue;
-          seen.add(artifact.name);
-          expect(
-            titles,
-            `${rule}: em ${name}.mdx:${index + 1}, o ${artifact.name} exposto em "${line.trim()}" ` +
-              `precisa de um Callout "${artifact.title}" antes, na mesma seção`,
-          ).toContain(artifact.title);
-        }
-      });
+      expect(source, `${name}.mdx diz que o repositório é privado`).not.toMatch(repositoryPrivate);
+      expect(source, `${name}.mdx condiciona o repositório num Callout`).not.toMatch(
+        /<Callout[^>]*title="[^"]*privad/i,
+      );
     }
-    // If a form stops matching, the patterns above no longer guard the guides.
-    for (const artifact of artifacts)
-      expect(
-        seen.has(artifact.name),
-        `${rule}: nenhum guia expõe mais o ${artifact.name}; revise o teste e a condição`,
-      ).toBe(true);
-    // The guides' top bar shows the private label as visible text, not as an icon's aria-label.
+    // The clone and the repository link stay in the installation guide, now unconditioned.
+    expect(guides.instalacao).toContain(
+      "git clone https://github.com/freecorps/freecorpsNFE.git fiscal",
+    );
+    expect(guides.instalacao).toContain("](https://github.com/freecorps/freecorpsNFE)");
+    expect(guides.licencas).toContain(
+      "](https://github.com/freecorps/freecorpsNFE/blob/main/LICENSE)",
+    );
     const github = (baseOptions().links ?? []).filter(
       (link) => "url" in link && link.url?.startsWith("https://github.com/"),
     );
     expect(github).toHaveLength(1);
     for (const link of github) {
       expect(link.type ?? "main").toBe("main");
-      expect("text" in link && link.text).toBe("GitHub (privado)");
+      expect("text" in link && link.text).toBe("GitHub");
     }
     expect(baseOptions().githubUrl).toBeUndefined();
   });

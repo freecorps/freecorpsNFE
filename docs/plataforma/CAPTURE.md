@@ -1246,8 +1246,11 @@ sem payload remoto, e saída não zero.
    schemas dos envelopes, checkpoint e estado de desligamento. Não copia CNPJ,
    razão social, IDs, storage, XML, senha, token ou chave; se algum desses
    valores aparecer, falha com `RECEIPT_NOT_SANITIZED`. O operador revisa o
-   arquivo, copia para os recibos da #50, no repositório privado da
-   Freecorps, e escreve o README da rodada com o que foi e o que não foi comprovado. Sem
+   arquivo, guarda-o com os recibos da #50 pela regra de
+   [evidência restrita](../v1.0/EVIDENCE-STORAGE.md#evidência-restrita) e
+   escreve o README da rodada com o que foi e o que não foi comprovado. Os
+   recibos das rodadas anteriores ficam no repositório arquivado, privado, e
+   não estão neste repositório. Sem
    `source.status`, não houve resposta fiscal persistida.
 8. **Desligamento e revogação.** `stop` desliga o transporte, pausa a captura e
    revoga o certificado, removendo o envelope do cofre. Gerar `receipt` de novo

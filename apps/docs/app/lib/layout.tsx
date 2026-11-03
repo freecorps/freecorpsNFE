@@ -1,7 +1,7 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
-// The guides show the repository link as visible text marked private, like the landing, until
-// the repository is published (#518). It opens in the same tab, as the landing's does.
+// The repository is public since 03/11/2026 (#267): the guides link it as plain visible text, like
+// the landing. It opens in the same tab, as the landing's does.
 export const repository = "https://github.com/freecorps/freecorpsNFE";
 
 // Same wordmark as the landing header (apps/console/src/site/landing/shell.tsx).
@@ -30,7 +30,7 @@ export function baseOptions(): BaseLayoutProps {
       // phones the same login is a plain item in the side menu (#452).
       { type: "button", text: "Entrar", url: "/login", active: "none", on: "nav" },
       { text: "Entrar", url: "/login", active: "none", on: "menu" },
-      { text: "GitHub (privado)", url: repository, external: false, active: "none" },
+      { text: "GitHub", url: repository, external: false, active: "none" },
     ],
   };
 }

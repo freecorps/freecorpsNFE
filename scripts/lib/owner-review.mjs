@@ -2,10 +2,11 @@
  * Gate de revisão na publicação (ADR 0007, nota de 23/10/2026, opção 2; #424;
  * decisão do dono do projeto de 26/10/2026: só o dono do projeto aprova).
  *
- * O plano do GitHub da organização não aplica proteção da `main` nem o
- * `CODEOWNERS`. Antes de publicar, este gate lista os commits entre a revisão
- * que a produção serve e a nova e, para cada um que toque um caminho do
- * `CODEOWNERS` (na versão publicada ou na nova), exige uma destas aprovações:
+ * O ruleset da `main` (03/11/2026) exige PR e checks, mas nenhuma aprovação,
+ * então o `CODEOWNERS` não obriga revisão. Antes de publicar, este gate lista
+ * os commits entre a revisão que a produção serve e a nova e, para cada um que
+ * toque um caminho do `CODEOWNERS` (na versão publicada ou na nova), exige uma
+ * destas aprovações:
  *
  * - **Dispatch de um dono.** Num `workflow_dispatch` do `Deploy production`,
  *   disparado e não só repetido pela pessoa (`dispatcherOf`), quem dispara

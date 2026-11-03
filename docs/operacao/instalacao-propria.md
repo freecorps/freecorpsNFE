@@ -3,7 +3,8 @@
 A plataforma usa `platform/convex` e `apps/console`. A biblioteca XML e o SDK
 podem ser instalados separadamente.
 
-O repositório ainda é privado. Plataforma e motor usam a licença Freecorps 1.0; o SDK cliente usa MIT.
+O repositório é público desde 03/11/2026, em
+https://github.com/freecorps/freecorpsNFE. Plataforma e motor usam a licença Freecorps 1.0; o SDK cliente usa MIT.
 `@freecorps/sdk`, `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e
 `@freecorps/fiscal-nfse` estão no npm desde 01/11/2026, com os schemas
 incorporados sob as condições de [LICENSING.md](../../LICENSING.md).
@@ -56,7 +57,7 @@ node --experimental-strip-types scripts/selfhost.mjs up minha-instalacao
 node --experimental-strip-types scripts/selfhost.mjs serve minha-instalacao
 ```
 
-O repositório exige acesso enquanto for privado. Isso não exige conta Convex,
+O clone não exige conta no GitHub, conta Convex,
 Clerk, arquivo `.env.local` do mantenedor ou credenciais da Freecorps. O Bun
 fixado pode ser usado por `bunx` sem alterar a instalação global.
 Para validar um PR antes de sua integração, faça checkout da revisão do PR

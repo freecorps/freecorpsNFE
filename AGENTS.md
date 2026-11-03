@@ -21,7 +21,7 @@ da plataforma ([ISSUANCE.md](docs/plataforma/ISSUANCE.md)).
 A plataforma substituiu o serviço legado no mesmo endereço. O backoffice Clerk
 e o motor de emissão NFS-e/NFC-e desse serviço saíram do repositório na #345 e
 não fazem parte deste repositório; a documentação e o código deles ficam
-no repositório privado da Freecorps e não são contrato da plataforma.
+no repositório arquivado, privado, e não são contrato da plataforma.
 
 ## O que o freecorpsNFE não pode perder
 

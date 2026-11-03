@@ -133,7 +133,7 @@ custo estão em [ci.md](desenvolvimento/ci.md). Jornadas no navegador seguem
 
 O planejamento da 1.0, a transição do serviço anterior e a documentação do
 backoffice Clerk e do motor de emissão legado, retirados na #345, ficam no
-repositório privado da Freecorps e não fazem parte desta cópia.
+repositório arquivado, privado, e não estão neste repositório.
 
 ## Manter a organização
 

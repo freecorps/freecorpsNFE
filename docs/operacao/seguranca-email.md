@@ -69,10 +69,10 @@ caixa. Depois deles:
    [DISTRIBUTION.md](../licenses/DISTRIBUTION.md). Antes disso, nenhuma
    release ou anúncio cita o canal.
 
-Quando o repositório for publicado, ligar o Private vulnerability reporting
-(Settings > Security), conferir por
-`GET repos/freecorps/freecorpsNFE/private-vulnerability-reporting` e citá-lo
-no `SECURITY.md` como segundo canal.
+O Private vulnerability reporting está ligado desde a abertura do repositório,
+em 03/11/2026: `GET repos/freecorps/freecorpsNFE/private-vulnerability-reporting`
+devolve `enabled: true`, e o `SECURITY.md` o cita como canal, ao lado do
+e-mail.
 
 ## Ensaio de recebimento e resposta
 

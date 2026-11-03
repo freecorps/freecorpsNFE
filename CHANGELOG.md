@@ -2,6 +2,11 @@
 
 ## Não publicado
 
+- Repositório público (#267): desde 03/11/2026 o código está em
+  https://github.com/freecorps/freecorpsNFE, sem o histórico anterior, que
+  fica num repositório arquivado e privado. Guias, landing e documentação
+  deixam de dizer que o repositório é privado; `tests/publicSite.test.ts`
+  recusa essa frase e o `Callout` de acesso nos guias.
 - Termos de uso 1.1 (`termos-de-uso-2026-11-02`): a seção 1 deixa de oferecer
   a importação de lotes NFS-e ABRASF, retirada na #142, e diz que as NFS-e já
   importadas continuam para leitura, download e exportação. As organizações

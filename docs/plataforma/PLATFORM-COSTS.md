@@ -165,7 +165,7 @@ dados comerciais, controle e a cerca de numeração e captura.
 ## Referência anterior: export completo reproduzível
 
 O modelo (`docs/v1.0/evidence/429/costs/model.mjs`) fica nos recibos do
-repositório privado da Freecorps e não acompanha esta cópia. O script é
+repositório arquivado, privado, e não está neste repositório. O script é
 local, não consulta serviços e confere âncoras aritméticas. O resultado é um teste de
 sensibilidade de **arquivos e backup**, não o custo completo nem um teto.
 
@@ -238,7 +238,7 @@ não são 100 GB de banco nem 100 GB de transferência mensal.
 
 O script `docs/v1.0/evidence/429/costs/paid-plans.mjs`, que roda com Node
 22.18 ou mais recente e as dependências locais instaladas, fica nos recibos
-do repositório privado da Freecorps e não acompanha esta cópia. O script importa o catálogo
+do repositório arquivado, privado, e não está neste repositório. O script importa o catálogo
 TypeScript, sem acessar rede ou dados reais. Emite resultados e todas as
 checagens antes do assert final. As checagens `required` preservam a matemática
 anterior, explicitamente sem catálogo quente; nenhuma meta foi reduzida.

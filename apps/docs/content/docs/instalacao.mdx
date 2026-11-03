@@ -1,6 +1,6 @@
 ---
 title: Instalação
-description: Três formas de usar a plataforma. Chamar a API hospedada, instalar as bibliotecas no seu projeto ou operar a aplicação completa na sua infraestrutura. As bibliotecas estão no npm; a aplicação completa depende do repositório, ainda privado.
+description: Três formas de usar a plataforma. Chamar a API hospedada, instalar as bibliotecas no seu projeto ou operar a aplicação completa na sua infraestrutura. As bibliotecas estão no npm, e a aplicação completa sai do repositório público no GitHub.
 ---
 
 ## Usar a API hospedada [#api]
@@ -9,14 +9,14 @@ description: Três formas de usar a plataforma. Chamar a API hospedada, instalar
 
 ## O que está disponível hoje [#disponibilidade]
 
-| Artefato                                                                     | Estado                                            |
-| ---------------------------------------------------------------------------- | ------------------------------------------------- |
-| API hospedada, console, esta documentação e OpenAPI                          | Público                                           |
-| `@freecorps/sdk`                                                             | Publicado no npm, versão 0.1.0                    |
-| `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse` | Publicados no npm, versão 0.1.0                   |
-| Repositório `freecorps/freecorpsNFE`                                         | Privado; o link do GitHub responde 404 sem acesso |
+| Artefato                                                                     | Estado                          |
+| ---------------------------------------------------------------------------- | ------------------------------- |
+| API hospedada, console, esta documentação e OpenAPI                          | Público                         |
+| `@freecorps/sdk`                                                             | Publicado no npm, versão 0.1.0  |
+| `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse` | Publicados no npm, versão 0.1.0 |
+| Repositório `freecorps/freecorpsNFE`                                         | Público no GitHub               |
 
-Cada artefato é publicado pelo próprio fluxo de distribuição. Publicar os pacotes não tornou público o repositório.
+Cada artefato é publicado pelo próprio fluxo de distribuição.
 
 ## Instalar as bibliotecas [#bibliotecas]
 
@@ -42,13 +42,7 @@ As bibliotecas fiscais não dependem de Convex nem de autenticação. Validar co
 
 ## Operar a aplicação completa [#aplicacao]
 
-<Callout type="warn" title="Repositório ainda privado">
-  O repositório continua privado: o link, o `git clone` e o guia de instalação própria abaixo só
-  funcionam para quem tem acesso a ele. Eles passam a valer para todos quando o repositório for
-  publicado pelo fluxo de distribuição próprio. Até lá, use a [API hospedada](/docs/instalacao#api).
-</Callout>
-
-O código está no [repositório no GitHub](https://github.com/freecorps/freecorpsNFE), ainda privado. A instalação própria sobe o servidor Convex em Docker, o console e o Worker:
+O código está no [repositório público no GitHub](https://github.com/freecorps/freecorpsNFE), e o clone não pede conta nem acesso. A instalação própria sobe o servidor Convex em Docker, o console e o Worker:
 
 ```bash title="Servidor próprio local"
 git clone https://github.com/freecorps/freecorpsNFE.git fiscal

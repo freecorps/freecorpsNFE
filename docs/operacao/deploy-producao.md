@@ -477,20 +477,20 @@ não é usado e nada é copiado. `scripts/backup-offsite.mjs snapshot|check
 --target issuance` também pula com `result: "skipped"` (`PLAN_NOT_NAMED`). O
 alerta usa o rótulo `offsite-backup-issuance-alert`.
 
-**Passos humanos antes da primeira publicação**, registrados na #198. O passo
-4 está bloqueado: a organização `freecorps` está no plano Free do GitHub e o
-repositório é privado (conferido em 23/10/2026). Nesse plano, pela
-documentação do GitHub, não há required reviewers nem _Prevent self-review_ em
-environment de repositório privado, e a API recusa a proteção da `main` com
-HTTP 403. Sem required reviewers, o run não tem aprovação e
-`deploy-issuance-production.yml` recusa toda publicação com
-`APPROVAL_MISSING`, antes de usar a chave (passo 1 da publicação, acima): a
-falha é fechada, como no `nfse-gate-enable.yml`. Sem a proteção da `main`,
-porém, quem tem escrita no repositório pode mudar o próprio workflow ou o
-script sem outra pessoa revisar. Mudar o plano, tornar o repositório público
-ou emendar a ADR é decisão pendente dos sócios e pré-condição da primeira
-publicação. Fontes e consequências estão em
-[emissao-nfse.md](emissao-nfse.md#bloqueio-o-plano-do-github).
+**Passos humanos antes da primeira publicação**, registrados na #198. Até
+03/11/2026 o passo 4 estava bloqueado: com o repositório privado no plano Free
+do GitHub, não havia required reviewers nem _Prevent self-review_ em
+environment, e a API recusava a proteção da `main` com HTTP 403. Desde a
+abertura, em 03/11/2026, o environment `nfse-production-release` tem required
+reviewers com _Prevent self-review_ e aceita só a `main`, ainda sem os
+segredos, e a `main` tem um ruleset que exige PR e os checks `Validate` e
+`Public scan`, sem aprovação obrigatória. Sem uma aprovação no run,
+`deploy-issuance-production.yml` recusa a publicação com `APPROVAL_MISSING`,
+antes de usar a chave (passo 1 da publicação, acima): a falha é fechada, como
+no `nfse-gate-enable.yml`. Sem aprovação obrigatória na `main`, porém, quem tem
+escrita no repositório ainda pode mudar o próprio workflow ou o script sem
+outra pessoa revisar. O estado conferido e o que falta estão em
+[emissao-nfse.md](emissao-nfse.md#proteções-do-github).
 
 1. Criar o deployment Convex na região padrão, com o acesso ao painel e ao
    time restrito a pessoas nomeadas, e configurar as variáveis do preflight.

@@ -431,10 +431,11 @@ Limites:
   `.claude/skills/` são arquivos comuns, gerados por
   `scripts/sync-claude-skills.mjs`, e entram na varredura.
 
-O repositório é privado e, em 21/10/2026, a API do GitHub não informava secret
-scanning nem push protection ativos (`security_and_analysis: null`). Ativá-los,
-quando disponíveis para o plano, é decisão do mantenedor; eles não substituem
-`ci:secrets`, que roda no mesmo grafo do job Validate.
+Desde 03/11/2026 o repositório é público, e secret scanning e push protection
+estão ligados (`security_and_analysis` de `gh api repos/freecorps/freecorpsNFE`).
+Em 21/10/2026, com o repositório privado, a API não informava nenhum dos dois
+(`security_and_analysis: null`). Eles não substituem `ci:secrets`, que roda no
+mesmo grafo do job Validate.
 
 ### Varredura pública
 
@@ -738,9 +739,11 @@ Cada job usa uma VM efêmera. Snapshot e monitor têm agendas independentes,
 mas compartilham o provedor Blacksmith: indisponibilidade do provedor pode
 impedir ambos de iniciar. O operador confere os horários das duas execuções.
 
-Os runners hospedados pelo GitHub não são usados. Os minutos gratuitos dos
-repositórios privados da organização se esgotaram, e a cobrança bloqueia jobs
-novos: o job falha sem iniciar. CI que não iniciou não é teste aprovado;
+Os runners hospedados pelo GitHub não são usados. A escolha vem de quando o
+repositório era privado: os minutos gratuitos dos repositórios privados da
+organização se esgotaram, e a cobrança bloqueava jobs novos, que falhavam sem
+iniciar. O repositório é público desde 03/11/2026; trocar de runner é outra
+decisão. CI que não iniciou não é teste aprovado;
 registre esse bloqueio separadamente das falhas de código.
 
 ### Orçamento da Blacksmith
