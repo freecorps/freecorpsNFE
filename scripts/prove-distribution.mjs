@@ -205,7 +205,8 @@ const report = {
   distributionPolicySha256: sha256(readFileSync("docs/licenses/DISTRIBUTION.md")),
   distributionInspectorSha256: sha256(readFileSync("scripts/lib/distribution.mjs")),
   result: "passed",
-  publication: "accepted on #83 for the tarball hashes in docs/v1.0/evidence/83/2026-11-01",
+  publication:
+    "accepted on #83 for the tarball hashes in docs/v1.0/evidence/83/2026-11-01; the renamed SDK on #73, in docs/v1.0/evidence/73/2026-11-03",
   artifacts: reports,
   installedFrom: fromRegistry ? "registry" : "local tarballs",
   ...(fromRegistry ? { registry } : { installedExactTarballs: true }),

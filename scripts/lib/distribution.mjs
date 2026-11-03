@@ -19,13 +19,18 @@ export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex"
 // fiscal-nfse, version 0.1.0, for publication; contracts stays private (the SDK
 // bundles the four MIT contracts and depends only on zod). The acceptance covers the
 // tarball hashes recorded in docs/v1.0/evidence/83/2026-11-01, not any bytes that
-// pass here, and `rights` rests on the per-file relation recorded there.
+// pass here, and `rights` rests on the per-file relation recorded there. The SDK,
+// renamed to @freecorps/freecorpsnfe-sdk on #72, was accepted again under that name
+// on #73, on 2026-11-03, for the hash in docs/v1.0/evidence/73/2026-11-03.
 // The legal reviews and the XSD permission were replaced by the maintainer
 // decisions of 2026-10-20; the schemas still have to match their manifest.
 const acceptance = {
   conditions: ["rights", "release-acceptance"],
   version: "0.1.0",
   record: "docs/v1.0/evidence/83/2026-11-01/README.md",
+};
+const acceptanceRecords = {
+  "@freecorps/freecorpsnfe-sdk": "docs/v1.0/evidence/73/2026-11-03/README.md",
 };
 const acceptedPackages = new Set([
   "@freecorps/freecorpsnfe-sdk",
@@ -223,7 +228,7 @@ export function checkPackageFiles(entries, expectedName, corpus) {
       ? {
           status: "accepted",
           acceptedConditions: [...acceptance.conditions],
-          acceptance: acceptance.record,
+          acceptance: acceptanceRecords[expectedName] ?? acceptance.record,
           policy: "docs/licenses/DISTRIBUTION.md",
         }
       : {

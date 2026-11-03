@@ -1,0 +1,10 @@
+{
+  "codeSha": "c138d933bf390b3908026198e5b4b67aecc06611",
+  "packages": [
+    {
+      "name": "@freecorps/freecorpsnfe-sdk",
+      "version": "0.1.0",
+      "sha256": "36c29407c77216f798aeb73601020554c51fb8bcf5c8a41f2cb80b6c72ba5159"
+    }
+  ]
+}

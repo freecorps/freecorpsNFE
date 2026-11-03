@@ -5,10 +5,9 @@
 - O SDK muda de nome no npm: `@freecorps/sdk` passa a ser
   `@freecorps/freecorpsnfe-sdk`, com o export `/webhooks`. A API não muda;
   troque o pacote e os imports. O npm não aceita maiúsculas, por isso o nome
-  é todo em minúsculas. A 0.1.0 com o nome novo sai pelo aceite por versão e
-  hash de [release.md](docs/operacao/release.md); depois dela,
-  `@freecorps/sdk` é marcado como obsoleto com `npm deprecate`, apontando
-  para o nome novo.
+  é todo em minúsculas. A 0.1.0 com o nome novo foi aceita e publicada em
+  03/11/2026 (#73; recibo em `docs/v1.0/evidence/73/2026-11-03`), e
+  `@freecorps/sdk` ficou marcado como obsoleto, apontando para o nome novo.
 - Os seis workflows da captura fiscal viram um, **Fiscal capture**
   (`capture-fiscal.yml`, #57), com a operação escolhida em `operation`:
   `list`, que é o padrão, `alert_test`, `emergency_withdraw`, `unblock`,
