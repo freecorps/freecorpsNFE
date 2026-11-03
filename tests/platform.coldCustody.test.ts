@@ -7,7 +7,13 @@ import { EXPORT_WINDOW } from "../platform/convex/lib/organizationClosure";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import { PURGE_ARCHIVE_WAIT } from "../platform/convex/organizationClosure";
 import { actor, fixture } from "./helpers/export-fixture";
-import { person, platformTest, syntheticApiKey, usePlatformEnvironment } from "./helpers/platform";
+import {
+  enablePix,
+  person,
+  platformTest,
+  syntheticApiKey,
+  usePlatformEnvironment,
+} from "./helpers/platform";
 
 /**
  * What an organization keeps in cold custody (ADR 0009, §§2-3), for each state of its run: the
@@ -417,6 +423,7 @@ describe("Organização arquivada: o que continua permitido (ADR 0009, §2)", ()
       admissionsUntil: NOW + DAY,
       evidence: "synthetic-cold-custody",
     });
+    await enablePix(f.t);
     await f.t.run((ctx) =>
       ctx.db.insert("usagePlans", {
         organizationId: f.scope.organizationId,
@@ -566,6 +573,7 @@ describe("Plano e encerramento em custódia (ADR 0009, §2)", () => {
       admissionsUntil: NOW + DAY,
       evidence: "synthetic-cold-custody",
     });
+    await enablePix(t);
     const organizationId = await t.run((ctx) =>
       ctx.db.insert("organizations", {
         name: "Custódia",

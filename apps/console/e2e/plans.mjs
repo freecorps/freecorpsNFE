@@ -248,7 +248,7 @@ await withLocalBrowser(root, "plans", async () => {
       "Expected one local settings row at most",
     );
     const prior = settings.page[0];
-    await rpc("mutation", "plans:configure", {
+    const configured = await rpc("mutation", "plans:configure", {
       enabled: true,
       expectedVersion: prior?.version ?? 0,
       filesBytes: Math.max(
@@ -269,6 +269,12 @@ await withLocalBrowser(root, "plans", async () => {
       ),
       admissionsUntil: Date.now() + 24 * 60 * 60 * 1000,
       evidence: "Synthetic local browser journey; no real company funds or payment",
+    });
+    // The journey pays by assisted Pix, off by default.
+    await rpc("mutation", "plans:configurePix", {
+      enabled: true,
+      expectedVersion: configured,
+      evidence: "Synthetic local browser journey; Pix confirmed by the operator",
     });
     await page.getByRole("button", { name: "Ativar gratuito", exact: true }).waitFor();
     await capture("02-catalog-desktop");

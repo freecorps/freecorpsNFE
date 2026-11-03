@@ -70,6 +70,7 @@ function overview(): PlansOverview {
     request: null,
     availability: { canClaimFree: true, reason: null },
     annualEnabled: false,
+    pixEnabled: true,
     annualStarts: { now: true, next: true },
     checkout: false,
     terms: [],
@@ -670,6 +671,8 @@ it.each([
   ["ANNUAL_TERM_SCHEDULED", "Há um plano anual agendado"],
   ["PAYMENT_METHOD_PIX", "foi pago por Pix"],
   ["PAYMENT_METHOD_CARD", "Esta organização paga por cartão"],
+  // The screen still showed Pix when the switch went off.
+  ["PIX_DISABLED", "Assine pelo cartão em Cobrança"],
   ["SUBSCRIPTION_RENEWING", "Use “Cancelar renovação” antes de assinar o anual no cartão"],
   ["PERIOD_CLOSING", "a mudança fecha na virada do mês"],
 ])("explains %s in Portuguese", async (refusal, text) => {
@@ -796,4 +799,26 @@ it("after the card Checkout goes away, the upgrade is a new intention", async ()
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   await click("Ir para o Stripe");
   expect(keys()[2]).not.toBe(keys()[0]);
+});
+
+it("with Pix off, paid tiers point to the card and a Pix term offers no upgrade", () => {
+  clock();
+  state.data = {
+    ...annualOn(),
+    pixEnabled: false,
+    terms: [term({ upgrade: upgrade() })],
+  };
+  show();
+  expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
+  expect(screen.getAllByText("Assine pelo cartão em Cobrança.")).toHaveLength(2);
+  expect(screen.getByRole("button", { name: "Ativar gratuito" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Mudar para Grande anual" })).toBeNull();
+  cleanup();
+  state.data = {
+    ...annualOn(),
+    pixEnabled: false,
+    terms: [term({ source: "stripe", upgrade: upgrade() })],
+  };
+  show();
+  expect(screen.getByRole("button", { name: "Mudar para Grande anual" })).toBeTruthy();
 });

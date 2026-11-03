@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
-import { platformTest, person, usePlatformEnvironment } from "./helpers/platform";
+import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
 import { termEndsAt } from "../platform/convex/lib/annualTerms";
 import { activateCatalogPlan } from "../platform/convex/lib/planCore";
 import { insertTerm, termTierAt } from "../platform/convex/lib/planTerms";
@@ -48,6 +48,7 @@ async function fixture({ annual = true } = {}) {
     admissionsUntil: Date.UTC(2027, 11, 31),
     evidence: "synthetic-local-proof",
   });
+  await enablePix(t);
   if (annual)
     await t.mutation(internal.plans.configureAnnual, {
       enabled: true,

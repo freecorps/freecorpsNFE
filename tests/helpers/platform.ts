@@ -94,6 +94,18 @@ export function capturePlan(
   });
 }
 /** A synthetic API key secret in the platform's format; `fill` pads it to full length. */
+/**
+ * Turns the assisted Pix sale on, off by default, without moving the settings version the
+ * fixtures count on. Call after `plans:configure`.
+ */
+export const enablePix = (t: PlatformTest) =>
+  t.run(async (ctx) => {
+    const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+    await ctx.db.patch("platformPlanSettings", settings._id, {
+      pix: { enabled: true, evidence: "synthetic-pix-on", updatedAt: Date.now() },
+    });
+  });
+
 export const syntheticApiKey = (fill = "b") =>
   `fnfe_${crypto.randomUUID().replaceAll("-", "").padEnd(43, fill)}`;
 

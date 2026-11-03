@@ -49,6 +49,10 @@ export const annualOn = (
   settings: Pick<Doc<"platformPlanSettings">, "enabled" | "annual"> | null,
 ) => settings?.enabled === true && settings.annual?.enabled === true;
 export const annualEnabled = async (ctx: QueryCtx) => annualOn(await planSettings(ctx));
+/** The assisted Pix sale is on only while the catalog is on too; the card does not depend on it. */
+export const pixOn = (settings: Pick<Doc<"platformPlanSettings">, "enabled" | "pix"> | null) =>
+  settings?.enabled === true && settings.pix?.enabled === true;
+export const pixEnabled = async (ctx: QueryCtx) => pixOn(await planSettings(ctx));
 
 export async function requirePlanAdmissions(ctx: QueryCtx) {
   const settings = await requirePlansEnabled(ctx);

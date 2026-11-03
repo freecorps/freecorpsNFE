@@ -94,6 +94,8 @@ function failure(error: unknown) {
     CAPACITY_INVENTORY_REQUIRED:
       "O inventário de capacidade está pendente. Solicite a conferência à Freecorps.",
     QUOTA_EXCEEDED: "O uso atual não cabe neste plano. Nada foi alterado.",
+    PIX_DISABLED:
+      "O pagamento por Pix não está disponível no momento. Assine pelo cartão em Cobrança. Nada foi registrado.",
     PAYMENT_METHOD_CARD:
       "Esta organização paga por cartão. Cancele a renovação ou desista do pagamento em andamento antes de pedir o Pix.",
     // The card upgrade of an annual term opens a Stripe Checkout from here.
@@ -414,7 +416,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
           key={term.id}
           term={term}
           actions={
-            canManage && term.upgrade ? (
+            // A Pix term is upgraded by Pix: with Pix off, only a card term offers it.
+            canManage && term.upgrade && (term.source === "stripe" || data.pixEnabled) ? (
               <>
                 <Button
                   disabled={blocked || (term.source === "stripe" && cardUpgradeClosed)}
@@ -523,6 +526,9 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               header: "Contratação",
               cell: (item) => {
                 const free = item.tier === "free";
+                // The paid tiers here are Pix requests; with Pix off, the card sells them below.
+                if (!free && !data.pixEnabled)
+                  return <p className="gestao-help">Assine pelo cartão em Cobrança.</p>;
                 const yearly = !free && annualView;
                 const unavailable =
                   blocked ||

@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
-import { platformTest, person, usePlatformEnvironment } from "./helpers/platform";
+import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
 import {
   billingConfig,
   invoiceGrant,
@@ -301,6 +301,7 @@ async function fixture() {
     admissionsUntil: Date.UTC(2027, 11, 31),
     evidence: "synthetic-local-proof",
   });
+  await enablePix(t);
   const fake = fakeStripe();
   const plan = () =>
     t.run((ctx) =>

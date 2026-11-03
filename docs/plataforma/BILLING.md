@@ -8,6 +8,10 @@ na renovação. Uma organização paga por uma forma de cada vez. A decisão é 
 27/10/2026 (#556), e as políticas de inadimplência, reembolso e contestação
 foram decididas pelo mantenedor em 28/10/2026.
 
+**Por enquanto, só o cartão.** Em 03/11/2026 o mantenedor decidiu não aceitar
+Pix: a venda nova é só pelo Stripe. O Pix assistido continua no código, atrás
+do [interruptor do Pix](#interruptor-do-pix), desligado.
+
 **O catálogo continua desligado.** A cobrança por cartão existe no código e nos
 testes, mas toda contratação passa por `requirePlanAdmissions`: sem
 `platformPlanSettings.enabled` e janela de admissão aberta, nada é vendido.
@@ -144,6 +148,29 @@ Fatura não paga não é registrada e volta a ser lida na próxima conferência.
   [termos de uso 1.0](../termos/arquivo/termos-de-uso-2026-11-01.md), publicados em 01/11/2026 (#428). Elas valem quando um plano
   pago estiver à venda no console.
 
+## Interruptor do Pix
+
+`platformPlanSettings.pix` (`enabled`, `evidence`, `updatedAt`) fica
+desligado quando ausente. Só o operador o altera, pela mutation interna
+`plans:configurePix`, com as mesmas regras de `plans:configureAnnual`:
+`expectedVersion`, evidência de 8 a 500 caracteres, recusa com o catálogo
+desligado (`PLANS_DISABLED`) e avanço da `version` comum. `pixOn` em
+`planCore.ts` exige o catálogo e o Pix ligados, e `plans:configure` preserva o
+campo.
+
+Desligado, `plans:requestPaid` recusa todo pedido novo com `PIX_DISABLED`,
+mensal, anual ou upgrade de termo Pix, antes de gravar qualquer coisa. Com o
+anual também desligado, o pedido anual responde `ANNUAL_DISABLED`. A
+repetição de um pedido já feito, pela mesma chave, continua respondendo, e
+`plans:confirmPayment` ainda confirma um pedido feito antes. Termos pagos por
+Pix não mudam. A adesão ao Gratuito não passa pelo Pix e continua.
+
+`plans:overview` e `billing:overview` trazem `pixEnabled`. Com o Pix
+desligado, o console troca os botões "Solicitar …" dos planos pagos por
+"Assine pelo cartão em Cobrança.", não oferece o upgrade de um termo Pix e
+tira o Pix dos textos de Cobrança. Sem Pix, o anual só começa no dia 1
+seguinte, pelo [Checkout anual](#checkout-anual).
+
 ## Janela de admissão
 
 `admissionsUntil`, em `platformPlanSettings`, limita só a **nova reserva** de
@@ -160,7 +187,8 @@ decidiu em 29/10/2026 na #549. Antes, a renovação depois da janela ficava
 O anual dá 12 meses pelo preço de 10
 ([ADR 0010](../adr/0010-guarda-em-camadas-e-custo-dos-planos.md), decisões 4.2
 e 9). O Pix assistido e o [Checkout anual](#checkout-anual) do cartão
-vendem o anual, só com o interruptor ligado, que segue desligado. Uma fatura
+vendem o anual, só com o interruptor ligado, que segue desligado; o Pix
+também depende do [interruptor do Pix](#interruptor-do-pix). Uma fatura
 anual paga vira termo ([Fatura anual do cartão](#fatura-anual-do-cartão)). O
 [upgrade](#upgrade-do-anual) do Intermediário anual para o Grande anual é
 vendido pelas duas formas. A [rescisão](#rescisão-do-anual), com o
@@ -301,7 +329,7 @@ com o interruptor ligado.
 
 ### Venda por Pix
 
-O fluxo é o do Pix mensal, com `cycle: "annual"` em `plans:requestPaid`:
+Só com o [interruptor do Pix](#interruptor-do-pix) ligado. O fluxo é o do Pix mensal, com `cycle: "annual"` em `plans:requestPaid`:
 
 1. **Pedido.** O owner ou admin escolhe o tier pago e `start`: `now` começa o
    termo no dia 1 do mês corrente, que conta como o 1º mês, com cobrança
@@ -1291,11 +1319,11 @@ mantenedor.
    dia 1, a fatura `subscription_cycle` paga vira termo `active`, pelo
    evento ou pela conferência agendada duas horas depois, e o console mostra
    o anual em vigor.
-5. **Upgrade, rescisão e Pix.** Com o termo do cartão em vigor, o upgrade
+5. **Upgrade e rescisão.** Com o termo do cartão em vigor, o upgrade
    para o Grande e a rescisão (`plans:rescindTerm`) aparecem no console como
-   em [Tela do anual no console](#tela-do-anual-no-console). Em outra
-   organização sintética, um pedido Pix anual confirmado pelo operador com
-   referência sintética vira termo e aparece da mesma forma.
+   em [Tela do anual no console](#tela-do-anual-no-console). Com o Pix
+   desligado, o console não oferece o pedido Pix, e `plans:requestPaid`
+   responde `PIX_DISABLED`.
 6. **Repetição.** Reenviar pelo painel um evento já processado não cria
    efeito novo.
 7. **Limpeza.** Cancelar as assinaturas de teste, desligar o anual e o
@@ -1308,7 +1336,8 @@ mantenedor.
 Depois da prova, a ativação em produção segue esta ordem:
 `billing:check-stripe` com a chave `live` contra o endpoint de produção, os
 segredos no deployment de produção, o catálogo ligado e
-`plans:configureAnnual` com `enabled: true` e evidência que cite a prova.
+`plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O
+Pix continua desligado.
 Depois, conferir no console conectado que o anual aparece à venda. Os limites
 da matriz continuam valendo: testes locais de Pix não são transferência real,
 e 3DS, disputas, Smart Retries e e-mails não foram demonstrados.

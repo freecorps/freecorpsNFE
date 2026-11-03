@@ -50,6 +50,10 @@ export const planTables = {
     annual: v.optional(
       v.object({ enabled: v.boolean(), evidence: v.string(), updatedAt: v.number() }),
     ),
+    /** Assisted Pix sale switch; missing is off, and it needs `enabled` too. */
+    pix: v.optional(
+      v.object({ enabled: v.boolean(), evidence: v.string(), updatedAt: v.number() }),
+    ),
   }).index("by_key", ["key"]),
   platformPlanAllocations: defineTable({
     organizationId: v.id("organizations"),

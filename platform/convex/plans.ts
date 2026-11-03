@@ -30,6 +30,8 @@ import {
   annualOn,
   grantTerm,
   planAllocation,
+  pixEnabled,
+  pixOn,
   planSettings,
   recordTermRefund as recordTermRefundCore,
   requirePlanAdmissions,
@@ -253,6 +255,8 @@ export const overview = query({
     availability: v.object({ canClaimFree: v.boolean(), reason: v.union(v.string(), v.null()) }),
     /** The annual switch (`annualEnabled`): new annual sales and upgrades. */
     annualEnabled: v.boolean(),
+    /** The Pix switch (`pixEnabled`): new requests by assisted Pix, annual upgrades included. */
+    pixEnabled: v.boolean(),
     /**
      * Whether no term stops a new annual by Pix starting `now` (this month) or `next` month
      * (`annualTermBlocks`): a term in force allows only `next`, and only in its last month.
@@ -353,6 +357,7 @@ export const overview = query({
           : "Gratuidade sujeita à elegibilidade, inventário e orçamento disponível.",
       },
       annualEnabled: annualOnSale,
+      pixEnabled: pixOn(settings),
       annualStarts: {
         now: !(await annualTermBlocks(ctx, args.organizationId, monthStart(now), now)),
         next: !(await annualTermBlocks(ctx, args.organizationId, nextUsagePeriodStart(now), now)),
@@ -453,8 +458,9 @@ export const requestPaid = mutation({
       if (prior.state === "cancelled") deny("PLAN_REQUEST_UNAVAILABLE");
       return { id: prior._id, amountCents: prior.amountCents, period: prior.period };
     }
-    // Turning the switch off stops new sales only; a request already made is still honored.
+    // Turning a switch off stops new sales only; a request already made is still honored.
     if (annual && !(await annualEnabled(ctx))) deny("ANNUAL_DISABLED");
+    if (!(await pixEnabled(ctx))) deny("PIX_DISABLED");
     if (args.start === "upgrade") return requestUpgrade(ctx, args, user._id, now);
     // A monthly request buys the current month, which must not overlap an annual term; an
     // annual one must not overlap one either, and waits while another is scheduled. A `next` in
@@ -884,8 +890,9 @@ export const configure = internalMutation({
       key: "platform" as const,
       ...fields,
       ...counters,
-      // The annual switch has its own mutation; rewriting the budgets keeps it as it was.
+      // The annual and Pix switches have their own mutations; rewriting the budgets keeps them.
       ...(prior?.annual ? { annual: prior.annual } : {}),
+      ...(prior?.pix ? { pix: prior.pix } : {}),
       version: expectedVersion + 1,
       updatedAt: Date.now(),
     };
@@ -902,21 +909,37 @@ export const configure = internalMutation({
 export const configureAnnual = internalMutation({
   args: { enabled: v.boolean(), expectedVersion: v.number(), evidence: v.string() },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    requirePlatformEnvironment();
-    const prior = await planSettings(ctx);
-    if ((prior?.version ?? 0) !== args.expectedVersion) deny("OPERATION_CONFLICT");
-    if (args.evidence.length < 8 || args.evidence.length > 500) deny("INVALID_REQUEST");
-    if (!prior || (args.enabled && !prior.enabled)) deny("PLANS_DISABLED");
-    const now = Date.now();
-    await ctx.db.patch("platformPlanSettings", prior._id, {
-      annual: { enabled: args.enabled, evidence: args.evidence, updatedAt: now },
-      version: prior.version + 1,
-      updatedAt: now,
-    });
-    return prior.version + 1;
-  },
+  handler: (ctx, args) => configureSwitch(ctx, "annual", args),
 });
+
+/**
+ * Assisted Pix sale switch, off until an operator turns it on. Off, the card is the only way to
+ * buy; a request already made can still be confirmed, and terms paid by Pix stay as they are.
+ */
+export const configurePix = internalMutation({
+  args: { enabled: v.boolean(), expectedVersion: v.number(), evidence: v.string() },
+  returns: v.number(),
+  handler: (ctx, args) => configureSwitch(ctx, "pix", args),
+});
+
+async function configureSwitch(
+  ctx: MutationCtx,
+  field: "annual" | "pix",
+  args: { enabled: boolean; expectedVersion: number; evidence: string },
+) {
+  requirePlatformEnvironment();
+  const prior = await planSettings(ctx);
+  if ((prior?.version ?? 0) !== args.expectedVersion) deny("OPERATION_CONFLICT");
+  if (args.evidence.length < 8 || args.evidence.length > 500) deny("INVALID_REQUEST");
+  if (!prior || (args.enabled && !prior.enabled)) deny("PLANS_DISABLED");
+  const now = Date.now();
+  await ctx.db.patch("platformPlanSettings", prior._id, {
+    [field]: { enabled: args.enabled, evidence: args.evidence, updatedAt: now },
+    version: prior.version + 1,
+    updatedAt: now,
+  });
+  return prior.version + 1;
+}
 
 /** Restored bytes and inventory precede this final transaction. A renewed custody fund precedes access. */
 export const resumeArchived = internalMutation({
