@@ -75,7 +75,7 @@ A assinatura é HMAC-SHA256 sobre os bytes originais do corpo, precedidos por es
 Verifique antes de qualquer parser JSON. O [verificador do SDK](/docs/sdk#instalar) faz isso por você. Sem o SDK, calcule você mesmo o HMAC-SHA256 sobre o prefixo acima seguido dos bytes do corpo, com o segredo do webhook, e compare em tempo constante com o `v1` do cabeçalho [`X-Fnfe-Signature`](/docs/webhooks#payload).
 
 ```ts title="Verificar com o SDK"
-import { verifyWebhook } from "@freecorps/sdk/webhooks";
+import { verifyWebhook } from "@freecorps/freecorpsnfe-sdk/webhooks";
 
 const checked = await verifyWebhook({
   body, // bytes originais do corpo
@@ -121,7 +121,7 @@ O receptor de exemplo verifica a assinatura, consulta o documento e deduplica em
 </ul>
 
 ```bash title="Instalar o SDK"
-npm install @freecorps/sdk
+npm install @freecorps/freecorpsnfe-sdk
 ```
 
 </Step>

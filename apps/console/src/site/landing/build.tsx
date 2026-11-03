@@ -32,8 +32,8 @@ const examples = [
   {
     id: "sdk",
     label: "SDK",
-    code: `// npm install @freecorps/sdk
-import { FreecorpsClient } from "@freecorps/sdk";
+    code: `// npm install @freecorps/freecorpsnfe-sdk
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 
 const fiscal = new FreecorpsClient({
   baseUrl: "https://api.nfe.freecorps.com.br",
@@ -74,7 +74,7 @@ data.reused; // true quando a chave já tinha sido usada`,
   {
     id: "webhook",
     label: "Webhook",
-    code: `import { verifyWebhook } from "@freecorps/sdk/webhooks";
+    code: `import { verifyWebhook } from "@freecorps/freecorpsnfe-sdk/webhooks";
 
 export async function POST(request: Request) {
   // x-fnfe-signature: HMAC-SHA256 sobre os bytes do corpo.

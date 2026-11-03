@@ -12,7 +12,7 @@ description: Três formas de usar a plataforma. Chamar a API hospedada, instalar
 | Artefato                                                                     | Estado                          |
 | ---------------------------------------------------------------------------- | ------------------------------- |
 | API hospedada, console, esta documentação e OpenAPI                          | Público                         |
-| `@freecorps/sdk`                                                             | Publicado no npm, versão 0.1.0  |
+| `@freecorps/freecorpsnfe-sdk` (antes `@freecorps/sdk`)                       | Publicado no npm, versão 0.1.0  |
 | `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse` | Publicados no npm, versão 0.1.0 |
 | Repositório `freecorps/freecorpsNFE`                                         | Público no GitHub               |
 
@@ -20,12 +20,12 @@ Cada artefato é publicado pelo próprio fluxo de distribuição.
 
 ## Instalar as bibliotecas [#bibliotecas]
 
-| Pacote                   | Para quê                                                      | Licença       |
-| ------------------------ | ------------------------------------------------------------- | ------------- |
-| `@freecorps/sdk`         | Cliente da API e verificador de webhooks                      | MIT           |
-| `@freecorps/fiscal-core` | Decimal exato em texto e conceitos fiscais comuns             | Freecorps 1.0 |
-| `@freecorps/fiscal-nfe`  | Validar e normalizar XML de NF-e localmente, sem a plataforma | Freecorps 1.0 |
-| `@freecorps/fiscal-nfse` | Montar e assinar a DPS e os eventos da NFS-e nacional         | Freecorps 1.0 |
+| Pacote                        | Para quê                                                      | Licença       |
+| ----------------------------- | ------------------------------------------------------------- | ------------- |
+| `@freecorps/freecorpsnfe-sdk` | Cliente da API e verificador de webhooks                      | MIT           |
+| `@freecorps/fiscal-core`      | Decimal exato em texto e conceitos fiscais comuns             | Freecorps 1.0 |
+| `@freecorps/fiscal-nfe`       | Validar e normalizar XML de NF-e localmente, sem a plataforma | Freecorps 1.0 |
+| `@freecorps/fiscal-nfse`      | Montar e assinar a DPS e os eventos da NFS-e nacional         | Freecorps 1.0 |
 
 ```bash title="npm"
 npm install @freecorps/fiscal-core @freecorps/fiscal-nfe

@@ -83,6 +83,6 @@ assert.equal(normalize("packages/contracts/LICENSE-MIT"), normalize(scope.mit.te
 for (const name of ["fiscal-core", "fiscal-nfe", "fiscal-nfse", "sdk"])
   assert.equal(
     normalize("packages/" + name + "/LICENSE"),
-    packageLicenseText("@freecorps/" + name),
+    packageLicenseText(JSON.parse(normalize("packages/" + name + "/package.json")).name),
   );
 console.log("Licenças próprias, escopo MIT e manifests conferidos.");

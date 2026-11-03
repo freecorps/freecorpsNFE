@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { decimal } from "@freecorps/fiscal-core";
-import { FreecorpsClient } from "@freecorps/sdk";
-import { verifyWebhook } from "@freecorps/sdk/webhooks";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
+import { verifyWebhook } from "@freecorps/freecorpsnfe-sdk/webhooks";
 
 assert.equal(decimal("12.3456789012").coefficient, "123456789012");
 assert.equal(

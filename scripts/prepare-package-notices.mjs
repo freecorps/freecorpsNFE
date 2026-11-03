@@ -13,6 +13,7 @@ function installed(name, from) {
 // Only third-party runtime dependencies; workspace code is covered by LICENSE.
 for (const name of ["contracts", "fiscal-core", "fiscal-nfe", "fiscal-nfse", "sdk"]) {
   const base = resolve("packages", name),
+    packageName = JSON.parse(readFileSync(join(base, "package.json"), "utf8")).name,
     seen = new Set(),
     sections = [];
   function visit(directory) {
@@ -58,12 +59,12 @@ for (const name of ["contracts", "fiscal-core", "fiscal-nfe", "fiscal-nfse", "sd
     if (readFileSync(target, "utf8") !== text) throw new Error(`Avisos desatualizados: ${name}`);
     if (
       readFileSync(join(base, "LICENSE"), "utf8").replaceAll("\r\n", "\n") !==
-      packageLicenseText("@freecorps/" + name)
+      packageLicenseText(packageName)
     )
       throw new Error(`Texto de licença divergente: ${name}`);
   } else {
     writeFileSync(target, text);
-    writeFileSync(join(base, "LICENSE"), packageLicenseText("@freecorps/" + name));
+    writeFileSync(join(base, "LICENSE"), packageLicenseText(packageName));
   }
 }
 console.log(

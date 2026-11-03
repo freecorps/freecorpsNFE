@@ -7,15 +7,15 @@ contract: true
 ## Instalar [#instalar]
 
 ```bash title="npm"
-npm install @freecorps/sdk
+npm install @freecorps/freecorpsnfe-sdk
 ```
 
-O pacote é ESM, com tipos TypeScript e Zod como única dependência. Roda em Node 22 e 24. O verificador de webhooks em `@freecorps/sdk/webhooks` usa só Web Crypto e pode ser importado sozinho.
+O pacote é ESM, com tipos TypeScript e Zod como única dependência. Roda em Node 22 e 24. O verificador de webhooks em `@freecorps/freecorpsnfe-sdk/webhooks` usa só Web Crypto e pode ser importado sozinho.
 
 ## Criar o cliente [#cliente]
 
 ```ts title="Cliente"
-import { FreecorpsClient } from "@freecorps/sdk";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 
 const client = new FreecorpsClient({
   baseUrl: "https://api.nfe.freecorps.com.br",
@@ -57,7 +57,7 @@ Falhas da API viram `FreecorpsError`, com `status`, `code`, `requestId` e `retry
 Depois da reativação, os documentos, importações, operações e emissões voltam com IDs novos. O ID que você guardou antes continua valendo nas chamadas, e a resposta traz o `id` novo e, em `originalId`, o primeiro ID do recurso. Deduplique por `originalId ?? id`. Um recurso nunca arquivado não tem `originalId`.
 
 ```ts title="Tratar erros"
-import { FreecorpsError } from "@freecorps/sdk";
+import { FreecorpsError } from "@freecorps/freecorpsnfe-sdk";
 
 try {
   await client.call("getDocument", request);

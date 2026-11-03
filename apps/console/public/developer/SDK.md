@@ -1,7 +1,8 @@
 # Contrato externo, SDK e quickstart
 
-A API de documentos da plataforma usa `platform/convex`. `@freecorps/sdk` 0.1.0 está
-publicado no npm desde 01/11/2026 (#83). Plataforma e motor usam a licença Freecorps 1.0; o SDK cliente usa MIT; distribuição e bloqueios
+A API de documentos da plataforma usa `platform/convex`. O SDK está no npm como
+`@freecorps/freecorpsnfe-sdk` 0.1.0. Até 03/11/2026 ele se chamava `@freecorps/sdk`, nome com que a
+0.1.0 foi publicada em 01/11/2026 (#83). Plataforma e motor usam a licença Freecorps 1.0; o SDK cliente usa MIT; distribuição e bloqueios
 por artefato estão no arquivo `LICENSING.md` da raiz do repositório.
 
 ## Fonte e atualização
@@ -141,36 +142,37 @@ os campos da NT 2026.008 da NF-e, para major 7, e o evento `connection.history_l
 segue em `documents/1`, porque a 7.0.0 só acrescenta campos e não muda o
 significado de nenhum; o envelope de webhook não muda de versão. Consumidores com enum fechado devem atualizar
 o SDK/schema antes de ativar captura ou assinar o novo evento. O 8.0.0
-foi publicado com `@freecorps/sdk` 0.1.0 no npm em 01/11/2026 (#83); desde então o gate recusa mudança incompatível nesse major.
+foi publicado com `@freecorps/sdk` 0.1.0, nome anterior do SDK, no npm em 01/11/2026 (#83); desde então o gate recusa mudança incompatível nesse major.
 
 ## Instalação independente
 
 Num projeto consumidor, instale pelo npm:
 
 ```sh
-npm install @freecorps/sdk
+npm install @freecorps/freecorpsnfe-sdk
 ```
 
-Os bytes publicados são os aceitos na #83; o SHA-256 de cada tarball e a prova
-de instalação pelo registry estão em `docs/v1.0/evidence/83/2026-11-01`.
+Os bytes de `@freecorps/sdk` 0.1.0 são os aceitos na #83; o SHA-256 de cada tarball e a prova
+de instalação pelo registry estão em `docs/v1.0/evidence/83/2026-11-01`. O pacote com o
+nome novo segue o mesmo aceite por versão e hash (release.md).
 
 O roteiro completo para o consumidor fica em `/docs/` da instalação,
 com downloads, PowerShell, Bash e diagnósticos. A geração abaixo é para
 quem tem acesso ao código-fonte e quer testar um tarball local.
 
 Com Bun 1.4.0 e dependências instaladas, `bun run sdk:build` produz
-`.ci-results/74/freecorps-sdk-0.1.0.tgz`. Copie esse arquivo para um consumidor
+`.ci-results/74/freecorps-freecorpsnfe-sdk-0.1.0.tgz`. Copie esse arquivo para um consumidor
 limpo, junto dos três exemplos em `examples/`. Não copie `node_modules`.
 
 ```sh
 npm init -y
-npm install ./freecorps-sdk-0.1.0.tgz
+npm install ./freecorps-freecorpsnfe-sdk-0.1.0.tgz
 ```
 
 O artefato contém JS ESM e declarações TypeScript, com Zod como dependência.
 Não instala Convex, React, Clerk ou Better Auth. Os schemas são incorporados ao
 artefato a partir da fonte canônica; não existe uma segunda definição editável.
-O verificador em `@freecorps/sdk/webhooks` usa somente Web Crypto e pode ser
+O verificador em `@freecorps/freecorpsnfe-sdk/webhooks` usa somente Web Crypto e pode ser
 importado separadamente. Node 22 e 24 são os runtimes alvo; o receptor usa
 `node:sqlite` e requer Node 22.13+ ou 24. Confira o runtime efetivamente exercitado
 no recibo da entrega. Não há alegação de testes em outros runtimes.

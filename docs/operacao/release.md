@@ -67,7 +67,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
       Não adicionar arquivos ao escopo MIT apenas para contornar uma falha.
 - [ ] Conferir as versões finais no registry. Npm/2FA e nomes foram conferidos
       pelo mantenedor em 29/10 na #83; repetir essa conferência se houver mudança.
-      Os nomes preparados são `@freecorps/sdk`, `@freecorps/contracts`,
+      Os nomes preparados são `@freecorps/freecorpsnfe-sdk` (até 03/11/2026, `@freecorps/sdk`), `@freecorps/contracts`,
       `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse`
       (decisão 5 de 28/10).
 - [ ] Regerar pacotes do candidato limpo (`packages:build`, `contracts:build`,
@@ -114,6 +114,8 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
    `node scripts/rights-relation.mjs <evidência>/rights.json`. Registre em
    `docs/v1.0/evidence/83/<data>/` o recibo, a relação e um `accepted.json`
    com `codeSha` e, por pacote, `name`, `version` e `sha256`.
+   O lote pode listar só parte dos pacotes, como o SDK com o nome novo; os
+   demais precisam já estar no registry com os bytes de um lote anterior.
 3. O mantenedor aceita na #83 cada linha: pacote, versão, hash, `rights` e
    `release-acceptance`.
 4. Com `npm login` na conta da organização `freecorps`, no mesmo checkout:

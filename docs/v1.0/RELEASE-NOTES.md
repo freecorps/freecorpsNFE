@@ -51,8 +51,9 @@ forma.
 
 O que fazer:
 
-1. Instale o SDK pelo npm: `npm install @freecorps/sdk`. A versão `0.1.0`
-   publicada em 01/11/2026 já traz o contrato 8.0.0.
+1. Instale o SDK pelo npm: `npm install @freecorps/freecorpsnfe-sdk`. A versão `0.1.0`, publicada
+   em 01/11/2026 como `@freecorps/sdk`, já traz o contrato 8.0.0; o nome mudou
+   em 03/11/2026.
 2. Se você valida as respostas com schemas próprios gerados do OpenAPI,
    gere-os de novo do `openapi.json` 8.0.0.
 3. Nenhum campo antigo mudou de significado: `total` continua sendo o

@@ -5,8 +5,8 @@ podem ser instalados separadamente.
 
 O repositório é público desde 03/11/2026, em
 https://github.com/freecorps/freecorpsNFE. Plataforma e motor usam a licença Freecorps 1.0; o SDK cliente usa MIT.
-`@freecorps/sdk`, `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e
-`@freecorps/fiscal-nfse` estão no npm desde 01/11/2026, com os schemas
+`@freecorps/freecorpsnfe-sdk` (antes `@freecorps/sdk`), `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e
+`@freecorps/fiscal-nfse` estão no npm, publicados a partir de 01/11/2026, com os schemas
 incorporados sob as condições de [LICENSING.md](../../LICENSING.md).
 Importar XML sintético não comprova autorização fiscal.
 

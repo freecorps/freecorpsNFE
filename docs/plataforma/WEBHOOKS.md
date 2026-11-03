@@ -366,7 +366,7 @@ confere a persistência da deduplicação após reabrir o SQLite. Node 22.15 com
 `--experimental-strip-types` foi usado na prova; o receptor de referência
 requer `node:sqlite`. O verificador usa somente WebCrypto e UTF-8.
 
-A integração pelo SDK exporta esse mesmo verificador em `@freecorps/sdk/webhooks`, com prova
+A integração pelo SDK exporta esse mesmo verificador em `@freecorps/freecorpsnfe-sdk/webhooks`, com prova
 dos vetores a partir do pacote instalado fora do repositório. O receptor
 `examples/sdk-webhook-receiver.mjs` acrescenta consulta documental autenticada
 antes de persistir o efeito e guarda o intervalo de `connection.history_limited`. Veja [instalação e quickstart](../v1.0/SDK.md) e

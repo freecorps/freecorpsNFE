@@ -41,7 +41,10 @@ for (const name of ["contracts", "fiscal-core", "fiscal-nfe", "fiscal-nfse", "sd
     cwd: target,
     stdio: "pipe",
   });
-  const tarball = join(output, `freecorps-${name}-${manifest.version}.tgz`);
+  const tarball = join(
+    output,
+    `${manifest.name.slice(1).replace("/", "-")}-${manifest.version}.tgz`,
+  );
   reports.push(inspectTarball(tarball, manifest.name));
   tarballs[manifest.name] = `file:${tarball.replaceAll("\\", "/")}`;
 }
@@ -162,7 +165,7 @@ writeFileSync(
   ["", "/external", "/organizations", "/references", "/registry", "/webhooks"]
     .map((subpath, index) => `import * as c${index} from "@freecorps/contracts${subpath}";`)
     .concat(
-      'import { FreecorpsClient } from "@freecorps/sdk";',
+      'import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";',
       "export const used = [c0, c1, c2, c3, c4, c5, FreecorpsClient];",
     )
     .join("\n") + "\n",

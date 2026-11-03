@@ -3,11 +3,11 @@
 Cliente TypeScript da API v1 da Freecorps NF-e, publicado no npm:
 
 ```sh
-npm install @freecorps/sdk
+npm install @freecorps/freecorpsnfe-sdk
 ```
 
 ```ts
-import { FreecorpsClient } from "@freecorps/sdk";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 const client = new FreecorpsClient({
   baseUrl: process.env.FREECORPS_BASE_URL!,
   apiKey: process.env.FREECORPS_API_KEY!,
@@ -23,7 +23,7 @@ const companies = await client.call("listCompanies", {
 No serviço hospedado, `baseUrl` é `https://api.nfe.freecorps.com.br`, sem `/v1`.
 
 Requer Node 22 ou 24 com Fetch, AbortSignal e Web Crypto. O receptor SQLite de
-referência requer Node 22.13+ ou 24. O subpath `@freecorps/sdk/webhooks` usa
+referência requer Node 22.13+ ou 24. O subpath `@freecorps/freecorpsnfe-sdk/webhooks` usa
 somente Web Crypto; não importa Zod, Convex, React ou bibliotecas de login.
 Outros runtimes não são declarados como testados.
 

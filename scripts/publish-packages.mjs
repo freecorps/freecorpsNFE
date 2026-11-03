@@ -1,4 +1,5 @@
 // Publishes the tarballs accepted on #83, exactly as `distribution:prove` produced them.
+// The batch lists all packages or only some of them; each is checked against the proof.
 // Usage: node scripts/publish-packages.mjs <accepted.json> [--dry-run]
 // Requires `npm login` with the account of the `freecorps` organization; npm asks the
 // 2FA code for each publication. Repeating it skips what is already published with the
@@ -35,10 +36,15 @@ const order = [
   "@freecorps/fiscal-core",
   "@freecorps/fiscal-nfe",
   "@freecorps/fiscal-nfse",
-  "@freecorps/sdk",
+  "@freecorps/freecorpsnfe-sdk",
 ];
-assert.deepEqual(accepted.packages.map((p) => p.name).sort(), [...order].sort());
-for (const name of order) {
+// A batch may accept only part of the packages, such as the SDK under its new name;
+// the others must already be on the registry with the bytes a previous batch accepted.
+const names = accepted.packages.map((p) => p.name);
+assert.ok(names.length > 0, "O accepted.json não lista pacotes");
+assert.equal(new Set(names).size, names.length, "Pacote repetido no accepted.json");
+for (const name of names) assert.ok(order.includes(name), `Pacote fora da publicação: ${name}`);
+for (const name of order.filter((name) => names.includes(name))) {
   const { version, sha256 } = accepted.packages.find((p) => p.name === name);
   const proved = proof.artifacts.find((a) => a.name === name);
   assert.ok(proved && !proved.private, `Artefato sem prova publicável: ${name}`);

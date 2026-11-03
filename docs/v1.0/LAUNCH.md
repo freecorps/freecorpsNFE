@@ -49,7 +49,7 @@ ser executado de verdade, registre a limitação e pule-o; não simule sucesso.
    Primeiros passos → Explorar demonstração e projeto em sandbox. Gerar a
    chave restrita antes da gravação; não gravar a exibição do segredo.
 3. Pasta com os quatro downloads de `/docs/`, o SDK instalado pelo npm
-   (`@freecorps/sdk` 0.1.0), um túnel HTTPS e o receptor de exemplo. Terminais sem histórico
+   (`@freecorps/freecorpsnfe-sdk` 0.1.0), um túnel HTTPS e o receptor de exemplo. Terminais sem histórico
    de credenciais visível.
 
 ### Bloco 1: do XML ao JSON

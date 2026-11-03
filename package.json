@@ -102,7 +102,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@cloudflare/workers-types": "5.20261023.1",
-    "@freecorps/sdk": "workspace:*",
+    "@freecorps/freecorpsnfe-sdk": "workspace:*",
     "@napi-rs/canvas": "1.0.10",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

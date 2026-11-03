@@ -126,7 +126,8 @@ O operador confere acesso, concessões e transporte do webhook antes do convite.
 Se o transporte estiver desativado, registrar essa etapa como não executada.
 
 O caminho curl exige Node e curl, sem SDK. Para TypeScript e o receptor, o
-participante instala `@freecorps/sdk` pelo npm, publicado em 01/11/2026 (#83);
+participante instala `@freecorps/freecorpsnfe-sdk` pelo npm (até 03/11/2026, `@freecorps/sdk`, publicado
+em 01/11/2026 na #83);
 registrar a versão instalada. O roteiro não depende de clonar o repositório. Senhas
 e chaves são digitadas somente nas telas e terminal do participante, sem
 gravação desses momentos.

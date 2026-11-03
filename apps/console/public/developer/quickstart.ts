@@ -25,7 +25,7 @@ THE SOFTWARE.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
-import { FreecorpsClient } from "@freecorps/sdk";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 
 // Run from a clean consumer after installing the SDK tarball. Never log credentials or tickets.
 const required = (name: string) => {

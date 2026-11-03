@@ -17,7 +17,7 @@ it("rejects stale, dirty, failed or replaced package evidence before importing a
     mkdirSync(join(directory, "packages/sdk"), { recursive: true });
     writeFileSync(
       join(directory, "packages/sdk/package.json"),
-      JSON.stringify({ name: "@freecorps/sdk", version: "0.1.1" }),
+      JSON.stringify({ name: "@freecorps/freecorpsnfe-sdk", version: "0.1.1" }),
     );
     git("add", ".gitignore", "packages/sdk/package.json");
     git(
@@ -31,8 +31,8 @@ it("rejects stale, dirty, failed or replaced package evidence before importing a
     );
     const artifacts = join(directory, ".ci-results/74");
     mkdirSync(artifacts, { recursive: true });
-    writeFileSync(join(artifacts, "freecorps-sdk-0.1.0.tgz"), "stale-package");
-    const tarball = join(artifacts, "freecorps-sdk-0.1.1.tgz");
+    writeFileSync(join(artifacts, "freecorps-freecorpsnfe-sdk-0.1.0.tgz"), "stale-package");
+    const tarball = join(artifacts, "freecorps-freecorpsnfe-sdk-0.1.1.tgz");
     writeFileSync(tarball, "synthetic-package");
     const report = {
       result: "passed",
