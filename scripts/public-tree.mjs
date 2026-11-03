@@ -130,6 +130,7 @@ export const rules = [
     "LICENSES/",
     ".agents/",
     ".claude/",
+    ".vite-hooks/",
     "docs/adr/",
     "docs/plataforma/",
     "docs/desenvolvimento/",
@@ -1159,7 +1160,7 @@ export function build({
   sha,
   entries,
   read,
-  denylist = [],
+  denylist = /** @type {ReturnType<typeof denyEntry>[]} */ ([]),
   auditedObjects = new Set(),
   editList = edits,
   allow = findingAllowlist,
@@ -1317,9 +1318,11 @@ export function build({
     waived[f.kind] ??= {};
     waived[f.kind][f.path] = (waived[f.kind][f.path] ?? 0) + 1;
   }
+  // Sem a lista de nomes restritos (PR de fork, hook pre-push), os nomes não
+  // são procurados: as exceções deles não têm como ser julgadas obsoletas.
   const { open, allowed, stale } = applyAllowlist(
     findings.filter((f) => findingKinds[f.kind] !== "dispensa"),
-    allow,
+    denylist.length ? allow : allow.filter((a) => !denyKinds.has(a.kind)),
   );
   const staleAllowlist = [
     ...stale.map(({ path, kind, count }) => ({ path, kind, count })),
@@ -1455,8 +1458,8 @@ function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
-    if (flag === "--checkout") {
-      args.checkout = true;
+    if (flag === "--checkout" || flag === "--sem-gitleaks") {
+      args[flag === "--checkout" ? "checkout" : "semGitleaks"] = true;
       continue;
     }
     const value = argv[i + 1];
@@ -1469,7 +1472,7 @@ function parseArgs(argv) {
 }
 
 const usage = `uso: node scripts/public-tree.mjs --sha <rev> --out <pasta fora do repositório> [--denylist <arquivo>] [--edits <arquivo>] [--gitleaks <binário>]
-     node scripts/public-tree.mjs --checkout --sha <rev> --out <pasta> [--denylist <arquivo>] [--gitleaks <binário>]
+     node scripts/public-tree.mjs --checkout --sha <rev> --out <pasta> [--denylist <arquivo>] [--gitleaks <binário> | --sem-gitleaks]
 
 O Gitleaks ${GITLEAKS_VERSION} varre a cópia montada: --gitleaks, GITLEAKS_BIN ou
 gitleaks no PATH. Roda só no repositório privado, salvo com --checkout: precisa do commit
@@ -1479,7 +1482,10 @@ da auditoria de 25/10 (${AUDIT_SHA.slice(0, 7)}), da lista de nomes restritos
 
 Com --checkout, varre o repositório público: tudo o que está versionado no commit
 é público, sem seleção nem edição; a lista de nomes restritos vem de --denylist
-(no CI, do secret FNFE_PUBLIC_DENYLIST) e, sem ela, os nomes não são conferidos.`;
+(no CI, do secret FNFE_PUBLIC_DENYLIST) e, sem ela, os nomes não são conferidos.
+
+--sem-gitleaks pula o Gitleaks e avisa: as demais regras continuam. Serve ao hook
+pre-push de uma máquina sem o Gitleaks fixado; o CI não usa.`;
 
 /** No repositório público, tudo o que está versionado é público. */
 export const checkoutClass = () => ({
@@ -1593,11 +1599,20 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
       process.exit(2);
     }
   }
+  if (args.semGitleaks && args.gitleaks) {
+    console.error(`public-tree: --sem-gitleaks não combina com --gitleaks
+
+${usage}`);
+    process.exit(2);
+  }
   // Antes da montagem, para não montar uma cópia que não dá para varrer.
-  const gitleaks = args.gitleaks ?? process.env.GITLEAKS_BIN ?? "gitleaks";
-  const leaksVersion = spawnSync(gitleaks, ["version"], { encoding: "utf8", windowsHide: true });
-  const foundVersion = leaksVersion.stdout?.trim().replace(/^v/, "");
-  if (leaksVersion.status !== 0 || foundVersion !== GITLEAKS_VERSION) {
+  const gitleaks = args.semGitleaks
+    ? null
+    : (args.gitleaks ?? process.env.GITLEAKS_BIN ?? "gitleaks");
+  const leaksVersion =
+    gitleaks && spawnSync(gitleaks, ["version"], { encoding: "utf8", windowsHide: true });
+  const foundVersion = leaksVersion?.stdout?.trim().replace(/^v/, "");
+  if (gitleaks && (leaksVersion.status !== 0 || foundVersion !== GITLEAKS_VERSION)) {
     console.error(
       `public-tree: Gitleaks ${GITLEAKS_VERSION} ausente (${foundVersion || "não encontrado"} em ${gitleaks})\n\n${usage}`,
     );
@@ -1618,31 +1633,38 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   mkdirSync(out, { recursive: true });
   writeOutput(out, result);
   const tree = join(out, "arvore");
-  const leaksFile = join(out, "gitleaks.json");
-  const scan = spawnSync(
-    gitleaks,
-    [
-      "dir",
-      tree,
-      "--no-banner",
-      "--redact",
-      "--report-format",
-      "json",
-      "--report-path",
-      leaksFile,
-      "--exit-code",
-      "0",
-    ],
-    { encoding: "utf8", windowsHide: true },
-  );
-  if (scan.status !== 0 || !existsSync(leaksFile)) {
-    console.error("public-tree: o Gitleaks não terminou a varredura da cópia");
-    process.exit(2);
+  if (gitleaks) {
+    const leaksFile = join(out, "gitleaks.json");
+    const scan = spawnSync(
+      gitleaks,
+      [
+        "dir",
+        tree,
+        "--no-banner",
+        "--redact",
+        "--report-format",
+        "json",
+        "--report-path",
+        leaksFile,
+        "--exit-code",
+        "0",
+      ],
+      { encoding: "utf8", windowsHide: true },
+    );
+    if (scan.status !== 0 || !existsSync(leaksFile)) {
+      console.error("public-tree: o Gitleaks não terminou a varredura da cópia");
+      process.exit(2);
+    }
+    const leaks = parseGitleaks(JSON.parse(readFileSync(leaksFile, "utf8")), tree);
+    // O relatório do Gitleaks traz trechos redigidos; a varredura guarda só caminho, linha e regra.
+    rmSync(leaksFile, { force: true });
+    applyGitleaks(result.report, leaks);
+  } else {
+    result.report.gitleaks = { version: GITLEAKS_VERSION, skipped: true };
+    console.log(
+      `::warning title=Gitleaks pulado::--sem-gitleaks: a varredura seguiu sem o Gitleaks ${GITLEAKS_VERSION}; o Public scan do CI o roda.`,
+    );
   }
-  const leaks = parseGitleaks(JSON.parse(readFileSync(leaksFile, "utf8")), tree);
-  // O relatório do Gitleaks traz trechos redigidos; a varredura guarda só caminho, linha e regra.
-  rmSync(leaksFile, { force: true });
-  applyGitleaks(result.report, leaks);
   writeFileSync(join(out, "varredura.json"), `${JSON.stringify(result.report, null, 2)}\n`);
   const { report } = result;
   console.log(

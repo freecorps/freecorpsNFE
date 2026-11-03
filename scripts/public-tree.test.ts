@@ -728,6 +728,25 @@ describe("montagem", () => {
     ]);
   });
 
+  it("sem a lista de nomes, não julga obsoletas as exceções de nomes", () => {
+    const files = tree({ "docs/c.md": "Aprovado por Fulana de Tal.\n" });
+    const allow = [{ path: "docs/c.md", kind: "mantenedor", count: 1, reason: "teste" }];
+    const denylist = [denyEntry("mantenedor", "Fulana de Tal")];
+    expect(
+      build({ sha: "abc", classifyPath: checkoutClass, ...files, allow, denylist }).report.status,
+    ).toBe("pronta para revisão");
+    // PR de fork e hook pre-push: os nomes não são procurados.
+    expect(
+      build({ sha: "abc", classifyPath: checkoutClass, ...files, allow }).report.findings
+        .staleAllowlist,
+    ).toEqual([]);
+    // Com a lista, a exceção sem a ocorrência continua obsoleta.
+    const without = tree({ "docs/c.md": "Aprovado pelo mantenedor.\n" });
+    expect(
+      build({ sha: "abc", classifyPath: checkoutClass, ...without, allow, denylist }).report.status,
+    ).toBe("bloqueada");
+  });
+
   it("conta por arquivo os e-mails dispensados de licença e de função", () => {
     const { entries, read } = tree({
       "LICENSES/MIT.txt": `${email("autor", "gmail.com")} ${email("outra", "gmail.com")}\n`,
@@ -904,6 +923,26 @@ describe("linha de comando", () => {
     const result = run();
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("Roda só no repositório privado");
+  });
+
+  it("recusa --sem-gitleaks junto com --gitleaks", () => {
+    const dir = mkdtempSync(join(tmpdir(), "public-tree-"));
+    try {
+      const result = run(
+        "--checkout",
+        "--sem-gitleaks",
+        "--gitleaks",
+        "gitleaks",
+        "--sha",
+        "HEAD",
+        "--out",
+        join(dir, "saida"),
+      );
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain("--sem-gitleaks não combina com --gitleaks");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("recusa saída que é um arquivo", () => {

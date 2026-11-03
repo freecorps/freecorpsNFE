@@ -479,6 +479,40 @@ Desde a fase 1e da #267, uma varredura bloqueada reprova o check
 ausente. Com `"false"`, ela só avisaria. Para rodar localmente, com o Gitleaks 8.21.2 no PATH ou em
 `GITLEAKS_BIN`: `node scripts/public-scan.mjs <pasta vazia fora do repositório>`.
 
+Sem a lista de nomes restritos, os nomes não são procurados e as exceções
+deles (`mantenedor`, `cliente`, `deployment-teste`, `produto-freecorps`) não
+são julgadas obsoletas; com a lista, uma exceção sem a ocorrência bloqueia.
+
+### Hook pre-push
+
+O `Public scan` roda depois do push, quando a branch já está pública. O hook
+`.vite-hooks/pre-push` chama `scripts/pre-push.mjs`, que varre cada commit
+enviado com `scripts/public-tree.mjs --checkout` antes de ele sair da
+máquina, em cerca de 2 segundos. Um achado que bloqueia recusa o push e
+mostra caminho, linha e tipo, sem o valor; o relatório fica numa pasta
+temporária, sem a cópia da árvore.
+
+O script `prepare` (`vp config --no-agent`) instala o dispatcher do Vite+ em
+`.vite-hooks/_` a cada `vp install` e aponta `core.hooksPath` para ele. A
+configuração é do repositório e vale para todos os worktrees; um worktree sem
+`.vite-hooks/_` (antes do `vp install` ou numa branch anterior a este hook)
+envia sem varrer. `vp hooks status` mostra o estado.
+
+Limites:
+
+- Sem o Gitleaks 8.21.2 no PATH ou em `GITLEAKS_BIN`, o hook passa
+  `--sem-gitleaks` e avisa; as regras de `scripts/check-secrets.mjs` e os
+  identificadores continuam. Os nomes restritos, que vêm do secret do CI,
+  nunca são conferidos no hook.
+- Ele varre o commit na ponta de cada ref enviada, como o CI. Um dado
+  adicionado num commit intermediário e removido no seguinte passa pelos dois
+  e fica no histórico público.
+- Título e corpo de PR, issue, comentário e mensagem de commit não são
+  arquivos e ficam fora do hook e do `Public scan`.
+- `git push --no-verify` e `VP_GIT_HOOKS=0` pulam o hook. Agentes não usam
+  nenhum dos dois para passar um bloqueio (AGENTS.md, Credenciais e dados
+  reais).
+
 ## Instalação reproduzível e cache
 
 Bun `1.4.0`, Node `24.22.1`, Vite+ `1.4.0` e dependências resolvidas pelo

@@ -10,6 +10,11 @@
  * publica na conta de produção; `nenhum` só compila ou confere arquivos.
  */
 export const commands = {
+  prepare: [
+    "repositório",
+    "local",
+    "Roda após vp install: instala o dispatcher de hooks do Vite+ (.vite-hooks/), com o pre-push da varredura pública",
+  ],
   "backup:collect": [
     "plataforma",
     "Convex e R2 do plano versionado",

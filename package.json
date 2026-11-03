@@ -11,6 +11,7 @@
   ],
   "type": "module",
   "scripts": {
+    "prepare": "vp config --no-agent",
     "backup:collect": "node scripts/backup-offsite.mjs collect",
     "backup:prove-capacity": "node scripts/prove-backup-capacity.mjs",
     "help": "node scripts/commands.mjs help",
