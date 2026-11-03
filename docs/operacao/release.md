@@ -99,7 +99,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
       registrar tag, versão, integridade e recibo. Publicar release notes somente
       após essa conferência. Só `scripts/publish-packages.mjs`, rodado pelo mantenedor
       com 2FA, publica no registry. O primeiro lote, de 01/11/2026, está em
-      evidence/83/2026-11-01.
+      evidence/83/2026-11-01; o do SDK com o nome novo, em evidence/73/2026-11-03.
 - [ ] Na mudança que registra o recibo da publicação, gravar em
       `packages/contracts/published.json` a versão do contrato publicado, o commit
       dos bytes publicados e o SHA-256 de `docs/v1.0/openapi.json` nesse commit,

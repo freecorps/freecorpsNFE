@@ -153,8 +153,8 @@ npm install @freecorps/freecorpsnfe-sdk
 ```
 
 Os bytes de `@freecorps/sdk` 0.1.0 são os aceitos na #83; o SHA-256 de cada tarball e a prova
-de instalação pelo registry estão em `docs/v1.0/evidence/83/2026-11-01`. O pacote com o
-nome novo segue o mesmo aceite por versão e hash (release.md).
+de instalação pelo registry estão em `docs/v1.0/evidence/83/2026-11-01`. Os do pacote com o
+nome novo, publicado em 03/11/2026, estão em `docs/v1.0/evidence/73/2026-11-03`.
 
 O roteiro completo para o consumidor fica em `/docs/` da instalação,
 com downloads, PowerShell, Bash e diagnósticos. A geração abaixo é para
