@@ -10,7 +10,7 @@ on:
         value: ${{ jobs.validate.outputs.tested_sha }}
       publication_sha:
         description: Manual validation publication from main only; empty otherwise
-        value: ${{ jobs.validation_gate.outputs.publication_sha }}
+        value: ${{ jobs.validate.outputs.publication_sha }}
 
 permissions:
   contents: read
@@ -35,6 +35,7 @@ jobs:
     timeout-minutes: 20
     outputs:
       tested_sha: ${{ steps.approve.outputs.tested_sha }}
+      publication_sha: ${{ steps.gate.outputs.publication_sha }}
     env:
       WRANGLER_SEND_METRICS: "false"
     steps:
@@ -86,6 +87,14 @@ jobs:
       - name: Approve the checked revision
         id: approve
         run: node scripts/ci.mjs approve
+      # Pure comparison of the approved SHA with the workflow's, after every
+      # check passed. It ran as a job of its own until #51; as a step it saves
+      # a runner start, a checkout and a toolchain setup on every run.
+      - name: Require successful checks for the same commit
+        id: gate
+        env:
+          CI_TESTED_SHA: ${{ steps.approve.outputs.tested_sha }}
+        run: node scripts/ci.mjs gate
       - name: Summarize suites and pending coverage
         if: always()
         run: node scripts/ci.mjs summary
@@ -108,28 +117,3 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
-
-  # Only compares the validated SHA with the workflow's, so it runs on the
-  # cheapest runner Blacksmith offers (ARM counts 0.625 of an x64 minute).
-  validation_gate:
-    name: Validation publication gate
-    needs: validate
-    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-    timeout-minutes: 5
-    outputs:
-      publication_sha: ${{ steps.gate.outputs.publication_sha }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
-        with:
-          version-file: package.json
-          node-version: "24.22.1"
-          run-install: false
-          cache: false
-      - name: Require successful checks for the same commit
-        id: gate
-        env:
-          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
-        run: node scripts/ci.mjs gate

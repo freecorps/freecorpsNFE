@@ -95,8 +95,7 @@ each task, because it can change between PRs.
 
 8. **Merge it yourself** (being asked to act as the manager for a goal is the explicit request to merge each of
    your PRs for that goal) with `gh pr merge <n> --squash` when **all** of these hold:
-   - `Validate` and `Validation publication gate` are green on the latest commit; a job that did not start is not
-     a pass;
+   - `Validate` is green on the latest commit; a job that did not start is not a pass;
    - every finding has an answer and every review thread is resolved (`mira/review` is not required, but a red
      one needs every finding answered);
    - your own final read of the full diff passes, including the UI bar for anything visual;

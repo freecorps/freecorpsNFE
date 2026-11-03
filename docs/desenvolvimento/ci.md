@@ -24,10 +24,12 @@ Não descrever o head como testado quando o runner executou outro commit.
 
 `Validate` instala pelo lockfile, executa o grafo `validate` (formatação, lint,
 tipos, testes, provas de consumidor e empacotamento do console, sem publicar) e depois `vp run ci:boundaries`. Somente após esses checks
-o job produz `tested_sha`. O job `Validation publication gate`, dependente de
-`Validate`, recusa SHA diferente e produz `publication_sha` apenas para
+o job produz `tested_sha`. Em seguida, o passo `Require successful checks for
+the same commit` recusa SHA diferente e produz `publication_sha` apenas para
 `workflow_dispatch` de `deploy-validation.yml` na `main` do repositório
-esperado. PR, fork, outra branch e o push da `main` chamado por `deploy.yml`
+esperado. Até a #51 esse passo era o job `Validation publication gate`; como
+só compara variáveis do ambiente, virou o último check de `Validate` e poupa
+a cada execução o início de outro runner, o checkout e o setup. PR, fork, outra branch e o push da `main` chamado por `deploy.yml`
 não recebem esse output de validação. Em `workflow_call`, evento, ref e
 `GITHUB_WORKFLOW_REF` são os do workflow chamador. Falha em qualquer step
 impede o gate; não há `continue-on-error`. A publicação de produção em
@@ -770,14 +772,14 @@ O contrato da plataforma está em [API-REFERENCE.md](../v1.0/API-REFERENCE.md) e
 
 ### Onde cada job roda
 
-| Workflow            | Job                           | Runner                             |
-| ------------------- | ----------------------------- | ---------------------------------- |
-| `CI`                | `Validate`                    | `blacksmith-4vcpu-ubuntu-2404`     |
-| `CI`                | `Validation publication gate` | `blacksmith-2vcpu-ubuntu-2404-arm` |
-| `Deploy validation` | `Publish validation`          | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Deploy production` | `Publish production`          | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Encrypted snapshot`          | `blacksmith-2vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Check latest copy`           | `blacksmith-2vcpu-ubuntu-2404`     |
+| Workflow            | Job                  | Runner                             |
+| ------------------- | -------------------- | ---------------------------------- |
+| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Deploy production` | `Owner review`       | `blacksmith-2vcpu-ubuntu-2404-arm` |
+| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404`     |
+| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404`     |
 
 `Deploy validation` e `Deploy production` chamam o `CI` como workflow
 reutilizável; os dois jobs de validação rodam na Blacksmith também nesses
@@ -812,8 +814,10 @@ Medições de `Validate` com o grafo atual, em execuções reais:
 
 O x64 de 4 vCPUs termina em menos de um minuto, mas com 6 a 12 s de folga:
 passando de 60 s, a execução custa 4. O de 2 vCPUs custa 2 com cerca de 40 s
-de folga. O ARM é mais lento e mais caro para este job. O gate só compara
-SHAs, dura cerca de 20 s e custa 0,625 no ARM.
+de folga. O ARM é mais lento e mais caro para este job. O gate, que só compara
+SHAs, durava cerca de 20 s e custava 0,625 no ARM como job próprio; desde a
+#51 é um passo de `Validate`. `Owner review` só lê o Git e a API do GitHub
+e custa 0,625 no ARM a cada publicação de produção.
 
 Estimativa histórica, anterior à migração de produção e snapshot, com 150
 execuções de `CI` em PRs, 25 publicações de validação e 5 de produção:
