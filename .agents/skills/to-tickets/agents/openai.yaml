@@ -1,0 +1,5 @@
+interface:
+  display_name: "Dividir em tickets"
+  short_description: "Entregas verificáveis com dependências explícitas"
+policy:
+  allow_implicit_invocation: false

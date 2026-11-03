@@ -1,0 +1,70 @@
+name: Fiscal capture, list the companies
+
+# Internal view of the fiscal capture on the hosted site (#422): every company with a release
+# record (released, withdrawn or blocked), with its stream state, code, last answered query,
+# certificate, interval and latest alerts, plus the deployment switches and the alerts of the last
+# 30 days by kind and code. A workflow without approval that only a person in authorizedActors of
+# deploy/issuance-gate.json may trigger; the call is fixed: `captureSupervisor:survey` in
+# scripts/lib/capture-release.mjs. It queries no source and changes no release, stream or
+# customer record; it only arms the supervision of a released company that has none scheduled.
+# The log and the public receipt show ids and states; the company's name is only in the receipt
+# sealed for the custodians, and the CNPJ in neither. A /health that does not confirm the site refuses the run.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Its own group: a list never queues behind an emergency.
+concurrency:
+  group: capture-fiscal-list
+  cancel-in-progress: false
+
+jobs:
+  # One job on a GitHub-hosted runner, without a download the action depends on, like the other workflows.
+  list:
+    name: List the companies and their capture
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: capture-fiscal-emergency
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The Node of the runner image runs the executor, which only uses Node built-in modules
+      # (fetch and AbortSignal.timeout need 20 or newer); the action downloads nothing it depends on.
+      # Seals the full receipt for the custodians (scripts/lib/sealed-receipt.mjs). It never
+      # blocks the action: without age, the public receipt records sealed.state "unavailable".
+      - name: Install pinned age for the sealed receipt
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+      - name: Check the Node.js of the runner image
+        run: node -e 'const major = Number(process.versions.node.split(".")[0]); if (!(major >= 20)) { console.error("Node " + process.versions.node + " is older than 20"); process.exit(1); }'
+      - name: Check the run and the authorized person, then list
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_SITE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/capture-release.mjs list
+      - name: Record the list or the refusal
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: capture-release-list-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/capture-release/receipt.json
+            .ci-results/capture-release/receipt.full.json.age
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

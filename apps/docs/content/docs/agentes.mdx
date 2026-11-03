@@ -1,0 +1,57 @@
+---
+title: Usar com agentes de IA
+description: A documentação em Markdown, o OpenAPI e as regras que um agente de código precisa seguir para integrar sem duplicar notas nem arredondar valores.
+---
+
+## Arquivos para o agente [#arquivos]
+
+| Arquivo                                                       | Conteúdo                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| <a href="/docs/llms.txt">/docs/llms.txt</a>                   | Índice das páginas, com um resumo de cada uma                                  |
+| <a href="/docs/llms-full.txt">/docs/llms-full.txt</a>         | Todas as páginas em Markdown, num arquivo só                                   |
+| `/docs/<página>.md`                                           | Uma página em Markdown, como <a href="/docs/contrato.md">/docs/contrato.md</a> |
+| <a href="/developer/openapi.json">/developer/openapi.json</a> | O contrato completo, com schemas, escopos e erros                              |
+| <a href="/developer/SDK.md">/developer/SDK.md</a>             | O guia completo do SDK                                                         |
+
+Dê ao agente o `llms-full.txt` e o OpenAPI. Os dois cabem no contexto dos modelos atuais e respondem a quase toda pergunta de integração. As tabelas de operações e de erros do Markdown saem do mesmo contrato que gera a API, então não ficam desatualizadas.
+
+## Contexto para colar [#contexto]
+
+Cole este bloco nas instruções do projeto, como `AGENTS.md` ou `CLAUDE.md`:
+
+```markdown title="AGENTS.md"
+## Freecorps Fiscal
+
+Integração com a API REST da Freecorps Fiscal (https://api.nfe.freecorps.com.br).
+Documentação: https://nfe.freecorps.com.br/docs/llms-full.txt
+Contrato: https://nfe.freecorps.com.br/developer/openapi.json
+SDK: @freecorps/sdk no npm (TypeScript, ESM). Sem o SDK, chame a API REST
+pelo contrato.
+
+Regras:
+
+- Valores fiscais e quantidades são strings decimais. Nunca use Number,
+  parseFloat ou aritmética de ponto flutuante com eles.
+- Toda escrita que aceita Idempotency-Key recebe uma chave estável por
+  intenção de negócio (por nota, por importação). Repetir com a mesma chave
+  é seguro; gerar uma chave nova a cada tentativa duplica o efeito.
+- Toda chamada envia Authorization: Bearer <chave> e X-Environment igual ao
+  ambiente da chave.
+- Decida pelo error.code e pelo error.retryable, nunca pelo error.message.
+- 202 significa aceito, não concluído. Acompanhe o estado pela consulta ou
+  pelos webhooks.
+- Depois de um timeout, consulte o recurso antes de repetir o pedido.
+- Webhooks: verifique a assinatura sobre os bytes originais antes de fazer
+  o parse, deduplique por eventId e ignore resource.version mais antiga.
+- A chave de API e o segredo do webhook ficam em variáveis de ambiente ou
+  cofre, nunca no código, em logs ou em testes.
+- No sandbox a emissão de NFS-e é simulada e sem validade fiscal.
+```
+
+## O que revisar no código gerado [#revisar]
+
+- **Idempotência.** A chave nasce do pedido de negócio, como o ID do pedido no seu sistema, e não de `crypto.randomUUID()` dentro do laço de retentativa.
+- **Dinheiro.** Nenhum `Number(...)` sobre `amount.value`, `total` ou `unitPrice`.
+- **Webhook.** A verificação usa o corpo bruto. Um `express.json()` antes do handler já quebra a assinatura.
+- **Paginação.** O código segue `nextCursor` até `null` em vez de ler só a primeira página.
+- **Segredos.** Nenhuma chave `fnfe_` em arquivos versionados.

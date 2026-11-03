@@ -1,0 +1,158 @@
+{
+  "surveyedAt": "2026-10-26",
+  "source": "https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?tipoConteudo=BMPFMBoln3w=",
+  "section": "VERSÕES OFICIAIS (em uso)",
+  "decisions": "docs/plataforma/NFE-SCHEMAS.md",
+  "entries": [
+    {
+      "code": "EQhOQMgipXY=",
+      "title": "Schemas XML NF-e - Pacote de Liberação nº 010g v.1.03 - NT 2026.006 v.1.00 e NT 2026.008 v.1.00 (Publicado em 26/10/26)",
+      "decision": "incorporado",
+      "package": "nfe-4.00-010g"
+    },
+    {
+      "code": "8ITFuBLltXs=",
+      "title": "Schemas XML NF-e - Pacote de Liberação nº 010f - NT 2025.002 v.1.50 e NT 2026.007 v.1.00 (Publicado em 31/08/26)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "c14derMqb2Y=",
+      "title": "Schemas XML NF-e/NFC-e - Pacote de Liberação 010e_v.1.02 (ZIP) - NT 2025.002 v.1.40 , NT 2026.002 v.1.0 e NT 2026.003 v.1.0 - (Publicado em 10/07/2026)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "kp0SXLu+ZdI=",
+      "title": "Esquema XML NF-e/NFC-e - Schema dos eventos da NT 2025.002 v.1.40 - RTC (ZIP). Publicado em 27/07/2026",
+      "decision": "trazer",
+      "package": "rtc-events-1.40"
+    },
+    {
+      "code": "+pBOYTXBtbk=",
+      "title": "Schemas XML NF-e/NFC-e - Pacote de Liberação 010d_v.1.03(ZIP) CNPJ Alfanumérico- NT 2026.004.v.1.01- (Publicado em 10/07/2026)",
+      "decision": "trazer",
+      "package": "events-1.00-alphanumeric"
+    },
+    {
+      "code": "IzuP2y0G6hk=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Distribuição de DF-e v.1.04. Publicado em 03/07/2026 (ZIP)",
+      "decision": "fixado",
+      "package": "distribution-1.04"
+    },
+    {
+      "code": "FOEnx2KAsCk=",
+      "title": "Schemas XML NF-e 010d_v1.01 - CNPJ Alfanumérico - NT 2026.004.v.1.01, Eventos e ws de Consulta CCC. (Publicado em 08/06/2026)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "G3fIxJUvAD8=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento de Averbação v1.01 (atualizado em 30/04/2025) (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "tL1S8quJtVE=",
+      "title": "Esquemas XML NF-e/NFC-e - Evento de Conciliação Financeira. Publicado em 30/07/2024 (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "qvyq5vuft74=",
+      "title": "Esquemas XML NF-e - Evento Insucesso na Entrega da NF-e. Publicado em 26/04/2024 (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "xJdTH687/8s=",
+      "title": "Esquemas XML NF-e/NFC-e - Pacote de Liberação da consulta GTIN (NT 2022.001 v.1.00). Publicado em 31/05/22",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "W9sYeScSDZg=",
+      "title": "Esquemas XML NF-e - Evento Comprovante Entrega da NF-e . Publicado em 19/05/2021 (Atualizado em 15/06/2021)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "Y1hrcyzvncE=",
+      "title": "Esquemas XML NF-e - Evento Ator Interessado na NF-e - Transportador. Publicado em 28/01/2021.",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "6UBZKIOo6qU=",
+      "title": "Esquemas XML NFC-e - Evento Cancelamento por Substituição (Atualizado em 21/12/2018) (ZIP)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "0Yynu2Ck+bM=",
+      "title": "Esquemas XML NF-e / NFC-e - Evento Cancelamento (Atualizado em 21/12/2018) (ZIP)",
+      "decision": "fixado",
+      "package": "cancellation-1.01"
+    },
+    {
+      "code": "QuYuRVqPWuQ=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Suframa Vistoria v1.01 (25/11/2015) (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "D8VcRXDh9xk=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Suframa Internaliza v1.01 (26/01/2015) (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "KSNIzTeJ4mY=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Prorrog. Indust. 1.0 (27/11/2015) (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "Ig8Y9i6kgOc=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Canc v1.01 (30/05/2014) (ZIP)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "+0MSTVshMl8=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento CCe v1.01 (30/05/2014) (ZIP)",
+      "decision": "fixado",
+      "package": "correction-1.01"
+    },
+    {
+      "code": "OPt9hJUGOv0=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento EPEC v1.01 (30/05/2014) (ZIP)",
+      "decision": "adiar",
+      "package": null
+    },
+    {
+      "code": "zHyCKC788y8=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Generico v1.01 (Atualizado em 30/05/2014) (ZIP)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "Q7x6aqhBAy4=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento Manifesta Destinatário v1.01 (30/05/2014) (ZIP)",
+      "decision": "fixado",
+      "package": "manifestation-1.01"
+    },
+    {
+      "code": "vJ6Ja1Upn2o=",
+      "title": "Esquemas XML NF-e - Pacote de Liberação Evento EPEC NFCe v1.00 (07/05/2014) (ZIP)",
+      "decision": "excluir",
+      "package": null
+    },
+    {
+      "code": "O5z/3yYsxnc=",
+      "title": "Esquemas XML NF-e - Consulta Situação NF-e(01/10/10) (ZIP)",
+      "decision": "excluir",
+      "package": null
+    }
+  ]
+}

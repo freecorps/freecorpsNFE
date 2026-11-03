@@ -1,0 +1,153 @@
+/* Station 3: a 4 s exchange. A pulse rides the beam from the beacon to the
+   pediment (0 to 40%), the oculus takes it, and the building answers: door
+   and windows light (45 to 60%) and stay lit until the next send. */
+.fig-transmitter .lane {
+  fill: none;
+  stroke: #1d2b24;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fig-transmitter .lit-lane {
+  stroke: var(--glow);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 3 3;
+  filter: url(#iso-soft);
+}
+.fig-transmitter .blade {
+  fill: #16231c;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-transmitter .blade.lit {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  filter: url(#iso-soft);
+}
+.fig-transmitter .blade-t {
+  fill: #7d9287;
+  font: 600 3.4px var(--font-mono);
+}
+.fig-transmitter .blade-t.on {
+  fill: var(--glow-ink);
+}
+.fig-transmitter .oculus {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-glow);
+}
+.fig-transmitter .answer {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  filter: url(#iso-glow);
+}
+.fig-transmitter .name {
+  fill: #b5c6bc;
+  font-size: 5px;
+}
+.fig-transmitter .beacon-halo {
+  fill: var(--glow);
+  opacity: 0.35;
+  filter: url(#iso-bloom);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fig-transmitter .beam-pulse {
+  fill: none;
+  stroke: var(--glow-hi);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 8 92;
+  stroke-dashoffset: 8;
+  filter: url(#iso-glow);
+  visibility: hidden;
+}
+.fig-transmitter .beam,
+.fig-transmitter .beacon {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-transmitter .beam-core {
+    animation: transmitter-dash 0.9s linear infinite;
+  }
+  .fig-transmitter .beam-pulse {
+    animation: transmitter-pulse 4s ease-in infinite;
+  }
+  .fig-transmitter .beacon-halo {
+    animation: transmitter-halo 4s var(--ease-out) infinite;
+  }
+  .fig-transmitter .answer {
+    animation: transmitter-answer 4s ease-in-out infinite;
+  }
+  .fig-transmitter .oculus {
+    animation: transmitter-oculus 4s ease-out infinite;
+  }
+  .fig-transmitter .lit-lane {
+    animation: transmitter-dash 1.2s linear infinite;
+  }
+}
+
+@keyframes transmitter-dash {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+@keyframes transmitter-pulse {
+  0% {
+    stroke-dashoffset: 8;
+    visibility: visible;
+  }
+  40% {
+    stroke-dashoffset: -92;
+    visibility: visible;
+  }
+  40.01%,
+  100% {
+    stroke-dashoffset: -92;
+    visibility: hidden;
+  }
+}
+@keyframes transmitter-halo {
+  0% {
+    transform: scale(1.5);
+    opacity: 0.6;
+  }
+  30%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+}
+@keyframes transmitter-oculus {
+  0%,
+  38% {
+    fill: #16231c;
+    stroke: var(--line-2);
+  }
+  42% {
+    fill: var(--glow-hi);
+    stroke: var(--glow-hi);
+  }
+  60%,
+  100% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+}
+@keyframes transmitter-answer {
+  0%,
+  44% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+  58%,
+  100% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+}

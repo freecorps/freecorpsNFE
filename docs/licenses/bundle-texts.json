@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "reason": "Packages bundled in the console or the documentation whose registry tarball ships no license file. The text comes from the project repository; the source records the commit read.",
+  "packages": [
+    {
+      "id": "react-remove-scroll-bar@2.3.8",
+      "declaredLicense": "MIT",
+      "licenseText": "docs/licenses/texts/react-remove-scroll-bar-LICENSE",
+      "licenseSource": "https://github.com/theKashey/react-remove-scroll-bar/blob/7301c160fda44cb8cf2b9fdfde61efad35736196/LICENSE",
+      "note": "The tarball declares MIT in package.json and README. The published gitHead b3b1287 is not on GitHub; the repository LICENSE was added later, with the same author."
+    }
+  ]
+}

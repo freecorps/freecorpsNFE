@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "scenarios": [
+    "source-version",
+    "valid",
+    "out-of-validity",
+    "absent",
+    "snapshot-unknown",
+    "incomplete-update",
+    "rollback"
+  ],
+  "files": [
+    {
+      "file": "ncm.json",
+      "sha256": "a97299e38231f625dabfe258cead03349736fb1c3fb4208e73eda49969ae4560",
+      "origin": "handwritten-synthetic",
+      "redistribution": "synthetic",
+      "expected": {
+        "count": 25,
+        "firstCodeOn20260922": "out_of_validity",
+        "secondCodeOn20260922": "valid",
+        "absentCode": "not_found"
+      }
+    },
+    {
+      "file": "municipalities.json",
+      "sha256": "c088e93140945ca3b230271baad7f488ac6bce4c19f93280a92f63d0ea908403",
+      "origin": "handwritten-synthetic",
+      "redistribution": "synthetic",
+      "expected": {
+        "count": 25,
+        "firstCodeOn20260922": "out_of_validity",
+        "secondCodeOn20260922": "valid",
+        "absentCode": "not_found"
+      }
+    }
+  ]
+}

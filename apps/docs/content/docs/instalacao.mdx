@@ -1,0 +1,64 @@
+---
+title: Instalação
+description: Três formas de usar a plataforma. Chamar a API hospedada, instalar as bibliotecas no seu projeto ou operar a aplicação completa na sua infraestrutura. As bibliotecas estão no npm; a aplicação completa depende do repositório, ainda privado.
+---
+
+## Usar a API hospedada [#api]
+
+É o caminho mais curto. Crie a conta, gere uma chave e chame `https://api.nfe.freecorps.com.br` com curl ou com qualquer cliente HTTP gerado do <a href="/developer/openapi.json">OpenAPI</a>. Comece pela [primeira chamada](/docs/primeira-chamada), que usa um XML sintético e o script `quickstart-curl.mjs`. O [SDK](/docs/sdk), publicado no npm, também chama a API.
+
+## O que está disponível hoje [#disponibilidade]
+
+| Artefato                                                                     | Estado                                            |
+| ---------------------------------------------------------------------------- | ------------------------------------------------- |
+| API hospedada, console, esta documentação e OpenAPI                          | Público                                           |
+| `@freecorps/sdk`                                                             | Publicado no npm, versão 0.1.0                    |
+| `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse` | Publicados no npm, versão 0.1.0                   |
+| Repositório `freecorps/freecorpsNFE`                                         | Privado; o link do GitHub responde 404 sem acesso |
+
+Cada artefato é publicado pelo próprio fluxo de distribuição. Publicar os pacotes não tornou público o repositório.
+
+## Instalar as bibliotecas [#bibliotecas]
+
+| Pacote                   | Para quê                                                      | Licença       |
+| ------------------------ | ------------------------------------------------------------- | ------------- |
+| `@freecorps/sdk`         | Cliente da API e verificador de webhooks                      | MIT           |
+| `@freecorps/fiscal-core` | Decimal exato em texto e conceitos fiscais comuns             | Freecorps 1.0 |
+| `@freecorps/fiscal-nfe`  | Validar e normalizar XML de NF-e localmente, sem a plataforma | Freecorps 1.0 |
+| `@freecorps/fiscal-nfse` | Montar e assinar a DPS e os eventos da NFS-e nacional         | Freecorps 1.0 |
+
+```bash title="npm"
+npm install @freecorps/fiscal-core @freecorps/fiscal-nfe
+```
+
+```js title="Ler uma NF-e localmente"
+import { readFileSync } from "node:fs";
+import { processNfe } from "@freecorps/fiscal-nfe";
+
+const result = processNfe(readFileSync("./nota.xml"));
+```
+
+As bibliotecas fiscais não dependem de Convex nem de autenticação. Validar contra o schema não prova que a nota foi autorizada.
+
+## Operar a aplicação completa [#aplicacao]
+
+<Callout type="warn" title="Repositório ainda privado">
+  O repositório continua privado: o link, o `git clone` e o guia de instalação própria abaixo só
+  funcionam para quem tem acesso a ele. Eles passam a valer para todos quando o repositório for
+  publicado pelo fluxo de distribuição próprio. Até lá, use a [API hospedada](/docs/instalacao#api).
+</Callout>
+
+O código está no [repositório no GitHub](https://github.com/freecorps/freecorpsNFE), ainda privado. A instalação própria sobe o servidor Convex em Docker, o console e o Worker:
+
+```bash title="Servidor próprio local"
+git clone https://github.com/freecorps/freecorpsNFE.git fiscal
+cd fiscal
+bunx bun@1.4.0 install --frozen-lockfile
+node --experimental-strip-types scripts/selfhost.mjs init minha-instalacao 4410 5410
+node --experimental-strip-types scripts/selfhost.mjs up minha-instalacao
+node --experimental-strip-types scripts/selfhost.mjs serve minha-instalacao
+```
+
+Requisitos: Git, Docker com contêineres Linux, Node 22.23.4+ ou 24.22.1+ e Bun 1.4.0. O [guia de instalação própria](https://github.com/freecorps/freecorpsNFE/blob/main/docs/operacao/instalacao-propria.md) cobre Convex Cloud, servidor hospedado, atualização e recuperação.
+
+Quem opera responde por banco, arquivos, chaves de criptografia, e-mail, TLS, backups e atualizações. Os gates fiscais ficam desligados até a empresa ter autorização específica. O servidor Convex usa a licença FSL-1.1-Apache-2.0, e o uso da plataforma para terceiros tem condições próprias, descritas em [Licenças](/docs/licencas).

@@ -1,0 +1,78 @@
+diff --git a/dist/component/schema.js b/dist/component/schema.js
+index 86516c9cc1e90bfe1ace285a150d2b0eef580bf8..f21ff4bf76884ddd4f7b0deaf76ab747344b96b9 100644
+--- a/dist/component/schema.js
++++ b/dist/component/schema.js
+@@ -129,7 +129,7 @@ export const tables = {
+         count: v.number(),
+         lastRequest: v.number(),
+     })
+-        .index("key", ["key"]),
++        .index("key", ["key"]).index("lastRequest", ["lastRequest"]),
+ };
+ const schema = defineSchema(tables);
+ export default schema;
+diff --git a/dist/react/index.d.ts b/dist/react/index.d.ts
+index 652857c519c97b92f4819cbb8f25bea33be20982..d5ffd81da8f6cd7c04d49884d2f1bf7a4c887375 100644
+--- a/dist/react/index.d.ts
++++ b/dist/react/index.d.ts
+@@ -1,18 +1,18 @@
+ import type { PropsWithChildren, ReactNode } from "react";
+ import type { AuthTokenFetcher } from "convex/browser";
+ import type { FunctionReference } from "convex/server";
+-import type { BetterAuthClientPlugin } from "better-auth";
+-import type { createAuthClient } from "better-auth/react";
++import type { BetterAuthClientPlugin, BetterAuthClientOptions } from "better-auth";
++import type { ReactAuthClient } from "better-auth/react";
+ import type { convexClient, crossDomainClient } from "../client/plugins/index.js";
+ import type { EmptyObject } from "convex-helpers";
+ type CrossDomainClient = ReturnType<typeof crossDomainClient>;
+ type ConvexClient = ReturnType<typeof convexClient>;
+ type PluginsWithCrossDomain = (CrossDomainClient | ConvexClient | BetterAuthClientPlugin)[];
+ type PluginsWithoutCrossDomain = (ConvexClient | BetterAuthClientPlugin)[];
+-type AuthClientWithPlugins<Plugins extends PluginsWithCrossDomain | PluginsWithoutCrossDomain> = ReturnType<typeof createAuthClient<BetterAuthClientPlugin & {
+-    plugins: Plugins;
+-}>>;
+-export type AuthClient = AuthClientWithPlugins<PluginsWithCrossDomain> | AuthClientWithPlugins<PluginsWithoutCrossDomain>;
++type SupportedClientOptions = BetterAuthClientOptions & {
++    plugins?: PluginsWithCrossDomain | PluginsWithoutCrossDomain;
++};
++export type AuthClient<Option extends SupportedClientOptions = SupportedClientOptions> = ReactAuthClient<Option>;
+ type IConvexReactClient = {
+     setAuth(fetchToken: AuthTokenFetcher): void;
+     clearAuth(): void;
+@@ -23,10 +23,10 @@ type IConvexReactClient = {
+  *
+  * @public
+  */
+-export declare function ConvexBetterAuthProvider({ children, client, authClient, initialToken, }: {
++export declare function ConvexBetterAuthProvider<Option extends SupportedClientOptions>({ children, client, authClient, initialToken, }: {
+     children: ReactNode;
+     client: IConvexReactClient;
+-    authClient: AuthClient;
++    authClient: ReactAuthClient<Option>;
+     initialToken?: string | null;
+ }): import("react/jsx-runtime").JSX.Element;
+ /**
+@@ -69,9 +69,9 @@ export declare function ConvexBetterAuthProvider({ children, client, authClient,
+  * The component provides a query for this via `export const { getAuthUser } = authComponent.clientApi()`.
+  * @param props.isAuthError - Function to check if the error is auth related.
+  */
+-export declare const AuthBoundary: ({ children, onUnauth, authClient, renderFallback, getAuthUserFn, isAuthError, }: PropsWithChildren<{
++export declare const AuthBoundary: <Option extends SupportedClientOptions>({ children, onUnauth, authClient, renderFallback, getAuthUserFn, isAuthError, }: PropsWithChildren<{
+     onUnauth: () => void | Promise<void>;
+-    authClient: AuthClient;
++    authClient: ReactAuthClient<Option>;
+     renderFallback?: () => React.ReactNode;
+     getAuthUserFn: FunctionReference<"query", "public", EmptyObject>;
+     isAuthError: (error: unknown) => boolean;
+diff --git a/src/component/schema.ts b/src/component/schema.ts
+index 8b5ecc1c7e8dd615461290459f147e9c07813a3f..593b1373d94945ff87b60c2fc7425e1edc3bd2b2 100644
+--- a/src/component/schema.ts
++++ b/src/component/schema.ts
+@@ -131,5 +131,5 @@ export const tables = {
+     count: v.number(),
+     lastRequest: v.number(),
+   })
+-    .index("key", ["key"]),
++    .index("key", ["key"]).index("lastRequest", ["lastRequest"]),
+ };

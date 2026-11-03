@@ -1,0 +1,85 @@
+---
+title: Freecorps Fiscal
+description: Importe XML de NF-e pelo painel ou pela API, consulte documentos normalizados e receba webhooks assinados. Comece pela empresa de demonstração, no ambiente de teste, sem certificado fiscal.
+---
+
+## Escolha o que quer fazer [#tarefa]
+
+Você envia o XML de uma nota, ou a plataforma o recebe do fisco. O arquivo é validado e guardado como chegou, e vira um documento normalizado, com itens, eventos e valores em decimal exato. Cada mudança relevante pode virar um webhook assinado para o seu sistema. Escolha a tarefa e siga o guia dela; cada um diz o que é preciso antes, o que deve aparecer no fim e como recuperar uma falha.
+
+<Cards>
+  <Card title="Importar XML pelo painel" href="/docs/importar-pelo-painel">
+    Sem programar e sem certificado. Comece pela empresa de demonstração e o XML de exemplo, e veja
+    a nota com itens e o original guardado.
+  </Card>
+  <Card title="Integrar pela API" href="/docs/primeira-chamada">
+    Importe uma NF-e sintética com curl, acompanhe o processamento e consulte o documento em poucos
+    minutos. Pede uma chave do ambiente de teste.
+  </Card>
+  <Card title="Capturar NF-e" href="/docs/captura-nfe">
+    Receba as NF-e emitidas contra o CNPJ da sua empresa pela distribuição DF-e. Roda em produção,
+    com o certificado A1 da empresa e sem manifestação: quem administra autoriza a captura no painel
+    e quem opera ou administra a inicia.
+  </Card>
+  <Card title="Experimentar a emissão simulada" href="/docs/emitir-nfse">
+    Peça uma NFS-e no ambiente de teste, com transporte simulado e sem validade fiscal. A emissão em
+    produção está desligada.
+  </Card>
+</Cards>
+
+<a href="/signup?redirect=%2Fconsole%3Ftarefa%3Dimportar">Crie uma conta</a> para começar; a empresa
+de demonstração é criada em <Ui>Primeiros passos</Ui>, no painel. Todos os exemplos desta
+documentação usam dados fictícios.
+
+Quem pode usar, o que o ambiente de teste inclui e como pedir ajuda estão em [Ajuda e condições de acesso](/docs/ajuda).
+
+## Ambientes, sem misturar [#ambientes]
+
+No serviço hospedado, a importação e a emissão simulada rodam no ambiente de teste, chamado `sandbox`, pelo painel ou pela API. A única consulta ao fisco em produção é a [captura de NF-e](/docs/captura-nfe), da empresa que a ativa no painel. O que vale em cada um está em [Conceitos](/docs/conceitos#ambientes).
+
+## O que a plataforma faz [#o-que-faz]
+
+| Capacidade                                         | Estado                                                               |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| Importação de NF-e modelo 55                       | Disponível, pelo painel e pela API                                   |
+| Importação de lotes NFS-e no leiaute ABRASF        | Retirada; notas já importadas só para leitura                        |
+| Consulta de documentos, itens, JSON e XML original | Disponível                                                           |
+| Webhooks assinados com retentativas                | Disponível                                                           |
+| Exportação privada de documentos                   | Disponível                                                           |
+| Consulta de CNPJ, municípios do IBGE e NCM         | Disponível, sem indicar regularidade fiscal                          |
+| Emissão e cancelamento de NFS-e                    | Só no sandbox, com transporte simulado e sem validade fiscal         |
+| Captura de NF-e destinadas pela distribuição DF-e  | Em produção, para a empresa que a ativa no console, sem manifestação |
+| Emissão automática a partir de cobranças do Stripe | Em construção                                                        |
+
+<Callout type="warn" title="Fora da 1.0">
+  Emissão com validade fiscal de qualquer modelo, emissão de NF-e ou NFC-e, cálculo tributário,
+  captura de NFS-e, NFS-e na importação (nacional, ABRASF ou outros leiautes municipais), CT-e,
+  MDF-e e SLA.
+</Callout>
+
+## Três regras que valem em toda a API [#regras]
+
+1. **Dinheiro é texto.** Valores fiscais e quantidades chegam e saem como strings decimais exatas, como `"1500.00"`. Não converta para `Number`.
+2. **Repetir não duplica.** Escritas aceitam `Idempotency-Key`. A mesma chave com o mesmo pedido devolve o resultado original.
+3. **Aceito não é concluído.** Importações e emissões respondem assim que o pedido é aceito. Acompanhe o estado pela consulta ou pelos webhooks.
+
+## Para ir mais fundo [#aprofundar]
+
+<Cards>
+  <Card title="Conceitos" href="/docs/conceitos">
+    Organização, projeto, empresa, ambientes, permissões da chave (escopos) e chaves de API.
+  </Card>
+  <Card title="Importar XML pela API" href="/docs/importar-xml">
+    Reserva, envio, confirmação e leitura do documento, com o que fazer quando uma resposta se
+    perde.
+  </Card>
+  <Card title="Receber webhooks" href="/docs/webhooks">
+    Verifique a assinatura e trate entregas repetidas sem duplicar efeitos.
+  </Card>
+  <Card title="Contrato e referência da API" href="/docs/contrato">
+    Autenticação, paginação, idempotência, erros e limites, com as tabelas geradas do contrato.
+  </Card>
+  <Card title="Usar com agentes de IA" href="/docs/agentes">
+    Contexto em Markdown e as regras que um agente precisa seguir.
+  </Card>
+</Cards>

@@ -1,0 +1,22 @@
+{
+  "@odata.context": "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata$metadata#_CotacaoMoedaDia",
+  "_comentario": "Resposta SINTÉTICA no formato Olinda; cotações inventadas para teste.",
+  "value": [
+    {
+      "paridadeCompra": 1.3601,
+      "paridadeVenda": 1.3602,
+      "cotacaoCompra": 3.9811,
+      "cotacaoVenda": 3.9825,
+      "dataHoraCotacao": "2026-08-28 10:08:00.000",
+      "tipoBoletim": "Abertura"
+    },
+    {
+      "paridadeCompra": 1.3604,
+      "paridadeVenda": 1.3605,
+      "cotacaoCompra": 3.9862,
+      "cotacaoVenda": 3.9876,
+      "dataHoraCotacao": "2026-08-28 13:09:00.000",
+      "tipoBoletim": "Fechamento"
+    }
+  ]
+}

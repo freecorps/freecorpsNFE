@@ -1,0 +1,235 @@
+/* NFC-e till. One 6 s sale: three items keyed (the total grows on the
+   customer display), the total key, the receipt feeds out of the printer,
+   the drawer opens and closes, the receipt is torn off. Without motion the
+   figure rests at the end of the sale: total shown, receipt printed. */
+.fig-register .keycap {
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-register .keycap.top {
+  fill: #18261e;
+}
+.fig-register .key-go.top {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  filter: url(#iso-soft);
+}
+.fig-register .amt {
+  font-size: 8.4px;
+  font-weight: 600;
+}
+.fig-register .a0,
+.fig-register .a1,
+.fig-register .a2 {
+  visibility: hidden;
+}
+.fig-register .ink-fill {
+  fill: var(--glow-ink);
+}
+.fig-register .ink.heavy {
+  stroke-width: 1.6;
+}
+.fig-register .receipt-paper.lit {
+  filter: url(#iso-soft);
+}
+.fig-register .tray {
+  fill: #060b08;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-register .note {
+  fill: #1a2820;
+  stroke: #3a4f44;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-register .coin {
+  fill: #22322a;
+  stroke: #4b6155;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-register .lock {
+  fill: #16231c;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-register.is-live {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-register .kA.top {
+    animation: reg-key-a 6s ease-out infinite;
+  }
+  .fig-register .kB.top {
+    animation: reg-key-b 6s ease-out infinite;
+  }
+  .fig-register .kC.top {
+    animation: reg-key-c 6s ease-out infinite;
+  }
+  .fig-register .key-go.top {
+    animation: reg-key-go 6s ease-out infinite;
+  }
+  .fig-register .a0 {
+    animation: reg-a0 6s step-end infinite;
+  }
+  .fig-register .a1 {
+    animation: reg-a1 6s step-end infinite;
+  }
+  .fig-register .a2 {
+    animation: reg-a2 6s step-end infinite;
+  }
+  .fig-register .a3 {
+    animation: reg-a3 6s step-end infinite;
+  }
+  .fig-register .feed {
+    animation: reg-feed 6s infinite;
+  }
+  .fig-register .prn-led {
+    animation: reg-led 6s step-end infinite;
+  }
+  .fig-register .drawer {
+    animation: reg-drawer 6s infinite;
+  }
+}
+
+@keyframes reg-key-a {
+  0%,
+  7%,
+  14%,
+  100% {
+    fill: #18261e;
+  }
+  8% {
+    fill: var(--glow);
+  }
+}
+@keyframes reg-key-b {
+  0%,
+  19%,
+  26%,
+  100% {
+    fill: #18261e;
+  }
+  20% {
+    fill: var(--glow);
+  }
+}
+@keyframes reg-key-c {
+  0%,
+  31%,
+  38%,
+  100% {
+    fill: #18261e;
+  }
+  32% {
+    fill: var(--glow);
+  }
+}
+/* The total key idles dim and lights when the sale is closed. */
+@keyframes reg-key-go {
+  0%,
+  41% {
+    fill: #18261e;
+    stroke: var(--line-2);
+  }
+  42%,
+  97% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+  100% {
+    fill: #18261e;
+    stroke: var(--line-2);
+  }
+}
+@keyframes reg-a0 {
+  0% {
+    visibility: visible;
+  }
+  9%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes reg-a1 {
+  0% {
+    visibility: hidden;
+  }
+  9% {
+    visibility: visible;
+  }
+  21%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes reg-a2 {
+  0% {
+    visibility: hidden;
+  }
+  21% {
+    visibility: visible;
+  }
+  33%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes reg-a3 {
+  0% {
+    visibility: hidden;
+  }
+  33%,
+  100% {
+    visibility: visible;
+  }
+}
+/* Paper feeds up out of the slot; the jump back at the end of the loop is the
+   tear (the printed receipt leaves, the torn stub stays). */
+@keyframes reg-feed {
+  0%,
+  46% {
+    transform: translate(0, 27px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  80%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes reg-led {
+  0% {
+    fill: #23332b;
+    filter: none;
+  }
+  46% {
+    fill: var(--glow);
+    filter: url(#iso-soft);
+  }
+  80%,
+  100% {
+    fill: #23332b;
+    filter: none;
+  }
+}
+@keyframes reg-drawer {
+  0%,
+  82% {
+    transform: translate(0, 0);
+    animation-timing-function: var(--ease-out);
+  }
+  87%,
+  93% {
+    transform: translate(-8.66px, 5px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  98%,
+  100% {
+    transform: translate(0, 0);
+  }
+}

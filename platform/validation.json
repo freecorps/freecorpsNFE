@@ -1,0 +1,25 @@
+{
+  "team": "freecorps",
+  "project": "freecorpsnfe",
+  "projectId": 2892159,
+  "reference": "dev/fiscal-platform-v1-validation",
+  "deploymentType": "dev",
+  "deploymentName": "modest-seal-118",
+  "url": "https://modest-seal-118.convex.cloud",
+  "siteUrl": "https://modest-seal-118.convex.site",
+  "region": "aws-us-east-1",
+  "expiresAt": null,
+  "owner": "freecorps",
+  "branch": "main",
+  "githubEnvironment": "validation",
+  "consoleUrl": "https://freecorpsnfe-validation.freecorps.workers.dev",
+  "environment": {
+    "APP_ENV": "validation",
+    "PRODUCT_ENV": "sandbox",
+    "FISCAL_ENV": "disabled",
+    "FNFE_CRONS": "off",
+    "EMAIL_MODE": "disabled",
+    "WEBHOOK_MODE": "disabled",
+    "SITE_URL": "https://freecorpsnfe-validation.freecorps.workers.dev"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "tipoAmbiente": 2,
+  "versaoAplicativo": "SINTETICO_1.0",
+  "dataHoraProcessamento": "2026-08-29T10:00:01-03:00",
+  "erros": [
+    {
+      "Descricao": "Já existe NFS-e gerada para esta DPS (mensagem sintética de teste)."
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+/* MDF-e rig: road, wheels and headlight pool as in .fig-truck, plus the
+   manifest board that fills in line by line. */
+.fig-manifest .face.road {
+  fill: #08100c;
+  stroke: var(--line);
+}
+.fig-manifest .face.road.top {
+  fill: #0a120e;
+}
+.fig-manifest .edge,
+.fig-manifest .rail,
+.fig-manifest .wiper,
+.fig-manifest .spoke {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-manifest .edge {
+  stroke: #2c3d34;
+}
+.fig-manifest .lane {
+  fill: #33473c;
+}
+.fig-manifest .beam {
+  fill: url(#manifest-beam);
+  stroke: none;
+}
+.fig-manifest .beam-a {
+  stop-color: var(--glow);
+  stop-opacity: 0.34;
+}
+.fig-manifest .beam-b {
+  stop-color: var(--glow);
+  stop-opacity: 0;
+}
+.fig-manifest .face.chassis {
+  fill: #070d0a;
+}
+.fig-manifest .grille {
+  fill: #070d0a;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-manifest .flap {
+  fill: #070d0a;
+  stroke: var(--line);
+}
+.fig-manifest .tread {
+  fill: none;
+  stroke: #15211b;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-manifest .hub {
+  fill: #1a2820;
+}
+.fig-manifest .lug,
+.fig-manifest .cap {
+  fill: #2c3d34;
+}
+.fig-manifest .spin-box {
+  fill: none;
+  stroke: none;
+}
+.fig-manifest .spin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fig-manifest .face.stack {
+  fill: #121e18;
+}
+.fig-manifest .m-head {
+  font-size: 5.4px;
+  font-weight: 700;
+}
+.fig-manifest .m-rule,
+.fig-manifest .m-line,
+.fig-manifest .m-check {
+  fill: none;
+  stroke: var(--glow-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fig-manifest .m-rule {
+  stroke-width: 0.6;
+}
+.fig-manifest .m-line {
+  stroke-width: 1.3;
+  stroke-dasharray: 1;
+}
+.fig-manifest .m-seal {
+  fill: none;
+  stroke: var(--glow-ink);
+  stroke-width: 0.8;
+}
+.fig-manifest .m-check {
+  stroke-width: 1.2;
+  stroke-dasharray: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fig-manifest .dashes {
+    animation: manifest-road 1.75s linear infinite;
+  }
+  .fig-manifest .spin {
+    animation: manifest-spin 2.75s linear infinite;
+  }
+  /* The manifest is written one line at a time, closed with the check, held,
+     and wiped for the next trip. */
+  .fig-manifest .m-line,
+  .fig-manifest .m-check,
+  .fig-manifest .m-seal {
+    animation: 6s var(--ease-out) infinite;
+  }
+  .fig-manifest .m-l0 {
+    animation-name: manifest-l0;
+  }
+  .fig-manifest .m-l1 {
+    animation-name: manifest-l1;
+  }
+  .fig-manifest .m-l2 {
+    animation-name: manifest-l2;
+  }
+  .fig-manifest .m-l3 {
+    animation-name: manifest-l3;
+  }
+  .fig-manifest .m-check {
+    animation-name: manifest-check;
+  }
+  .fig-manifest .m-seal {
+    animation-name: manifest-seal;
+    animation-timing-function: steps(1, end);
+  }
+}
+@keyframes manifest-road {
+  to {
+    transform: translateX(-28px);
+  }
+}
+@keyframes manifest-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes manifest-l0 {
+  0%,
+  4% {
+    stroke-dashoffset: 1;
+  }
+  14%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes manifest-l1 {
+  0%,
+  16% {
+    stroke-dashoffset: 1;
+  }
+  26%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes manifest-l2 {
+  0%,
+  28% {
+    stroke-dashoffset: 1;
+  }
+  38%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes manifest-l3 {
+  0%,
+  40% {
+    stroke-dashoffset: 1;
+  }
+  50%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes manifest-check {
+  0%,
+  56% {
+    stroke-dashoffset: 1;
+  }
+  64%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes manifest-seal {
+  0% {
+    visibility: hidden;
+  }
+  54% {
+    visibility: visible;
+  }
+  94% {
+    visibility: hidden;
+  }
+}

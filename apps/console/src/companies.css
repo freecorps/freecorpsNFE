@@ -1,0 +1,634 @@
+/*
+ * Telas de cadastro (Empresas, página da empresa e as abas, Primeiros passos). Só tokens de
+ * `ui/tokens.css`, na camada `ui`; os componentes vêm de `ui/`. Aqui fica só o arranjo das telas.
+ */
+@layer ui {
+  /* ---------------------------------------------------------------- Cabeçalho da empresa */
+  .company-head {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .company-back {
+    justify-self: start;
+    margin-left: calc(var(--space-3) * -1);
+    color: var(--color-text-muted);
+  }
+  .company-identity {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .company-switcher {
+    display: grid;
+    gap: var(--space-2);
+    width: min(100%, 280px);
+  }
+  /* Voltar e a troca de empresa numa barra acima do título: a troca não disputa com o nome. */
+  .company-head__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+  }
+  .company-head__bar .company-switcher {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    width: min(100%, 340px);
+  }
+  .company-head__bar .company-switcher > .ui-field {
+    display: contents;
+  }
+  .company-head__bar .company-switcher .ui-label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+  .company-head__bar .company-switcher > :not(.ui-field) {
+    grid-column: 1 / -1;
+  }
+  /* Na lista, só a demonstração leva selo, ao lado do nome. */
+  .company-list-name {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+  /* Prontidão: quantos itens estão prontos e o que a empresa já faz. */
+  .company-readiness {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: 0 0 var(--space-4);
+  }
+  .company-readiness__count {
+    font-weight: var(--weight-semibold);
+  }
+  .company-readiness__bar {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .company-readiness__bar > span {
+    width: 24px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-border);
+  }
+  .company-readiness__bar > .is-ready {
+    background: var(--color-success-dot);
+  }
+  /* Excluir empresa: recolhido no fim da página, aberto só por quem quer. */
+  .company-danger {
+    background: transparent;
+    box-shadow: none;
+  }
+  .company-danger > .ui-disclosure__summary {
+    width: fit-content;
+    padding-inline: 0;
+    color: var(--color-text-muted);
+  }
+  .company-danger > .ui-disclosure__body {
+    padding-inline: 0;
+  }
+  .company-body {
+    display: grid;
+    gap: var(--space-6);
+  }
+  .company-panel {
+    display: grid;
+    gap: var(--space-6);
+    min-width: 0;
+    border-radius: var(--radius-md);
+  }
+  .company-panel:focus-visible {
+    outline-offset: 6px;
+  }
+
+  /* ---------------------------------------------------------------- Situação e listas */
+  .company-status-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+  }
+  .company-status-line__value {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+  }
+  .company-person {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .company-person strong {
+    font-weight: var(--weight-medium);
+    overflow-wrap: anywhere;
+  }
+  .company-person .ui-mono {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+  .company-access {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
+  }
+  .company-row-action {
+    display: grid;
+    justify-items: end;
+    gap: var(--space-1);
+  }
+  .company-feedback {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-success);
+  }
+  .company-feedback > .ui-icon {
+    width: 14px;
+    height: 14px;
+  }
+  /* Itens de uma lista dentro de um cartão: versões do certificado, atividades, séries. */
+  .company-rows {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .company-rows > li {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .company-rows > li:first-child {
+    border-top: 0;
+  }
+  /* Dentro do corpo de um cartão, as linhas já têm o recuo do cartão. */
+  .company-rows--inset > li {
+    padding-inline: 0;
+  }
+  .company-rows--inset > li:first-child {
+    padding-top: 0;
+  }
+  .company-rows--inset > li:last-child {
+    padding-bottom: 0;
+  }
+  .company-row__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+  }
+  .company-row__title {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .company-row__title:focus-visible {
+    border-radius: 4px;
+  }
+  .company-row__meta {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------------------------------------------------------------- Formulários */
+  .company-form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+  .company-form-grid > * {
+    grid-column: span 6;
+    min-width: 0;
+  }
+  .company-form-grid > [data-span="1"] {
+    grid-column: span 1;
+  }
+  .company-form-grid > [data-span="2"] {
+    grid-column: span 2;
+  }
+  .company-form-grid > [data-span="3"] {
+    grid-column: span 3;
+  }
+  .company-form-grid > [data-span="4"] {
+    grid-column: span 4;
+  }
+  .company-form-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .company-form-footer > .ui-help {
+    flex: 1 1 280px;
+    max-width: 60ch;
+  }
+  .company-fieldset {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+    margin: 0;
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    box-shadow: var(--elevation-0);
+  }
+  .company-fieldset > legend {
+    float: left;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+  .company-fieldset > legend + * {
+    clear: both;
+  }
+  .company-fieldset > legend:focus-visible {
+    border-radius: 4px;
+  }
+  .company-form-section {
+    display: grid;
+    gap: var(--space-4);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .company-form-section__title {
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+  .company-form-section__title + .ui-help {
+    margin-top: calc(var(--space-3) * -1);
+  }
+  .ui-callout__list {
+    display: grid;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-4);
+  }
+  .ui-callout__list .ui-link {
+    color: var(--color-danger);
+    font-weight: var(--weight-regular);
+  }
+  .company-onboarding-pick {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 420px;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  /* Seletor de arquivo: o input cobre o botão desenhado; o foco aparece no botão. */
+  .company-file {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    width: fit-content;
+    max-width: 100%;
+  }
+  .company-file input[type="file"] {
+    position: absolute;
+    /* Acima do botão decorativo (.ui-button é position: relative e vem depois no DOM). */
+    z-index: 1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .company-file input[type="file"]:disabled {
+    cursor: not-allowed;
+  }
+  .company-file:focus-within .ui-button {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .company-file[data-invalid="true"] .ui-button {
+    --button-ring: 0 0 0 1px var(--color-danger);
+  }
+  .company-file__name {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* Cartão sem recuo (lista até a borda): o que não é lista ganha o recuo do cartão. */
+  .company-card-pad {
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .company-card-foot {
+    margin: 0;
+    padding: var(--space-3) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-2);
+  }
+  .ui-card--flush > .ui-empty {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .company-plain-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  /* Dados da consulta do CNPJ no cadastro: nome e endereço longos quebram dentro do bloco. */
+  .company-lookup {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    overflow-wrap: anywhere;
+  }
+  .company-lookup > legend {
+    padding: 0 var(--space-2);
+  }
+
+  /* Busca de município: as opções viram botões pequenos. */
+  .company-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Código exibido uma vez (transferência da captura). */
+  .company-secret {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+    background: var(--color-surface-1);
+    box-shadow: inset 0 0 0 1px var(--ring-strong);
+  }
+
+  .company-block {
+    display: block;
+  }
+  @media (max-width: 640px) {
+    /* No telefone, as abas quebram em linhas em vez de esconder as últimas. */
+    .company-tabs {
+      flex-wrap: wrap;
+    }
+    .company-card-pad,
+    .company-card-foot {
+      padding-inline: var(--space-4);
+    }
+    /* Campos curtos (número, UF, CEP, códigos) ficam em pares; os demais ocupam a linha. */
+    .company-form-grid > [data-span] {
+      grid-column: span 6;
+    }
+    .company-form-grid > [data-compact] {
+      grid-column: span 3;
+    }
+    .company-switcher {
+      width: 100%;
+    }
+    .company-rows > li {
+      padding: var(--space-4);
+    }
+    .company-fieldset {
+      padding: var(--space-4);
+    }
+    .company-row-action {
+      justify-items: start;
+    }
+  }
+  @media (forced-colors: active) {
+    .company-fieldset {
+      border: 1px solid CanvasText;
+    }
+  }
+
+  /* ---------------------------------------------------------------- Captura de NF-e (#432) */
+  /* Situação: selo e motivo numa linha; a origem fica no fim dela. */
+  .capture-situation,
+  .capture-group {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .capture-group__title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    color: var(--color-text);
+  }
+  .capture-situation__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
+    border-radius: 4px;
+    line-height: var(--leading-normal);
+  }
+  .capture-situation__reason {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .capture-situation__origin {
+    margin-left: auto;
+  }
+  /* O motivo de uma perda aceita, como a pessoa escreveu (quebras de linha inclusive). */
+  .capture-accepted__reason {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  /* Agenda, Volume e Certificado lado a lado; cada termo sobre o valor. */
+  .capture-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-4) var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .capture-group .ui-dl__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding: var(--space-2) 0 0;
+    border-top: 0;
+  }
+  .capture-number {
+    font-variant-numeric: tabular-nums;
+  }
+  .capture-certificate {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+    padding-top: var(--space-2);
+    line-height: var(--leading-normal);
+  }
+  /* Os caminhos para o que a captura recebeu, um por linha (#433). */
+  .capture-links {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-2) 0 0;
+    list-style: none;
+  }
+  /* As últimas consultas ocupam a largura toda, abaixo dos três grupos (#433). */
+  .capture-groups > .capture-history {
+    grid-column: 1 / -1;
+  }
+  .capture-history > .ui-help {
+    margin: 0;
+  }
+  .capture-history time {
+    white-space: nowrap;
+  }
+  /* A tabela é painel dentro do painel: só o anel, sem a sombra do cartão. */
+  .capture-history .ui-table-card {
+    box-shadow: var(--elevation-0);
+  }
+  /* A liberação ativa numa linha de resumo, com as ações ao lado. */
+  .capture-release {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .capture-release__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+  }
+  .capture-release__line {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+    border-radius: 4px;
+  }
+  .capture-release__line > [aria-hidden] {
+    color: var(--color-text-muted);
+  }
+  .capture-release__editor {
+    display: grid;
+    gap: var(--space-3);
+    max-width: 52ch;
+  }
+  /* Termos da captura fiscal: a frase que abre a lista fica junto dela. */
+  .capture-terms {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .capture-terms > * {
+    margin: 0;
+  }
+  /* Título de seção dos textos longos (termos de uso, política de privacidade). */
+  .capture-terms .capture-terms__heading {
+    margin-top: var(--space-3);
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+  .capture-terms__lead {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .capture-terms__lead > * {
+    margin: 0;
+  }
+  .capture-terms ul {
+    display: grid;
+    gap: var(--space-1);
+    padding-left: var(--space-6);
+  }
+  /* O hash dos termos ocupa a linha; o botão de copiar fica ao lado dele, não embaixo. */
+  .gestao-reference.capture-terms__hash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  /* A captura abaixo da liberação, separada por uma linha. */
+  .capture-production__panel {
+    min-width: 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  /* O Sandbox recolhido é um cartão próprio, com o título no resumo. */
+  .ui-disclosure.capture-sandbox {
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    box-shadow: var(--elevation-1);
+  }
+  .capture-sandbox > .ui-disclosure__summary {
+    min-height: 56px;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-md);
+  }
+  .capture-sandbox > .ui-disclosure__body {
+    gap: var(--space-4);
+    padding: 0 var(--space-6) var(--space-6);
+  }
+  .capture-sandbox__summary {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .capture-sandbox__title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.01em;
+  }
+  @media (max-width: 640px) {
+    .capture-situation__origin {
+      margin-left: 0;
+    }
+    .capture-sandbox > .ui-disclosure__summary {
+      padding-inline: var(--space-4);
+    }
+    .capture-sandbox > .ui-disclosure__body {
+      padding: 0 var(--space-4) var(--space-4);
+    }
+  }
+  @media (forced-colors: active) {
+    .ui-disclosure.capture-sandbox {
+      border: 1px solid CanvasText;
+    }
+  }
+}

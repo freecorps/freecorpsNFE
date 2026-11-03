@@ -1,0 +1,26 @@
+{
+  "title": "Documentação",
+  "pages": [
+    "---Começar---",
+    "index",
+    "primeira-chamada",
+    "conceitos",
+    "ajuda",
+    "---Guias---",
+    "importar-pelo-painel",
+    "consultar-danfe",
+    "importar-xml",
+    "webhooks",
+    "emitir-nfse",
+    "captura-nfe",
+    "---Referência---",
+    "contrato",
+    "api",
+    "sdk",
+    "agentes",
+    "---Produto---",
+    "instalacao",
+    "licencas",
+    "privacidade-cnpj"
+  ]
+}

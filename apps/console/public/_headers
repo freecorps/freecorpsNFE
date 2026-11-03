@@ -1,0 +1,22 @@
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+  Cache-Control: no-store
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'sha256-vGQdhYJbTuF+M8iCn1IZCHpdkiICocWHDq4qnQF4Rjw='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://modest-seal-118.convex.cloud wss://modest-seal-118.convex.cloud https://modest-seal-118.convex.site; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+
+# Vite names every file under /assets/ by its content hash: a new build is a new address, so
+# these never change. The rule above sets no-store for every path; this one detaches it.
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# The docs build (apps/docs) names everything under /docs/assets/ by content hash too, and
+# refuses a file there without one. Pages, search index and Markdown stay no-store.
+# A missing file never reaches these rules: the Worker answers it (asset-fallback.ts).
+/docs/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable

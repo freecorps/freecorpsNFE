@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-09-29T19:46:42.031Z",
+  "sanitizedFrom": {
+    "repository": "freecorps/freecorpsNFE-arquivo",
+    "sha256": "705888ecdc23f8a8891f6f160cce37927241ba0c9641db1250fda498586032db",
+    "sanitizedAt": "2026-11-03"
+  },
+  "consumer": "App consumidor da Freecorps, num repositório privado do mantenedor",
+  "tests": 1866,
+  "environments": [
+    {
+      "role": "produção",
+      "available": false,
+      "mode": "transition",
+      "webhookStatus": 410,
+      "frontendStatus": 200,
+      "scheduled": {
+        "pending": 0,
+        "running": 0,
+        "truncated": false
+      }
+    },
+    {
+      "role": "desenvolvimento",
+      "available": false,
+      "mode": "transition",
+      "webhookStatus": 410,
+      "frontendStatus": 200,
+      "scheduled": {
+        "pending": 0,
+        "running": 0,
+        "truncated": false
+      }
+    }
+  ],
+  "activeConsumerBeforeTransition": {
+    "role": "desenvolvimento",
+    "centralModified": false
+  },
+  "devLegacyCredentialsRemoved": true
+}

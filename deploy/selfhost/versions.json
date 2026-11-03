@@ -1,0 +1,6 @@
+{
+  "backendImage": "ghcr.io/get-convex/convex-backend@sha256:b756b06641d15a55b5ec0692897ce5ad3715ddccfd02e1e213621e9e764255c8",
+  "backendRevision": "0cf49cbf8c4b7e22e631ceda9b5111f6cccbcd49",
+  "bun": "1.4.0",
+  "node": "22.23.4"
+}

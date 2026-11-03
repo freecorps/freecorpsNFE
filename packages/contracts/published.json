@@ -1,0 +1,10 @@
+{
+  "decision": "Decisão do mantenedor de 26/10/2026: um major ainda não publicado aceita mudanças; o gate compara com o último contrato publicado. Política em docs/v1.0/SDK.md, seção Versionamento.",
+  "published": {
+    "version": "8.0.0",
+    "commit": "08e85d807a8687d655066289bac689215f49ebc8",
+    "openapiSha256": "edfcb60eb1adaa170d3c7f1232153162d51bd94ad4924132a8e1e79b3e548c1a",
+    "publishedAt": "2026-11-01T20:17:03.175Z"
+  },
+  "note": "Publicado com @freecorps/sdk@0.1.0, que embute os tipos deste contrato (#83; recibo em docs/v1.0/evidence/83/2026-11-01). @freecorps/contracts continua privado."
+}

@@ -1,0 +1,106 @@
+/* CT-e box truck: road, wheels and headlight pool (shared look with
+   .fig-manifest, which repeats these rules for its own scope). */
+.fig-truck .face.road {
+  fill: #08100c;
+  stroke: var(--line);
+}
+.fig-truck .face.road.top {
+  fill: #0a120e;
+}
+.fig-truck .edge,
+.fig-truck .rail,
+.fig-truck .wiper,
+.fig-truck .spoke {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-truck .edge {
+  stroke: #2c3d34;
+}
+.fig-truck .lane {
+  fill: #33473c;
+}
+.fig-truck .beam {
+  fill: url(#truck-beam);
+  stroke: none;
+}
+.fig-truck .beam-a {
+  stop-color: var(--glow);
+  stop-opacity: 0.34;
+}
+.fig-truck .beam-b {
+  stop-color: var(--glow);
+  stop-opacity: 0;
+}
+.fig-truck .face.chassis {
+  fill: #070d0a;
+}
+.fig-truck .grille {
+  fill: #070d0a;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-truck .flap {
+  fill: #070d0a;
+  stroke: var(--line);
+}
+.fig-truck .tread {
+  fill: none;
+  stroke: #15211b;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-truck .hub {
+  fill: #1a2820;
+}
+.fig-truck .lug,
+.fig-truck .cap {
+  fill: #2c3d34;
+}
+.fig-truck .spin-box {
+  fill: none;
+  stroke: none;
+}
+.fig-truck .spin {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fig-truck .tag-t {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* The road slides back under the truck at the speed its wheels turn. */
+  .fig-truck .dashes {
+    animation: truck-road 1.75s linear infinite;
+  }
+  .fig-truck .spin {
+    animation: truck-spin 2.75s linear infinite;
+  }
+  .fig-truck .beam {
+    animation: truck-beam 4.8s ease-in-out infinite;
+  }
+}
+@keyframes truck-road {
+  to {
+    transform: translateX(-28px);
+  }
+}
+@keyframes truck-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes truck-beam {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}

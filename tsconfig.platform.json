@@ -1,0 +1,16 @@
+{
+  // Tipos da plataforma, dos pacotes, dos testes e das ferramentas: o que
+  // `platform:check`, `build` e `ci:typecheck` conferem. O tsconfig.json da raiz
+  // inclui a mesma árvore para o editor e o lint type-aware de `vp check`
+  // (docs/desenvolvimento/ci.md, Tipos).
+  "extends": "./tsconfig.json",
+  "include": [
+    "platform/convex",
+    "tests",
+    "scripts",
+    "lib",
+    "vite.config.ts",
+    "packages",
+    "examples"
+  ]
+}

@@ -1,0 +1,19 @@
+freecorpsNFE
+Copyright (c) 2026 FREECORPS TECNOLOGIA DA INFORMACAO LTDA
+Copyright 2026 Freecorps and contributors.
+CNPJ 63.113.119/0001-90
+
+Original platform and fiscal-engine code uses the Freecorps Source Available
+License 1.0 in LICENSE. The SDK client and expressly listed integration files
+use MIT; see LICENSES/MIT.txt and docs/licenses/first-party.json. This notice
+does not change rights granted by those licenses or license third-party material.
+
+Official fiscal schemas, reference datasets, imported code, trademarks and
+infrastructure retain their own conditions. Their public availability is not
+a redistribution grant. See LICENSING.md and package THIRD_PARTY_NOTICES.txt.
+No shadcn/ui-derived source is known in the current tree. The legacy
+backoffice, removed from the tree in #345 and kept only in the Git history,
+adapted shadcn/ui; its upstream MIT notice stays in
+docs/licenses/texts/shadcn-LICENSE for any distribution that includes that
+history. Imported agent skills retain their
+origin notices and licenses. No permission to publish the complete repository is implied.

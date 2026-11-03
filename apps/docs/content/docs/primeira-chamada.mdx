@@ -1,0 +1,156 @@
+---
+title: Primeira chamada
+description: Importe uma NF-e sintética no sandbox, acompanhe o processamento e consulte o documento normalizado. Leva poucos minutos e não exige certificado fiscal.
+---
+
+Você vai precisar de Node 22.23.4 ou mais recente e de curl. O exemplo, `quickstart-curl.mjs`, é um script Node que executa curl em cada chamada à API e entrega a chave ao curl pela entrada padrão, fora da linha de comando. As variáveis vêm em PowerShell, com a alternativa em Bash logo abaixo; o comando de importação é o mesmo nos dois.
+
+<Steps>
+<Step>
+
+### Prepare a conta e a chave [#chave]
+
+1. <a href="/signup?redirect=%2Fconsole%3Ftarefa%3Dintegrar">Crie uma conta</a>, confirme o código
+   recebido por e-mail e crie uma organização.
+2. Em <Ui>Primeiros passos</Ui>, clique em <Ui>Explorar demonstração</Ui>. Isso cria a empresa fictícia do XML de exemplo.
+3. Crie o projeto, conceda a ele a empresa de demonstração e gere a chave, por um destes caminhos:
+   - **Guiado.** Em <Ui>Integrações</Ui>, clique em <Ui>Conectar meu sistema</Ui> e escolha a empresa de demonstração, o ambiente <Ui>Sandbox</Ui> e as permissões <Ui>Importar XML e consultar documentos</Ui>. O percurso cria o projeto, a concessão e a chave e termina com um link para a aba <Ui>Primeira chamada</Ui>.
+   - **Pelas abas do projeto.** Crie um projeto e, em <Ui>Empresas e acesso</Ui>, conceda a ele essa empresa no ambiente `sandbox` com o grupo <Ui>Importar e consultar documentos</Ui>. Depois, em <Ui>Chaves de API</Ui>, gere uma chave Sandbox para essa empresa.
+
+   Nos dois caminhos, a chave precisa dos escopos `documents:import` (<Ui>Importar XML</Ui>) e `documents:read` (<Ui>Consultar documentos</Ui>). O exemplo não precisa de outro: ele não lista empresas nem cadastra webhook.
+
+4. Na aba <Ui>Primeira chamada</Ui> do projeto, confira o ambiente e os escopos e copie a URL da API e o ID da empresa marcada como <Ui>Demonstração</Ui>. A aba lista só as empresas com acesso em sandbox e os dois escopos, a de demonstração primeiro; se aparecer um aviso, ajuste o acesso em <Ui>Empresas e acesso</Ui>. O XML de exemplo só vale para a empresa de demonstração.
+
+A chave aparece uma vez só. Guarde-a num gerenciador de senhas.
+
+</Step>
+<Step>
+
+### Baixe os arquivos [#arquivos]
+
+Crie uma pasta para o teste e salve nela:
+
+<ul className="downloads">
+  <li>
+    <a href="/examples/nfe-demonstracao.xml" download>
+      nfe-demonstracao.xml
+    </a>
+  </li>
+  <li>
+    <a href="/developer/quickstart-curl.mjs" download>
+      quickstart-curl.mjs
+    </a>
+  </li>
+</ul>
+
+</Step>
+<Step>
+
+### Defina as variáveis [#variaveis]
+
+No terminal, dentro da pasta, cole o bloco abaixo. O ID da empresa e a chave são pedidos na hora, a chave sem eco na tela.
+
+```powershell title="PowerShell"
+$env:FREECORPS_BASE_URL = 'https://api.nfe.freecorps.com.br'
+$env:FREECORPS_COMPANY_ID = Read-Host 'ID da empresa'
+$chave = Read-Host 'Chave de API' -AsSecureString
+$env:FREECORPS_API_KEY = [System.Net.NetworkCredential]::new('', $chave).Password
+Remove-Variable chave
+$env:FREECORPS_XML = './nfe-demonstracao.xml'
+$env:FREECORPS_IDEMPOTENCY_KEY = 'importacao-sintetica-001'
+```
+
+<details>
+<summary>Alternativa em Bash</summary>
+
+Para Bash. No zsh, o `read` aceita outras opções: rode `bash` antes de colar.
+
+```bash title="Bash"
+export FREECORPS_BASE_URL='https://api.nfe.freecorps.com.br'
+read -r -p 'ID da empresa: ' FREECORPS_COMPANY_ID
+read -r -s -p 'Chave de API: ' FREECORPS_API_KEY; echo
+export FREECORPS_COMPANY_ID FREECORPS_API_KEY
+export FREECORPS_XML='./nfe-demonstracao.xml'
+export FREECORPS_IDEMPOTENCY_KEY='importacao-sintetica-001'
+```
+
+</details>
+
+Use a URL da API sem `/v1`. A URL do painel é outra.
+
+</Step>
+<Step>
+
+### Importe e consulte [#importar]
+
+```powershell title="Importar e consultar"
+node quickstart-curl.mjs
+```
+
+O script reserva a importação, envia o XML, confirma, espera o processamento e consulta o documento e os itens. Todas as chamadas autenticadas vão com `X-Environment: sandbox`; o envio do XML usa só o token de upload.
+
+O processamento é assíncrono. Enquanto ele roda, o script consulta a operação uma vez por segundo e não imprime nada; a espera vai até 2 minutos. Essas consultas contam no limite de 60 chamadas por minuto da chave; se ele estourar, o script espera o `Retry-After` e continua. Ao terminar, imprime uma linha JSON, aqui formatada:
+
+```json title="Resultado"
+{
+  "importId": "…",
+  "operationId": "…",
+  "documentId": "…",
+  "reused": true,
+  "contractVersion": "…",
+  "total": "24.69",
+  "items": [{ "quantity": "2.0000", "unitPrice": "12.3456789012", "total": "24.69" }],
+  "resourceVersion": 2,
+  "sha256": "…"
+}
+```
+
+</Step>
+<Step>
+
+### Confira no painel [#painel]
+
+Abra <Ui>Documentos</Ui> na mesma empresa, em sandbox. A nota está lá, com os itens e o XML original.
+
+</Step>
+</Steps>
+
+## Se algo falhar [#erros]
+
+A mensagem de erro começa pela etapa em que o script parou: `reserva`, `importação`, `envio`, `confirmação`, `processamento`, `resultado`, `documento` ou `itens`. Um erro da API traz depois o código e o `requestId`, por exemplo `Error: reserva: SCOPE_DENIED; requestId=…`. Guarde os dois para o [suporte](/docs/ajuda#pedir-ajuda), nunca a chave. Na tabela, `…:` vale para qualquer etapa.
+
+| O script imprime                                                     | Causa e o que fazer                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Defina FREECORPS_…`                                                 | Falta uma variável. Repita o bloco de variáveis no mesmo terminal.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `TypeError: Invalid URL`                                             | A URL da API está incompleta, sem `https://`. Use a URL mostrada na aba <Ui>Primeira chamada</Ui>.                                                                                                                                                                                                                                                                                                                                                              |
+| `Origem inválida`                                                    | A URL tem `/v1` ou outro caminho, ou não usa HTTPS. Use a URL da API mostrada na aba <Ui>Primeira chamada</Ui>.                                                                                                                                                                                                                                                                                                                                                 |
+| `…: INVALID_API_KEY`                                                 | HTTP 401. A chave está errada, revogada ou vencida, ou o projeto foi desativado. Reativar o projeto não revalida as chaves antigas: gere uma nova chave.                                                                                                                                                                                                                                                                                                        |
+| `…: ENVIRONMENT_DENIED`                                              | HTTP 403. A chave não é de Sandbox. Gere uma chave Sandbox.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `…: SCOPE_DENIED`                                                    | HTTP 403. Falta à chave `documents:import` ou `documents:read`: gere uma nova chave com os dois. Na reserva, também pode ser o plano fora da vigência; veja <Ui>Uso e limites</Ui>.                                                                                                                                                                                                                                                                             |
+| `reserva: NOT_FOUND`                                                 | HTTP 404. Primeiro, confira em <Ui>Empresas e acesso</Ui> se a empresa tem acesso em Sandbox com `documents:import` e `documents:read`, e copie o ID na aba <Ui>Primeira chamada</Ui>. Se a empresa foi removida e concedida de novo depois que a chave foi gerada, gere uma nova chave. Se esta chave de idempotência já foi usada com outra empresa, troque `FREECORPS_IDEMPOTENCY_KEY`.                                                                      |
+| `reserva: IDEMPOTENCY_CONFLICT`                                      | HTTP 409. A mesma chave de idempotência já foi usada neste projeto com outra empresa ou outro XML. Troque `FREECORPS_IDEMPOTENCY_KEY`, por exemplo para `importacao-sintetica-002`.                                                                                                                                                                                                                                                                             |
+| `…: NOT_FOUND` depois da reserva                                     | HTTP 404. O acesso mudou durante a execução. Confira em <Ui>Empresas e acesso</Ui> se a empresa ainda tem acesso em Sandbox com os dois escopos: sem `documents:read`, a importação termina e a leitura do documento falha. Se a empresa foi removida e concedida de novo, gere uma nova chave. Com o acesso de volta, rode de novo com a mesma chave de idempotência.                                                                                          |
+| `envio: Origem de upload inesperada`                                 | O endereço de envio do XML não é o de `FREECORPS_BASE_URL`. Use a URL da API mostrada na aba <Ui>Primeira chamada</Ui>, sem outro nome para o mesmo servidor.                                                                                                                                                                                                                                                                                                   |
+| `…: UPLOAD_EXPIRED`                                                  | HTTP 409. A reserva venceu antes do envio. Troque `FREECORPS_IDEMPOTENCY_KEY`, por exemplo para `importacao-sintetica-002`, e rode de novo.                                                                                                                                                                                                                                                                                                                     |
+| `processamento: Operação queued, running, retry_wait ou reconciling` | O processamento passou de 2 minutos e continua no servidor. Rode o script de novo com a mesma chave de idempotência: ele retoma a mesma importação, sem reenviar o XML.                                                                                                                                                                                                                                                                                         |
+| `processamento: Operação failed ou paused (código)`                  | O processamento parou e não avança sozinho. O código entre parênteses diz o motivo; `ACCESS_REVOKED`, por exemplo, é acesso retirado durante o processamento. Repetir mostra o mesmo estado; procure o [suporte](/docs/ajuda#pedir-ajuda) informando o código e a chave de idempotência.                                                                                                                                                                        |
+| `reserva: Identidade mudou`                                          | As duas reservas com a mesma chave de idempotência devolveram importações diferentes, o que não deveria acontecer. Não repita; procure o [suporte](/docs/ajuda#pedir-ajuda) informando a chave de idempotência.                                                                                                                                                                                                                                                 |
+| `resultado: sem documento`                                           | O processamento terminou sem documento e sem código de diagnóstico. Procure o [suporte](/docs/ajuda#pedir-ajuda) informando a chave de idempotência.                                                                                                                                                                                                                                                                                                            |
+| `resultado: COMPANY_MISMATCH`                                        | O XML não é da empresa escolhida: o original foi guardado, sem virar documento. Use a empresa de demonstração e troque `FREECORPS_IDEMPOTENCY_KEY`, porque a chave usada ficou presa à outra empresa. Os outros resultados estão no guia [Importar XML pela API](/docs/importar-xml#resultados).                                                                                                                                                                |
+| `…: curl falhou`                                                     | O curl não está instalado, a conexão TLS falhou, a resposta não chegou em 30 segundos ou a rede caiu. Confira com `curl --version` (no Windows, `curl.exe --version`) e a rede; depois rode de novo com a mesma chave de idempotência: o script consulta a importação antes de reenviar.                                                                                                                                                                        |
+| `…: resposta sem JSON`                                               | A URL não é a da API, ou um proxy respondeu no lugar dela. Confira a URL e rode de novo com a mesma chave de idempotência.                                                                                                                                                                                                                                                                                                                                      |
+| `…: RATE_LIMITED`                                                    | HTTP 429. A chave passou de 60 chamadas por minuto, contando as do próprio script e as de qualquer programa com a mesma chave; ou a organização passou de 120 por minuto, somando todas as chaves; ou, na reserva, acabou a cota do plano. Na espera do processamento, o script aguarda o `Retry-After` e tenta de novo sozinho. Nas outras etapas, espere um minuto e rode de novo com a mesma chave de idempotência; se repetir, veja <Ui>Uso e limites</Ui>. |
+
+Os demais códigos estão em [códigos de erro](/docs/contrato#erros).
+
+## O que aconteceu [#o-que-aconteceu]
+
+O script fez a mesma reserva duas vezes, com a mesma `Idempotency-Key`. A segunda chamada devolveu a primeira importação com `reused: true`, e por isso nada foi duplicado. Execute o script de novo com a mesma chave e ele devolve o mesmo `importId`, `operationId` e `documentId`, sem enviar o XML outra vez. Com outra chave, a reserva é nova, mas o XML é o mesmo e a nota continua sendo um documento só.
+
+Importar um XML prova que ele foi lido e preservado. Não prova que a nota foi autorizada pelo fisco.
+
+## Próximos passos [#proximos]
+
+- Entenda cada etapa da importação em [Importar XML pela API](/docs/importar-xml). Para enviar XMLs sem programar, use [Importar XML pelo painel](/docs/importar-pelo-painel).
+- Receba o aviso da nota importada em [Receber webhooks](/docs/webhooks). Esse passo pede também o escopo `webhooks:manage`.
+- Faça a mesma jornada em TypeScript com o [SDK](/docs/sdk), publicado no npm.

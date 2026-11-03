@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "reason": "Additional versions resolved by npm during clean tarball installation; do not change bun.lock. @nodable/entities@3.1.0 comes from fast-xml-parser@5.11.1 dependency ^3.0.0; strnum@2.5.1 (published 2026-10-10, same MIT license and anynum dependency as 2.4.2, two parsing fixes) comes from fast-xml-parser@5.11.2 dependency ^2.4.2; is-unsafe@2.0.3 (published 2026-11-03 with npm provenance, same MIT license, no dependencies or install scripts, adds entity decoding to the HTML/XML/SVG contexts) comes from fast-xml-parser@5.11.2 dependency ^2.0.0.",
+  "packages": [
+    {
+      "id": "@nodable/entities@3.1.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40nodable%2Fentities/3.1.0",
+      "integrity": "sha512-LsS/DjHr+uDM647Gru/cA8+J3a3HfhttwCKLyuoyN7yXTFCxKBtSgMQBvrW9yNPa2/zDRUNuGPaH5QUFoa4arQ==",
+      "repository": "git+https://github.com/nodable/val-parsers.git",
+      "gitHead": "ac48e7ea591da372be023a481875c747535812b3",
+      "licenseSource": "https://github.com/nodable/val-parsers/blob/ac48e7ea591da372be023a481875c747535812b3/LICENSE"
+    },
+    {
+      "id": "strnum@2.5.1",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/strnum/2.5.1",
+      "integrity": "sha512-UM4nTLWzQiDBseVxUGxN0wJzIk0UU89Qi7pKXz9qISo+lhviJikTuikBsK/oFRlpvYHvSdz0TVoLyQ+sEpYwxA==",
+      "repository": "git+https://github.com/NaturalIntelligence/strnum.git",
+      "gitHead": "5aa0a504335d30d761c0b79865b40eb80da5a2ab",
+      "licenseSource": "https://github.com/NaturalIntelligence/strnum/blob/5aa0a504335d30d761c0b79865b40eb80da5a2ab/LICENSE"
+    },
+    {
+      "id": "is-unsafe@2.0.3",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/is-unsafe/2.0.3",
+      "integrity": "sha512-ZBllczCCO267vgdFb6Tq3pv+LhHaCiGMdr+ZsuL+OopruAg7S+3ZDs1vD0RPC0uSrkjzbraxaGjtX1YBxjPeFQ==",
+      "repository": "git+https://github.com/NaturalIntelligence/is-unsafe.git",
+      "gitHead": "ed7a8d05b52cdc7e622354de28eb019229cef4b7",
+      "licenseSource": "https://github.com/NaturalIntelligence/is-unsafe/blob/ed7a8d05b52cdc7e622354de28eb019229cef4b7/LICENSE"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@freecorps/docs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSING.md",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "@freecorps/contracts": "workspace:*",
+    "@react-router/node": "8.5.0",
+    "fumadocs-core": "16.17.8",
+    "fumadocs-mdx": "15.4.10",
+    "fumadocs-openapi": "12.5.5",
+    "fumadocs-ui": "16.17.8",
+    "react": "~19.2.9",
+    "react-dom": "~19.2.9",
+    "react-router": "8.5.0",
+    "shiki": "4.5.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@react-router/dev": "8.5.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/mdx": "^2.0.13",
+    "tailwindcss": "^4.3.3"
+  }
+}

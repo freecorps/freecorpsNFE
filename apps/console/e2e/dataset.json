@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "milestone": "M0",
+  "source": "private pre-provisioned validation accounts",
+  "roles": ["operator", "viewer", "none"],
+  "fiscalData": "none",
+  "seeding": "No data writes; each browser creates and revokes its own session.",
+  "pending": [
+    "M1: two organizations, projects, companies and grants; idempotent seed scoped by run ID",
+    "M2: full document, summary without XML, events, duplicate and invalid XML",
+    "M3: API keys, webhook collector and source failures",
+    "M4: synthetic certificate and simulated capture states"
+  ]
+}

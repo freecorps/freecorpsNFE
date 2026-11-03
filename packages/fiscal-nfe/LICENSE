@@ -1,0 +1,190 @@
+LICENÇA DE CÓDIGO DISPONÍVEL FREECORPS 1.0
+Identificador: LicenseRef-Freecorps-Source-Available-1.0
+
+Copyright (c) 2026 FREECORPS TECNOLOGIA DA INFORMACAO LTDA
+CNPJ: 63.113.119/0001-90
+
+1. Objeto e definições
+
+Licenciante é FREECORPS TECNOLOGIA DA INFORMACAO LTDA, identificada acima.
+Software é o código do freecorpsNFE disponibilizado sob esta licença, incluindo
+plataforma, interface administrativa, motores fiscais, bibliotecas e alterações
+ou obras derivadas desse código. Materiais com licença própria, identificados
+em LICENSING.md, não integram essa concessão. Em particular, os arquivos
+expressamente licenciados em MIT e os componentes de terceiros conservam seus
+termos próprios; esta licença não restringe direitos concedidos por eles.
+
+Você é a pessoa física ou jurídica que exerce os direitos desta licença.
+Grupo significa você e as pessoas jurídicas sob seu controle, que o controlem
+ou estejam sob controle comum. Controle exige poder de dirigir a gestão por
+maioria dos direitos de voto ou por acordo vinculante equivalente. Relações
+de franquia, associação, clientela ou participação minoritária, por si sós,
+não constituem grupo.
+
+Uso interno é operar o Software para as atividades e obrigações próprias de
+você ou de seu grupo. Não inclui operar processos fiscais de clientes,
+franqueados, associados ou outros terceiros independentes, mesmo mediante
+procuração, contrato de contabilidade ou uso de credenciais desses terceiros.
+A emissão de documento de venda própria para um cliente e o recebimento de
+documento de um fornecedor são uso interno, não atendimento fiscal a terceiros.
+
+Oferta concorrente é disponibilizar a terceiros, por meio do Software ou de
+obra derivada, funcionalidades fiscais ou de gestão de documentos que
+substituam, total ou parcialmente, as funcionalidades do freecorpsNFE.
+Inclui emissão, recepção, consulta, validação, processamento, armazenamento,
+distribuição e automação de documentos fiscais. Pode assumir a forma de
+produto, módulo, biblioteca, API, serviço hospedado ou instalação local,
+inclusive integrada a ERP ou produto maior. A definição independe de cobrança,
+gratuidade, marca, interface, linguagem ou plataforma. As permissões expressas
+das seções 3 e 4 prevalecem sobre esta definição nos limites nelas previstos.
+Esta licença não restringe software desenvolvido independentemente que não
+use nem derive do código coberto, nem o exercício de direitos sobre materiais
+licenciados separadamente.
+
+2. Concessão e aceitação
+
+Sujeito às condições desta licença, o Licenciante concede licença mundial,
+não exclusiva e sem royalties para executar, estudar, copiar, modificar e
+distribuir o Software somente nos usos permitidos. Exercendo esses direitos,
+você aceita as condições. Direitos concedidos por lei independentemente desta
+licença, inclusive limitações e exceções legais, permanecem preservados.
+
+3. Usos permitidos
+
+São permitidos uso interno pessoal ou empresarial, estudo, avaliação, testes,
+pesquisa e desenvolvimento de melhorias. Não há limite de usuários, empresas
+do mesmo grupo ou quantidade de documentos para uso interno.
+
+Você pode manter e compartilhar repositórios de código-fonte, forks, patches
+e alterações para estudo, auditoria, colaboração e uso interno permitido.
+Repositórios devem conservar esta licença e os avisos, identificar alterações
+e informar que não constituem uma distribuição oficial. É permitido ao
+destinatário compilar esse código para uso permitido. Essa permissão não
+autoriza anunciar ou oferecer o fork como produto substituto, nem distribuir
+instaladores, imagens ou pacotes de execução como oferta concorrente. Artefatos
+de teste restritos aos participantes da colaboração são permitidos para testes.
+
+Integrar um sistema à API operada pelo Licenciante não constitui oferta
+concorrente por si só. O acesso, preço, disponibilidade e demais condições
+desse serviço dependem de contrato separado; esta licença não concede conta,
+credenciais, infraestrutura ou serviço gratuito.
+
+4. Prestadores de serviços técnicos
+
+Você pode contratar e remunerar terceiros para instalar, configurar, corrigir,
+customizar, dar suporte e administrar o Software exclusivamente para seu uso
+permitido. O prestador recebe os direitos necessários a esse trabalho e fica
+sujeito a esta licença. Ele não adquire direito de oferecer uma plataforma
+fiscal a terceiros por meio dessa contratação.
+
+A instalação deve ser dedicada a um cliente e seu grupo e permanecer sob
+controle efetivo desse cliente, que pode acessar e exportar seus dados, obter
+o código correspondente, substituir o prestador e continuar operando sem
+depender de uma licença ou credencial exclusiva do prestador. O prestador
+atua por conta e sob instruções do cliente, inclusive ao administrar recursos
+de infraestrutura contratados pelo cliente.
+
+Essa permissão não cobre operação compartilhada para clientes independentes,
+revenda ou sublicenciamento do Software, nem oferta de serviço fiscal
+hospedado pelo prestador como produto próprio, ainda que haja instâncias
+isoladas por cliente. Essas ofertas exigem autorização da seção 5.
+Fornecer infraestrutura computacional genérica, sem oferecer o Software como
+serviço fiscal, não é uma oferta concorrente por si só.
+
+5. Ofertas que exigem autorização específica
+
+É necessária autorização prévia e expressa por escrito do Licenciante para
+oferta concorrente, gratuita ou remunerada, ou para atender processos fiscais
+de terceiros fora das permissões da seção 4. Isso inclui incorporar o motor
+em ERP oferecido a clientes, operar emissão para clientes de contabilidade,
+franquias ou associações independentes e distribuir uma versão substituta.
+Trocar a marca, oferecer gratuitamente, cobrar apenas hospedagem ou incluir
+o Software em produto maior não dispensa essa autorização.
+
+O Licenciante pode conceder licenças comerciais ou outras autorizações em
+instrumento separado. A autorização deve identificar beneficiário, escopo e
+condições. Direitos ou dispensas não expressamente previstos nela continuam
+sujeitos a esta licença. O silêncio do Licenciante não constitui autorização.
+
+6. Código correspondente e distribuição
+
+Ao fornecer a terceiros uma versão modificada do Software, seja como
+código-fonte, executável ou acesso remoto às funcionalidades dessa versão
+modificada, você deve oferecer a esses destinatários ou usuários, sem custo
+adicional, o código-fonte correspondente da versão fornecida. Inclua as
+modificações e os arquivos e instruções necessários para
+compilar e instalar as partes cobertas. Faça a oferta de forma clara junto
+da distribuição ou em local acessível aos usuários do serviço, mantendo-a
+disponível enquanto fornecer a versão ou operar o serviço.
+
+O código deve ser fornecido sob esta mesma licença, preservadas as licenças
+dos componentes separados. Não é obrigatório enviar contribuição ao projeto
+original nem disponibilizar publicamente mudanças usadas apenas internamente.
+Fornecer código ao prestador que atua nos limites da seção 4 não torna a
+instalação um serviço público e não exige publicar alterações internas.
+
+Esta obrigação também se aplica a parceiros autorizados pela seção 5, salvo
+dispensa expressa em seu instrumento separado. Disponibilizar código não
+autoriza uma oferta concorrente que de outro modo seja vedada. Não se exige
+fornecer dados fiscais, pessoais ou de clientes, certificados, senhas, chaves
+privadas ou segredos de implantação. Use configurações de exemplo sem segredos.
+Módulos independentes que não contenham nem derivem de código coberto não
+precisam ser abertos por mera comunicação com o Software.
+
+Toda cópia distribuída deve acompanhar esta licença, os avisos de copyright,
+as atribuições e as licenças de terceiros aplicáveis. Identifique de forma
+clara que arquivos ou versões foram modificados. Cada destinatário recebe
+diretamente do Licenciante as permissões desta licença; você não pode conceder
+direitos mais amplos sobre o código coberto.
+
+7. Marcas e autoria
+
+Esta licença não concede direito sobre nomes, logotipos ou marcas do
+Licenciante, exceto referência factual à origem do Software e preservação
+dos avisos exigidos. Não anuncie parceria, aprovação ou versão oficial sem
+autorização. Versões modificadas oferecidas nos usos permitidos devem ser
+identificadas como não oficiais. Não se exige exibir logotipo na interface
+de uma instalação interna. Avisos legais e atribuições devem ser preservados.
+
+8. Patentes e outros direitos
+
+O Licenciante concede, para os usos permitidos, licença mundial, não exclusiva
+e sem royalties sobre reivindicações de patentes que ele possa licenciar e
+que sejam necessariamente infringidas pelo uso do código que forneceu.
+Se você iniciar demanda alegando que esse código infringe patente sua, essa
+concessão de patente se encerra para você. Nenhuma licença de patente de
+terceiro ou sobre combinações não fornecidas é presumida.
+
+Contribuições recebidas dependem dos termos próprios de contribuição. Esta
+licença não presume cessão de autoria nem permite ao Licenciante conceder
+direitos que não possua. Direitos anteriores validamente concedidos sob
+outras licenças permanecem preservados para suas respectivas versões.
+
+9. Descumprimento
+
+Direitos sob esta licença dependem do cumprimento de suas condições. No
+primeiro aviso escrito de descumprimento, você terá 32 dias do recebimento
+para cessar a infração e tomar medidas razoáveis para corrigir seus efeitos.
+Corrigido o descumprimento nesse prazo, os direitos continuam. Sem correção,
+ou em nova infração após esse primeiro aviso, os direitos se encerram,
+ressalvados os direitos que a lei assegure independentemente desta licença.
+O encerramento não elimina obrigações já constituídas nem os direitos de
+destinatários que cumpram esta licença.
+
+10. Ausência de garantia e responsabilidade
+
+Na extensão permitida pela lei aplicável, o Software é fornecido no estado
+em que se encontra, sem garantia de adequação, funcionamento ininterrupto,
+correção, não infração ou conformidade fiscal. O Licenciante e os demais
+titulares não respondem por danos decorrentes de seu uso nos limites em que
+a lei permitir excluir essa responsabilidade. Esta cláusula não afasta
+responsabilidades que a lei não permita excluir.
+
+11. Versão e alcance
+
+Esta é a versão 1.0 da licença. Uma nova versão publicada pelo Licenciante não
+altera retroativamente os termos aplicáveis a uma cópia já recebida. Não há
+conversão automática para outra licença nem autorização para escolher versão
+futura. Um acordo escrito separado pode conceder direitos adicionais.
+Esta licença é de código disponível com restrições de uso e concorrência.
+Não constitui licença de software livre ou open source.

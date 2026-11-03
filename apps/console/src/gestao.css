@@ -1,0 +1,692 @@
+/*
+ * Telas de gestão no sistema visual novo: organizações e convite, membros, configurações,
+ * integrações (projetos, chaves, webhooks, primeira chamada), uso e limites, operação e
+ * suporte e diagnóstico. Camada `ui`, só tokens de `ui/tokens.css`; os componentes vêm de
+ * `ui/`. Aqui ficam apenas os arranjos que essas telas compõem com eles.
+ */
+@layer ui {
+  /* ---------------------------------------------------------------- Arranjos */
+  .gestao-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+  .gestao-grid--even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gestao-grid--thirds {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .gestao-narrow-page {
+    width: 100%;
+    max-width: 640px;
+  }
+  .gestao-closure {
+    width: 100%;
+    max-width: var(--content-width);
+    margin: 0 auto var(--space-6);
+  }
+  .gestao-closure .ui-callout p + p {
+    margin-top: var(--space-2);
+  }
+  /* Os termos de uso inteiros cabem no diálogo de aceite rolando só o texto. */
+  .terms-of-use__text {
+    max-height: 50dvh;
+    overflow-y: auto;
+  }
+  .gestao-period {
+    width: 200px;
+  }
+  .gestao-divider {
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .gestao-heading-focus:focus-visible {
+    outline-offset: 4px;
+  }
+  .gestao-role-select {
+    width: auto;
+    min-width: 160px;
+    min-height: var(--control-h-sm);
+  }
+  .ui-actions > .ui-select-wrap {
+    flex: 0 1 auto;
+  }
+  .gestao-stack {
+    display: grid;
+    gap: var(--space-6);
+    min-width: 0;
+  }
+  .gestao-inline-form {
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3) var(--space-4);
+  }
+  .gestao-inline-form > .ui-field {
+    flex: 1 1 220px;
+  }
+  .gestao-inline-form > .gestao-narrow {
+    flex: 0 1 200px;
+  }
+  .gestao-inline-form > .ui-actions {
+    flex: 0 0 auto;
+  }
+  .gestao-inline-form > .ui-help,
+  .gestao-inline-form > .ui-callout {
+    flex: 1 0 100%;
+  }
+  .gestao-help {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+  .gestao-heading {
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .gestao-heading:focus-visible {
+    outline-offset: 4px;
+  }
+
+  /* ---------------------------------------------------------------- Listas em cartões */
+  .gestao-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .gestao-list > li {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .gestao-list > li:first-child {
+    border-top: 0;
+  }
+  .ui-card:not(.ui-card--flush) .gestao-list > li {
+    padding-inline: 0;
+  }
+  .ui-card:not(.ui-card--flush) .gestao-list > li:first-child {
+    padding-top: 0;
+  }
+  .ui-card:not(.ui-card--flush) .gestao-list > li:last-child {
+    padding-bottom: 0;
+  }
+  .gestao-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    min-width: 0;
+  }
+  .gestao-row__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    min-width: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .gestao-meta {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+  .gestao-cell {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .gestao-cell > :is(p, span) {
+    margin: 0;
+  }
+  .gestao-cell .gestao-meta {
+    font-size: var(--text-xs);
+  }
+  .gestao-time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .gestao-footer {
+    padding: var(--space-3) var(--space-6);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .gestao-footer:empty {
+    display: none;
+  }
+  .gestao-footer > .ui-pagination,
+  .gestao-footer > .ui-button {
+    margin: 0;
+  }
+  .ui-card--flush > .gestao-body {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-6);
+  }
+  /* Tabela e vazio dentro de um cartão: o cartão já é a superfície. */
+  .ui-card--flush > .ui-table-card {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ui-card .ui-empty {
+    padding: var(--space-8) var(--space-6);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .ui-card:not(.ui-card--flush) .ui-empty {
+    padding: var(--space-4) 0;
+  }
+
+  /* Lista de organizações: cada linha é um link inteiro. */
+  .gestao-links {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .gestao-links > li + li {
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .gestao-links a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 56px;
+    padding: var(--space-3) var(--space-6);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background-color var(--duration-fast) ease;
+  }
+  .gestao-links a > .gestao-cell {
+    flex: 1;
+  }
+  .gestao-links a > .ui-icon {
+    color: var(--color-text-muted);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .gestao-links a:hover {
+      background: var(--color-surface-hover);
+    }
+  }
+  .gestao-links a:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* ---------------------------------------------------------------- Formulários compostos */
+  .gestao-fieldset {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .gestao-fieldset > legend {
+    float: left;
+    width: 100%;
+    margin: 0 0 var(--space-1);
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+  }
+  .gestao-fieldset > legend + * {
+    clear: both;
+  }
+  .gestao-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-2) var(--space-4);
+  }
+  .gestao-choice {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .gestao-choice > .ui-help,
+  .gestao-choice > .ui-disabled-reason {
+    padding-left: 28px;
+  }
+  .gestao-details {
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .gestao-details > summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-primary-text);
+    cursor: pointer;
+    list-style: none;
+  }
+  .gestao-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .gestao-details > summary > .ui-icon {
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .gestao-details[open] > summary > .ui-icon {
+    transform: rotate(180deg);
+  }
+  .gestao-details > :not(summary) {
+    margin: 0;
+    padding: 0 var(--space-3) var(--space-3);
+  }
+  .gestao-details--plain {
+    background: transparent;
+    box-shadow: none;
+  }
+  .gestao-details--plain > summary {
+    min-height: 0;
+    padding: 0;
+  }
+  .gestao-details--plain > :not(summary) {
+    padding: var(--space-2) 0 0;
+  }
+  .gestao-scope-group + .gestao-scope-group {
+    margin-top: var(--space-3);
+  }
+  .gestao-scope-group > p {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+  }
+  .gestao-scope-group code {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+  .gestao-submit {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-2);
+  }
+
+  /* ---------------------------------------------------------------- Código e segredo */
+  /* Primeira chamada: a long line of a `pre` scrolls inside it instead of widening the columns
+     (and the page) past 375 px. Scoped so other stacks keep their content-sized columns. */
+  .gestao-quickstart,
+  .gestao-quickstart :is(.gestao-steps, .ui-stack) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gestao-code {
+    position: relative;
+    min-width: 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .gestao-code > pre {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    padding-right: 112px;
+    overflow-x: auto;
+    border: 0;
+    border-radius: inherit;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-text);
+    background: transparent;
+    white-space: pre;
+    tab-size: 2;
+  }
+  .gestao-code > pre:focus-visible {
+    outline-offset: 0;
+  }
+  .gestao-code > .ui-copy {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    flex-direction: row-reverse;
+  }
+  .gestao-code > .ui-copy .ui-copy__feedback:empty {
+    display: none;
+  }
+  .gestao-code > .ui-copy .ui-copy__feedback {
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-float);
+    box-shadow: var(--elevation-0);
+  }
+  .gestao-code--plain > pre {
+    padding-right: var(--space-4);
+  }
+  .gestao-secret {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .gestao-secret > .ui-input {
+    flex: 1 1 280px;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+  .gestao-steps {
+    display: grid;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: gestao-step;
+  }
+  .gestao-steps > li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--space-2) var(--space-4);
+    counter-increment: gestao-step;
+  }
+  .gestao-steps > li::before {
+    content: counter(gestao-step);
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-on-primary);
+    background: var(--color-primary);
+  }
+  .gestao-steps > li > div {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .gestao-steps h3 {
+    margin: 4px 0 0;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+  .gestao-steps p {
+    margin: 0;
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+    overflow-wrap: anywhere;
+  }
+  :is(.gestao-steps, .gestao-meta, .ui-help, .ui-callout, .ui-dl, .ui-table, .ui-card__description)
+    :not(pre)
+    > code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: inherit;
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------------------------------------------------------------- Uso e limites */
+  /* Segunda linha de um valor da lista: explica o valor sem virar outro item. */
+  .gestao-dl-note {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  /* Abre o painel de cada ambiente: diz de quem é o saldo antes dos números. */
+  .gestao-panel-lead {
+    max-width: 68ch;
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text-muted);
+  }
+  /* Na aba do ambiente, o aviso de limite é texto: a aba não acende por cor. */
+  .gestao-tab-note {
+    margin-inline-start: var(--space-2);
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+  /* O ponto é só visual; o leitor de tela ouve "Sandbox, limite atingido". */
+  .gestao-tab-note::before {
+    content: "· ";
+    content: "· " / "";
+  }
+  /* No telefone, as duas abas com a marca não cabem lado a lado: a marca desce para uma
+     segunda linha, em vez de a aba atual ficar cortada na borda. */
+  @media (max-width: 480px) {
+    .ui-tabs__tab:has(> .gestao-tab-note) {
+      padding-block: var(--space-1);
+      line-height: 1.25;
+      white-space: normal;
+    }
+    .gestao-tab-note {
+      display: block;
+      margin-inline-start: 0;
+      font-size: var(--text-xs);
+    }
+    .gestao-tab-note::before {
+      content: none;
+    }
+  }
+  .gestao-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+  }
+  .gestao-metric {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-1);
+    box-shadow: var(--elevation-1);
+  }
+  .gestao-metric__label {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+  }
+  .gestao-metric__value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .gestao-metric__value > span {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+    letter-spacing: 0;
+    color: var(--color-text-muted);
+  }
+  .gestao-meter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+  }
+  .gestao-meter__track {
+    position: relative;
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .gestao-meter__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    /* Só existe com consumo: em 0% a trilha fica vazia. */
+    min-width: 2px;
+    border-radius: inherit;
+    background: var(--color-success-dot);
+  }
+  .gestao-meter[data-state="warning"] .gestao-meter__fill {
+    background: var(--color-warning-dot);
+  }
+  .gestao-meter[data-state="full"] .gestao-meter__fill {
+    background: var(--color-danger-dot);
+  }
+  @media (forced-colors: active) {
+    .gestao-meter__fill {
+      background: CanvasText;
+    }
+  }
+
+  /* ---------------------------------------------------------------- Operação */
+  .gestao-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1px;
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--color-border-subtle);
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
+  }
+  .gestao-stats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-1);
+  }
+  .gestao-stats dt {
+    order: 2;
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+  .gestao-stats dd {
+    order: 1;
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .gestao-stats dd small {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+  .gestao-callout-heading {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .gestao-reference {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+  }
+  .gestao-reference > code {
+    padding: 4px var(--space-2);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--ring);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------------------------------------------------------------- Zona de perigo */
+  .gestao-danger {
+    box-shadow:
+      var(--elevation-1),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-danger-dot) 45%, transparent);
+  }
+
+  @media (max-width: 960px) {
+    .gestao-grid,
+    .gestao-grid--even {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .gestao-grid--thirds {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .gestao-list > li,
+    .gestao-links a,
+    .gestao-footer,
+    .ui-card--flush > .gestao-body {
+      padding-inline: var(--space-4);
+    }
+    .ui-card--flush .ui-empty {
+      padding: var(--space-6) var(--space-4);
+    }
+    .gestao-metric {
+      padding: var(--space-4);
+    }
+    .gestao-metric__value {
+      font-size: var(--text-xl);
+    }
+    .gestao-code > pre {
+      padding-right: var(--space-4);
+      padding-top: 52px;
+    }
+    /* Na Primeira chamada o botão de copiar fica abaixo do código: sem a faixa para ele. */
+    .gestao-quickstart .gestao-code--plain > pre {
+      padding-top: var(--space-3);
+    }
+    .gestao-steps > li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .gestao-grid--thirds {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .gestao-period {
+      width: 100%;
+    }
+    .gestao-inline-form > .ui-actions,
+    .gestao-inline-form > .gestao-narrow {
+      flex: 1 1 100%;
+    }
+  }
+}

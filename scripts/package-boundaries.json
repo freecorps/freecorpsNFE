@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "workspaces": {
+    "platform": {
+      "kind": "platform"
+    },
+    "apps/console": {
+      "kind": "platform"
+    },
+    "apps/docs": {
+      "kind": "platform"
+    },
+    "packages/contracts": {
+      "kind": "pure",
+      "workspaces": ["@freecorps/fiscal-core"],
+      "external": ["zod"]
+    },
+    "packages/fiscal-core": {
+      "kind": "pure",
+      "workspaces": [],
+      "external": []
+    },
+    "packages/fiscal-nfe": {
+      "kind": "node",
+      "workspaces": ["@freecorps/fiscal-core"],
+      "external": ["@xmldom/xmldom", "fast-xml-parser", "libxml2-wasm", "pdf-lib", "xml-crypto"]
+    },
+    "packages/fiscal-nfse": {
+      "kind": "node",
+      "workspaces": ["@freecorps/fiscal-core"],
+      "external": ["@xmldom/xmldom", "libxml2-wasm", "pdf-lib", "qrcode", "xml-crypto"],
+      "entryPoints": {
+        "./pure": {
+          "kind": "pure",
+          "workspaces": ["@freecorps/fiscal-core"],
+          "external": []
+        }
+      }
+    },
+    "packages/sdk": {
+      "kind": "pure",
+      "workspaces": ["@freecorps/contracts"],
+      "external": ["zod"]
+    }
+  }
+}

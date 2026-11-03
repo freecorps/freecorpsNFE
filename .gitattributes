@@ -1,0 +1,10 @@
+# Match the formatter on every platform, including core.autocrlf=true on Windows.
+* text=auto eol=lf
+# These hashes/signatures identify exact bytes, including official legacy encodings.
+packages/fiscal-nfe/schemas/**/*.xsd -text -whitespace
+packages/fiscal-nfse/schemas/**/*.xsd -text -whitespace
+tests/fixtures/nfe/**/*.xml -text
+# Accepted terms are identified by the SHA-256 of their bytes: LF everywhere, never rewritten.
+docs/termos/arquivo/** text eol=lf -whitespace
+# Preserve whitespace in verbatim third-party copyright/license notices.
+packages/*/THIRD_PARTY_NOTICES.txt -whitespace

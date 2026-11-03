@@ -1,0 +1,555 @@
+{
+  "format": "document-footprint-after/1",
+  "sizeMethod": "getDocumentSize de convex/values, IDs de 32 caracteres, sem índices",
+  "environment": "sandbox (convex-test)",
+  "baseline": "document-footprint.json (B1)",
+  "scenarios": [
+    {
+      "id": "nfe-1",
+      "model": "55",
+      "items": 1,
+      "notes": 1,
+      "versionsPerNote": 2,
+      "clearedVersions": 2,
+      "blobsPerNote": 4,
+      "fileBytesPerNote": 7743,
+      "documentBytesPerNote": 5872,
+      "allTablesBytesPerNote": 31881,
+      "tables": {
+        "capacityAccounts": {
+          "rows": 1,
+          "bytes": 161
+        },
+        "capacityTotals": {
+          "rows": 2,
+          "bytes": 405
+        },
+        "capacityEvents": {
+          "rows": 2,
+          "bytes": 526
+        },
+        "capacityFiles": {
+          "rows": 4,
+          "bytes": 740
+        },
+        "capacityRecords": {
+          "rows": 11,
+          "bytes": 2004
+        },
+        "operationalRetention": {
+          "rows": 1,
+          "bytes": 194
+        },
+        "operationalAudit": {
+          "rows": 18,
+          "bytes": 7575
+        },
+        "usageEvents": {
+          "rows": 7,
+          "bytes": 2058
+        },
+        "usageTotals": {
+          "rows": 4,
+          "bytes": 1017
+        },
+        "importMaintenance": {
+          "rows": 1,
+          "bytes": 129
+        },
+        "imports": {
+          "rows": 2,
+          "bytes": 712
+        },
+        "importFiles": {
+          "rows": 2,
+          "bytes": 936
+        },
+        "fiscalDocuments": {
+          "rows": 1,
+          "bytes": 819
+        },
+        "documentArtifacts": {
+          "rows": 2,
+          "bytes": 958
+        },
+        "documentVersions": {
+          "rows": 2,
+          "bytes": 2411
+        },
+        "documentFiscalEvidence": {
+          "rows": 2,
+          "bytes": 836
+        },
+        "documentListings": {
+          "rows": 4,
+          "bytes": 848
+        },
+        "outboxEvents": {
+          "rows": 6,
+          "bytes": 4454
+        },
+        "operations": {
+          "rows": 2,
+          "bytes": 2278
+        },
+        "idempotencyRecords": {
+          "rows": 2,
+          "bytes": 682
+        },
+        "operationAttempts": {
+          "rows": 2,
+          "bytes": 426
+        },
+        "operationAudit": {
+          "rows": 4,
+          "bytes": 778
+        },
+        "operationReceipts": {
+          "rows": 4,
+          "bytes": 934
+        }
+      },
+      "before": {
+        "documentBytesPerNote": 22725,
+        "allTablesBytesPerNote": 48542
+      },
+      "documentRatio": 0.258
+    },
+    {
+      "id": "nfe-5",
+      "model": "55",
+      "items": 5,
+      "notes": 1,
+      "versionsPerNote": 2,
+      "clearedVersions": 2,
+      "blobsPerNote": 4,
+      "fileBytesPerNote": 10257,
+      "documentBytesPerNote": 5874,
+      "allTablesBytesPerNote": 31883,
+      "tables": {
+        "capacityAccounts": {
+          "rows": 1,
+          "bytes": 161
+        },
+        "capacityTotals": {
+          "rows": 2,
+          "bytes": 405
+        },
+        "capacityEvents": {
+          "rows": 2,
+          "bytes": 526
+        },
+        "capacityFiles": {
+          "rows": 4,
+          "bytes": 740
+        },
+        "capacityRecords": {
+          "rows": 11,
+          "bytes": 2004
+        },
+        "operationalRetention": {
+          "rows": 1,
+          "bytes": 194
+        },
+        "operationalAudit": {
+          "rows": 18,
+          "bytes": 7575
+        },
+        "usageEvents": {
+          "rows": 7,
+          "bytes": 2058
+        },
+        "usageTotals": {
+          "rows": 4,
+          "bytes": 1017
+        },
+        "importMaintenance": {
+          "rows": 1,
+          "bytes": 129
+        },
+        "imports": {
+          "rows": 2,
+          "bytes": 712
+        },
+        "importFiles": {
+          "rows": 2,
+          "bytes": 936
+        },
+        "fiscalDocuments": {
+          "rows": 1,
+          "bytes": 819
+        },
+        "documentArtifacts": {
+          "rows": 2,
+          "bytes": 958
+        },
+        "documentVersions": {
+          "rows": 2,
+          "bytes": 2413
+        },
+        "documentFiscalEvidence": {
+          "rows": 2,
+          "bytes": 836
+        },
+        "documentListings": {
+          "rows": 4,
+          "bytes": 848
+        },
+        "outboxEvents": {
+          "rows": 6,
+          "bytes": 4454
+        },
+        "operations": {
+          "rows": 2,
+          "bytes": 2278
+        },
+        "idempotencyRecords": {
+          "rows": 2,
+          "bytes": 682
+        },
+        "operationAttempts": {
+          "rows": 2,
+          "bytes": 426
+        },
+        "operationAudit": {
+          "rows": 4,
+          "bytes": 778
+        },
+        "operationReceipts": {
+          "rows": 4,
+          "bytes": 934
+        }
+      },
+      "before": {
+        "documentBytesPerNote": 28609,
+        "allTablesBytesPerNote": 55138
+      },
+      "documentRatio": 0.205
+    },
+    {
+      "id": "nfe-20",
+      "model": "55",
+      "items": 20,
+      "notes": 1,
+      "versionsPerNote": 2,
+      "clearedVersions": 2,
+      "blobsPerNote": 4,
+      "fileBytesPerNote": 19534,
+      "documentBytesPerNote": 5874,
+      "allTablesBytesPerNote": 31884,
+      "tables": {
+        "capacityAccounts": {
+          "rows": 1,
+          "bytes": 161
+        },
+        "capacityTotals": {
+          "rows": 2,
+          "bytes": 405
+        },
+        "capacityEvents": {
+          "rows": 2,
+          "bytes": 526
+        },
+        "capacityFiles": {
+          "rows": 4,
+          "bytes": 740
+        },
+        "capacityRecords": {
+          "rows": 11,
+          "bytes": 2004
+        },
+        "operationalRetention": {
+          "rows": 1,
+          "bytes": 194
+        },
+        "operationalAudit": {
+          "rows": 18,
+          "bytes": 7575
+        },
+        "usageEvents": {
+          "rows": 7,
+          "bytes": 2058
+        },
+        "usageTotals": {
+          "rows": 4,
+          "bytes": 1017
+        },
+        "importMaintenance": {
+          "rows": 1,
+          "bytes": 129
+        },
+        "imports": {
+          "rows": 2,
+          "bytes": 712
+        },
+        "importFiles": {
+          "rows": 2,
+          "bytes": 936
+        },
+        "fiscalDocuments": {
+          "rows": 1,
+          "bytes": 819
+        },
+        "documentArtifacts": {
+          "rows": 2,
+          "bytes": 958
+        },
+        "documentVersions": {
+          "rows": 2,
+          "bytes": 2413
+        },
+        "documentFiscalEvidence": {
+          "rows": 2,
+          "bytes": 836
+        },
+        "documentListings": {
+          "rows": 4,
+          "bytes": 848
+        },
+        "outboxEvents": {
+          "rows": 6,
+          "bytes": 4454
+        },
+        "operations": {
+          "rows": 2,
+          "bytes": 2279
+        },
+        "idempotencyRecords": {
+          "rows": 2,
+          "bytes": 682
+        },
+        "operationAttempts": {
+          "rows": 2,
+          "bytes": 426
+        },
+        "operationAudit": {
+          "rows": 4,
+          "bytes": 778
+        },
+        "operationReceipts": {
+          "rows": 4,
+          "bytes": 934
+        }
+      },
+      "before": {
+        "documentBytesPerNote": 50805,
+        "allTablesBytesPerNote": 80005
+      },
+      "documentRatio": 0.116
+    },
+    {
+      "id": "nfse-single",
+      "model": "nfse",
+      "items": 0,
+      "notes": 1,
+      "versionsPerNote": 2,
+      "clearedVersions": 2,
+      "blobsPerNote": 3,
+      "fileBytesPerNote": 2071,
+      "documentBytesPerNote": 3995,
+      "allTablesBytesPerNote": 17742,
+      "tables": {
+        "capacityAccounts": {
+          "rows": 1,
+          "bytes": 161
+        },
+        "capacityTotals": {
+          "rows": 2,
+          "bytes": 405
+        },
+        "capacityEvents": {
+          "rows": 1,
+          "bytes": 263
+        },
+        "capacityFiles": {
+          "rows": 3,
+          "bytes": 555
+        },
+        "capacityRecords": {
+          "rows": 9,
+          "bytes": 1630
+        },
+        "operationalRetention": {
+          "rows": 1,
+          "bytes": 194
+        },
+        "operationalAudit": {
+          "rows": 8,
+          "bytes": 3357
+        },
+        "usageEvents": {
+          "rows": 4,
+          "bytes": 1175
+        },
+        "usageTotals": {
+          "rows": 4,
+          "bytes": 1017
+        },
+        "importMaintenance": {
+          "rows": 1,
+          "bytes": 129
+        },
+        "imports": {
+          "rows": 1,
+          "bytes": 356
+        },
+        "importFiles": {
+          "rows": 1,
+          "bytes": 468
+        },
+        "fiscalDocuments": {
+          "rows": 1,
+          "bytes": 394
+        },
+        "documentArtifacts": {
+          "rows": 2,
+          "bytes": 1021
+        },
+        "documentVersions": {
+          "rows": 2,
+          "bytes": 1738
+        },
+        "documentListings": {
+          "rows": 4,
+          "bytes": 842
+        },
+        "outboxEvents": {
+          "rows": 2,
+          "bytes": 1507
+        },
+        "operations": {
+          "rows": 1,
+          "bytes": 1120
+        },
+        "idempotencyRecords": {
+          "rows": 1,
+          "bytes": 341
+        },
+        "operationAttempts": {
+          "rows": 1,
+          "bytes": 213
+        },
+        "operationAudit": {
+          "rows": 2,
+          "bytes": 389
+        },
+        "operationReceipts": {
+          "rows": 2,
+          "bytes": 467
+        }
+      },
+      "before": {
+        "documentBytesPerNote": 5288,
+        "allTablesBytesPerNote": 18665
+      },
+      "documentRatio": 0.755
+    },
+    {
+      "id": "nfse-batch-20",
+      "model": "nfse",
+      "items": 0,
+      "notes": 20,
+      "versionsPerNote": 1.05,
+      "clearedVersions": 21,
+      "blobsPerNote": 1.1,
+      "fileBytesPerNote": 1638,
+      "documentBytesPerNote": 2868,
+      "allTablesBytesPerNote": 6336,
+      "tables": {
+        "capacityAccounts": {
+          "rows": 0.05,
+          "bytes": 8
+        },
+        "capacityTotals": {
+          "rows": 0.1,
+          "bytes": 20
+        },
+        "capacityEvents": {
+          "rows": 0.05,
+          "bytes": 13
+        },
+        "capacityFiles": {
+          "rows": 1.1,
+          "bytes": 204
+        },
+        "capacityRecords": {
+          "rows": 7.1,
+          "bytes": 1285
+        },
+        "operationalRetention": {
+          "rows": 0.05,
+          "bytes": 10
+        },
+        "operationalAudit": {
+          "rows": 1.35,
+          "bytes": 578
+        },
+        "usageEvents": {
+          "rows": 1.15,
+          "bytes": 336
+        },
+        "usageTotals": {
+          "rows": 0.2,
+          "bytes": 51
+        },
+        "importMaintenance": {
+          "rows": 0.05,
+          "bytes": 6
+        },
+        "imports": {
+          "rows": 0.05,
+          "bytes": 18
+        },
+        "importFiles": {
+          "rows": 0.05,
+          "bytes": 23
+        },
+        "fiscalDocuments": {
+          "rows": 1,
+          "bytes": 395
+        },
+        "documentArtifacts": {
+          "rows": 1.05,
+          "bytes": 609
+        },
+        "documentVersions": {
+          "rows": 1.05,
+          "bytes": 1023
+        },
+        "documentListings": {
+          "rows": 4,
+          "bytes": 842
+        },
+        "outboxEvents": {
+          "rows": 1.05,
+          "bytes": 789
+        },
+        "operations": {
+          "rows": 0.05,
+          "bytes": 56
+        },
+        "idempotencyRecords": {
+          "rows": 0.05,
+          "bytes": 17
+        },
+        "operationAttempts": {
+          "rows": 0.05,
+          "bytes": 11
+        },
+        "operationAudit": {
+          "rows": 0.1,
+          "bytes": 19
+        },
+        "operationReceipts": {
+          "rows": 0.1,
+          "bytes": 23
+        }
+      },
+      "before": {
+        "documentBytesPerNote": 3784,
+        "allTablesBytesPerNote": 7057
+      },
+      "documentRatio": 0.758
+    }
+  ]
+}

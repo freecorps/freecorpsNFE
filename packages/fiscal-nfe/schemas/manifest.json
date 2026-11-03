@@ -1,0 +1,650 @@
+{
+  "version": 1,
+  "retrievedAt": "2026-10-26",
+  "sources": [
+    {
+      "id": "nfe-4.00-010g",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=EQhOQMgipXY%3D",
+      "archiveSha256": "b329ecbe7e4c05a41bfbc1527f105defb7047328acfeada7c77e1666da485eaf",
+      "nested": null
+    },
+    {
+      "id": "events-1.00-alphanumeric",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%2BpBOYTXBtbk%3D",
+      "archiveSha256": "45ceefe4dfbbfec93958283b650a2f1e1734784f4770d070b9907754de081d9b",
+      "nested": null
+    },
+    {
+      "id": "cancellation-1.01",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=0Yynu2Ck%2BbM%3D",
+      "archiveSha256": "71ccd5fcc48f9604a2a8965146df45e3b73e96e87942ab3391be0d55cc0df718",
+      "nested": null
+    },
+    {
+      "id": "distribution-1.04",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=IzuP2y0G6hk%3D",
+      "archiveSha256": "9bd6d478dd04770016783a914111f3e2cc794c6a2f2b62ac7243fb101c138740",
+      "nested": null
+    },
+    {
+      "id": "correction-1.01",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=%2B0MSTVshMl8%3D",
+      "archiveSha256": "c300695ae3344dcb0c000ec806559e7392c54f7be99599274965050112771f77",
+      "nested": null
+    },
+    {
+      "id": "manifestation-1.01",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=Q7x6aqhBAy4%3D",
+      "archiveSha256": "05877dd4a4a42ea7e1b251a2c2ecc365d3c73f3a1a9794760486db7cbe2a116e",
+      "nested": null
+    },
+    {
+      "id": "rtc-events-1.40",
+      "source": "https://www.nfe.fazenda.gov.br/portal/exibirArquivo.aspx?conteudo=kp0SXLu%2BZdI%3D",
+      "archiveSha256": "a4c57ce95b225cd8852f90bd6c39ca28ae551636ff3f67eb2602b9fa847129b2",
+      "nested": null
+    }
+  ],
+  "files": [
+    {
+      "path": "nfe-4.00-010g/e110300_v1.00.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/Evento/e110300_v1.00.xsd",
+      "sha256": "3def9bd3e19dfb3e78688afc540c049dc77f6fb11ae2603d85b6e759a7908fa6",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "3def9bd3e19dfb3e78688afc540c049dc77f6fb11ae2603d85b6e759a7908fa6"
+    },
+    {
+      "path": "nfe-4.00-010g/tiposBasico_v1.03.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/Evento/tiposBasico_v1.03.xsd",
+      "sha256": "88bae738184e4af32286a4825392adf7da458dc1fa763e2feca3b90708aa7fff",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "88bae738184e4af32286a4825392adf7da458dc1fa763e2feca3b90708aa7fff"
+    },
+    {
+      "path": "nfe-4.00-010g/DFeTiposBasicos_v1.00.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/NFe/DFeTiposBasicos_v1.00.xsd",
+      "sha256": "2da0785a6c70db4f93571187a28514dde715cfd0b0f41e746176fbf3444549f2",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "2da0785a6c70db4f93571187a28514dde715cfd0b0f41e746176fbf3444549f2"
+    },
+    {
+      "path": "nfe-4.00-010g/leiauteNFe_v4.00.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/NFe/leiauteNFe_v4.00.xsd",
+      "sha256": "e8470f5d85ded3d99010676087907214aef71c9626140b672abbafa72656c0f5",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "e8470f5d85ded3d99010676087907214aef71c9626140b672abbafa72656c0f5"
+    },
+    {
+      "path": "nfe-4.00-010g/nfe_v4.00.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/NFe/nfe_v4.00.xsd",
+      "sha256": "adce3646c13ceb54922ec3142fc1dc45bd4fb839ac35ad583e86c733c07d27df",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "adce3646c13ceb54922ec3142fc1dc45bd4fb839ac35ad583e86c733c07d27df"
+    },
+    {
+      "path": "nfe-4.00-010g/tiposBasico_v4.00.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/NFe/tiposBasico_v4.00.xsd",
+      "sha256": "772619c85723e598840667ca66e7298a250442df47eeb94b397d2a333ce62047",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "772619c85723e598840667ca66e7298a250442df47eeb94b397d2a333ce62047"
+    },
+    {
+      "path": "nfe-4.00-010g/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": "nfe-4.00-010g",
+      "archivePath": "PL_010g_v1.03/NFe/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "0c4637c742c6f39135111c15a967261f0d20b9ee9c3936172f902259e9162d97"
+    },
+    {
+      "path": "events-1.00-alphanumeric/envEvento_v1.00.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/envEvento_v1.00.xsd",
+      "sha256": "e4d61ba81582b5f1f9a2a4b135d33f4c1ec1c8f9138a2343a9abfffa02bb2777",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "e4d61ba81582b5f1f9a2a4b135d33f4c1ec1c8f9138a2343a9abfffa02bb2777"
+    },
+    {
+      "path": "events-1.00-alphanumeric/leiauteEvento_v1.00.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/leiauteEvento_v1.00.xsd",
+      "sha256": "9a48df8603f685653dfde27dbda72e0f47b5d3c13be0090952f1e82f8d2bc476",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "9a48df8603f685653dfde27dbda72e0f47b5d3c13be0090952f1e82f8d2bc476"
+    },
+    {
+      "path": "events-1.00-alphanumeric/procEventoNFe_v1.00.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/procEventoNFe_v1.00.xsd",
+      "sha256": "4263ee5d12e7a731efab126310aba4edb25612e5986a1c5dde0c87e6c6173798",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "4263ee5d12e7a731efab126310aba4edb25612e5986a1c5dde0c87e6c6173798"
+    },
+    {
+      "path": "events-1.00-alphanumeric/retEnvEvento_v1.00.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/retEnvEvento_v1.00.xsd",
+      "sha256": "5eb93a244c5b26c983c08f725f8eafaa1923664a992181b9d78f60cc8523fa72",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "5eb93a244c5b26c983c08f725f8eafaa1923664a992181b9d78f60cc8523fa72"
+    },
+    {
+      "path": "events-1.00-alphanumeric/tiposBasico_v1.03.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/tiposBasico_v1.03.xsd",
+      "sha256": "d89d4fe1136f89abc7878b440d91ac0e770fbc128dd35b483284c961d6c3fd5d",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "d89d4fe1136f89abc7878b440d91ac0e770fbc128dd35b483284c961d6c3fd5d"
+    },
+    {
+      "path": "events-1.00-alphanumeric/tiposBasico_v4.00.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/tiposBasico_v4.00.xsd",
+      "sha256": "e73476a037832fa1b8aea8323de5385d8a6ac4e73f98ac5d0805735a77ec36c2",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "e73476a037832fa1b8aea8323de5385d8a6ac4e73f98ac5d0805735a77ec36c2"
+    },
+    {
+      "path": "events-1.00-alphanumeric/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": "events-1.00-alphanumeric",
+      "archivePath": "PL_010d_v1.03/Evento/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "f56744a5f51c03f027de13f39f869307091781a9ef1d91b1ebe14719ce28e1ac",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "0c4637c742c6f39135111c15a967261f0d20b9ee9c3936172f902259e9162d97"
+    },
+    {
+      "path": "cancellation-1.01/e110111_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/e110111_v1.00.xsd",
+      "sha256": "56fcdad336b281a9de5e7aae27850bc2c5bd7714e267c891e1b4d0dc227c65da",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "56fcdad336b281a9de5e7aae27850bc2c5bd7714e267c891e1b4d0dc227c65da"
+    },
+    {
+      "path": "cancellation-1.01/envEventoCancNFe_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/envEventoCancNFe_v1.00.xsd",
+      "sha256": "d3f1550b1c3fa6974690cc27e5b74a55fbec3dd11ecdd2992fbcd248b015d534",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "d3f1550b1c3fa6974690cc27e5b74a55fbec3dd11ecdd2992fbcd248b015d534"
+    },
+    {
+      "path": "cancellation-1.01/eventoCancNFe_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/eventoCancNFe_v1.00.xsd",
+      "sha256": "3e5a2840a42f1f66bbbcb21066dcde6aa90407c1ef05456ad9ac38456d96982d",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "3e5a2840a42f1f66bbbcb21066dcde6aa90407c1ef05456ad9ac38456d96982d"
+    },
+    {
+      "path": "cancellation-1.01/leiauteEventoCancNFe_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/leiauteEventoCancNFe_v1.00.xsd",
+      "sha256": "9426ec0d8e3ce441c78d61cf2bd8b6910b7b1cc377a0b337a5a1a9dbe438a66f",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "9426ec0d8e3ce441c78d61cf2bd8b6910b7b1cc377a0b337a5a1a9dbe438a66f"
+    },
+    {
+      "path": "cancellation-1.01/procEventoCancNFe_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/procEventoCancNFe_v1.00.xsd",
+      "sha256": "7e85da1583df86aee753400286d4aad48160846090cd6ecd2c1400fed4afaa69",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "7e85da1583df86aee753400286d4aad48160846090cd6ecd2c1400fed4afaa69"
+    },
+    {
+      "path": "cancellation-1.01/retEnvEventoCancNFe_v1.00.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/retEnvEventoCancNFe_v1.00.xsd",
+      "sha256": "a0a81bf59c9c166f4061f52f8d74cd7aa21bdc1bd8c9b0e0b8bc44d0df34e665",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "a0a81bf59c9c166f4061f52f8d74cd7aa21bdc1bd8c9b0e0b8bc44d0df34e665"
+    },
+    {
+      "path": "cancellation-1.01/tiposBasico_v1.03.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/tiposBasico_v1.03.xsd",
+      "sha256": "486f7b7e2ac053eddf87661858fbeb171f8dce2e805d501d388665269c95dbf3",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "486f7b7e2ac053eddf87661858fbeb171f8dce2e805d501d388665269c95dbf3"
+    },
+    {
+      "path": "cancellation-1.01/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": "cancellation-1.01",
+      "archivePath": "Evento_Canc_PL_v1.01/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "8ce2a385b593c85acf09cb03521f9e730dad2b2e6a5d02cc6f5b688ca94ce230",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "dc6573efbb3bbf10b06a7434144fddadc003d2ddb309a180a3c764464854cafd"
+    },
+    {
+      "path": "distribution-1.04/distDFeInt_v1.01.xsd",
+      "sourceArchive": "distribution-1.04",
+      "archivePath": "PL_NFeDistDFe_104/distDFeInt_v1.01.xsd",
+      "sha256": "2d95df1430b0f0e2b04c6f29cf6bb69cdb5a392ac52102987653902b9a34ff7a",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "5047c15e2e82dc17bd8c980b9606d82c97ab234afd63c1d234e3d7c0572b5726"
+    },
+    {
+      "path": "distribution-1.04/resEvento_v1.01.xsd",
+      "sourceArchive": "distribution-1.04",
+      "archivePath": "PL_NFeDistDFe_104/resEvento_v1.01.xsd",
+      "sha256": "77bd5c05e336fa2854f8ab71316e07fe30759c5efedf493bb684a77c26af9d55",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "7fcf03a6b28353867f147096d925163bca4fa37c77cea2e9055ee4dc17b0864c"
+    },
+    {
+      "path": "distribution-1.04/resNFe_v1.01.xsd",
+      "sourceArchive": "distribution-1.04",
+      "archivePath": "PL_NFeDistDFe_104/resNFe_v1.01.xsd",
+      "sha256": "6ca072e27d72d3a74065d3414af669f7ad525f8883a22af89d22da96095856fa",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "a784d0a2445453da6bec8a22f2b32ba97a7d7c1c37e00ef3332dc5ac88b98a57"
+    },
+    {
+      "path": "distribution-1.04/retDistDFeInt_v1.01.xsd",
+      "sourceArchive": "distribution-1.04",
+      "archivePath": "PL_NFeDistDFe_104/retDistDFeInt_v1.01.xsd",
+      "sha256": "059c4183e190282851337e80725c6ac4e996736a85077246d8711b3b31406236",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "af05db78be82562f9f272a26562a90d9dfe969705d5c0fd147cebfed26a4eddb"
+    },
+    {
+      "path": "distribution-1.04/tiposDistDFe_v1.01.xsd",
+      "sourceArchive": "distribution-1.04",
+      "archivePath": "PL_NFeDistDFe_104/tiposDistDFe_v1.01.xsd",
+      "sha256": "0bc215b9bda6422e37c2c28b80590b4c5ba3041f0db85ca17ebba61edadd7547",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "5d1f297feea1dd5625072dd8859e225b081026b76341f54a1103a8e423c162f0"
+    },
+    {
+      "path": "correction-1.01/CCe_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/CCe_v1.00.xsd",
+      "sha256": "9c98e1375c5dcf792e1f5dcd9ce4d1f5a76f45dd1edc285b5a26574d0743e1a1",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "9c98e1375c5dcf792e1f5dcd9ce4d1f5a76f45dd1edc285b5a26574d0743e1a1"
+    },
+    {
+      "path": "correction-1.01/e110110_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/e110110_v1.00.xsd",
+      "sha256": "0a56d7efa780579eb82f28c2069748bad1bf0fdbae57f3c59b0a198cecf3b718",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "0a56d7efa780579eb82f28c2069748bad1bf0fdbae57f3c59b0a198cecf3b718"
+    },
+    {
+      "path": "correction-1.01/envCCe_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/envCCe_v1.00.xsd",
+      "sha256": "342664616e7c3ca9b697038c869b7803d9c297d722e79e230efbdb1083a189bf",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "342664616e7c3ca9b697038c869b7803d9c297d722e79e230efbdb1083a189bf"
+    },
+    {
+      "path": "correction-1.01/leiauteCCe_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/leiauteCCe_v1.00.xsd",
+      "sha256": "af28107e2e1ab55ee77aaa5bba5e409e3679d8382d69c6cc1d6b0d4af8dbb56c",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "af28107e2e1ab55ee77aaa5bba5e409e3679d8382d69c6cc1d6b0d4af8dbb56c"
+    },
+    {
+      "path": "correction-1.01/procCCeNFe_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/procCCeNFe_v1.00.xsd",
+      "sha256": "f86f4b435af3c0853141b8349dbbef7d1d162f5be1bc0c5c2bff152f0a6f26aa",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "f86f4b435af3c0853141b8349dbbef7d1d162f5be1bc0c5c2bff152f0a6f26aa"
+    },
+    {
+      "path": "correction-1.01/retEnvCCe_v1.00.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/retEnvCCe_v1.00.xsd",
+      "sha256": "ac045c25a61ca693770491d97a60727bc40c07cd175d4b0514fd69cd59e6fd3e",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "ac045c25a61ca693770491d97a60727bc40c07cd175d4b0514fd69cd59e6fd3e"
+    },
+    {
+      "path": "correction-1.01/tiposBasico_v1.03.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/tiposBasico_v1.03.xsd",
+      "sha256": "1456f384d8eeab66648ba079b231a95376938afdd7f3cb288a33b7eb2768c7dd",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "1456f384d8eeab66648ba079b231a95376938afdd7f3cb288a33b7eb2768c7dd"
+    },
+    {
+      "path": "correction-1.01/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": "correction-1.01",
+      "archivePath": "Evento_CCe_PL_v1.01/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "8ce2a385b593c85acf09cb03521f9e730dad2b2e6a5d02cc6f5b688ca94ce230",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "dc6573efbb3bbf10b06a7434144fddadc003d2ddb309a180a3c764464854cafd"
+    },
+    {
+      "path": "manifestation-1.01/confRecebto_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/confRecebto_v1.00.xsd",
+      "sha256": "4447b9910e522b8ec31e51a976bc1d557f9fb7890f88374cd452e18a23d2a741",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "4447b9910e522b8ec31e51a976bc1d557f9fb7890f88374cd452e18a23d2a741"
+    },
+    {
+      "path": "manifestation-1.01/e210200_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/e210200_v1.00.xsd",
+      "sha256": "afe48b729cdefbdf122d1dee81382aa7832b9bdf1596ed4de6c5451070071b98",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "afe48b729cdefbdf122d1dee81382aa7832b9bdf1596ed4de6c5451070071b98"
+    },
+    {
+      "path": "manifestation-1.01/e210210_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/e210210_v1.00.xsd",
+      "sha256": "ebc9171b9b64192599270cafdf51e13756b09cebce83d2e78ac0140dee4003e7",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "ebc9171b9b64192599270cafdf51e13756b09cebce83d2e78ac0140dee4003e7"
+    },
+    {
+      "path": "manifestation-1.01/e210220_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/e210220_v1.00.xsd",
+      "sha256": "636e742e2f6784b8626a8f3b284d3eac01e2ea28a1fb8a56d9d847e5b92abcfd",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "636e742e2f6784b8626a8f3b284d3eac01e2ea28a1fb8a56d9d847e5b92abcfd"
+    },
+    {
+      "path": "manifestation-1.01/e210240_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/e210240_v1.00.xsd",
+      "sha256": "e7df7243f0a6d5b7b590e5251b83f34a52d0ec3a68a8e6b398bcb4cfc862b14e",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "e7df7243f0a6d5b7b590e5251b83f34a52d0ec3a68a8e6b398bcb4cfc862b14e"
+    },
+    {
+      "path": "manifestation-1.01/envConfRecebto_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/envConfRecebto_v1.00.xsd",
+      "sha256": "92ec44f08ace5eb72af87e631bc72abbc9c66cc6c86fe840d5ada1356d7e38c6",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "92ec44f08ace5eb72af87e631bc72abbc9c66cc6c86fe840d5ada1356d7e38c6"
+    },
+    {
+      "path": "manifestation-1.01/leiauteConfRecebto_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/leiauteConfRecebto_v1.00.xsd",
+      "sha256": "84ca61ab131743f7fc5cef5b807d662526b8aeb0184a94c9dc1da5604cb14fe2",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "84ca61ab131743f7fc5cef5b807d662526b8aeb0184a94c9dc1da5604cb14fe2"
+    },
+    {
+      "path": "manifestation-1.01/procConfRecebtoNFe_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/procConfRecebtoNFe_v1.00.xsd",
+      "sha256": "435c2d17c23c85d558dd991bde340dae7482807c0bb6529997ae987a2baa5118",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "435c2d17c23c85d558dd991bde340dae7482807c0bb6529997ae987a2baa5118"
+    },
+    {
+      "path": "manifestation-1.01/retEnvConfRecebto_v1.00.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/retEnvConfRecebto_v1.00.xsd",
+      "sha256": "72eed24110cccd222db3cc1b35fe8c35ee8ec5de38212b34ebf9b30f5f53782c",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "iso-8859-1",
+      "runtimeUtf8Sha256": "d86d9497377f28dc9242c2685bb466ab997ebfb3e3de200f23fb118324026add"
+    },
+    {
+      "path": "manifestation-1.01/tiposBasico_v1.03.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/tiposBasico_v1.03.xsd",
+      "sha256": "1456f384d8eeab66648ba079b231a95376938afdd7f3cb288a33b7eb2768c7dd",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "1456f384d8eeab66648ba079b231a95376938afdd7f3cb288a33b7eb2768c7dd"
+    },
+    {
+      "path": "manifestation-1.01/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": "manifestation-1.01",
+      "archivePath": "Evento_ManifestaDest_PL_v1.01/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "8ce2a385b593c85acf09cb03521f9e730dad2b2e6a5d02cc6f5b688ca94ce230",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "dc6573efbb3bbf10b06a7434144fddadc003d2ddb309a180a3c764464854cafd"
+    },
+    {
+      "path": "rtc-events-1.40/e110001_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e110001_v1.00.xsd",
+      "sha256": "d2e14b5d7215b64d2a893703143e158bc282084c08a08a794aded9bc6e834fe9",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "d2e14b5d7215b64d2a893703143e158bc282084c08a08a794aded9bc6e834fe9"
+    },
+    {
+      "path": "rtc-events-1.40/e112110_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e112110_v1.00.xsd",
+      "sha256": "10bf7c0df0038155201ea37d9c12b68b4cbea02867370afa3c4863af729b6016",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "10bf7c0df0038155201ea37d9c12b68b4cbea02867370afa3c4863af729b6016"
+    },
+    {
+      "path": "rtc-events-1.40/e112120_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e112120_v1.00 .xsd",
+      "sha256": "27e654b1c7eee2feb4fffa694f0b5ee16618f61f7f849517a714c60cfd1e450c",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "27e654b1c7eee2feb4fffa694f0b5ee16618f61f7f849517a714c60cfd1e450c"
+    },
+    {
+      "path": "rtc-events-1.40/e112130_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e112130_v1.00.xsd",
+      "sha256": "1c1f5e024bc6fba5d5dc2ea01d49b20d089ec5870dc89bc7f17135610e7ca4e8",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "1c1f5e024bc6fba5d5dc2ea01d49b20d089ec5870dc89bc7f17135610e7ca4e8"
+    },
+    {
+      "path": "rtc-events-1.40/e112140_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e112140_v1.00.xsd",
+      "sha256": "ec52646b5d7931dc87a41d6f11c585534d49bdf3d63ded6acbb52dc1b6bb4090",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "ec52646b5d7931dc87a41d6f11c585534d49bdf3d63ded6acbb52dc1b6bb4090"
+    },
+    {
+      "path": "rtc-events-1.40/e112150_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e112150_v1.00.xsd",
+      "sha256": "f67b2a2dd0f6edd195ef2bb352956c624144232d2c59338567495fc55638dc7f",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "f67b2a2dd0f6edd195ef2bb352956c624144232d2c59338567495fc55638dc7f"
+    },
+    {
+      "path": "rtc-events-1.40/e211110_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211110_v1.00.xsd",
+      "sha256": "610452ad57365ee84667ebf2a38940422213aedf8f1419374e51ce13cc784d16",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "610452ad57365ee84667ebf2a38940422213aedf8f1419374e51ce13cc784d16"
+    },
+    {
+      "path": "rtc-events-1.40/e211124_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211124_v1.00.xsd",
+      "sha256": "f3be0304553022bfb44852a023cc1853686f2ba5cb017dfc87dace87dfd85945",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "f3be0304553022bfb44852a023cc1853686f2ba5cb017dfc87dace87dfd85945"
+    },
+    {
+      "path": "rtc-events-1.40/e211128_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211128_v1.00.xsd",
+      "sha256": "57a4df9a386af8b575ea1d5499a9b0b2dcb781169b40c390dfeb239f14605385",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "57a4df9a386af8b575ea1d5499a9b0b2dcb781169b40c390dfeb239f14605385"
+    },
+    {
+      "path": "rtc-events-1.40/e211130_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211130_v1.00.xsd",
+      "sha256": "9c6086a885c8f32c920437151aa3e6fa14f6f6f56055416805f3392c646fc0dd",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "9c6086a885c8f32c920437151aa3e6fa14f6f6f56055416805f3392c646fc0dd"
+    },
+    {
+      "path": "rtc-events-1.40/e211140_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211140_v1.00.xsd",
+      "sha256": "1081fbfdc78dbca20be80d9ee8abae094211100e4b5eea12c1b8c861e737619c",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "1081fbfdc78dbca20be80d9ee8abae094211100e4b5eea12c1b8c861e737619c"
+    },
+    {
+      "path": "rtc-events-1.40/e211150_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e211150_v1.00.xsd",
+      "sha256": "de2504594bc3c317adab421c52b8fad35ad6406519b7198bb0d90406a2c6d2b1",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "de2504594bc3c317adab421c52b8fad35ad6406519b7198bb0d90406a2c6d2b1"
+    },
+    {
+      "path": "rtc-events-1.40/e212110_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e212110_v1.00.xsd",
+      "sha256": "e4f76579f2324dccf361bcdfcc551e9ff5f021eefbb5ac8662c28fc12dcfe04a",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "e4f76579f2324dccf361bcdfcc551e9ff5f021eefbb5ac8662c28fc12dcfe04a"
+    },
+    {
+      "path": "rtc-events-1.40/e212120_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e212120_v1.00.xsd",
+      "sha256": "bacfaf3ee4e5ecf5517e42892f172ebb016203c4198671129612d7f32e0a6ba5",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "bacfaf3ee4e5ecf5517e42892f172ebb016203c4198671129612d7f32e0a6ba5"
+    },
+    {
+      "path": "rtc-events-1.40/e412120_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e412120_v1.00.xsd",
+      "sha256": "6396c50672e7e93032b82b31a3f8b79e9494faaa65f9a470deaff399d4a91a89",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "6396c50672e7e93032b82b31a3f8b79e9494faaa65f9a470deaff399d4a91a89"
+    },
+    {
+      "path": "rtc-events-1.40/e412130_v1.00.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/e412130_v1.00.xsd",
+      "sha256": "226f883090516d776ce632cb72f7ce4d3e6aa2b47432b21bec05a4bb29f276c8",
+      "declaredEncoding": "UTF-8",
+      "decodedEncoding": "UTF-8",
+      "runtimeUtf8Sha256": "226f883090516d776ce632cb72f7ce4d3e6aa2b47432b21bec05a4bb29f276c8"
+    },
+    {
+      "path": "rtc-events-1.40/tiposBasico_v1.03.xsd",
+      "sourceArchive": "rtc-events-1.40",
+      "archivePath": "Eventos_RTC/tiposBasico_v1.03.xsd",
+      "sha256": "f20b13ad50eac1235aac2114fd1a98d89527c4bf895cb4e7a73342eaf53780da",
+      "declaredEncoding": "utf-8-sig",
+      "decodedEncoding": "utf-8-sig",
+      "runtimeUtf8Sha256": "f20b13ad50eac1235aac2114fd1a98d89527c4bf895cb4e7a73342eaf53780da"
+    },
+    {
+      "path": "nfe-4.00-010g/procNFe_v4.00.xsd",
+      "sourceArchive": null,
+      "derivedOrigin": "Local entrypoint for official TNfeProc",
+      "sha256": "76dfaa399e51c3cb0caf2dbe62f83c3db04925e62b783d020939148b87a42ea0",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "76dfaa399e51c3cb0caf2dbe62f83c3db04925e62b783d020939148b87a42ea0"
+    },
+    {
+      "path": "events-1.00-alphanumeric/evento_v1.00.xsd",
+      "sourceArchive": null,
+      "derivedOrigin": "Local entrypoint for official TEvento",
+      "sha256": "82b549efb96e95cfbebe50ab807a0cf446acdead6843dc76119bc0899bff5027",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "82b549efb96e95cfbebe50ab807a0cf446acdead6843dc76119bc0899bff5027"
+    },
+    {
+      "path": "distribution-1.04/xmldsig-core-schema_v1.01.xsd",
+      "sourceArchive": null,
+      "derivedOrigin": "Offline alias of nfe-4.00-010g/xmldsig-core-schema_v1.01.xsd",
+      "sha256": "0c4637c742c6f39135111c15a967261f0d20b9ee9c3936172f902259e9162d97",
+      "declaredEncoding": "utf-8",
+      "decodedEncoding": "utf-8",
+      "runtimeUtf8Sha256": "0c4637c742c6f39135111c15a967261f0d20b9ee9c3936172f902259e9162d97"
+    }
+  ],
+  "redistribution": {
+    "license": "not-explicitly-stated",
+    "source": "Official NF-e portal archives (ENCAT, state finance secretariats and Receita Federal)",
+    "xmldsig": "W3C Software Notice and License 19980720, full text in LICENSING.md",
+    "decision": "Redistributed unmodified by maintainer decision on 2026-10-20; see LICENSING.md"
+  }
+}

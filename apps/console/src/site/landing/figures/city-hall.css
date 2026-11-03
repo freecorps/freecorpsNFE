@@ -1,0 +1,140 @@
+/* NFS-e municipal town. Windows switch on in a wave from left to right and
+   off again (8 s); the flag waves; the lit clock and the open doors stay on.
+   Without motion: every window lit. */
+.fig-city-hall .kerb {
+  fill: none;
+  stroke: #24342b;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-city-hall .roof-inner {
+  fill: #0a130f;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-city-hall .sill {
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-city-hall .name {
+  fill: var(--glow-hi);
+  font: 600 5.4px var(--font-mono);
+  letter-spacing: 0.14em;
+  filter: url(#iso-soft);
+}
+.fig-city-hall .clock {
+  fill: var(--glow);
+}
+.fig-city-hall .globe {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-glow);
+}
+.fig-city-hall .crown {
+  fill: #101b16;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-city-hall .crown-line,
+.fig-city-hall .clock-hand {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.fig-city-hall .clock-hand {
+  stroke: var(--glow-ink);
+}
+.fig-city-hall .flag {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+}
+.fig-city-hall .flag-cloth {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-soft);
+}
+.fig-city-hall .flag-disc {
+  fill: var(--glow-ink);
+}
+.fig-city-hall .finial {
+  fill: var(--line-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Negative delays: every band is already mid-cycle on load, each one
+     0.4 s behind the band to its left. */
+  .fig-city-hall .wave {
+    animation: ch-window 8s infinite;
+    animation-delay: -3.2s;
+  }
+  .fig-city-hall .b1 {
+    animation-delay: -2.8s;
+  }
+  .fig-city-hall .b2 {
+    animation-delay: -2.4s;
+  }
+  .fig-city-hall .b3 {
+    animation-delay: -2s;
+  }
+  .fig-city-hall .b4 {
+    animation-delay: -1.6s;
+  }
+  .fig-city-hall .b5 {
+    animation-delay: -1.2s;
+  }
+  .fig-city-hall .b6 {
+    animation-delay: -0.8s;
+  }
+  .fig-city-hall .b7 {
+    animation-delay: -0.4s;
+  }
+  .fig-city-hall .flag {
+    animation: ch-flag 2.6s ease-in-out infinite alternate;
+  }
+}
+
+/* Dark for the first beat, lit for most of the loop, dark again. */
+@keyframes ch-window {
+  0%,
+  6% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+  10%,
+  72% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+  76%,
+  100% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+}
+@keyframes ch-flag {
+  from {
+    transform: skewY(-7deg) scaleX(0.9);
+  }
+  to {
+    transform: skewY(5deg) scaleX(1);
+  }
+}
+.fig-city-hall.is-live .bldg {
+  cursor: pointer;
+}
+.fig-city-hall .bldg.dark .window.lit,
+.fig-city-hall .bldg.dark .door.lit {
+  fill: #08100c;
+  stroke: var(--line);
+  filter: none;
+  animation: none;
+}

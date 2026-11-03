@@ -1,0 +1,49 @@
+{
+  "name": "@freecorps/fiscal-nfse",
+  "version": "0.1.0",
+  "description": "NFS-e issuing core: DPS, signature, events, PTAX, routing and the national adapter with injected transport",
+  "license": "SEE LICENSE IN LICENSING.md",
+  "files": [
+    "dist",
+    "README.md",
+    "schemas/manifest.json",
+    "LICENSE",
+    "NOTICE",
+    "LICENSING.md",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./pure": {
+      "types": "./dist/pure.d.ts",
+      "default": "./dist/pure.js"
+    },
+    "./danfse": {
+      "types": "./dist/danfse.d.ts",
+      "default": "./dist/danfse.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vp test run --root ../.. packages/fiscal-nfse"
+  },
+  "dependencies": {
+    "@freecorps/fiscal-core": "workspace:*",
+    "@xmldom/xmldom": "0.8.15",
+    "libxml2-wasm": "0.7.2",
+    "pdf-lib": "1.17.1",
+    "qrcode": "1.5.4",
+    "xml-crypto": "6.4.0"
+  },
+  "engines": {
+    "node": ">=20.20.2"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "bucket": "freecorpsnfe-offsite-backups",
+  "prefix": "elated-possum-295/",
+  "cadenceHours": 12,
+  "alertAfterHours": 13,
+  "retentionDays": 14,
+  "rpoHours": 24,
+  "rtoHours": 24,
+  "maxSnapshotBytes": 4294967296,
+  "coldTier": { "bucket": "freecorpsnfe-cold-documents" },
+  "incremental": {
+    "version": 2,
+    "blobPrefix": "elated-possum-295/objects/",
+    "retentionConfigured": true
+  },
+  "recipients": [
+    {
+      "custodian": "hhs0001",
+      "recipient": "age1hwmmt8wrrcmh90p48yjph45vgype7283ycsm6vs5zag73exxe49s6qu3p6"
+    },
+    {
+      "custodian": "wolf-stievano",
+      "recipient": "age1zeh4n6aq0wyyguj9rh23ctt2ff797jtvkxnx252pfc35d2gweamqj2mc0p"
+    }
+  ]
+}

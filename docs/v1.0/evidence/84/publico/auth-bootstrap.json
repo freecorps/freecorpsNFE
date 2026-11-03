@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "gate": "authBootstrap",
+  "humanAttestation": {
+    "signupCompleted": true,
+    "emailCodeConsumedOnSite": true,
+    "loginCompleted": true,
+    "source": "Maintainer confirmation in this thread"
+  },
+  "beforeReload": {
+    "anonymousDenied": true,
+    "membershipsCount": 0,
+    "membershipsRead": true,
+    "observedAt": "2026-09-29T21:03:00.868Z",
+    "origin": "https://nfe.freecorps.com.br",
+    "profileVerified": true,
+    "ready": true,
+    "secretsRecorded": false,
+    "sessionVerified": true,
+    "sha": "7e8907c02e0c0fb97dbb15c277b251478cf3e96e",
+    "unknownOrganizationHidden": true
+  },
+  "afterReload": {
+    "anonymousDenied": true,
+    "membershipsCount": 0,
+    "membershipsRead": true,
+    "observedAt": "2026-09-29T21:03:24.940Z",
+    "origin": "https://nfe.freecorps.com.br",
+    "profileVerified": true,
+    "ready": true,
+    "secretsRecorded": false,
+    "sessionVerified": true,
+    "sha": "7e8907c02e0c0fb97dbb15c277b251478cf3e96e",
+    "unknownOrganizationHidden": true
+  },
+  "limits": [
+    "No passwords, verification codes, email addresses or session tokens recorded",
+    "No fiscal authorization or cross-organization membership grant claimed"
+  ]
+}

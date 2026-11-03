@@ -1,0 +1,105 @@
+---
+title: Consultar NF-e pelo DANFE
+description: Tem só o DANFE, em papel ou foto? Digite a chave de acesso no painel ou leia o código de barras de uma foto, confira o que ela diz e abra o resumo da nota no Portal da NF-e. Nada é importado.
+---
+
+Este guia é para quem recebeu o DANFE de uma NF-e, mas não o XML. O painel confere a chave de acesso impressa e abre a consulta pública do Portal Nacional da NF-e com ela preenchida. A consulta acontece no portal, não na plataforma.
+
+<Callout title="Isto não importa a nota">
+  A consulta não traz a nota para a plataforma, não cria documento e não muda nada nos seus dados.
+  Para guardar a nota com itens, original e histórico, peça o XML a quem emitiu e use [Importar XML
+  pelo painel](/docs/importar-pelo-painel).
+</Callout>
+
+## Antes de começar [#requisitos]
+
+- **Uma conta numa organização.** Qualquer papel usa a consulta, porque ela não lê nem grava dados fiscais da organização. Não é preciso escolher empresa nem ter certificado. Importar o XML depois continua exigindo papel de Operador, Administrador ou Proprietário.
+- **O DANFE de uma NF-e modelo 55.** A chave de acesso tem 44 posições e fica perto do código de barras, em grupos de quatro. O cupom da NFC-e (modelo 65) não é aceito.
+
+## Consultar [#consultar]
+
+<Steps>
+<Step>
+
+### Abra a consulta [#abrir]
+
+Em <Ui>Importar XML</Ui> ou em <Ui>Documentos</Ui>, clique em <Ui>Consultar pelo DANFE</Ui>. Em qualquer página da organização, <Ui>Buscar ou ir para…</Ui>, no topo do painel, também tem <Ui>Consultar NF-e pelo DANFE</Ui>; ela é o caminho para quem trabalha só pelas integrações.
+
+</Step>
+<Step>
+
+### Digite, cole ou leia a chave pela foto [#chave]
+
+No campo <Ui>Chave de acesso da NF-e</Ui>, digite a chave como está no DANFE ou cole a que você copiou. Com o DANFE à mão ou numa imagem, use <Ui>Ler a chave pela foto</Ui> (veja [Ler a chave pela foto](#foto)). Espaços, pontos, hífens, barras e quebras de linha são ignorados, e letras minúsculas viram maiúsculas. Clique em <Ui>Conferir chave</Ui>.
+
+O campo passa a mostrar a chave em grupos de quatro, como no DANFE, para você comparar grupo por grupo. Se algo não confere, a mensagem diz o que está errado e onde. O painel nunca completa nem troca um caractere por conta própria: corrija no campo e confira de novo.
+
+</Step>
+<Step>
+
+### Confira o que a chave diz [#conferir]
+
+Com a chave válida, aparece <Ui>Lido da chave</Ui>: UF, mês e ano de emissão, modelo, série, número, CNPJ ou CPF do emitente e tipo de emissão. Tudo isso sai da própria chave. Quando as posições do emitente valem tanto como CNPJ quanto como CPF, a chave não diz qual é, e o painel mostra as duas leituras. O dígito verificador conferir mostra que a chave está bem formada, não que a NF-e exista ou tenha sido autorizada.
+
+</Step>
+<Step>
+
+### Abra o portal [#portal]
+
+Clique em <Ui>Consultar no Portal da NF-e</Ui>. O portal oficial (`www.nfe.fazenda.gov.br`) abre em outra aba, com a chave preenchida, como observado num ensaio manual em 20/10/2026. Resolva o CAPTCHA lá para ver o resumo. Se o campo do portal vier vazio, use <Ui>Copiar chave</Ui> e cole a chave no portal.
+
+</Step>
+</Steps>
+
+## Ler a chave pela foto [#foto]
+
+O DANFE imprime a chave também como código de barras, logo acima da chave em números. <Ui>Ler a chave pela foto</Ui> lê esse código:
+
+1. Toque em <Ui>Ler a chave pela foto</Ui>. No celular, escolha tirar uma foto ou usar uma imagem da galeria, como a captura de tela de um DANFE em PDF. No computador, escolha o arquivo ou arraste a imagem para a área.
+2. Espere <Ui>Lendo a imagem…</Ui> terminar. Na primeira foto, o painel baixa do próprio site o leitor de código de barras, com cerca de 1 MB.
+3. A chave lida aparece no campo em grupos de quatro e é conferida como uma chave digitada. **Compare com a chave impressa no DANFE** antes de abrir o portal: numa foto com outro papel ao lado, o código lido pode ser de outra nota.
+
+Para a leitura dar certo:
+
+- Enquadre o código de barras inteiro, com uma margem branca dos lados, e deixe as barras na horizontal ou na vertical. Uma foto de lado ou de cabeça para baixo funciona; barras muito inclinadas, não.
+- Use boa luz, sem reflexo nem sombra sobre as barras.
+- Segure firme e espere o foco. Barras borradas não são lidas.
+
+| O painel diz                                         | O que fazer                                                                                                                                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Não encontrei o código de barras da chave            | Tente outra foto com as dicas acima ou digite a chave.                                                                                                                                           |
+| O código de barras lido não é a chave de acesso      | O código lido tem outro tamanho, como o do DANFE em contingência. Fotografe o código que fica acima da chave impressa.                                                                           |
+| Encontrei 2 chaves diferentes nesta imagem           | Escolha a do DANFE que você quer conferir. O painel nunca escolhe sozinho.                                                                                                                       |
+| Esta imagem é de uma NFC-e (modelo 65)               | O cupom da NFC-e não tem o código de barras da chave, só um QR code, e esta consulta atende só NF-e. Aponte a câmera do celular para o QR code do cupom: ele abre a consulta da Sefaz do estado. |
+| A imagem tem mais de 50 megapixels ou passa de 25 MB | Use uma foto em resolução menor ou uma captura de tela do DANFE.                                                                                                                                 |
+| Mantive o que você digitou                           | Você mexeu no campo durante a leitura, e a foto não trocou o que estava nele. Para usar a foto, escolha a imagem de novo.                                                                        |
+| Não consegui abrir esta imagem                       | Use JPEG, PNG ou WebP. Fora do Safari, fotos em HEIC podem não abrir; uma captura de tela da foto resolve.                                                                                       |
+| Uma mensagem sobre a chave, como dígito verificador  | A chave foi lida do código de barras, mas a conferência recusou. Veja [Mensagens da chave](#mensagens).                                                                                          |
+
+O painel nunca completa uma chave lida pela metade: se o código não sai inteiro, nada vai para o campo.
+
+## Mensagens da chave [#mensagens]
+
+| A mensagem fala de                 | O que conferir                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Número de posições                 | Faltou ou sobrou um grupo. A chave tem 44 posições.                                                                |
+| Caractere ou letra fora do lugar   | Só há letras nas posições 7 a 18, do CNPJ alfanumérico do emitente. Um "O" no lugar de zero é o engano mais comum. |
+| Dígito verificador                 | Algum caractere está diferente do DANFE. Compare grupo por grupo.                                                  |
+| NFC-e (modelo 65) ou outro modelo  | A consulta atende só NF-e modelo 55.                                                                               |
+| UF, mês, número ou tipo de emissão | A chave não é de uma NF-e. Confira se o número copiado é mesmo a chave de acesso.                                  |
+| CNPJ ou CPF do emitente            | As posições 7 a 20 não formam um CNPJ ou CPF válido.                                                               |
+
+## O que o portal mostra [#limites]
+
+- **O resultado fica no portal.** Nada volta para o painel: a situação da nota na plataforma não muda.
+- **O resumo pode esconder dados.** Destinatário e descrição dos produtos podem aparecer parcialmente ocultos.
+- **Consulta Completa e download do XML exigem certificado digital** no próprio portal. O painel não baixa o XML pelo portal.
+- **Uma nota por vez.** Não há consulta automática, em lote nem acompanhamento da nota depois.
+
+Exemplo fictício de chave, com dígito válido: `3526 0911 2223 3300 0181 5500 1000 0000 6911 2345 6787`.
+
+## Privacidade [#privacidade]
+
+A chave fica só na tela enquanto você a usa. Ela não vai para o endereço do painel, para o armazenamento do navegador nem para registros da plataforma. Ela segue apenas no link do portal oficial, que você decide abrir.
+
+A foto também fica no seu navegador. O código de barras é lido ali mesmo, sem enviar a imagem à plataforma ou a outro serviço, sem guardá-la e sem registrá-la. Terminada a leitura, o painel não mantém a imagem.

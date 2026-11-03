@@ -1,0 +1,25 @@
+{
+  "name": "@freecorps/fiscal-platform",
+  "version": "0.0.0",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSING.md",
+  "type": "module",
+  "scripts": {
+    "check": "node ../scripts/build-fiscal-packages.mjs && node ../scripts/typecheck.mjs -p ../tsconfig.platform.json",
+    "test": "vp test run --root .. --project platform --project platform-isolated"
+  },
+  "dependencies": {
+    "@convex-dev/better-auth": "0.12.5",
+    "@convex-dev/rate-limiter": "0.3.2",
+    "@convex-dev/workpool": "0.4.12",
+    "@freecorps/contracts": "workspace:*",
+    "@freecorps/fiscal-core": "workspace:*",
+    "@freecorps/fiscal-nfe": "workspace:*",
+    "@freecorps/fiscal-nfse": "workspace:*",
+    "better-auth": "1.6.33",
+    "convex": "^1.48.0",
+    "convex-helpers": "0.1.129",
+    "fflate": "0.8.3",
+    "postal-mime": "4.1.4"
+  }
+}

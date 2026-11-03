@@ -1,0 +1,88 @@
+name: NFS-e production gate, emergency disable
+
+# Turns off the fiscal production gate of one company in an emergency (#198, ADR 0004 §8, second
+# amendment): a separate workflow, without approval, that only a person in authorizedActors of
+# deploy/issuance-gate.json may trigger. The command is fixed: `kind: "emergency_disable"` is set
+# in scripts/lib/issuance-gate.mjs, and no input chooses it. Turning off blocks only new notes;
+# cancellation and reconciliation continue while the company stays in the list. While
+# deploy/issuance-production.json names no deployment, the runner refuses (PLAN_NOT_NAMED) before
+# reading any secret, and nothing reaches Convex. If GitHub or Actions is down, the alternative is
+# to remove the company from FNFE_NFSE_PRODUCTION_COMPANIES in the Convex dashboard (the full cut,
+# docs/operacao/emissao-nfse.md, Cortar a emissão).
+on:
+  workflow_dispatch:
+    inputs:
+      organization_id:
+        description: Convex id of the organization (organizations)
+        required: true
+        type: string
+      company_id:
+        description: Convex id of the company (companies)
+        required: true
+        type: string
+      reason:
+        description: "Reason, 10 to 500 characters. Public: no customer name, CNPJ or personal data."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Its own group: an enable run waiting for approval never queues the emergency switch-off.
+concurrency:
+  group: nfse-production-emergency
+  cancel-in-progress: false
+
+jobs:
+  # One job on a GitHub-hosted runner, with as few dependencies as possible: no plan job (the
+  # runner checks the plan before anything else, and this environment has no reviewers to
+  # spare), no third-party runner and no toolchain download.
+  disable:
+    name: Disable the gate now
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: nfse-production-emergency
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The Node of the runner image runs the executor, which only uses Node built-in modules
+      # (fetch and AbortSignal.timeout need 20 or newer); the action downloads nothing it depends on.
+      # Seals the full receipt for the custodians (scripts/lib/sealed-receipt.mjs). It never
+      # blocks the action: without age, the public receipt records sealed.state "unavailable".
+      - name: Install pinned age for the sealed receipt
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+      - name: Check the Node.js of the runner image
+        run: node -e 'const major = Number(process.versions.node.split(".")[0]); if (!(major >= 20)) { console.error("Node " + process.versions.node + " is older than 20"); process.exit(1); }'
+      - name: Check the plan, the run and the authorized person, then disable
+        env:
+          GATE_ORGANIZATION_ID: ${{ inputs.organization_id }}
+          GATE_COMPANY_ID: ${{ inputs.company_id }}
+          GATE_REASON: ${{ inputs.reason }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/issuance-gate.mjs emergency_disable
+      - name: Record the change or the refusal
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nfse-gate-emergency-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/issuance-gate/receipt.json
+            .ci-results/issuance-gate/receipt.full.json.age
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

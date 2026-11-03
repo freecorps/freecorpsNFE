@@ -1,0 +1,289 @@
+/* Station 1: every 6 s each source pushes a document out of its slot (the
+   sources take turns, 2 s apart) and it hops into the inbox, landing exactly
+   on the lit top sheet. Flights are sampled arcs (see intake.ts for LAND). */
+.fig-intake .flyer {
+  visibility: hidden;
+}
+.fig-intake .card-body.face {
+  fill: #1d2b23;
+}
+.fig-intake .chip.lit {
+  filter: url(#iso-soft);
+}
+.fig-intake .dish {
+  fill: #0d1712;
+}
+.fig-intake .wave {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fig-intake .w1 {
+  transform: scale(1.35);
+  stroke-opacity: 0.18;
+}
+.fig-intake [data-source] {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-intake .flyer {
+    animation: 6s linear infinite;
+  }
+  .fig-intake .fly-order {
+    animation-name: intake-fly-order;
+  }
+  .fig-intake .fly-capture {
+    animation-name: intake-fly-capture;
+    animation-delay: 2s;
+  }
+  .fig-intake .fly-xml {
+    animation-name: intake-fly-xml;
+    animation-delay: 4s;
+  }
+  .fig-intake .src-led {
+    animation: intake-led 6s ease-out infinite;
+  }
+  .fig-intake .src-led[data-src="capture"] {
+    animation-delay: 2s;
+  }
+  .fig-intake .src-led[data-src="xml"] {
+    animation-delay: 4s;
+  }
+  .fig-intake .tray-strip {
+    animation: intake-strip 2s ease-out infinite;
+    animation-delay: 1.5s;
+  }
+  .fig-intake .wave {
+    animation: intake-wave 2s ease-in infinite;
+  }
+  .fig-intake .w1 {
+    animation-delay: 1s;
+  }
+}
+
+@keyframes intake-led {
+  0%,
+  10% {
+    fill: var(--glow);
+  }
+  24%,
+  100% {
+    fill: #23332b;
+  }
+}
+@keyframes intake-strip {
+  0% {
+    fill: var(--glow-hi);
+  }
+  60%,
+  100% {
+    fill: var(--glow);
+  }
+}
+@keyframes intake-wave {
+  0% {
+    transform: scale(1.7);
+    stroke-opacity: 0;
+  }
+  40% {
+    stroke-opacity: 0.5;
+  }
+  100% {
+    transform: scale(0.75);
+    stroke-opacity: 0;
+  }
+}
+@keyframes intake-fly-order {
+  0% {
+    transform: translate(-34.64px, -64.8px);
+    visibility: visible;
+  }
+  2.45% {
+    transform: translate(-43.64px, -59.6px);
+    visibility: visible;
+  }
+  4.9% {
+    transform: translate(-48.83px, -56.61px);
+    visibility: visible;
+  }
+  7% {
+    transform: translate(-50.23px, -55.8px);
+    visibility: visible;
+  }
+  8.8% {
+    transform: translate(-53.2px, -56.73px);
+    visibility: visible;
+  }
+  10.6% {
+    transform: translate(-52.76px, -55.26px);
+    visibility: visible;
+  }
+  12.4% {
+    transform: translate(-48.9px, -51.41px);
+    visibility: visible;
+  }
+  14.2% {
+    transform: translate(-41.64px, -45.16px);
+    visibility: visible;
+  }
+  16% {
+    transform: translate(-30.96px, -36.52px);
+    visibility: visible;
+  }
+  17.8% {
+    transform: translate(-19.81px, -27.2px);
+    visibility: visible;
+  }
+  19.6% {
+    transform: translate(-11.15px, -18.89px);
+    visibility: visible;
+  }
+  21.4% {
+    transform: translate(-4.95px, -11.58px);
+    visibility: visible;
+  }
+  23.2% {
+    transform: translate(-1.24px, -5.29px);
+    visibility: visible;
+  }
+  25% {
+    transform: translate(0px, 0px);
+    visibility: visible;
+  }
+  31%,
+  100% {
+    transform: translate(0, 0);
+    visibility: hidden;
+  }
+}
+@keyframes intake-fly-capture {
+  0% {
+    transform: translate(16.45px, -34.3px);
+    visibility: visible;
+  }
+  2.45% {
+    transform: translate(7.45px, -29.1px);
+    visibility: visible;
+  }
+  4.9% {
+    transform: translate(2.27px, -26.11px);
+    visibility: visible;
+  }
+  7% {
+    transform: translate(0.87px, -25.3px);
+    visibility: visible;
+  }
+  8.8% {
+    transform: translate(-3.13px, -26.92px);
+    visibility: visible;
+  }
+  10.6% {
+    transform: translate(-5.75px, -27.32px);
+    visibility: visible;
+  }
+  12.4% {
+    transform: translate(-7.01px, -26.51px);
+    visibility: visible;
+  }
+  14.2% {
+    transform: translate(-6.89px, -24.5px);
+    visibility: visible;
+  }
+  16% {
+    transform: translate(-5.41px, -21.27px);
+    visibility: visible;
+  }
+  17.8% {
+    transform: translate(-3.46px, -17.36px);
+    visibility: visible;
+  }
+  19.6% {
+    transform: translate(-1.95px, -13.28px);
+    visibility: visible;
+  }
+  21.4% {
+    transform: translate(-0.87px, -9.02px);
+    visibility: visible;
+  }
+  23.2% {
+    transform: translate(-0.22px, -4.59px);
+    visibility: visible;
+  }
+  25% {
+    transform: translate(0px, 0px);
+    visibility: visible;
+  }
+  31%,
+  100% {
+    transform: translate(0, 0);
+    visibility: hidden;
+  }
+}
+@keyframes intake-fly-xml {
+  0% {
+    transform: translate(71.88px, -4.3px);
+    visibility: visible;
+  }
+  2.45% {
+    transform: translate(62.88px, 0.9px);
+    visibility: visible;
+  }
+  4.9% {
+    transform: translate(57.69px, 3.89px);
+    visibility: visible;
+  }
+  7% {
+    transform: translate(56.29px, 4.7px);
+    visibility: visible;
+  }
+  8.8% {
+    transform: translate(51.19px, 2.64px);
+    visibility: visible;
+  }
+  10.6% {
+    transform: translate(45.24px, 0.52px);
+    visibility: visible;
+  }
+  12.4% {
+    transform: translate(38.44px, -1.67px);
+    visibility: visible;
+  }
+  14.2% {
+    transform: translate(30.8px, -3.94px);
+    visibility: visible;
+  }
+  16% {
+    transform: translate(22.3px, -6.28px);
+    visibility: visible;
+  }
+  17.8% {
+    transform: translate(14.27px, -7.92px);
+    visibility: visible;
+  }
+  19.6% {
+    transform: translate(8.03px, -8.12px);
+    visibility: visible;
+  }
+  21.4% {
+    transform: translate(3.57px, -6.86px);
+    visibility: visible;
+  }
+  23.2% {
+    transform: translate(0.89px, -4.15px);
+    visibility: visible;
+  }
+  25% {
+    transform: translate(0px, 0px);
+    visibility: visible;
+  }
+  31%,
+  100% {
+    transform: translate(0, 0);
+    visibility: hidden;
+  }
+}

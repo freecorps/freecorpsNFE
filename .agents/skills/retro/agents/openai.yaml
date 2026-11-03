@@ -1,0 +1,5 @@
+interface:
+  display_name: "Retrospectiva"
+  short_description: "Melhorias no ambiente a partir de uma sessão"
+policy:
+  allow_implicit_invocation: false

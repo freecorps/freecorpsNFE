@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /
+
+# Candidato: liberar apenas as páginas públicas após aceite e publicação.

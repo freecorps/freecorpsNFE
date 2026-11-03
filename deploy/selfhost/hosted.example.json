@@ -1,0 +1,6 @@
+{
+  "cloud": "https://cloud.example.invalid",
+  "site": "https://backend.example.invalid",
+  "frontend": "https://console.example.invalid",
+  "api": "https://api.example.invalid"
+}

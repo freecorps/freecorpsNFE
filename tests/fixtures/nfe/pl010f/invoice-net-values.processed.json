@@ -1,0 +1,620 @@
+{
+  "metadata": {
+    "model": "55",
+    "source": "imported-xml",
+    "originalSha256": "22abb838a08f8745cc545ec401142f89c55e9944c6209a71ee6b4cbd353f4e7e",
+    "versions": {
+      "parser": "nfe-parser/4",
+      "normalizer": "nfe-normalizer/1",
+      "schema": {
+        "id": "nfeProc",
+        "version": "4.00",
+        "package": "nfe-4.00-010f",
+        "catalogSha256": "1e871ba26cdaa7367b6a8e670f3ad8f2185508cb9ab7eac3e4bc1aa690375cc8"
+      }
+    },
+    "unsupportedFields": [
+      "infNFe.det[1].prod.cEAN",
+      "infNFe.det[1].prod.cEANTrib",
+      "infNFe.det[1].prod.indTot",
+      "infNFe.emit.CRT",
+      "infNFe.emit.enderEmit",
+      "infNFe.ide.cMunFG",
+      "infNFe.ide.idDest",
+      "infNFe.ide.indFinal",
+      "infNFe.ide.indPres",
+      "infNFe.ide.procEmi",
+      "infNFe.ide.tpImp",
+      "infNFe.ide.tpNF",
+      "infNFe.ide.verProc",
+      "infNFe.pag",
+      "infNFe.transp",
+      "protNFe.infProt.verAplic",
+      "protNFe.infProt.xMotivo"
+    ]
+  },
+  "parsing": {
+    "metadata": {
+      "model": "55",
+      "source": "imported-xml",
+      "originalSha256": "22abb838a08f8745cc545ec401142f89c55e9944c6209a71ee6b4cbd353f4e7e",
+      "versions": {
+        "parser": "nfe-parser/4",
+        "normalizer": null,
+        "schema": {
+          "id": "nfeProc",
+          "version": "4.00",
+          "package": "nfe-4.00-010f",
+          "catalogSha256": "1e871ba26cdaa7367b6a8e670f3ad8f2185508cb9ab7eac3e4bc1aa690375cc8"
+        }
+      },
+      "unsupportedFields": [
+        "infNFe.det[1].prod.cEAN",
+        "infNFe.det[1].prod.cEANTrib",
+        "infNFe.det[1].prod.indTot",
+        "infNFe.emit.CRT",
+        "infNFe.emit.enderEmit",
+        "infNFe.ide.cMunFG",
+        "infNFe.ide.idDest",
+        "infNFe.ide.indFinal",
+        "infNFe.ide.indPres",
+        "infNFe.ide.procEmi",
+        "infNFe.ide.tpImp",
+        "infNFe.ide.tpNF",
+        "infNFe.ide.verProc",
+        "infNFe.pag",
+        "infNFe.transp",
+        "protNFe.infProt.verAplic",
+        "protNFe.infProt.xMotivo"
+      ]
+    },
+    "document": {
+      "kind": "invoice",
+      "key": "35260911222333000181550010000000691123456787",
+      "environment": "2",
+      "number": "69",
+      "series": "1",
+      "issuedAt": "2026-09-12T12:00:00-03:00",
+      "operation": "VENDA SINTETICA",
+      "purpose": {
+        "code": "6",
+        "creditType": null,
+        "debitType": "06"
+      },
+      "issuer": {
+        "kind": "CNPJ",
+        "document": "11222333000181",
+        "name": "EMITENTE SINTETICO",
+        "stateRegistration": "110042490114"
+      },
+      "recipient": null,
+      "total": "24.69",
+      "totals": [
+        {
+          "path": "vProdLiqTot",
+          "value": "22.45",
+          "representation": "text"
+        },
+        {
+          "path": "ICMSTot.vBC",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vICMS",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vICMSDeson",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCP",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vBCST",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vST",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCPST",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCPSTRet",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vProd",
+          "value": "24.69",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFrete",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vSeg",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vDesc",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vII",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vIPI",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vIPIDevol",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vPIS",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vCOFINS",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vOutro",
+          "value": "0.00",
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vNF",
+          "value": "24.69",
+          "representation": "decimal"
+        }
+      ],
+      "nt2026008": {
+        "vProdLiqTot": "22.45"
+      },
+      "products": [
+        {
+          "item": "1",
+          "code": "ITEM-69",
+          "description": "PRODUTO SINTETICO",
+          "ncm": "21069090",
+          "cfop": "5102",
+          "cest": "1709700",
+          "purchaseOrder": "PEDIDO-69",
+          "purchaseOrderItem": "000069",
+          "unit": "UN",
+          "quantity": "2.0000",
+          "unitPrice": "12.3456789012",
+          "total": "24.69",
+          "tributaryUnit": "UN",
+          "tributaryQuantity": "2.0000",
+          "tributaryUnitPrice": "12.3456789012",
+          "nt2026008": {
+            "vUnComLiq": "11.2233445566",
+            "vProdLiq": "22.45",
+            "vICMSPrevisto": "4.44"
+          },
+          "taxes": [
+            {
+              "path": "ICMS.ICMSPrevistoPagtoAntecip.vICMSPrevisto",
+              "value": "4.44",
+              "representation": "text"
+            },
+            {
+              "path": "PIS.PISNT.CST",
+              "value": "07",
+              "representation": "code"
+            },
+            {
+              "path": "COFINS.COFINSNT.CST",
+              "value": "07",
+              "representation": "code"
+            }
+          ]
+        }
+      ],
+      "protocol": {
+        "key": "35260911222333000181550010000000691123456787",
+        "environment": "2",
+        "status": "100",
+        "number": "135260000000069",
+        "receivedAt": "2026-09-12T12:01:00-03:00",
+        "digest": "57yKnQRQXOzRa1SIcpc4UzFN624="
+      }
+    }
+  },
+  "normalized": {
+    "metadata": {
+      "model": "55",
+      "source": "imported-xml",
+      "originalSha256": "22abb838a08f8745cc545ec401142f89c55e9944c6209a71ee6b4cbd353f4e7e",
+      "versions": {
+        "parser": "nfe-parser/4",
+        "normalizer": "nfe-normalizer/1",
+        "schema": {
+          "id": "nfeProc",
+          "version": "4.00",
+          "package": "nfe-4.00-010f",
+          "catalogSha256": "1e871ba26cdaa7367b6a8e670f3ad8f2185508cb9ab7eac3e4bc1aa690375cc8"
+        }
+      },
+      "unsupportedFields": [
+        "infNFe.det[1].prod.cEAN",
+        "infNFe.det[1].prod.cEANTrib",
+        "infNFe.det[1].prod.indTot",
+        "infNFe.emit.CRT",
+        "infNFe.emit.enderEmit",
+        "infNFe.ide.cMunFG",
+        "infNFe.ide.idDest",
+        "infNFe.ide.indFinal",
+        "infNFe.ide.indPres",
+        "infNFe.ide.procEmi",
+        "infNFe.ide.tpImp",
+        "infNFe.ide.tpNF",
+        "infNFe.ide.verProc",
+        "infNFe.pag",
+        "infNFe.transp",
+        "protNFe.infProt.verAplic",
+        "protNFe.infProt.xMotivo"
+      ]
+    },
+    "document": {
+      "kind": "invoice",
+      "key": "35260911222333000181550010000000691123456787",
+      "environment": "2",
+      "number": "69",
+      "series": "1",
+      "issuedAt": "2026-09-12T12:00:00-03:00",
+      "operation": "VENDA SINTETICA",
+      "purpose": {
+        "code": "6",
+        "creditType": null,
+        "debitType": "06"
+      },
+      "issuer": {
+        "kind": "CNPJ",
+        "document": "11222333000181",
+        "name": "EMITENTE SINTETICO",
+        "stateRegistration": "110042490114"
+      },
+      "recipient": null,
+      "total": {
+        "coefficient": "2469",
+        "scale": 2,
+        "declared": "24.69"
+      },
+      "totals": [
+        {
+          "path": "vProdLiqTot",
+          "value": "22.45",
+          "representation": "text"
+        },
+        {
+          "path": "ICMSTot.vBC",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vICMS",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vICMSDeson",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCP",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vBCST",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vST",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCPST",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFCPSTRet",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vProd",
+          "value": {
+            "coefficient": "2469",
+            "scale": 2,
+            "declared": "24.69"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vFrete",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vSeg",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vDesc",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vII",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vIPI",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vIPIDevol",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vPIS",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vCOFINS",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vOutro",
+          "value": {
+            "coefficient": "0",
+            "scale": 2,
+            "declared": "0.00"
+          },
+          "representation": "decimal"
+        },
+        {
+          "path": "ICMSTot.vNF",
+          "value": {
+            "coefficient": "2469",
+            "scale": 2,
+            "declared": "24.69"
+          },
+          "representation": "decimal"
+        }
+      ],
+      "nt2026008": {
+        "vProdLiqTot": {
+          "coefficient": "2245",
+          "scale": 2,
+          "declared": "22.45"
+        }
+      },
+      "products": [
+        {
+          "item": "1",
+          "code": "ITEM-69",
+          "description": "PRODUTO SINTETICO",
+          "ncm": "21069090",
+          "cfop": "5102",
+          "cest": "1709700",
+          "purchaseOrder": "PEDIDO-69",
+          "purchaseOrderItem": "000069",
+          "unit": "UN",
+          "quantity": {
+            "coefficient": "20000",
+            "scale": 4,
+            "declared": "2.0000"
+          },
+          "unitPrice": {
+            "coefficient": "123456789012",
+            "scale": 10,
+            "declared": "12.3456789012"
+          },
+          "total": {
+            "coefficient": "2469",
+            "scale": 2,
+            "declared": "24.69"
+          },
+          "tributaryUnit": "UN",
+          "tributaryQuantity": {
+            "coefficient": "20000",
+            "scale": 4,
+            "declared": "2.0000"
+          },
+          "tributaryUnitPrice": {
+            "coefficient": "123456789012",
+            "scale": 10,
+            "declared": "12.3456789012"
+          },
+          "nt2026008": {
+            "vUnComLiq": {
+              "coefficient": "112233445566",
+              "scale": 10,
+              "declared": "11.2233445566"
+            },
+            "vProdLiq": {
+              "coefficient": "2245",
+              "scale": 2,
+              "declared": "22.45"
+            },
+            "vICMSPrevisto": {
+              "coefficient": "444",
+              "scale": 2,
+              "declared": "4.44"
+            }
+          },
+          "taxes": [
+            {
+              "path": "ICMS.ICMSPrevistoPagtoAntecip.vICMSPrevisto",
+              "value": "4.44",
+              "representation": "text"
+            },
+            {
+              "path": "PIS.PISNT.CST",
+              "value": "07",
+              "representation": "code"
+            },
+            {
+              "path": "COFINS.COFINSNT.CST",
+              "value": "07",
+              "representation": "code"
+            }
+          ]
+        }
+      ],
+      "protocol": {
+        "key": "35260911222333000181550010000000691123456787",
+        "environment": "2",
+        "status": "100",
+        "number": "135260000000069",
+        "receivedAt": "2026-09-12T12:01:00-03:00",
+        "digest": "57yKnQRQXOzRa1SIcpc4UzFN624="
+      }
+    }
+  },
+  "checks": {
+    "parsing": {
+      "status": "passed",
+      "code": "XML_PARSED"
+    },
+    "normalization": {
+      "status": "passed",
+      "code": "NORMALIZATION_VALID"
+    },
+    "xsd": {
+      "status": "failed",
+      "code": "XSD_INVALID"
+    },
+    "identity": {
+      "status": "passed",
+      "code": "NFE_IDENTITY_VALID"
+    },
+    "signature": {
+      "status": "passed",
+      "code": "SIGNATURE_INTEGRITY_VALID"
+    },
+    "certificateTrust": {
+      "status": "not_checked",
+      "code": "CERTIFICATE_CHAIN_NOT_CHECKED"
+    },
+    "certificateTime": {
+      "status": "passed",
+      "code": "CERTIFICATE_VALID_AT_EVALUATION"
+    },
+    "fiscalEvidence": {
+      "status": "failed",
+      "code": "FISCAL_EVIDENCE_INCONSISTENT"
+    },
+    "originTrust": {
+      "status": "not_checked",
+      "code": "FISCAL_ORIGIN_NOT_AUTHENTICATED"
+    }
+  },
+  "signature": {
+    "referenceId": "NFe35260911222333000181550010000000691123456787",
+    "referenceSha256": "14cbb071ba6c4388aba89ea02d6d963286b0df5a544e07a2b8d8d7ebbfb82161",
+    "certificateSha256": "823ffc5f3f1d9e5614753748ad4562dbc4e031699f54231678fb50d4e145cad7",
+    "evaluatedAt": "2026-09-12T15:00:00Z"
+  }
+}

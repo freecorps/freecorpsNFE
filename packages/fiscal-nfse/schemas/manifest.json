@@ -1,0 +1,113 @@
+{
+  "version": 2,
+  "sources": [
+    {
+      "id": "nfse-1.01-20260209",
+      "page": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual",
+      "source": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual/nfse-esquemas_xsd-v1-01-20260209.zip",
+      "archiveSha256": "e7935cbd9470527c6cc32984c1b2263e614183bf0139ce2733eaaed2de9a8072",
+      "retrievedAt": "2026-10-09"
+    },
+    {
+      "id": "nfse-1.01-prodrest-20261020",
+      "page": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita",
+      "source": "https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita/esquemas_prod_restrita_20261020.zip",
+      "archiveSha256": "25fdcecc651a67a216496ab10d7566631e6ed10f721e37d62c7845dadb0ea267",
+      "retrievedAt": "2026-11-02"
+    }
+  ],
+  "files": [
+    {
+      "path": "nfse-1.01-20260209/DPS_v1.01.xsd",
+      "archivePath": "Schemas/1.01/DPS_v1.01.xsd",
+      "sha256": "fe45e5250a48e519aba89fc6a472863b8e602ed957778fb64692804933a00d0c",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "fe45e5250a48e519aba89fc6a472863b8e602ed957778fb64692804933a00d0c"
+    },
+    {
+      "path": "nfse-1.01-20260209/pedRegEvento_v1.01.xsd",
+      "archivePath": "Schemas/1.01/pedRegEvento_v1.01.xsd",
+      "sha256": "e90b6816d29cca0bd5ed8f86ad98d3b7b0d8bbfc11a7583e6ff8f98170fd4009",
+      "byteOrderMark": true,
+      "runtimeUtf8Sha256": "e90b6816d29cca0bd5ed8f86ad98d3b7b0d8bbfc11a7583e6ff8f98170fd4009"
+    },
+    {
+      "path": "nfse-1.01-20260209/tiposComplexos_v1.01.xsd",
+      "archivePath": "Schemas/1.01/tiposComplexos_v1.01.xsd",
+      "sha256": "e8e09d525574cc224ca6d1f8d8eb0366043ab2a3aa8d0d234058e6244d60e371",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "e8e09d525574cc224ca6d1f8d8eb0366043ab2a3aa8d0d234058e6244d60e371"
+    },
+    {
+      "path": "nfse-1.01-20260209/tiposEventos_v1.01.xsd",
+      "archivePath": "Schemas/1.01/tiposEventos_v1.01.xsd",
+      "sha256": "1b32bea21089dc232d78b62d805e9c07382f440d4e0ea2cb3fb6b82ebde68c11",
+      "byteOrderMark": true,
+      "runtimeUtf8Sha256": "1b32bea21089dc232d78b62d805e9c07382f440d4e0ea2cb3fb6b82ebde68c11"
+    },
+    {
+      "path": "nfse-1.01-20260209/tiposSimples_v1.01.xsd",
+      "archivePath": "Schemas/1.01/tiposSimples_v1.01.xsd",
+      "sha256": "830ea116c34d7310699e34b214b7214a65f7e5d3b1f09aeaa702f7e3f4283b17",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "830ea116c34d7310699e34b214b7214a65f7e5d3b1f09aeaa702f7e3f4283b17",
+      "loadTimeAdjustment": "TSSerieDPS: anchors ^ and $ removed when loading (literal characters in XSD regex)"
+    },
+    {
+      "path": "nfse-1.01-20260209/xmldsig-core-schema.xsd",
+      "archivePath": "Schemas/1.01/xmldsig-core-schema.xsd",
+      "sha256": "49848f732663aecb618d72ad6130c5c3240f0a10f3a1a8544b7d48a6c726046f",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "49848f732663aecb618d72ad6130c5c3240f0a10f3a1a8544b7d48a6c726046f"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/DPS_v1.01.xsd",
+      "archivePath": "DPS_v1.01.xsd",
+      "sha256": "fe45e5250a48e519aba89fc6a472863b8e602ed957778fb64692804933a00d0c",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "fe45e5250a48e519aba89fc6a472863b8e602ed957778fb64692804933a00d0c"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/pedRegEvento_v1.01.xsd",
+      "archivePath": "pedRegEvento_v1.01.xsd",
+      "sha256": "e90b6816d29cca0bd5ed8f86ad98d3b7b0d8bbfc11a7583e6ff8f98170fd4009",
+      "byteOrderMark": true,
+      "runtimeUtf8Sha256": "e90b6816d29cca0bd5ed8f86ad98d3b7b0d8bbfc11a7583e6ff8f98170fd4009"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/tiposComplexos_v1.01.xsd",
+      "archivePath": "tiposComplexos_v1.01.xsd",
+      "sha256": "4f66f7c15bd3b05b3a16cbe5fa671b90c10e4c9c74276038730be1c8c794b721",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "4f66f7c15bd3b05b3a16cbe5fa671b90c10e4c9c74276038730be1c8c794b721"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/tiposEventos_v1.01.xsd",
+      "archivePath": "tiposEventos_v1.01.xsd",
+      "sha256": "1b32bea21089dc232d78b62d805e9c07382f440d4e0ea2cb3fb6b82ebde68c11",
+      "byteOrderMark": true,
+      "runtimeUtf8Sha256": "1b32bea21089dc232d78b62d805e9c07382f440d4e0ea2cb3fb6b82ebde68c11"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/tiposSimples_v1.01.xsd",
+      "archivePath": "tiposSimples_v1.01.xsd",
+      "sha256": "562e326724f85cd7c41176d35e67c542376784d4c950ec1719704d480a8af226",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "562e326724f85cd7c41176d35e67c542376784d4c950ec1719704d480a8af226"
+    },
+    {
+      "path": "nfse-1.01-prodrest-20261020/xmldsig-core-schema.xsd",
+      "archivePath": "xmldsig-core-schema.xsd",
+      "sha256": "8c9792a056aedcadfc95bf16f2d7448a35da40df71533e20aea37d0329980c48",
+      "byteOrderMark": false,
+      "runtimeUtf8Sha256": "8c9792a056aedcadfc95bf16f2d7448a35da40df71533e20aea37d0329980c48"
+    }
+  ],
+  "redistribution": {
+    "license": "CC-BY-ND-3.0",
+    "source": "Portal NFS-e (gov.br/nfse): Documentação Atual, Esquemas XSD v1.01-20260209; Documentação Técnica (Homologação/testes), Esquemas XSD de 20/10/2026",
+    "attribution": "Receita Federal, Portal NFS-e, https://www.gov.br/nfse",
+    "xmldsig": "W3C Software Notice and License 19980720, full text in LICENSING.md",
+    "decision": "Redistributed unmodified by maintainer decision on 2026-10-20; the BOM and the TSSerieDPS anchors are adjusted in memory when loading; see LICENSING.md"
+  }
+}

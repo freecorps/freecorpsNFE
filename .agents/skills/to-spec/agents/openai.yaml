@@ -1,0 +1,5 @@
+interface:
+  display_name: "Criar especificação"
+  short_description: "Conversa convertida em especificação verificável"
+policy:
+  allow_implicit_invocation: false

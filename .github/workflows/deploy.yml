@@ -1,0 +1,81 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Bootstrap after reset, or release after login proof
+        required: true
+        type: choice
+        options: [release, bootstrap]
+        default: release
+      approved_sha:
+        description: Full main SHA approved after reset and release review
+        required: true
+        type: string
+      release_plan_hash:
+        description: SHA-256 of the reviewed deploy/platform-release.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  # The owner review gate reads the pull requests and reviews of each protected commit (#424).
+  pull-requests: read
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha)
+    uses: ./.github/workflows/ci.yml
+  publish:
+    name: Publish production
+    needs: validate
+    if: needs.validate.outputs.tested_sha == github.sha
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.tested_sha }}
+          persist-credentials: false
+          # History for the published-revision comparison (scripts/lib/platform-unchanged.mjs).
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Identify the versioned plan for an automatic release
+        if: github.event_name == 'push'
+        id: plan
+        run: |
+          node --input-type=module -e 'import { readFileSync, appendFileSync } from "node:fs"; import { createHash } from "node:crypto"; const hash = createHash("sha256").update(readFileSync("deploy/platform-release.json")).digest("hex"); appendFileSync(process.env.GITHUB_OUTPUT, "sha256=" + hash + "\n");'
+      - name: Publish the approved replacement platform
+        env:
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
+          RELEASE_APPROVED_SHA: ${{ github.event_name == 'push' && github.sha || inputs.approved_sha }}
+          RELEASE_PLAN_HASH: ${{ github.event_name == 'push' && steps.plan.outputs.sha256 || inputs.release_plan_hash }}
+          RELEASE_OPERATION: ${{ github.event_name == 'push' && 'release' || inputs.operation }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+          WRANGLER_SEND_METRICS: "false"
+        run: node scripts/deploy-platform.mjs
+      - name: Record publication or partial failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: platform-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/platform-release/receipt.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,266 @@
+name: Offsite backup
+
+# D04 (docs/operacao/backup.md): encrypted copy of production database and storage
+# to R2 every 12 hours, and a monitor that runs on another runner. Snapshot at
+# 00:00/12:00 BRT; check 90 minutes later. Manual dispatch runs either job.
+on:
+  schedule:
+    - cron: "0 3,15 * * *"
+    - cron: "30 4,16 * * *"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Snapshot to R2, or check the latest copy
+        required: true
+        type: choice
+        options: [snapshot, check]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offsite-backup-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+env:
+  AGE_VERSION: v1.3.2
+  AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+
+jobs:
+  snapshot:
+    name: Encrypted snapshot
+    if: github.ref == 'refs/heads/main' && (github.event.schedule == '0 3,15 * * *' || inputs.job == 'snapshot')
+    # A fresh Blacksmith VM; production credentials stay in the protected environment.
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 60
+    environment: offsite-backup
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Install pinned age
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+          echo "AGE_KEYGEN_BIN=$RUNNER_TEMP/age/age-keygen" >> "$GITHUB_ENV"
+      - name: Export, encrypt and upload
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
+          R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
+        run: node scripts/backup-offsite.mjs snapshot
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-backup-snapshot-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/offsite-backup/snapshot.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+
+  check:
+    name: Check latest copy
+    if: github.ref == 'refs/heads/main' && (github.event.schedule == '30 4,16 * * *' || inputs.job == 'check')
+    # A separate VM and schedule, without a dependency on the snapshot job.
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    environment: offsite-backup
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Verify age, hash and retention of the off-host copies
+        id: check
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_READ_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
+          R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
+          R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
+        run: node scripts/backup-offsite.mjs check
+      # One open issue carries the alert; recovery closes it.
+      - name: Open or update the alert
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check.json"); console.log(r.error ?? "falha sem recibo") } catch { console.log("falha sem recibo") }')
+          body=$(printf 'Backup externo D04 fora do esperado.\n\n%s\n\nRun: %s\n\nRoteiro: docs/operacao/backup.md#alerta' "$problem" "$RUN_URL")
+          number=$(gh issue list --label offsite-backup-alert --state open --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh label create offsite-backup-alert --color B60205 --description "Alerta do backup externo D04" 2>/dev/null || true
+            gh issue create --title "Alerta: backup externo D04" --label offsite-backup-alert --assignee wolf-stievano --body "$body"
+          fi
+      - name: Close a recovered alert
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for number in $(gh issue list --label offsite-backup-alert --state open --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "Backup externo íntegro e dentro do prazo. Run: $RUN_URL"
+          done
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-backup-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/offsite-backup/check.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+
+  # The NFS-e fiscal production deployment (#198) gets the same copy and check, under its own
+  # prefix, from its own environment. A plan job without secrets runs first: while
+  # deploy/issuance-production.json names no deployment, the two jobs below are skipped, their
+  # environment is never used and nothing is copied.
+  issuance-plan:
+    name: Fiscal production deployment named
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 10
+    outputs:
+      named: ${{ steps.plan.outputs.named }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      - name: Read the versioned plan
+        id: plan
+        run: |
+          if node scripts/issuance-gate.mjs plan; then
+            echo "named=true" >> "$GITHUB_OUTPUT"
+          elif grep -q '"code": "PLAN_NOT_NAMED"' .ci-results/issuance-gate/receipt.json; then
+            echo "::notice::Sem deployment de produção fiscal no plano; nada a copiar."
+            echo "named=false" >> "$GITHUB_OUTPUT"
+          else
+            exit 1
+          fi
+
+  snapshot-issuance:
+    name: Encrypted snapshot of the fiscal production
+    needs: issuance-plan
+    if: needs.issuance-plan.outputs.named == 'true' && (github.event.schedule == '0 3,15 * * *' || inputs.job == 'snapshot')
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 60
+    environment: offsite-backup-issuance
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Install pinned age
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+          echo "AGE_KEYGEN_BIN=$RUNNER_TEMP/age/age-keygen" >> "$GITHUB_ENV"
+      - name: Export, encrypt and upload
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
+          R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
+        run: node scripts/backup-offsite.mjs snapshot --target issuance
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-backup-snapshot-issuance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/offsite-backup/snapshot-issuance.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+
+  check-issuance:
+    name: Check latest copy of the fiscal production
+    needs: issuance-plan
+    if: needs.issuance-plan.outputs.named == 'true' && (github.event.schedule == '30 4,16 * * *' || inputs.job == 'check')
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    environment: offsite-backup-issuance
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Verify age, hash and retention of the off-host copies
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_READ_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
+          R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
+          R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
+        run: node scripts/backup-offsite.mjs check --target issuance
+      - name: Open or update the alert
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check-issuance.json"); console.log(r.error ?? "falha sem recibo") } catch { console.log("falha sem recibo") }')
+          body=$(printf 'Backup externo da produção fiscal NFS-e fora do esperado.\n\n%s\n\nRun: %s\n\nRoteiro: docs/operacao/backup.md#alerta' "$problem" "$RUN_URL")
+          number=$(gh issue list --label offsite-backup-issuance-alert --state open --json number --jq '.[0].number')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh label create offsite-backup-issuance-alert --color B60205 --description "Alerta do backup externo da produção fiscal" 2>/dev/null || true
+            gh issue create --title "Alerta: backup externo da produção fiscal NFS-e" --label offsite-backup-issuance-alert --assignee wolf-stievano --body "$body"
+          fi
+      - name: Close a recovered alert
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for number in $(gh issue list --label offsite-backup-issuance-alert --state open --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "Backup externo da produção fiscal íntegro e dentro do prazo. Run: $RUN_URL"
+          done
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offsite-backup-check-issuance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/offsite-backup/check-issuance.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

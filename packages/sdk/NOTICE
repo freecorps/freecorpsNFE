@@ -1,0 +1,7 @@
+@freecorps/sdk
+Copyright (c) 2026 FREECORPS TECNOLOGIA DA INFORMACAO LTDA
+Copyright 2026 Freecorps and contributors.
+
+Own SDK code and bundled external contract files use MIT, see LICENSE.
+No fiscal engine, fiscal-core or server code is included.
+Zod retains its MIT license and notices in THIRD_PARTY_NOTICES.txt.

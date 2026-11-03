@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client", "@types/mdx"],
+    "resolveJsonModule": true,
+    "paths": {}
+  },
+  "include": ["app", "scripts", "vite.config.ts", "react-router.config.ts"]
+}

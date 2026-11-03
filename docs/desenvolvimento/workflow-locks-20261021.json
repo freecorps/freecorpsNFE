@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "runtime": "v22.15.0",
+  "platform": "win32",
+  "arch": "x64",
+  "operation": "quatro ciclos de acquire/join/contender/release e withOperation com concorrente recusado",
+  "protocol": "um aquecimento por variante; cinco pares alternados; subprocesso novo por amostra; primeira sonda incluída",
+  "revisions": {
+    "base": {
+      "head": "4691d78a32e3ad0c8f7327a07ed3041045cb23d9",
+      "files": {
+        "scripts/lib/validation-lock.mjs": "88df91dc2acb3a4f124de07741b96e3a33682abd0bff86943792700e0958ed87",
+        "scripts/lib/worktree/operation.mjs": "59c0fd9b4ac46d71320999c75f6a7c8241e08eff8aa6deafa991d6b870cdcb78",
+        "scripts/lib/worktree/process-identity.mjs": "9555dce07c49fca24b7425cbdd4a1c4b0d314aa2e4d927ed76ca6d10c28b0e86",
+        "scripts/lib/worktree/exec.mjs": "2d78f21210e09ed9fe8fea5ea0b3abe55f02cefae068907d3af4a2d163922910",
+        "scripts/lib/worktree/paths.mjs": "9119ec00dd131cbb272e3dd3490452bc2616fd8961faa8ea4d2048ef157e1d5b"
+      }
+    },
+    "candidate": {
+      "head": "4691d78a32e3ad0c8f7327a07ed3041045cb23d9",
+      "files": {
+        "scripts/lib/validation-lock.mjs": "88df91dc2acb3a4f124de07741b96e3a33682abd0bff86943792700e0958ed87",
+        "scripts/lib/worktree/operation.mjs": "59c0fd9b4ac46d71320999c75f6a7c8241e08eff8aa6deafa991d6b870cdcb78",
+        "scripts/lib/worktree/process-identity.mjs": "5dd1979f9eda3bd68c614183167b8c10645e9825a8d7277e76ec593a9e4d4cc9",
+        "scripts/lib/worktree/exec.mjs": "2d78f21210e09ed9fe8fea5ea0b3abe55f02cefae068907d3af4a2d163922910",
+        "scripts/lib/worktree/paths.mjs": "9119ec00dd131cbb272e3dd3490452bc2616fd8961faa8ea4d2048ef157e1d5b"
+      }
+    }
+  },
+  "samples": [
+    {
+      "variant": "base",
+      "warmup": true,
+      "round": -1,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5403.5674,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": true,
+      "round": -1,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 357.05600000000004,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": false,
+      "round": 0,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 356.4842,
+      "cycles": 4
+    },
+    {
+      "variant": "base",
+      "warmup": false,
+      "round": 0,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5352.402599999999,
+      "cycles": 4
+    },
+    {
+      "variant": "base",
+      "warmup": false,
+      "round": 1,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5304.4569,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": false,
+      "round": 1,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 360.51849999999996,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": false,
+      "round": 2,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 386.9398,
+      "cycles": 4
+    },
+    {
+      "variant": "base",
+      "warmup": false,
+      "round": 2,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5372.1695,
+      "cycles": 4
+    },
+    {
+      "variant": "base",
+      "warmup": false,
+      "round": 3,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5362.2307,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": false,
+      "round": 3,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 365.7467,
+      "cycles": 4
+    },
+    {
+      "variant": "candidate",
+      "warmup": false,
+      "round": 4,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 363.1907,
+      "cycles": 4
+    },
+    {
+      "variant": "base",
+      "warmup": false,
+      "round": 4,
+      "exitCode": 0,
+      "signal": null,
+      "result": "passed",
+      "durationMs": 5336.7003,
+      "cycles": 4
+    }
+  ],
+  "result": "passed"
+}

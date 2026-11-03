@@ -1,0 +1,347 @@
+/* Coverage: Brazil from Natural Earth (map.ts), drawn lit. With JavaScript and
+   motion allowed, the routes leave Campinas in ten waves (.w0 to .w9, by
+   distance) when the section comes into view: each capital lights when its
+   route lands and its state fills behind it, then the map settles. */
+.coverage {
+  position: relative;
+  isolation: isolate;
+  padding: 140px var(--pad);
+  border-block: 1px solid var(--line);
+  background: radial-gradient(ellipse 60% 70% at 70% 50%, rgba(47, 107, 82, 0.16), transparent 70%);
+}
+.coverage-glow {
+  z-index: -1;
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 70% 50%, #000, transparent 75%);
+  mask-image: radial-gradient(ellipse 60% 70% at 70% 50%, #000, transparent 75%);
+}
+.coverage-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 5.4fr) minmax(0, 6.6fr);
+  align-items: center;
+  gap: clamp(40px, 6vw, 88px);
+  max-width: var(--max);
+  margin: 0 auto;
+}
+.coverage-copy {
+  display: grid;
+  gap: 24px;
+}
+.coverage-copy > p {
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 20px 0 0;
+  border-top: 1px solid var(--line);
+}
+.stats div {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 22px 0 0 20px;
+  border-left: 1px solid var(--line);
+}
+.stats div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.stats dd {
+  margin: 0;
+  font-size: clamp(34px, 3.6vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stats dt {
+  color: var(--faint);
+  font: 12px/1.4 var(--font-mono);
+}
+
+.coverage-map {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  max-width: 580px;
+  margin: 0;
+  padding-bottom: 8px;
+  justify-self: center;
+}
+.map {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.map .land {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  opacity: 0.42;
+}
+.map-borders,
+.map-edge {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.map-borders,
+.map-edge {
+  stroke-width: 1;
+}
+.map-borders {
+  stroke: #3d5347;
+}
+.map-edge {
+  stroke: #6e8277;
+}
+.map .route {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms var(--ease-out);
+}
+.map .hit {
+  fill: transparent;
+}
+.map .city:hover .route {
+  opacity: 0.5;
+}
+.map .city:hover .capital {
+  fill: var(--glow);
+}
+.map .capital {
+  fill: var(--glow-hi);
+  stroke: var(--night);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.map .ping {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 1;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.map .label {
+  fill: var(--muted);
+  font: 11.5px var(--font-mono);
+  letter-spacing: 0.01em;
+  paint-order: stroke;
+  stroke: var(--night);
+  stroke-width: 4.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.map .origin {
+  fill: var(--glow-hi);
+  stroke: var(--night);
+  stroke-width: 2;
+  filter: url(#iso-glow);
+}
+.map .origin-label {
+  fill: var(--glow);
+}
+.map .origin-ring {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 1.2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.coverage-map figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  /* Start where the land starts: the outline sits 9 units into the viewBox. */
+  padding-left: 1.5%;
+  gap: 8px 28px;
+  color: var(--faint);
+  font: 12.5px var(--font-mono);
+}
+.coverage-map figcaption span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.coverage-map figcaption span::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--glow-hi);
+}
+.coverage-map .key-origin::before {
+  box-shadow:
+    0 0 0 3px var(--night),
+    0 0 0 4px var(--glow);
+}
+
+.map .w1 {
+  --d: 0.2s;
+}
+.map .w2 {
+  --d: 0.4s;
+}
+.map .w3 {
+  --d: 0.6s;
+}
+.map .w4 {
+  --d: 0.8s;
+}
+.map .w5 {
+  --d: 1s;
+}
+.map .w6 {
+  --d: 1.2s;
+}
+.map .w7 {
+  --d: 1.4s;
+}
+.map .w8 {
+  --d: 1.6s;
+}
+.map .w9 {
+  --d: 1.8s;
+}
+
+/* Every step is paused (holding its first frame) until client.ts adds .seen;
+   a route takes 0.75s to land, then its capital, label and state light. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .coverage .map :is(.land, .route, .capital, .ping, .label, .origin, .origin-ring) {
+    animation-play-state: paused;
+  }
+  .js .coverage.seen .map :is(.land, .route, .capital, .ping, .label, .origin, .origin-ring) {
+    animation-play-state: running;
+  }
+  .js .coverage .map .origin {
+    animation: map-pop 600ms var(--ease-out) both;
+  }
+  .js .coverage .map .origin-ring {
+    animation: map-ring 2.6s var(--ease-out) 0.4s infinite;
+  }
+  .js .coverage .map .route {
+    animation: map-route 1.4s var(--ease-out) calc(var(--d, 0s) + 0.2s) both;
+  }
+  .js .coverage .map .capital {
+    animation: map-pop 700ms var(--ease-out) calc(var(--d, 0s) + 0.95s) both;
+  }
+  .js .coverage .map .ping {
+    animation: map-ping 1.1s var(--ease-out) calc(var(--d, 0s) + 0.95s);
+  }
+  .js .coverage .map .label {
+    animation: map-fade 600ms var(--ease-out) calc(var(--d, 0s) + 1s) both;
+  }
+  .js .coverage .map .land {
+    animation: map-land 1.1s var(--ease-out) calc(var(--d, 0s) + 0.95s) both;
+  }
+}
+@keyframes map-route {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+    stroke: var(--glow-hi);
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes map-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.7);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes map-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes map-land {
+  0% {
+    stroke: #33493d;
+    opacity: 1;
+  }
+  30% {
+    stroke: var(--glow-hi);
+    opacity: 0.75;
+  }
+}
+@keyframes map-ping {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
+@keyframes map-ring {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .coverage-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+  }
+  .coverage-copy > p {
+    max-width: 56ch;
+  }
+  .coverage-map {
+    max-width: 560px;
+  }
+}
+@media (max-width: 640px) {
+  .coverage {
+    padding-block: 96px;
+  }
+  .stats div {
+    padding-left: 14px;
+  }
+  .map .label {
+    font-size: 18.5px;
+    stroke-width: 4.5;
+  }
+  .map .minor {
+    display: none;
+  }
+  .coverage-map figcaption {
+    gap: 8px 20px;
+    font-size: 12px;
+  }
+}

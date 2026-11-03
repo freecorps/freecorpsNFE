@@ -1,0 +1,61 @@
+---
+title: Ajuda e condições de acesso
+description: Quem pode usar o serviço hospedado hoje, o que o ambiente de teste inclui, o estado dos planos, a diferença para a instalação própria e como pedir ajuda sem expor XML, credenciais ou dados fiscais.
+---
+
+## Quem pode usar hoje [#quem-pode-usar]
+
+O serviço hospedado é o site e o painel em `https://nfe.freecorps.com.br` e a API em `https://api.nfe.freecorps.com.br`, operados pela Freecorps. Para usá-lo, <a href="/signup?redirect=%2Fconsole%3Ftarefa%3Dimportar">crie uma conta</a>, confirme o código recebido por e-mail e crie uma organização. Na organização você cadastra empresas, convida pessoas com papéis e cria projetos com chaves de API, como em [Conceitos](/docs/conceitos).
+
+No serviço hospedado, a importação e a emissão simulada de NFS-e rodam só no ambiente de teste, chamado `sandbox`, onde também ficam a consulta, a exportação e os webhooks desses documentos. A emissão no sandbox usa transporte simulado e não tem validade fiscal; a emissão com validade fiscal está desligada.
+
+O único caminho que consulta o fisco em produção é a [captura de NF-e](/docs/captura-nfe), empresa por empresa. O cartão de ativação aparece na empresa quando a Freecorps oferece a captura fiscal no ambiente, e só `owner` e `admin` a ativam, com o certificado A1 da empresa e o aceite dos termos da captura. A plataforma só lê a distribuição e não manifesta. Depois da ativação, o ambiente `production` daquela empresa serve à captura e à consulta, à exportação e aos webhooks dos documentos capturados ([Conceitos, Ambientes](/docs/conceitos#ambientes)). A captura em produção também exige um plano vigente atribuído pela Freecorps ([códigos da captura](/docs/captura-nfe#codigos)).
+
+Os [termos de uso](/termos), com a cláusula de operadora, e a [política de privacidade](/privacidade) do serviço hospedado estão publicados, cada um com a versão e o SHA-256 do texto. Um proprietário aceita os termos de uso no painel ao criar a organização. As organizações que já existiam na publicação recebem o aviso no painel e por e-mail e têm 30 dias para aceitar; depois disso, sem o aceite, a organização não cria operações novas, e a leitura, a exportação e os pedidos de titulares continuam. A captura fiscal tem termos próprios, que a empresa aceita no painel ao ativá-la. A consulta CNPJ tem aviso próprio, em [Privacidade da consulta CNPJ](/docs/privacidade-cnpj).
+
+## O que o ambiente de teste inclui [#teste]
+
+O ambiente de teste não pede certificado fiscal. Ele traz as capacidades marcadas como disponíveis na [página inicial](/docs#o-que-faz) e a empresa de demonstração, criada em <Ui>Primeiros passos</Ui>, que aceita o XML de exemplo. Os guias [Importar XML pelo painel](/docs/importar-pelo-painel) e [Primeira chamada](/docs/primeira-chamada) usam só dados fictícios.
+
+Importar um XML no ambiente de teste prova que o arquivo foi lido e guardado. Não prova que a nota foi autorizada pelo fisco.
+
+Os limites de chamadas por minuto, de arquivos por reserva e de destinos de webhook, com a resposta de cada um, estão em [Contrato, Limites](/docs/contrato#limites), a página dona desses números. Cada ambiente tem cota própria, e o teste não gasta a cota de produção. Em <Ui>Uso e limites</Ui>, `owner` e `admin` veem o consumo e, quando há plano, as cotas.
+
+## Planos e cobrança [#planos]
+
+O catálogo de planos está desligado: o site e o painel não ofertam planos nem preços. As regras de cobrança já constam da seção 5A dos termos de uso e valem quando um plano pago estiver à venda no painel. Não há SLA de disponibilidade.
+
+A captura em produção é a exceção que já exige plano. Sem ele, a consulta para com `PLAN_REQUIRED` ([Captura, códigos](/docs/captura-nfe#codigos)). O plano é atribuído pela Freecorps. Enquanto o catálogo está desligado, peça o plano, ou mais capacidade, pelo canal de [Como pedir ajuda](#pedir-ajuda); esse canal vale para todas as organizações até a liberação do catálogo. Atingir uma cota não apaga documentos nem gera cobrança automática por excedente, como descrito em [Contrato, Limites](/docs/contrato#limites).
+
+## Serviço hospedado ou instalação própria [#instalacao-propria]
+
+No serviço hospedado, a Freecorps opera a infraestrutura, os ambientes e os bloqueios fiscais. Na [instalação própria](/docs/instalacao#aplicacao), a aplicação completa roda na sua infraestrutura, e quem opera responde por banco, arquivos, chaves de criptografia, e-mail, TLS, cópias de segurança e atualizações. Ela depende do repositório, que continua privado; o estado de cada artefato está em [o que está disponível hoje](/docs/instalacao#disponibilidade).
+
+Operar a parte fiscal de clientes ou de outros terceiros pede autorização escrita, conforme a [Licença Freecorps 1.0](/docs/licencas#freecorps). Para a instalação própria não há política de suporte nem prazo de correção prometido.
+
+## Como pedir ajuda [#pedir-ajuda]
+
+Escreva para [suporte@nfe.freecorps.com.br](mailto:suporte@nfe.freecorps.com.br). É o canal geral do serviço hospedado para dúvidas de uso, erros do painel ou da API, acesso à conta e, enquanto o catálogo está desligado, pedidos de plano. Respondemos assim que possível, sem prazo garantido.
+
+Para localizar o que aconteceu, informe:
+
+1. O que você tentava fazer, em qual tela do painel ou operação da API.
+2. O `code` e o `requestId` da resposta de erro, descritos em [Contrato, Erros](/docs/contrato#erros). No painel, o <Ui>Código para suporte</Ui> da linha.
+3. A `Idempotency-Key` usada, quando a escrita tinha uma, e os ids devolvidos, como `importId`, `operationId` ou `documentId`.
+4. O ambiente, `sandbox` ou `production`, e o horário aproximado, com o fuso.
+
+<Callout type="warn" title="Não envie dados sensíveis">
+  Não envie XML, certificado A1 ou a senha dele, senha de conta, chave de API, segredo de webhook
+  nem dados fiscais, como valores, chaves de acesso ou CNPJ de clientes. Os códigos e ids acima
+  servem para localizar o pedido. Se o problema depende de um arquivo, descreva o erro ou reproduza
+  com o [XML de exemplo](/docs/primeira-chamada#arquivos). Se uma chave saiu na mensagem por engano,
+  revogue-a em <Ui>Chaves de API</Ui> e gere outra.
+</Callout>
+
+## Privacidade e segurança [#outros-canais]
+
+Cada endereço tem uma finalidade. Envie cada pedido ao canal dele:
+
+- **Privacidade:** pedidos sobre dados pessoais, como os direitos de titular na consulta CNPJ, vão para [privacidade@nfe.freecorps.com.br](mailto:privacidade@nfe.freecorps.com.br), conforme [Privacidade da consulta CNPJ](/docs/privacidade-cnpj#direitos). Esse canal não atende dúvidas de uso nem erros.
+- **Segurança:** suspeitas de vulnerabilidade vão para [seguranca@nfe.freecorps.com.br](mailto:seguranca@nfe.freecorps.com.br), com a revisão afetada, uma reprodução mínima com dados inventados, o impacto e o resultado esperado e observado. Não teste acesso a dados de terceiros.
+- **Suporte:** dúvidas de uso, erros e acesso vão para [suporte@nfe.freecorps.com.br](mailto:suporte@nfe.freecorps.com.br), como descrito acima.

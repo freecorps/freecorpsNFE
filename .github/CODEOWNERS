@@ -1,0 +1,93 @@
+# Owners of what can publish the platform, change the NFS-e fiscal production or open the fiscal
+# capture transport of the hosted site (#198, ADR 0004 §8, ADR 0007, #424). The current GitHub
+# plan of the organization (free, private repository) enforces neither the branch protection of
+# `main` nor code owner review, so this file only requests the review. The compensation chosen on
+# 26/10/2026 (ADR 0007, #424) is the owner review gate of the publication:
+# scripts/lib/owner-review.mjs refuses to publish a commit that touches a path below without an
+# owner's approval.
+# Single owner: wolf-stievano, the project owner, by his decision of 26/10/2026, until he changes
+# it. Since he is also the author of the commits, the approval is his `workflow_dispatch` of
+# `Deploy production` (operation release, or bootstrap after a reset) for the SHA: a push to
+# `main` that brings a commit touching a path below does not publish by itself.
+
+# Workflows, including the gate and probe of the fiscal production, and this file.
+/.github/workflows/ @wolf-stievano
+/.github/CODEOWNERS @wolf-stievano
+
+# Versioned plans: release, offsite backup, fiscal production and its authorized people.
+/deploy/ @wolf-stievano
+# Who may trigger the emergency workflows of the NFS-e gate and of the fiscal capture.
+/deploy/issuance-gate.json @wolf-stievano
+
+# What the workflows run with production credentials.
+/scripts/issuance-gate.mjs @wolf-stievano
+/scripts/lib/issuance-gate.mjs @wolf-stievano
+/scripts/capture-release.mjs @wolf-stievano
+/scripts/lib/capture-release.mjs @wolf-stievano
+/scripts/lib/sealed-receipt.mjs @wolf-stievano
+/scripts/deploy-platform.mjs @wolf-stievano
+/scripts/lib/platform-release.mjs @wolf-stievano
+/scripts/lib/platform-unchanged.mjs @wolf-stievano
+/scripts/lib/owner-review.mjs @wolf-stievano
+# Everything deploy-platform.mjs imports runs in the process that holds the production keys, and
+# the build scripts it spawns run as the same user, which can read that process environment.
+# scripts/owner-review.test.ts fails if a module of those import graphs is left out.
+/platform/account-policy.mjs @wolf-stievano
+/platform/installation.ts @wolf-stievano
+/scripts/lib/installation-headers.mjs @wolf-stievano
+/scripts/lib/platform-operator.mjs @wolf-stievano
+/scripts/lib/platform-smoke.mjs @wolf-stievano
+/scripts/lib/repository.mjs @wolf-stievano
+/scripts/lib/smoke-diagnostic.mjs @wolf-stievano
+/scripts/lib/subprocess-environment.mjs @wolf-stievano
+/scripts/lib/terms-notice.mjs @wolf-stievano
+/scripts/lib/validation-deploy.mjs @wolf-stievano
+/scripts/lib/validation.mjs @wolf-stievano
+/lib/worktree-local.ts @wolf-stievano
+/scripts/build-fiscal-packages.mjs @wolf-stievano
+/scripts/lib/platform-build.mjs @wolf-stievano
+/scripts/lib/selfhost-environment.mjs @wolf-stievano
+/scripts/lib/selfhost.mjs @wolf-stievano
+/scripts/lib/worktree/deployment.mjs @wolf-stievano
+/scripts/lib/worktree/env-file.mjs @wolf-stievano
+/scripts/lib/worktree/exec.mjs @wolf-stievano
+/scripts/lib/worktree/paths.mjs @wolf-stievano
+/scripts/selfhost.mjs @wolf-stievano
+/scripts/lib/selfhost-server.mjs @wolf-stievano
+/apps/console/page-request.mjs @wolf-stievano
+
+# The installed dependencies run in the build, and the Convex and wrangler CLIs receive the
+# production keys: the lockfile and the manifests of the root and of every workspace.
+/bun.lock @wolf-stievano
+/package.json @wolf-stievano
+/platform/package.json @wolf-stievano
+/apps/console/package.json @wolf-stievano
+/apps/docs/package.json @wolf-stievano
+/packages/contracts/package.json @wolf-stievano
+/packages/fiscal-core/package.json @wolf-stievano
+/packages/fiscal-nfe/package.json @wolf-stievano
+/packages/fiscal-nfse/package.json @wolf-stievano
+/packages/sdk/package.json @wolf-stievano
+/scripts/backup-offsite.mjs @wolf-stievano
+/scripts/deploy-issuance-production.mjs @wolf-stievano
+/scripts/lib/issuance-release.mjs @wolf-stievano
+
+# The gate, the fiscal production profile and the vault policy of the issuance.
+/platform/convex/environment.ts @wolf-stievano
+/platform/convex/issuance.ts @wolf-stievano
+/platform/convex/lib/issuanceGate.ts @wolf-stievano
+/platform/convex/lib/issuanceProduction.ts @wolf-stievano
+/platform/convex/lib/issuanceCore.ts @wolf-stievano
+/platform/convex/certificateUse.ts @wolf-stievano
+
+# The fiscal capture release of the hosted site and the environment check (ADR 0007).
+/platform/convex/captureRelease.ts @wolf-stievano
+/platform/convex/lib/fiscalCaptureRelease.ts @wolf-stievano
+/platform/convex/lib/environmentAccess.ts @wolf-stievano
+
+# What opens the real capture transport of the hosted site: the gate, its processing, the worker
+# that calls the source and the functions that start and control the streams (ADR 0007, phase 4).
+/platform/convex/lib/siteCapture.ts @wolf-stievano
+/platform/convex/captureProcessing.ts @wolf-stievano
+/platform/convex/captureWorker.ts @wolf-stievano
+/platform/convex/captures.ts @wolf-stievano

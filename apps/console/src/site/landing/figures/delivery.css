@@ -1,0 +1,148 @@
+/* Station 4: a 5 s delivery. The box posts (screen reads POST), a capsule
+   rides the tube (8 to 46%), lands on the fifth floor and the floors light
+   outward from there; the box reads 200. Static and reduced motion: lit. */
+.fig-delivery .tube-shell {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 9;
+  stroke-linejoin: round;
+}
+.fig-delivery .tube-bore {
+  fill: none;
+  stroke: #0b140f;
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+.fig-delivery .tube-core {
+  fill: none;
+  stroke: var(--glow);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.fig-delivery .capsule {
+  fill: none;
+  stroke: var(--glow-hi);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 5 95;
+  stroke-dashoffset: -95;
+  filter: url(#iso-glow);
+  visibility: hidden;
+}
+.fig-delivery .st-post {
+  visibility: hidden;
+}
+.fig-delivery .tube-run,
+.fig-delivery .glass {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-delivery .capsule {
+    animation: delivery-capsule 5s ease-in-out infinite;
+  }
+  .fig-delivery .floor {
+    animation: delivery-floor 5s ease-out infinite;
+  }
+  .fig-delivery .f0 {
+    animation-delay: -4.44s;
+  }
+  .fig-delivery .f1 {
+    animation-delay: -4.58s;
+  }
+  .fig-delivery .f2 {
+    animation-delay: -4.72s;
+  }
+  .fig-delivery .f3 {
+    animation-delay: -4.86s;
+  }
+  .fig-delivery .f4 {
+    animation-delay: -5s;
+  }
+  .fig-delivery .f5 {
+    animation-delay: -4.86s;
+  }
+  .fig-delivery .f6 {
+    animation-delay: -4.72s;
+  }
+  .fig-delivery .st-post {
+    animation: delivery-post 5s steps(1, end) infinite;
+  }
+  .fig-delivery .st-ok {
+    animation: delivery-ok 5s steps(1, end) infinite;
+  }
+  .fig-delivery .ack {
+    animation: delivery-ack 5s ease-out infinite;
+  }
+}
+
+@keyframes delivery-capsule {
+  0%,
+  6% {
+    stroke-dashoffset: 5;
+    visibility: hidden;
+  }
+  6.01% {
+    stroke-dashoffset: 5;
+    visibility: visible;
+  }
+  46% {
+    stroke-dashoffset: -95;
+    visibility: visible;
+  }
+  46.01%,
+  100% {
+    stroke-dashoffset: -95;
+    visibility: hidden;
+  }
+}
+@keyframes delivery-floor {
+  0%,
+  46% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+  50% {
+    fill: var(--glow-hi);
+    stroke: var(--glow-hi);
+  }
+  58%,
+  92% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+  100% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+}
+@keyframes delivery-post {
+  0% {
+    visibility: visible;
+  }
+  48%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes delivery-ok {
+  0% {
+    visibility: hidden;
+  }
+  48%,
+  100% {
+    visibility: visible;
+  }
+}
+@keyframes delivery-ack {
+  0%,
+  46% {
+    fill: #23332b;
+  }
+  50%,
+  100% {
+    fill: var(--glow);
+  }
+}

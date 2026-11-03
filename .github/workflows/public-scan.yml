@@ -1,0 +1,72 @@
+name: Public scan
+
+# Permanent barrier of the public repository (#267, phase 1d): every pull request and every push
+# to main scans what is, or will be, public for credentials (scripts/check-secrets.mjs rules and
+# Gitleaks), real CNPJ, CPF and access keys, external e-mails, local paths, unknown Convex
+# deployments and the restricted names (scripts/public-tree.mjs).
+# - In the private archive the custody list exists, so it assembles the public copy from the
+#   commit, with its selection and edits, and scans it: drift shows up on the PR that causes it.
+# - In the public repository it scans every versioned file (--checkout). The restricted names
+#   come from the FNFE_PUBLIC_DENYLIST secret, the custody list as JSON (SHA-256 only). Pull
+#   requests from forks get no secrets: they are scanned without the names, with a warning, and
+#   the push to main scans again with them.
+# The report keeps path, line and kind, never the value found.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-scan-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scan:
+    name: Public scan
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # The full history: the copy compares its binaries with the audit commit of 25/10.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      # The copy is formatted by the oxfmt that bun.lock pins.
+      - name: Install locked dependencies
+        run: vp install --frozen-lockfile
+      - name: Install pinned Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.21.2
+          GITLEAKS_SHA256: 5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" "https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          echo "GITLEAKS_BIN=$RUNNER_TEMP/gitleaks/gitleaks" >> "$GITHUB_ENV"
+      # A blocked scan fails the check since the phase 1e of #267, and so does a usage error.
+      - name: Scan what goes public
+        env:
+          FNFE_PUBLIC_DENYLIST: ${{ secrets.FNFE_PUBLIC_DENYLIST }}
+          PUBLIC_SCAN_ENFORCE: "true"
+        run: node scripts/public-scan.mjs "$RUNNER_TEMP/public-scan"
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: public-scan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/public-scan/varredura.json
+          if-no-files-found: warn
+          retention-days: 14

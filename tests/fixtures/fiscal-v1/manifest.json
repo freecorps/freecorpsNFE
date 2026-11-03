@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "provenance": "handwritten-synthetic",
+  "files": [
+    {
+      "file": "distribution-empty.xml",
+      "version": "1.01",
+      "consumer": "future-distribution",
+      "outcome": "pending-module",
+      "sha256": "91c287623374225d218e1ae484c9f227876799f4cba2b2b401de17e14dc4c76b"
+    }
+  ]
+}

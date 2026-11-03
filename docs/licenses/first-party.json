@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "licensor": "FREECORPS TECNOLOGIA DA INFORMACAO LTDA",
+  "cnpj": "63.113.119/0001-90",
+  "default": {
+    "id": "LicenseRef-Freecorps-Source-Available-1.0",
+    "text": "LICENSE"
+  },
+  "mit": {
+    "text": "LICENSES/MIT.txt",
+    "files": [
+      "packages/sdk/src/index.ts",
+      "packages/sdk/src/webhooks.ts",
+      "packages/contracts/src/external.ts",
+      "packages/contracts/src/references.ts",
+      "packages/contracts/src/registry.ts",
+      "packages/contracts/src/webhooks.ts",
+      "examples/quickstart.ts",
+      "examples/quickstart-curl.mjs",
+      "examples/sdk-webhook-receiver.mjs",
+      "examples/nfse-issuance.ts",
+      "apps/console/public/developer/quickstart.ts",
+      "apps/console/public/developer/quickstart-curl.mjs",
+      "apps/console/public/developer/sdk-webhook-receiver.mjs",
+      "apps/console/public/developer/nfse-issuance.ts"
+    ],
+    "documentation": ["packages/sdk/README.md"]
+  }
+}

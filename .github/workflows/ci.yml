@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  workflow_call:
+    outputs:
+      tested_sha:
+        description: Exact checkout validated by every check
+        value: ${{ jobs.validate.outputs.tested_sha }}
+      publication_sha:
+        description: Manual validation publication from main only; empty otherwise
+        value: ${{ jobs.validation_gate.outputs.publication_sha }}
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its superseded validation. Publication
+# runs (push and manual, through workflow_call) get a group of their own, so
+# this never cancels or queues them.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Every check runs in one job: install once, then `vp run validate` runs the
+  # task graph in parallel. Blacksmith bills each started minute per vCPU. On
+  # 2 vCPUs the tests competed with builds and type checks and the job took 3
+  # to 7 minutes; 4 vCPUs finish in about half the minutes at a similar cost
+  # (docs/desenvolvimento/ci.md, Runners e custo). No secrets: this also
+  # validates publications.
+  validate:
+    name: Validate
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    outputs:
+      tested_sha: ${{ steps.approve.outputs.tested_sha }}
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          # Clean install is the M0 baseline; no node_modules or build cache.
+          cache: false
+      - name: Record exact checkout and PR head
+        run: node scripts/ci.mjs identity
+      - name: Install locked dependencies
+        run: vp install --frozen-lockfile
+      # The graph in vite.config.ts: fiscal packages, REST contract, SDK and XML
+      # consumer proofs, format/lint/types, tsc, tests, Wrangler tooling,
+      # validation console and auth proxy proof, in dependency order and side
+      # by side. --no-cache keeps
+      # this a clean run: nothing is replayed in place of a check
+      # (docs/desenvolvimento/ci.md). Output is grouped per task, with a summary at the end.
+      - name: Build, check and test
+        env:
+          CONTRACT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$CONTRACT_BASE" ] || [ "$CONTRACT_BASE" = "0000000000000000000000000000000000000000" ]; then
+            CONTRACT_BASE=$(git rev-parse HEAD^)
+          fi
+          export CONTRACT_BASE
+          vp run --no-cache --verbose --log grouped validate
+      # Inspects the built dist of the fiscal packages, so it follows the graph.
+      - name: Check independent package boundaries
+        run: vp run ci:boundaries
+      - name: Locate the current SDK validation package
+        id: sdk_artifact
+        run: |
+          node --input-type=module -e 'import { appendFileSync } from "node:fs"; import { sdkTarballPath } from "./scripts/lib/sdk-artifact.mjs"; appendFileSync(process.env.GITHUB_OUTPUT, "path=" + sdkTarballPath() + "\n");'
+      - name: Upload SDK validation package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.sdk_artifact.outputs.path }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Approve the checked revision
+        id: approve
+        run: node scripts/ci.mjs approve
+      - name: Summarize suites and pending coverage
+        if: always()
+        run: node scripts/ci.mjs summary
+      - name: Upload sanitized validation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/revision.json
+            .ci-results/tests.json
+            .ci-results/nfe/independent.json
+            .ci-results/nfse/independent.json
+            .ci-results/74/package.json
+            .ci-results/74/sdk-metafile.json
+            .ci-results/83/tarballs.json
+            .ci-results/summary.md
+            .browser-results/auth-worker/report.json
+            .browser-results/privacy-worker/report.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  # Only compares the validated SHA with the workflow's, so it runs on the
+  # cheapest runner Blacksmith offers (ARM counts 0.625 of an x64 minute).
+  validation_gate:
+    name: Validation publication gate
+    needs: validate
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    timeout-minutes: 5
+    outputs:
+      publication_sha: ${{ steps.gate.outputs.publication_sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - name: Require successful checks for the same commit
+        id: gate
+        env:
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
+        run: node scripts/ci.mjs gate

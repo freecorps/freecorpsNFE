@@ -1,0 +1,208 @@
+/*
+ * Tokens do console. Os tokens não têm camada; a base e os componentes ficam na camada `ui`.
+ * Componentes usam só estas variáveis: nenhuma cor solta.
+ *
+ * Breakpoints (media queries não leem variáveis; use estes valores):
+ *   sm  ≤ 640px   telefone: uma coluna, tabelas viram cartões
+ *   md  ≤ 960px   tablet: a lateral vira gaveta
+ *   lg  ≥ 1280px  desktop largo: conteúdo limitado a --content-width
+ */
+@layer ui;
+
+/* `[data-theme]` também vale num trecho da página (referência de componentes). */
+:root,
+[data-theme="light"] {
+  /* Superfícies: fundo chapado, cartões que flutuam pouco. */
+  --color-bg: #f7f8f4;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f1f4ec;
+  --color-surface-float: #ffffff;
+  --color-surface-hover: #eef2e7;
+  --color-surface-selected: #e6eddf;
+
+  /* Texto */
+  --color-text: #203b32;
+  --color-text-muted: #53675b;
+  --color-primary-text: #244f3e;
+
+  /* Bordas: a sutil separa linhas; a forte delimita controles (3:1). */
+  --color-border: #cdd5cc;
+  --color-border-subtle: #e3e8df;
+  --color-border-strong: #7d9083;
+
+  /* Ação */
+  --color-primary: #244f3e;
+  --color-primary-hover: #173d32;
+  --color-on-primary: #ffffff;
+  --color-focus: #397a62;
+
+  /* Estados: texto sobre o fundo do próprio tom passa AA. O ponto é só decorativo. */
+  --color-success: #25633f;
+  --color-success-bg: #e4f0e5;
+  --color-success-dot: #2f8f5b;
+  --color-warning: #8a6414;
+  --color-warning-bg: #f7efd9;
+  --color-warning-dot: #d9a023;
+  --color-danger: #a1362e;
+  --color-danger-bg: #f9ebe8;
+  --color-danger-dot: #a1362e;
+  --color-danger-solid: #a1362e;
+  --color-danger-solid-hover: #8a2c25;
+  --color-on-danger: #ffffff;
+  --color-info: #2f5d4c;
+  --color-info-bg: #eef2e7;
+  --color-neutral-dot: #8b998f;
+
+  /* Destaque da marca (painel lateral do login, marca). */
+  --color-brand-panel: #173d32;
+  --color-on-brand-panel: #f1f5e6;
+  --color-on-brand-panel-muted: #b5c9b9;
+
+  --color-overlay: rgb(15 31 25 / 0.45);
+  --ring: rgb(32 59 50 / 0.1);
+  --ring-strong: rgb(32 59 50 / 0.16);
+  --shadow-color: 32 59 50;
+  --highlight: rgb(255 255 255 / 0.16);
+
+  /* Elevação: plano (anel), cartão (anel + sombra curta), flutuante (menus e diálogos). */
+  --elevation-0: 0 0 0 1px var(--ring);
+  --elevation-1:
+    0 0 0 1px var(--ring), 0 1px 2px rgb(var(--shadow-color) / 0.06),
+    0 2px 6px -2px rgb(var(--shadow-color) / 0.08);
+  --elevation-2:
+    0 0 0 1px var(--ring-strong), 0 2px 6px rgb(var(--shadow-color) / 0.06),
+    0 12px 32px -8px rgb(var(--shadow-color) / 0.22);
+
+  /* Raios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Tipografia: seis tamanhos, Geist 400/500/600 e Geist Mono para códigos. */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --text-xs: 0.75rem; /* 12px: rótulos, selos, metadados */
+  --text-sm: 0.8125rem; /* 13px: navegação, tabelas, ajuda */
+  --text-md: 0.875rem; /* 14px: corpo e controles */
+  --text-lg: 1rem; /* 16px: títulos de cartão */
+  --text-xl: 1.25rem; /* 20px: títulos de seção grandes, números */
+  --text-2xl: 1.75rem; /* 28px: título da página */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  /* Espaço: 4/8/12/16/24/32/48. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Controles: 36px com ponteiro fino; 44px em toque. */
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+
+  /* Movimento */
+  --duration-fast: 120ms;
+  --duration: 180ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Estrutura */
+  --sidebar-w: 248px;
+  --content-width: 1120px;
+
+  color-scheme: light;
+}
+
+/*
+ * Escuro: a noite da landing (DESIGN.md). Fundo quase preto e esverdeado, nunca preto puro;
+ * o fósforo é o único acento e só acende o que está vivo: ação principal, foco, passo ativo.
+ * Elevação vem do degrau da superfície e do anel, não da sombra.
+ */
+[data-theme="dark"] {
+  --color-bg: #09100d; /* --night */
+  --color-surface-1: #0f1915; /* --surface */
+  --color-surface-2: #0c1511; /* --night-2 */
+  --color-surface-float: #14211b; /* --surface-2 */
+  --color-surface-hover: #182720;
+  --color-surface-selected: #1e2a1b; /* fósforo diluído sobre a superfície */
+
+  --color-text: #e6eee8;
+  --color-text-muted: #98aa9f;
+  --color-primary-text: #d2e98c; /* fósforo amaciado: links e ícone ativo, sem disputar com o botão */
+
+  --color-border: #22322a; /* --line */
+  --color-border-subtle: #18241e;
+  --color-border-strong: #5a7366; /* 3:1 sobre a noite e a superfície */
+
+  --color-primary: #d4f36e; /* --glow */
+  --color-primary-hover: #e2fa94;
+  --color-on-primary: #0b130f; /* --glow-ink */
+  --color-focus: #d4f36e;
+
+  /* Estados discretos e frios, para não confundir sucesso com o fósforo. */
+  --color-success: #8fd3b0;
+  --color-success-bg: #102219;
+  --color-success-dot: #4fb487;
+  --color-warning: #e6c47c;
+  --color-warning-bg: #241f12;
+  --color-warning-dot: #d6a640;
+  --color-danger: #f0a39a;
+  --color-danger-bg: #2a1613;
+  --color-danger-dot: #e5786c;
+  --color-danger-solid: #b0453b;
+  --color-danger-solid-hover: #bf5147;
+  --color-on-danger: #ffffff;
+  --color-info: #c3d1c8; /* --muted-hi */
+  --color-info-bg: #14211b;
+  --color-neutral-dot: #6e8277; /* --faint */
+
+  --color-brand-panel: #0c1511;
+  --color-on-brand-panel: #e6eee8;
+  --color-on-brand-panel-muted: #98aa9f;
+
+  --color-overlay: rgb(3 6 5 / 0.7);
+  --ring: rgb(230 238 232 / 0.07);
+  --ring-strong: rgb(230 238 232 / 0.12);
+  --shadow-color: 0 0 0;
+  --highlight: rgb(255 255 255 / 0.1);
+
+  --elevation-0: 0 0 0 1px var(--ring);
+  --elevation-1:
+    inset 0 1px 0 rgb(255 255 255 / 0.025), 0 0 0 1px var(--ring),
+    0 1px 2px rgb(var(--shadow-color) / 0.4);
+  --elevation-2:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px var(--ring-strong),
+    0 12px 32px -8px rgb(var(--shadow-color) / 0.7);
+
+  color-scheme: dark;
+}
+
+@media (pointer: coarse), (max-width: 640px) {
+  :root {
+    --control-h: 44px;
+    --control-h-sm: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root,
+  [data-theme] {
+    --ring: var(--color-border-strong);
+    --ring-strong: var(--color-border-strong);
+    --color-border: var(--color-border-strong);
+  }
+}

@@ -1,0 +1,93 @@
+name: Deploy validation
+
+# Manual only: publishes the top of main. Production publishes main on push
+# through deploy.yml; a push never writes to validation.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Persistent validation only
+        required: true
+        type: choice
+        options: [validation]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && inputs.target == 'validation'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Publish validation
+    needs: validate
+    if: needs.validate.outputs.tested_sha == github.sha && github.ref == 'refs/heads/main' && inputs.target == 'validation'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    environment:
+      name: validation
+      url: https://freecorpsnfe-validation.freecorps.workers.dev
+    # One writer from the eligibility check until smoke/recovery evidence.
+    # Pending runs may be superseded; a running two-service publication finishes.
+    concurrency:
+      group: validation-publication
+      cancel-in-progress: false
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.tested_sha }}
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - name: Install locked dependencies
+        run: vp install --frozen-lockfile
+      - name: Install Chromium for the published M0 journeys
+        run: node apps/console/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Publish the approved revision and verify both services
+        env:
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION_CONVEX_DEPLOY_KEY: ${{ secrets.VALIDATION_CONVEX_DEPLOY_KEY }}
+          VALIDATION_CLOUDFLARE_API_TOKEN: ${{ secrets.VALIDATION_CLOUDFLARE_API_TOKEN }}
+          VALIDATION_SMOKE_EMAIL: ${{ secrets.VALIDATION_SMOKE_EMAIL }}
+          VALIDATION_SMOKE_PASSWORD: ${{ secrets.VALIDATION_SMOKE_PASSWORD }}
+        run: node scripts/deploy-validation.mjs
+      - name: Validate published journeys in the browser
+        env:
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
+          VALIDATION_E2E_SHA: ${{ needs.validate.outputs.tested_sha }}
+          VALIDATION_SMOKE_EMAIL: ${{ secrets.VALIDATION_SMOKE_EMAIL }}
+          VALIDATION_SMOKE_PASSWORD: ${{ secrets.VALIDATION_SMOKE_PASSWORD }}
+        run: node apps/console/e2e/m0.mjs
+      - name: Upload sanitized browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .browser-results/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Record publication or partial failure
+        if: always()
+        env:
+          VALIDATION_JOB_STATUS: ${{ job.status }}
+        run: node scripts/deploy-validation.mjs summary
+      - name: Upload sanitized publication receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .validation-results/deployment.json
+            .validation-results/summary.md
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

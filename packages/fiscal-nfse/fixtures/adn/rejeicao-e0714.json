@@ -1,0 +1,17 @@
+{
+  "tipoAmbiente": 2,
+  "versaoAplicativo": "SINTETICO_1.0",
+  "dataHoraProcessamento": "2026-08-29T10:00:01-03:00",
+  "idDPS": "DPS350950221122233300018110001000000000000001",
+  "erros": [
+    {
+      "Codigo": "E0714",
+      "Descricao": "Algoritmo de assinatura não suportado (mensagem sintética de teste).",
+      "Complemento": "SignatureMethod rsa-sha256"
+    },
+    {
+      "codigo": "E0316",
+      "mensagem": "cNBS obrigatório (mensagem sintética de teste)."
+    }
+  ]
+}

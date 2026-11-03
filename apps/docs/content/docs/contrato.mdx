@@ -1,0 +1,82 @@
+---
+title: Contrato da API
+description: Regras que valem para toda rota. Autenticação, ambientes, paginação, números, idempotência, erros e limites. As tabelas de operações e de erros são geradas do contrato versionado.
+contract: true
+---
+
+## Autenticação e ambientes [#autenticacao]
+
+Toda chamada leva dois headers:
+
+```http title="Headers obrigatórios"
+Authorization: Bearer SUA_CHAVE
+X-Environment: sandbox
+```
+
+O contrato aceita <Environments />. O ambiente do header precisa ser o da chave; caso contrário, a resposta é `ENVIRONMENT_DENIED`. A chave precisa estar vigente, com o escopo da operação e concessão para a empresa. <Op id="getCapabilities" /> mostra o que a chave alcança.
+
+A URL da API hospedada é `https://api.nfe.freecorps.com.br`. Os conceitos de projeto, concessão e escopo estão em [Conceitos](/docs/conceitos).
+
+## Paginação [#paginacao]
+
+Listagens aceitam `limit` e `cursor` na query. O limite máximo vai <PageRange />, conforme a rota. Continue com o `nextCursor` até ele vir `null`.
+
+O cursor é opaco e preso à consulta: alterá-lo ou trocar os filtros no meio responde `INVALID_CURSOR`. A autorização é conferida de novo a cada página.
+
+Na maioria das listagens os registros ficam em `data.page`, com `data.nextCursor`. Empresas devolvem a lista em `data` e o cursor no envelope; entregas de webhook usam `data.items`. O formato exato de cada rota está no <a href="/developer/openapi.json">OpenAPI</a> e na referência de cada operação, como [Listar documentos](/docs/api/listdocuments).
+
+## Números e datas [#numeros]
+
+Valores fiscais e quantidades são **strings decimais exatas**, como `"1500.00"`. Preserve zeros finais e não use `Number` ou `parseFloat` em cálculos fiscais. Timestamps numéricos estão em milissegundos. Datas fiscais conservam a representação do documento.
+
+## Idempotência [#idempotencia]
+
+Escritas que podem ser repetidas aceitam `Idempotency-Key`, que identifica a intenção por projeto e operação. A mesma chave com o mesmo pedido devolve o resultado original com `reused: true`. A mesma chave com outro conteúdo responde `IDEMPOTENCY_CONFLICT`.
+
+Timeout não desfaz um pedido aceito. Depois de perder uma resposta, consulte o recurso antes de repetir.
+
+## Erros [#erros]
+
+Sucesso e erro usam envelopes diferentes, sempre com `requestId`:
+
+```json title="Envelopes de resposta"
+{ "data": { ... }, "requestId": "..." }
+{ "error": { "code": "...", "message": "...", "retryable": false }, "requestId": "..." }
+```
+
+Decida pelo `code` e pelo `retryable`, nunca pelo texto de `message`. Guarde o `requestId` para o suporte, sem registrar a chave. Para pedir ajuda com um erro, envie o `code` e o `requestId` como em [Como pedir ajuda](/docs/ajuda#pedir-ajuda), sem XML, credenciais ou dados fiscais.
+
+<ErrorCodes />
+
+## Limites [#limites]
+
+| Limite                        | Valor                         |
+| ----------------------------- | ----------------------------- |
+| Chamadas REST por chave       | 60 por minuto                 |
+| Chamadas REST por organização | 120 por minuto                |
+| Novas reservas de importação  | 20 por minuto por organização |
+| Arquivos por reserva          | 20 XMLs, até 2 MiB cada       |
+| Destinos de webhook           | 20 por empresa e ambiente     |
+
+Acima dos limites por minuto, a resposta é `RATE_LIMITED`, com `Retry-After`. Uma reserva com mais de 20 arquivos responde `INVALID_REQUEST`, e um arquivo declarado acima de 2 MiB, `INVALID_FILE`. O 21º destino de webhook da empresa no ambiente responde `ENDPOINT_LIMIT`. Cotas do plano contratado aparecem como `RATE_LIMITED`; cada ambiente tem o próprio saldo, e o sandbox não gasta a cota de produção. Limites de tamanho de cada campo estão no OpenAPI.
+
+A captura em Produção exige plano vigente com cotas de consultas (ou notas, no Gratuito) e bytes,
+inclusive no plano gratuito. Se faltar esse plano, o pedido de nova consulta
+retorna HTTP 403 com `SCOPE_DENIED` e uma mensagem sobre o plano necessário.
+Na consulta do estado da captura, o motivo é `PLAN_REQUIRED`. A leitura e a
+exportação autorizadas dos documentos já recebidos continuam disponíveis.
+
+Um plano atribuído sem vencimento continua ativo enquanto você usa a
+plataforma dentro das cotas. As franquias se renovam mensalmente, em UTC, e
+o saldo não utilizado não acumula. Ao atingir uma cota, você pode esperar
+o próximo mês ou [solicitar um plano](/docs/ajuda#pedir-ajuda) com mais capacidade. Não há cobrança
+automática por excedente nem exclusão dos documentos por atingir o limite.
+
+## Operações [#operacoes]
+
+<a href="/developer/openapi.json" download>
+  Baixar o OpenAPI completo
+</a>
+, com schemas, limites e erros. Versão do contrato: <ContractVersion />.
+
+<Operations />

@@ -1,0 +1,115 @@
+---
+title: Emitir NFS-e no sandbox
+description: Peça uma emissão, acompanhe o estado, baixe o XML e o DANFSe e cancele. No sandbox o transporte é simulado e a nota sai sem validade fiscal.
+contract: true
+---
+
+<Callout type="warn" title="Sem validade fiscal">
+  No sandbox, um provedor simulado responde no lugar do fisco. A nota traz "sem validade fiscal" e
+  serve para ensaiar a integração. A emissão em produção está desligada.
+</Callout>
+
+## Antes de começar [#requisitos]
+
+1. **Uma empresa declarada.** A empresa de demonstração não emite. Cadastre a sua em <Ui>Empresas</Ui>.
+2. **O perfil de emissão.** Na empresa, preencha o <Ui>Perfil de emissão</Ui>: município, regime no Simples Nacional, série da DPS e pelo menos uma atividade com CNAE, item da LC 116 e código de tributação nacional. Salvar o perfil não emite nada.
+3. **A concessão.** Um `owner` ou `admin` concede ao projeto `documents:issue` para emitir e `documents:cancel` para cancelar, em sandbox.
+4. **A chave.** Gere uma chave do projeto com esses escopos.
+
+Pelo painel, quem tem papel `owner`, `admin` ou `operator` emite em <Ui>Emissão NFS-e</Ui> → <Ui>Nova emissão</Ui>, sem chave.
+
+## Pedir a emissão [#pedir]
+
+<Op id="createIssuance" />, com `Idempotency-Key` obrigatória. Use uma chave por nota: repetir a
+chamada com ela devolve a mesma emissão, sem reservar outro número.
+
+```json title="Corpo do pedido"
+{
+  "companyId": "...",
+  "activityCode": "consultoria",
+  "competence": "2026-10",
+  "market": "domestic",
+  "taker": {
+    "kind": "national",
+    "document": "11444777000161",
+    "name": "Tomador Sintético Ltda",
+    "address": {
+      "municipalityCode": "3550308",
+      "postalCode": "01001000",
+      "street": "Praça da Sé",
+      "number": "100",
+      "district": "Sé"
+    }
+  },
+  "description": "Serviço sintético de demonstração",
+  "amount": { "currency": "BRL", "value": "150.00" },
+  "issRate": "2",
+  "issWithheld": false
+}
+```
+
+| Campo          | Regra                                                                                                |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| `activityCode` | O código de uma atividade do perfil de emissão                                                       |
+| `competence`   | `AAAA-MM`, até o mês da emissão                                                                      |
+| `issueDate`    | Opcional, `AAAA-MM-DD` no horário de Brasília. Padrão: hoje. Não pode ser futura                     |
+| `market`       | `domestic` ou `export`                                                                               |
+| `taker`        | `national`, com CPF ou CNPJ válido e endereço, ou `foreign`, com NIF e endereço completo no exterior |
+| `amount`       | Texto com até duas casas. `BRL` no mercado interno; `USD`, `CAD`, `EUR` ou `GBP` na exportação       |
+| `issRate`      | Alíquota de ISS em %, texto, maior que 0 e até 5. Optante do Simples sem retenção não informa        |
+| `issWithheld`  | ISS retido pelo tomador. Exige tomador com CNPJ                                                      |
+| `issuerEmail`  | Opcional quando o perfil já tem o e-mail do prestador                                                |
+
+Valor e alíquota são sempre texto. Um número JSON é recusado com `INVALID_REQUEST`, nunca arredondado. Erros de regra fiscal trazem um código específico e, quando há, `error.field` com o caminho do campo.
+
+## Acompanhar o estado [#estado]
+
+A resposta é `202` com `{ reused, issuance }`. **Aceito não é autorizado**: em geral o estado ainda é `processing`.
+
+| Estado       | Significado                                         |
+| ------------ | --------------------------------------------------- |
+| `processing` | Em transmissão, nova tentativa ou reconciliação     |
+| `authorized` | NFS-e autorizada e XML preservado                   |
+| `rejected`   | Rejeição definitiva. O número da DPS fica consumido |
+| `cancelled`  | Cancelamento registrado                             |
+
+Acompanhe por <Op id="getIssuance" />, com `companyId` na query, ou pelos webhooks `issuance.authorized` e `issuance.rejected`. Se uma resposta se perder, consulte antes de repetir: a plataforma reconcilia com o fisco antes de qualquer reenvio.
+
+## Baixar o XML e o DANFSe [#arquivos]
+
+Com a emissão autorizada, `issuance.artifacts` lista os arquivos, cada um com `kind`, `sha256` e `size`. Baixe por <Op id="downloadIssuanceArtifact" />: `nfse` é o XML da nota e `danfse` é o PDF.
+
+## Cancelar [#cancelar]
+
+<Op id="cancelIssuance" />, com `Idempotency-Key` e o corpo `{ companyId, reasonCode, reason }`. `reasonCode` é `"1"` para erro na emissão, `"2"` para serviço não prestado ou `"9"` para outros. `reason` tem de 15 a 255 caracteres. Só uma nota `authorized` pode ser cancelada. O resultado chega por `issuance.cancelled` ou `issuance.cancellation_rejected`.
+
+## Com o SDK [#sdk]
+
+<ul className="downloads">
+  <li>
+    <a href="/developer/nfse-issuance.ts" download>
+      nfse-issuance.ts
+    </a>
+  </li>
+</ul>
+
+O exemplo usa o [SDK](/docs/sdk#instalar) para emitir, acompanhar o estado e baixar o XML autorizado. Ele lê `FREECORPS_BASE_URL`, `FREECORPS_API_KEY`, `FREECORPS_COMPANY_ID`, `FREECORPS_IDEMPOTENCY_KEY` e `FREECORPS_ACTIVITY_CODE`. Com `FREECORPS_MARKET=export`, emite uma exportação para um tomador fictício no exterior.
+
+```bash title="Emitir com o SDK"
+node --experimental-strip-types nfse-issuance.ts
+```
+
+## Ensaiar desfechos [#simular]
+
+No sandbox, um marcador na descrição do serviço escolhe o que o provedor simulado responde:
+
+| Marcador                 | Desfecho                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| (nenhum)                 | Autoriza no primeiro envio                                                      |
+| `[simular:rejeicao]`     | Rejeição definitiva `SIM100`                                                    |
+| `[simular:indisponivel]` | O primeiro envio falha com 503 e o seguinte autoriza                            |
+| `[simular:timeout]`      | Autoriza, mas a resposta se perde. A reconciliação encontra a nota sem reenviar |
+| `[simular:perda]`        | O envio se perde antes do fisco. A reconciliação reenvia o mesmo XML            |
+| `[simular:duplicada]`    | O reenvio recebe "DPS já existe" e a consulta seguinte encontra a nota          |
+
+No motivo do cancelamento, `[simular:rejeicao]` rejeita com `SIM200` e `[simular:timeout]` registra o cancelamento e perde a resposta.

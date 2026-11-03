@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "id": "VAL04-independent-package-boundaries",
+      "status": "delivered",
+      "evidence": ["scripts/package-boundaries.test.ts", "scripts/check-package-boundaries.mjs"]
+    },
+    {
+      "id": "VAL04-canonical-contract-generation-and-shared-corpus",
+      "status": "delivered",
+      "evidence": [
+        "scripts/generate-contracts.mjs",
+        "scripts/prove-contract-drift.mjs",
+        "scripts/contract-drift.test.ts",
+        "tests/fixtureCorpus.test.ts",
+        "packages/fiscal-nfe/pipeline.test.ts",
+        "docs/v1.0/evidence/47-51/README.md"
+      ]
+    },
+    {
+      "id": "M0-auth-validation",
+      "status": "delivered",
+      "evidence": ["tests/platform.access.test.ts", "tests/platform.validation.test.ts"]
+    },
+    {
+      "id": "M0-environment-and-ci",
+      "status": "delivered",
+      "evidence": [
+        "tests/validationTarget.test.ts",
+        "tests/validationBackup.test.ts",
+        "tests/validationDeploy.test.ts",
+        "tests/validationSmoke.test.ts",
+        "scripts/prove-smoke-diagnostics.mjs",
+        "docs/v1.0/evidence/65/README.md",
+        "tests/consoleTarget.test.ts",
+        "tests/ci.contract.test.ts",
+        "tests/fixtureCorpus.test.ts"
+      ]
+    },
+    {
+      "id": "B00-B01-F00-local-foundation",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.account.test.ts",
+        "tests/platform.mail.test.ts",
+        "tests/worktreeSafety.test.ts",
+        "packages/fiscal-nfe/index.test.ts",
+        "packages/contracts/index.test.ts",
+        "apps/console/e2e/foundation.mjs"
+      ]
+    },
+    {
+      "id": "M0-controlled-account-protocol",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.hostedAuth.test.ts",
+        "tests/platform.authProxy.test.ts",
+        "tests/platform.mail.test.ts",
+        "scripts/prove-auth-worker.mjs"
+      ]
+    },
+    {
+      "id": "M0-hosted-email-and-trusted-edge-proof",
+      "status": "delivered",
+      "evidence": [
+        "docs/v1.0/evidence/63/README.md",
+        "docs/v1.0/evidence/63/real-maintainer-confirmation.json",
+        "docs/v1.0/evidence/63/real-recovery.json",
+        "docs/v1.0/evidence/63/real-ip-isolation.json"
+      ]
+    },
+    {
+      "id": "M0-independent-local-reproduction",
+      "status": "delivered",
+      "evidence": [
+        "tests/worktreeCommandTimeout.test.ts",
+        "docs/v1.0/evidence/64/README.md",
+        "docs/v1.0/evidence/64/observe.mjs",
+        "docs/v1.0/evidence/64/isolation-final.json",
+        "docs/v1.0/evidence/64/stopped-final.json",
+        "docs/v1.0/evidence/64/browser-final.json",
+        "docs/v1.0/evidence/64/xml-consumer.json"
+      ]
+    },
+    {
+      "id": "B02-F01-organizations-members-invitations",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.organizations.test.ts",
+        "tests/platform.mail.test.ts",
+        "packages/contracts/index.test.ts",
+        "apps/console/e2e/organizations.mjs",
+        "docs/v1.0/evidence/66/README.md"
+      ]
+    },
+    {
+      "id": "B02-F02-companies-grants-onboarding",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.companies.test.ts",
+        "packages/contracts/companies.test.ts",
+        "packages/contracts/fixtures/cnpj.json",
+        "apps/console/e2e/companies.mjs",
+        "docs/v1.0/evidence/67/README.md"
+      ]
+    },
+    {
+      "id": "B02-tenant-project-company-environment",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.keys.test.ts",
+        "apps/console/src/secret-once.test.tsx",
+        "apps/console/e2e/keys.mjs",
+        "docs/v1.0/evidence/68/README.md"
+      ]
+    },
+    {
+      "id": "B03-revoked-keys-and-direct-api",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.keys.test.ts",
+        "tests/platform.publicSurface.test.ts",
+        "apps/console/src/secret-once.test.tsx",
+        "apps/console/e2e/keys.mjs",
+        "docs/v1.0/evidence/68/README.md"
+      ]
+    },
+    {
+      "id": "B03-B05-issued-key-import-operation",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.keys.test.ts",
+        "tests/platform.operations.test.ts",
+        "docs/v1.0/evidence/68/revalidation/README.md"
+      ]
+    },
+    {
+      "id": "B04-xml-xsd-signatures-decimals",
+      "status": "delivered",
+      "evidence": [
+        "packages/fiscal-core/index.test.ts",
+        "packages/fiscal-nfe/pipeline.test.ts",
+        "tests/platform.xml.test.ts",
+        "packages/contracts/index.test.ts",
+        "scripts/package-boundaries.test.ts",
+        "scripts/prove-nfe-runtime.mjs",
+        "scripts/prove-excluded-events.mjs",
+        "tests/platform.documents.test.ts",
+        "docs/v1.0/evidence/69/README.md"
+      ]
+    },
+    {
+      "id": "B04-B05-private-files-and-idempotency",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.imports.test.ts",
+        "apps/console/e2e/imports.mjs",
+        "docs/plataforma/IMPORTS.md",
+        "docs/v1.0/evidence/71/README.md"
+      ]
+    },
+    {
+      "id": "B05-operations-fencing-and-recovery",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.operations.test.ts",
+        "tests/platform.imports.test.ts",
+        "scripts/prove-operations.mjs",
+        "docs/v1.0/evidence/70/README.md"
+      ]
+    },
+    {
+      "id": "B05-B06-claims-lease-cursor-recovery",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.captures.test.ts",
+        "packages/fiscal-nfe/distribution.test.ts",
+        "apps/console/e2e/captures.mjs",
+        "docs/v1.0/evidence/78/review-browser.json",
+        "docs/v1.0/evidence/77-78/README.md"
+      ]
+    },
+    {
+      "id": "B06-F07-certificates-controlled-mtls",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.certificateCrypto.test.ts",
+        "tests/platform.certificates.test.ts",
+        "scripts/prove-certificate-transport.ts",
+        "docs/v1.0/evidence/77/hosted.json",
+        "docs/v1.0/evidence/77/browser.json",
+        "docs/v1.0/evidence/77-78/README.md"
+      ]
+    },
+    {
+      "id": "VAL07-authorized-real-fiscal-capture",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "B07-outbox-duplicates-event-order",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.webhooks.test.ts",
+        "tests/webhookContract.test.ts",
+        "tests/webhookTransport.test.ts",
+        "packages/contracts/fixtures/webhooks.json",
+        "scripts/prove-webhook-contract.mjs",
+        "scripts/prove-webhooks.mjs",
+        "docs/v1.0/evidence/73/README.md"
+      ]
+    },
+    {
+      "id": "B08-cnpj-alphanumeric-and-tables",
+      "status": "delivered",
+      "evidence": [
+        "packages/fiscal-core/index.test.ts",
+        "tests/platform.registry.test.ts",
+        "tests/platform.references.test.ts",
+        "tests/referenceCorpus.test.ts",
+        "docs/v1.0/evidence/75-76/README.md"
+      ]
+    },
+    {
+      "id": "B07-contract-openapi-sdk-equivalence",
+      "status": "delivered",
+      "evidence": [
+        "tests/sdk.test.ts",
+        "scripts/sdk-proof.test.ts",
+        "scripts/prove-sdk-package.mjs",
+        "scripts/prove-contract-drift.mjs",
+        "docs/v1.0/evidence/74/README.md",
+        "docs/v1.0/evidence/130/README.md"
+      ]
+    },
+    {
+      "id": "B09-F08-M5-USAGE",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.usage.test.ts",
+        "tests/platform.captures.test.ts",
+        "tests/platform.registry.test.ts",
+        "tests/platform.webhooks.test.ts",
+        "apps/console/e2e/usage.mjs",
+        "scripts/prove-usage-load.mjs",
+        "docs/v1.0/evidence/79/README.md",
+        "scripts/hosted-proof.test.ts",
+        "tests/platform.observability.test.ts",
+        "scripts/prove-hosted-operations.mjs",
+        "docs/v1.0/evidence/79-80/README.md"
+      ]
+    },
+    {
+      "id": "B10-recovery-and-performance",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "B10-export-restore-installation-technical",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.exports.test.ts",
+        "tests/platform.installation.test.ts",
+        "docs/v1.0/evidence/81/README.md",
+        "docs/v1.0/evidence/82/README.md"
+      ]
+    },
+    {
+      "id": "NFSE-issuance-dps-xsd-signature-danfse-sandbox-simulated",
+      "status": "delivered",
+      "evidence": [
+        "packages/fiscal-nfse/schemas/manifest.json",
+        "packages/fiscal-nfse/schema.test.ts",
+        "packages/fiscal-nfse/dps.test.ts",
+        "packages/fiscal-nfse/signer.test.ts",
+        "packages/fiscal-nfse/danfse.test.ts",
+        "packages/fiscal-nfse/nacional.test.ts",
+        "packages/fiscal-nfse/fixtures/adn/nfse-autorizada.xml",
+        "packages/fiscal-nfse/fixtures/adn/rejeicao-e0714.json",
+        "scripts/package-boundaries.test.ts",
+        "scripts/lib/nfse-consumer.mjs",
+        "scripts/prove-xml-package.mjs",
+        "tests/platform.issuance.test.ts",
+        "tests/platform.issuanceRest.test.ts",
+        "docs/plataforma/ISSUANCE.md"
+      ]
+    },
+    {
+      "id": "NFSE-issuance-real-fiscal-authorization",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "F09-human-accessibility-and-external-pilot",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "F10-public-documentation-technical",
+      "status": "delivered",
+      "evidence": [
+        "tests/publicSite.test.ts",
+        "scripts/prove-public-site.mjs",
+        "docs/v1.0/evidence/85/README.md"
+      ]
+    },
+    {
+      "id": "B08-F06-versioned-references",
+      "status": "delivered",
+      "evidence": [
+        "tests/platform.references.test.ts",
+        "tests/referenceCorpus.test.ts",
+        "apps/console/e2e/references.mjs",
+        "docs/v1.0/evidence/75/README.md"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "manifest": {
+    "dataset": "municipalities",
+    "version": "synthetic-v1",
+    "source": "Corpus sintético Freecorps",
+    "sourceUrl": "https://example.invalid/references",
+    "sourceVersion": "synthetic-v1",
+    "retrievedAt": "2026-09-22T00:00:00Z",
+    "asOf": "2026-09-22",
+    "coverage": "intervals",
+    "sourceSha256": "969806e455937728863009c947df47f3ea9a75242e1be8c28a4e7bd224546522",
+    "contentSha256": "969806e455937728863009c947df47f3ea9a75242e1be8c28a4e7bd224546522",
+    "count": 25,
+    "termsUrl": "https://example.invalid/synthetic-terms",
+    "redistribution": "synthetic",
+    "terms": "Dados inventados para testes, sem correspondência fiscal. Reprodução permitida para os testes do projeto."
+  },
+  "entries": [
+    {
+      "code": "9900000",
+      "description": "Árvore de teste 00",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": "2025-12-31"
+    },
+    {
+      "code": "9900001",
+      "description": "Árvore de teste 01",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900002",
+      "description": "Árvore de teste 02",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900003",
+      "description": "Árvore de teste 03",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900004",
+      "description": "Árvore de teste 04",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900005",
+      "description": "Árvore de teste 05",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900006",
+      "description": "Árvore de teste 06",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900007",
+      "description": "Árvore de teste 07",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900008",
+      "description": "Árvore de teste 08",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900009",
+      "description": "Árvore de teste 09",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900010",
+      "description": "Árvore de teste 10",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900011",
+      "description": "Árvore de teste 11",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900012",
+      "description": "Árvore de teste 12",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900013",
+      "description": "Árvore de teste 13",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900014",
+      "description": "Árvore de teste 14",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900015",
+      "description": "Árvore de teste 15",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900016",
+      "description": "Árvore de teste 16",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900017",
+      "description": "Árvore de teste 17",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900018",
+      "description": "Árvore de teste 18",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900019",
+      "description": "Árvore de teste 19",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900020",
+      "description": "Árvore de teste 20",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900021",
+      "description": "Árvore de teste 21",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900022",
+      "description": "Árvore de teste 22",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900023",
+      "description": "Árvore de teste 23",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "9900024",
+      "description": "Árvore de teste 24",
+      "state": "SP",
+      "validFrom": "2025-01-01",
+      "validTo": null
+    }
+  ]
+}

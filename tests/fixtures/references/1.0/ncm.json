@@ -1,0 +1,195 @@
+{
+  "manifest": {
+    "dataset": "ncm",
+    "version": "synthetic-v1",
+    "source": "Corpus sintético Freecorps",
+    "sourceUrl": "https://example.invalid/references",
+    "sourceVersion": "synthetic-v1",
+    "retrievedAt": "2026-09-22T00:00:00Z",
+    "asOf": "2026-09-22",
+    "coverage": "intervals",
+    "sourceSha256": "7d2734f72664a03ee2cab5e66acf61ff31f5d58bd698cdbf48c831976f5e2b87",
+    "contentSha256": "7d2734f72664a03ee2cab5e66acf61ff31f5d58bd698cdbf48c831976f5e2b87",
+    "count": 25,
+    "termsUrl": "https://example.invalid/synthetic-terms",
+    "redistribution": "synthetic",
+    "terms": "Dados inventados para testes, sem correspondência fiscal. Reprodução permitida para os testes do projeto."
+  },
+  "entries": [
+    {
+      "code": "99000000",
+      "description": "Árvore de teste 00",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": "2025-12-31"
+    },
+    {
+      "code": "99000001",
+      "description": "Árvore de teste 01",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000002",
+      "description": "Árvore de teste 02",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000003",
+      "description": "Árvore de teste 03",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000004",
+      "description": "Árvore de teste 04",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000005",
+      "description": "Árvore de teste 05",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000006",
+      "description": "Árvore de teste 06",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000007",
+      "description": "Árvore de teste 07",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000008",
+      "description": "Árvore de teste 08",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000009",
+      "description": "Árvore de teste 09",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000010",
+      "description": "Árvore de teste 10",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000011",
+      "description": "Árvore de teste 11",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000012",
+      "description": "Árvore de teste 12",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000013",
+      "description": "Árvore de teste 13",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000014",
+      "description": "Árvore de teste 14",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000015",
+      "description": "Árvore de teste 15",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000016",
+      "description": "Árvore de teste 16",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000017",
+      "description": "Árvore de teste 17",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000018",
+      "description": "Árvore de teste 18",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000019",
+      "description": "Árvore de teste 19",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000020",
+      "description": "Árvore de teste 20",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000021",
+      "description": "Árvore de teste 21",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000022",
+      "description": "Árvore de teste 22",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000023",
+      "description": "Árvore de teste 23",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    },
+    {
+      "code": "99000024",
+      "description": "Árvore de teste 24",
+      "state": null,
+      "validFrom": "2025-01-01",
+      "validTo": null
+    }
+  ]
+}

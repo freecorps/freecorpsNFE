@@ -1,0 +1,206 @@
+---
+title: Receber webhooks
+description: Eventos, assinatura HMAC, retentativas e deduplicação. No fim, um receptor de teste rodando na sua máquina, exposto por um túnel HTTPS. O receptor usa o SDK, publicado no npm.
+contract: true
+---
+
+## Eventos [#eventos]
+
+Um destino de webhook pertence a um projeto, numa empresa e num ambiente, e assina os eventos que escolher. Cada evento exige um escopo na concessão do projeto.
+
+| Evento                                                  | Quando                                              | Escopo             |
+| ------------------------------------------------------- | --------------------------------------------------- | ------------------ |
+| `document.received`                                     | Primeira versão publicada de um documento           | `documents:read`   |
+| `document.updated`                                      | Mudança no resultado público ou na situação fiscal  | `documents:read`   |
+| `document.event_received`                               | Primeiro evento fiscal recebido para o documento    | `documents:read`   |
+| `import.completed`                                      | Todos os arquivos de uma reserva terminaram         | `documents:import` |
+| `issuance.authorized` e `issuance.rejected`             | A emissão NFS-e foi autorizada ou rejeitada         | `documents:issue`  |
+| `issuance.cancelled` e `issuance.cancellation_rejected` | O cancelamento foi registrado ou rejeitado          | `documents:cancel` |
+| `connection.attention_required`                         | A captura de NF-e precisa de atenção                | `connections:read` |
+| `connection.release_withdrawn`                          | A captura fiscal da empresa foi retirada            | `connections:read` |
+| `connection.history_limited`                            | O Proprietário aceitou a perda de um trecho da fila | `connections:read` |
+
+`connection.release_withdrawn` é o último evento de uma captura em Produção: sai quando a liberação fiscal da empresa é retirada, por ela no console ou pela Freecorps, e chega mesmo depois da retirada, que encerra os outros eventos de Produção. A captura fica pausada; os documentos já capturados continuam disponíveis para leitura.
+
+`connection.history_limited` sai quando a captura que a sua integração ativou encontrou um trecho da fila que a Receita não guarda mais, e o Proprietário da organização aceitou a perda no console. A captura segue com a sua chave. É o único evento com `data`: os NSU que não vão chegar e o papel de quem decidiu, sem o motivo nem a pessoa.
+
+```json title="data de connection.history_limited"
+{
+  "lost": { "from": "000000000000002", "to": "000000000000040" },
+  "decidedBy": "owner"
+}
+```
+
+A lista vem do contrato versionado: <WebhookEvents />. O teste explícito do destino envia `webhook.test` com `synthetic: true`.
+
+## O que chega [#payload]
+
+O corpo traz só referências (e o `data` de `connection.history_limited`), nunca o XML nem dados de terceiros:
+
+```json title="Corpo de uma entrega"
+{
+  "eventId": "...",
+  "type": "document.received",
+  "version": "1",
+  "occurredAt": 1760000000000,
+  "environment": "sandbox",
+  "companyId": "...",
+  "resource": { "type": "document", "id": "...", "version": 1 },
+  "synthetic": false
+}
+```
+
+Para ler o conteúdo, consulte o recurso pela API com a sua chave. Assim a autorização vigente é conferida de novo.
+
+Um documento, importação ou emissão que voltou do arquivo econômico com ID novo traz também `resource.originalId`, o primeiro ID do recurso. Deduplique por `originalId ?? id`. Os outros recursos não têm o campo.
+
+Cada entrega leva estes headers:
+
+```http title="Headers da entrega"
+X-Fnfe-Webhook-Version: 1
+X-Fnfe-Event-Id: <eventId>
+X-Fnfe-Delivery-Id: <deliveryId>
+X-Fnfe-Resource-Version: <inteiro>
+X-Fnfe-Signature: t=<epoch-ms>;k=<versão>,v1=<hmac-hex>
+```
+
+## Verificar a assinatura [#assinatura]
+
+A assinatura é HMAC-SHA256 sobre os bytes originais do corpo, precedidos por este prefixo:
+
+```text title="Prefixo assinado"
+<timestamp>.<versão-segredo>.<versão-envelope>.<eventId>.<deliveryId>.<versão-recurso>.
+```
+
+Verifique antes de qualquer parser JSON. O [verificador do SDK](/docs/sdk#instalar) faz isso por você. Sem o SDK, calcule você mesmo o HMAC-SHA256 sobre o prefixo acima seguido dos bytes do corpo, com o segredo do webhook, e compare em tempo constante com o `v1` do cabeçalho [`X-Fnfe-Signature`](/docs/webhooks#payload).
+
+```ts title="Verificar com o SDK"
+import { verifyWebhook } from "@freecorps/sdk/webhooks";
+
+const checked = await verifyWebhook({
+  body, // bytes originais do corpo
+  headers, // nomes em minúsculas
+  secrets: [{ version: 1, secret: process.env.WEBHOOK_SECRET }],
+  now: Date.now(),
+});
+if (!checked.ok) return respond(400); // checked.code diz o motivo
+const event = checked.event;
+```
+
+A tolerância padrão é de <Tolerance /> minutos para passado e futuro, então mantenha o relógio sincronizado. Na rotação, os dois segredos valem juntos por até 24 horas e o header pode trazer duas assinaturas. Mantenha o segredo anterior só até o `validUntil` informado.
+
+## Entrega e retentativas [#entrega]
+
+- A entrega é **pelo menos uma vez**. Não há garantia de ordem nem de exatamente uma vez.
+- Respostas `2xx` confirmam. `429`, `5xx` e falhas de rede geram até seis tentativas, com espera crescente de até uma hora. Outros `3xx` e `4xx` encerram a entrega como falha.
+- Uma nova tentativa leva timestamp novo e conserva `eventId` e `deliveryId`.
+- O painel e a API permitem reenviar uma entrega manualmente.
+- Cada empresa admite até 20 destinos por ambiente.
+
+<Callout type="warn" title="Assinatura válida não impede efeito duplicado">
+  Grave o `eventId` e a última versão do recurso na mesma transação do seu efeito. Se o evento já
+  foi visto, ou a versão é mais antiga, confirme com `2xx` sem repetir o efeito. Responda `400` a
+  uma assinatura inválida e `503` a uma falha temporária, para que a entrega seja repetida.
+</Callout>
+
+## Testar na sua máquina [#testar]
+
+O receptor de exemplo verifica a assinatura, consulta o documento e deduplica em SQLite. Você vai precisar de Node 22.23.4 ou mais recente, do [SDK](/docs/sdk#instalar) e de dois terminais, além daquele em que fez a [primeira chamada](/docs/primeira-chamada).
+
+<Steps>
+<Step>
+
+### Baixe o receptor e instale o SDK [#receptor]
+
+<ul className="downloads">
+  <li>
+    <a href="/developer/sdk-webhook-receiver.mjs" download>
+      sdk-webhook-receiver.mjs
+    </a>
+  </li>
+</ul>
+
+```bash title="Instalar o SDK"
+npm install @freecorps/sdk
+```
+
+</Step>
+<Step>
+
+### Abra o túnel HTTPS [#tunel]
+
+Instale o [cloudflared](https://developers.cloudflare.com/tunnel/downloads/) e, num terminal só para ele, execute:
+
+```bash title="Túnel"
+cloudflared tunnel --url http://127.0.0.1:8787
+```
+
+Espere a URL `https://….trycloudflare.com` e deixe o terminal aberto. A URL muda a cada reinício.
+
+</Step>
+<Step>
+
+### Cadastre o destino [#destino]
+
+No painel, na empresa de teste e em sandbox, abra <Ui>Webhooks</Ui> → <Ui>Novo destino</Ui>. Em URL HTTPS, cole a URL do túnel seguida de `/webhook`. Selecione os eventos `document.received`, `document.updated`, `document.event_received` e `import.completed` e clique em <Ui>Criar destino</Ui>.
+
+O segredo exibido é o do webhook, diferente da chave de API, e aparece uma vez só. Antes de fechar a tela, salve-o em `segredos-locais.json`, em UTF-8 sem BOM:
+
+```json title="segredos-locais.json"
+[{ "version": 1, "secret": "COLE_AQUI_O_SEGREDO_DO_WEBHOOK" }]
+```
+
+Mantenha esse arquivo fora do Git.
+
+</Step>
+<Step>
+
+### Inicie o receptor [#iniciar]
+
+No segundo terminal, com as mesmas variáveis da primeira chamada:
+
+```powershell title="PowerShell"
+$env:FREECORPS_ENVIRONMENT = 'sandbox'
+$env:FREECORPS_WEBHOOK_SECRETS_FILE = './segredos-locais.json'
+$env:FREECORPS_WEBHOOK_DATABASE = './eventos.sqlite'
+$env:PORT = '8787'
+node sdk-webhook-receiver.mjs --serve
+```
+
+<details>
+<summary>Alternativa em Bash</summary>
+
+```bash title="Bash"
+export FREECORPS_ENVIRONMENT='sandbox'
+export FREECORPS_WEBHOOK_SECRETS_FILE='./segredos-locais.json'
+export FREECORPS_WEBHOOK_DATABASE='./eventos.sqlite'
+export PORT='8787'
+node sdk-webhook-receiver.mjs --serve
+```
+
+</details>
+
+Deve aparecer **Receptor disponível em /webhook**.
+
+</Step>
+<Step>
+
+### Gere um evento e confira [#conferir]
+
+Rode a primeira chamada de novo com outra chave de idempotência, por exemplo `importacao-sintetica-002`. No painel, a entrega deve aparecer como <Ui>Entregue</Ui>, com HTTP 204.
+
+Clique em <Ui>Reenviar entrega</Ui>. O receptor responde 204 de novo, mas não repete o efeito: o `eventId` já está gravado em `eventos.sqlite`.
+
+</Step>
+</Steps>
+
+### Se algo não funcionar [#problemas]
+
+| Sintoma                                   | Causa provável                                                                                         |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Entrega <Ui>Pausada</Ui>, zero tentativas | O envio de webhooks está desligado nessa instalação. Peça ao operador para habilitar e reenvie.        |
+| Nenhuma tentativa chega ao receptor       | URL do túnel antiga, sem `/webhook` ou porta diferente entre túnel e receptor.                         |
+| HTTP 400                                  | Segredo ou versão errados no arquivo, JSON inválido ou relógio fora de hora.                           |
+| HTTP 503                                  | O receptor não conseguiu consultar o documento. Confira a chave, `documents:read`, empresa e ambiente. |
+
+Ao terminar, desative o destino de teste, encerre túnel e receptor com <kbd>Ctrl</kbd>+<kbd>C</kbd> e apague o arquivo de segredos.

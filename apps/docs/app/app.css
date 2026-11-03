@@ -1,0 +1,844 @@
+/* Docs theme: the landing's night palette (apps/console/src/site/landing/
+   landing.css) mapped onto Fumadocs. One theme, dark. Green tinted neutrals,
+   one accent (phosphor), glow only on what is active. Pills for controls,
+   16px panels, 12px code. Motion is transform and opacity only. The CSP
+   allows no inline styles: everything visual lives here. */
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "fumadocs-openapi/css/preset.css";
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/geist-latin-400-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/geist-latin-500-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/geist-latin-600-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/geist-mono-latin-400-normal.woff2) format("woff2");
+}
+
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Landing tokens, then the Fumadocs colour variables built from them. */
+:root,
+.dark {
+  --night: #09100d;
+  --night-2: #0c1511;
+  --surface: #0f1915;
+  --surface-2: #14211b;
+  --line: #22322a;
+  --line-2: #3a4f44;
+  --text: #e6eee8;
+  --muted: #98aa9f;
+  --faint: #6e8277;
+  --glow: #d4f36e;
+  --glow-hi: #efffbe;
+  --glow-ink: #0b130f;
+  --glow-dim: rgba(212, 243, 110, 0.12);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Figure faces, as on the landing. */
+  --body: #0c1511;
+  --deck: #101b16;
+
+  --color-fd-background: var(--night);
+  --color-fd-foreground: var(--text);
+  --color-fd-muted: var(--surface);
+  --color-fd-muted-foreground: var(--muted);
+  --color-fd-popover: var(--night-2);
+  --color-fd-popover-foreground: var(--text);
+  --color-fd-card: var(--night-2);
+  --color-fd-card-foreground: var(--text);
+  --color-fd-border: var(--line);
+  --color-fd-primary: var(--glow);
+  --color-fd-primary-foreground: var(--glow-ink);
+  --color-fd-secondary: var(--surface);
+  --color-fd-secondary-foreground: var(--text);
+  --color-fd-accent: var(--surface-2);
+  --color-fd-accent-foreground: var(--text);
+  --color-fd-ring: var(--glow);
+  --color-fd-overlay: rgba(4, 8, 6, 0.72);
+  --color-fd-info: #8fc4a6;
+  --color-fd-warning: #e6c46a;
+  --color-fd-error: #ef8f7d;
+  --color-fd-success: var(--glow);
+  --color-fd-idea: var(--glow);
+  --fd-layout-width: 1240px;
+  /* HTTP methods in the API reference (Tailwind colours used by Fumadocs). */
+  --color-green-400: #9fd4b2;
+  --color-blue-400: #c8df8f;
+  --color-orange-400: #e6c46a;
+  --color-yellow-400: #e6c46a;
+  --color-red-400: #ef8f7d;
+  color-scheme: dark;
+}
+.dark :is(#nd-sidebar, #nd-sidebar-mobile) {
+  --color-fd-muted: var(--surface);
+  --color-fd-secondary: var(--surface);
+  --color-fd-muted-foreground: var(--muted);
+}
+
+html {
+  background: var(--night);
+  scrollbar-gutter: stable;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+::selection {
+  background: rgba(212, 243, 110, 0.28);
+  color: var(--text);
+}
+:focus-visible:not(input, textarea) {
+  outline: 2px solid var(--glow);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Film grain, as on the landing, fixed so scrolling never repaints it. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 0.5px, transparent 0.6px);
+  background-size: 3px 3px;
+}
+
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 80;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+.skip:focus {
+  top: 12px;
+}
+#conteudo:focus {
+  outline: none;
+}
+
+/* Scroll lock while the search dialog is open. react-remove-scroll would
+   inject these rules as an inline <style>, which the CSP refuses; the build
+   stubs that injection (app/lib/style-singleton.ts) and keeps them here. */
+html > body[data-scroll-locked] {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+[class*="block-interactivity-"] {
+  pointer-events: none;
+}
+[class*="allow-interactivity-"] {
+  pointer-events: all;
+}
+[data-radix-scroll-area-viewport] {
+  scrollbar-width: none;
+}
+[data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  display: none;
+}
+
+/* Wordmark, identical to the landing header. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 600;
+  box-shadow: 0 0 18px -4px rgba(212, 243, 110, 0.7);
+}
+.brand-light {
+  color: var(--muted);
+  font-weight: 500;
+}
+.brand-tag {
+  margin-left: 2px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--muted);
+  font: 500 11.5px/1.4 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Code: 12px panels on night-2, token colours from app/lib/code-theme.ts. */
+.tk-c9d6ce {
+  --shiki-dark: #c9d6ce;
+  --shiki-light: #c9d6ce;
+}
+.tk-98aa9f {
+  --shiki-dark: #98aa9f;
+  --shiki-light: #98aa9f;
+}
+.tk-6e8277 {
+  --shiki-dark: #6e8277;
+  --shiki-light: #6e8277;
+}
+.tk-7f948a {
+  --shiki-dark: #7f948a;
+  --shiki-light: #7f948a;
+}
+.tk-d4f36e {
+  --shiki-dark: #d4f36e;
+  --shiki-light: #d4f36e;
+}
+.tk-b9d8c4 {
+  --shiki-dark: #b9d8c4;
+  --shiki-light: #b9d8c4;
+}
+.tk-efffbe {
+  --shiki-dark: #efffbe;
+  --shiki-light: #efffbe;
+}
+.tk-e6eee8 {
+  --shiki-dark: #e6eee8;
+  --shiki-light: #e6eee8;
+}
+.tk-9fd4b2 {
+  --shiki-dark: #9fd4b2;
+  --shiki-light: #9fd4b2;
+}
+.tk-b4c7bb {
+  --shiki-dark: #b4c7bb;
+  --shiki-light: #b4c7bb;
+}
+.tk-cfdcd3 {
+  --shiki-dark: #cfdcd3;
+  --shiki-light: #cfdcd3;
+}
+
+/* Header: near-opaque night bar with a hairline, like the landing's .top.
+   No backdrop blur: it made every element under it its own layer. */
+/* The header box keeps Fumadocs' own height (the layout offsets the page by
+   it). Its solid night background and the hairline sit on one pseudo
+   element that bleeds to both viewport edges, so nothing scrolls into view
+   between them. The mobile table of contents bar under it does the same. */
+#nd-subnav,
+[data-toc-popover] {
+  isolation: isolate;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+#nd-subnav::before,
+[data-toc-popover]::before {
+  content: "";
+  position: absolute;
+  inset: 0 -100vw;
+  z-index: -1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--night);
+}
+#nd-subnav [data-header-body],
+[data-toc-popover] > * {
+  border-color: transparent !important;
+  background: transparent !important;
+}
+#nd-subnav a[href="/"],
+#nd-subnav a[href="/console"],
+#nd-subnav a[href="/login"] {
+  font-size: 14.5px;
+}
+#nd-subnav .max-lg\:hidden > a[href="/login"] {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--glow);
+  border-radius: 999px;
+  background: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition:
+    transform 160ms var(--ease-out),
+    box-shadow 200ms;
+}
+#nd-subnav .max-lg\:hidden > a[href="/login"]:hover {
+  color: var(--glow-ink);
+  box-shadow:
+    0 0 28px -6px rgba(212, 243, 110, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+#nd-subnav .max-lg\:hidden > a[href="/login"]:active {
+  transform: scale(0.97);
+}
+
+/* Search trigger: a pill, hairline, mono shortcut. */
+button[data-search-full] {
+  height: 38px;
+  padding-inline: 14px 6px;
+  border-color: var(--line);
+  border-radius: 999px;
+  background: var(--night-2);
+  color: var(--faint);
+}
+button[data-search-full]:hover {
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--muted);
+}
+button[data-search-full] kbd {
+  min-width: 24px;
+  border-color: var(--line);
+  border-radius: 999px;
+  background: var(--night);
+  color: var(--muted);
+  font: 500 11.5px/22px var(--font-mono);
+  text-align: center;
+}
+
+/* Search dialog: compact results, two lines of context each. */
+[role="dialog"]:has(#fd-search-list) {
+  border-color: var(--line-2);
+  border-radius: 16px;
+  background: var(--night-2);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+#fd-search-list [role="option"] {
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+#fd-search-list [role="option"][aria-selected="true"] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+#fd-search-list [role="option"] :is(p, .prose) {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+#fd-search-list [role="option"] code {
+  padding: 0 4px;
+  border: 0;
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+/* Sidebar: group labels as the landing's mono eyebrows; the current page in
+   text colour on surface, marked by a short phosphor bar that glows. */
+:is(#nd-sidebar, #nd-sidebar-mobile) p > .fd-page-tree-item-name {
+  color: var(--faint);
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) p:has(> .fd-page-tree-item-name) {
+  margin-top: 28px;
+  margin-bottom: 8px;
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) p:first-of-type:has(> .fd-page-tree-item-name) {
+  margin-top: 4px;
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active] {
+  overflow-wrap: break-word;
+  padding-block: 7px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="false"]:hover {
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text);
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="true"] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+}
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--glow);
+  box-shadow: 0 0 10px 1px rgba(212, 243, 110, 0.55);
+  transform: translate(-1px, -50%);
+}
+
+/* Table of contents: muted links, phosphor on the section in view. */
+#nd-toc #toc-title {
+  color: var(--faint);
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+#nd-toc a[data-active] {
+  overflow-wrap: break-word;
+  color: var(--faint);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+#nd-toc a[data-active]:hover {
+  color: var(--text);
+}
+#nd-toc a[data-active="true"] {
+  color: var(--glow);
+}
+#nd-toc svg line {
+  stroke: var(--line);
+}
+
+/* Docs home: the landing's inbox figure beside the title only, at rest (the
+   docs are for reading, so its animations stay off); the lead keeps its
+   normal measure under both. Wide screens only. */
+.home-figure {
+  display: none;
+}
+.home-figure .glow-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.home-figure,
+.home-figure * {
+  animation: none !important;
+}
+.home-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+@media (min-width: 1180px) {
+  .home-figure {
+    display: block;
+    flex: none;
+    width: clamp(220px, 22vw, 300px);
+    margin-block: -12px -20px;
+    pointer-events: none;
+  }
+}
+
+/* Page head. */
+#conteudo > h1,
+.home-head > h1 {
+  font-size: clamp(32px, 3.4vw, 44px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+#conteudo > :is(h1, .home-head) + p {
+  max-width: 62ch;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Prose. Three levels of light, so a page can be skimmed: running text a
+   step below the text colour; headings, bold and links at full text colour;
+   code in the code theme's green tint; interface labels as the panel's own
+   pills. The phosphor stays for what is active (step numbers, current page). */
+.prose {
+  --tw-prose-body: #b2c2b8;
+  --tw-prose-headings: var(--text);
+  --tw-prose-links: var(--text);
+  --tw-prose-bold: var(--text);
+  --tw-prose-counters: var(--faint);
+  --tw-prose-bullets: var(--line-2);
+  --tw-prose-hr: var(--line);
+  --tw-prose-quotes: var(--text);
+  --tw-prose-captions: var(--muted);
+  --tw-prose-code: #b9d8c4;
+  --tw-prose-th-borders: var(--line);
+  --tw-prose-td-borders: var(--line);
+  font-size: 16px;
+  line-height: 1.75;
+}
+.prose :where(h2) {
+  margin-top: 2.6em;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.prose > h2:first-child {
+  margin-top: 0.6em;
+}
+.prose :where(h3) {
+  margin-top: 2em;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.prose :where(a):not(:where(.not-prose, .not-prose *, h1 *, h2 *, h3 *, h4 *)) {
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(212, 243, 110, 0.55);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 160ms;
+}
+.prose :where(a):not(:where(.not-prose, .not-prose *, h1 *, h2 *, h3 *, h4 *)):hover {
+  text-decoration-color: var(--glow);
+}
+.prose :where(code):not(:where(pre code, .not-prose *)) {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--night-2);
+  font-size: 0.86em;
+  font-weight: 400;
+}
+.prose :where(strong) {
+  font-weight: 600;
+}
+
+/* Interface labels (<Ui> in the guides): buttons, tabs and menus of the
+   panel, drawn as the pills they are there. */
+.prose .ui {
+  display: inline-block;
+  padding: 0 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875em;
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: nowrap;
+}
+.prose kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--night-2);
+  color: var(--text);
+  font: 500 0.8em/1.4 var(--font-mono);
+}
+
+/* Steps: a hairline rail with numbered markers in mono phosphor. Each step
+   opens with its h3, aligned with the marker. */
+.prose .fd-steps {
+  border-color: var(--line);
+}
+.prose .fd-step::before {
+  border: 1px solid rgba(212, 243, 110, 0.45);
+  background: var(--night);
+  color: var(--glow);
+  font: 500 13px/1 var(--font-mono);
+  box-shadow: 0 0 14px -6px rgba(212, 243, 110, 0.6);
+}
+.prose .fd-step > h3:first-child {
+  margin-top: 0;
+  padding-top: 4px;
+}
+.prose .fd-step + .fd-step {
+  margin-top: 2.2em;
+}
+
+/* Code blocks: night-2 panel, 12px, hairline; title in mono like the
+   landing's code titles. */
+.prose > figure.shiki {
+  margin-block: 22px;
+}
+figure.shiki {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: var(--night-2);
+}
+figure.shiki > div:first-child:has(figcaption) {
+  height: 40px;
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.012);
+}
+figure.shiki figcaption {
+  color: var(--muted);
+  font: 500 12.5px/1.4 var(--font-mono);
+  letter-spacing: 0.01em;
+}
+figure.shiki pre {
+  font-size: 13px;
+  line-height: 1.7;
+}
+figure.shiki button {
+  color: var(--faint);
+}
+figure.shiki button:hover {
+  color: var(--text);
+}
+
+/* Native disclosure for the Bash alternatives: readable without JavaScript. */
+.prose details {
+  margin-block: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.012);
+}
+.prose details > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  color: var(--muted);
+  font: 500 13px/1.4 var(--font-mono);
+  cursor: pointer;
+  list-style: none;
+  transition: color 160ms;
+}
+.prose details > summary::-webkit-details-marker {
+  display: none;
+}
+.prose details > summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 200ms var(--ease-out);
+}
+.prose details[open] > summary::before {
+  transform: rotate(45deg);
+}
+.prose details > summary:hover,
+.prose details[open] > summary {
+  color: var(--text);
+}
+.prose details > figure.shiki {
+  margin: 0 12px 12px;
+}
+
+/* Downloads: a row of mono pills. */
+.prose ul.downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.prose ul.downloads li {
+  margin: 0;
+  padding: 0;
+}
+.prose ul.downloads a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 16px 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--text);
+  font: 400 13px/1 var(--font-mono);
+  text-decoration: none;
+  transition:
+    border-color 160ms,
+    background-color 160ms,
+    transform 160ms var(--ease-out);
+}
+.prose ul.downloads a::before {
+  content: "";
+  width: 10px;
+  height: 11px;
+  background:
+    linear-gradient(var(--glow), var(--glow)) center top / 1.5px 8px no-repeat,
+    linear-gradient(var(--glow), var(--glow)) center bottom / 10px 1.5px no-repeat;
+}
+.prose ul.downloads a:hover {
+  border-color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+.prose ul.downloads a:active {
+  transform: scale(0.97);
+}
+
+/* Tables, including the ones generated from the contract: a 16px panel,
+   mono header, codes without chips. */
+.prose :where(table) {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.prose .contract-table,
+.prose div:has(> table) {
+  margin-block: 22px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--night-2);
+}
+.prose :where(thead) {
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.015);
+}
+.prose :where(th) {
+  padding: 12px 16px !important;
+  color: var(--muted);
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.prose :where(td) {
+  padding: 11px 16px !important;
+  vertical-align: baseline;
+}
+.prose :where(tbody tr) {
+  border-color: rgba(34, 50, 42, 0.7);
+}
+.prose :where(tbody tr):hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+.prose td code {
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  color: var(--text);
+  font-size: 12.5px !important;
+  line-height: inherit;
+  white-space: nowrap;
+}
+.prose .contract-table td:nth-child(2) {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.prose table :where(td, th) {
+  border-inline: 0 !important;
+}
+
+/* API reference: smaller section heads, the operationId in mono under the
+   title. */
+/* Field names and selected tabs in text colour: phosphor stays on what is
+   active (sidebar, table of contents, breadcrumb). */
+.api-page .prose {
+  --color-fd-primary: var(--text);
+}
+.api-page .prose :where(h2) {
+  margin-top: 2.2em;
+  font-size: 20px;
+}
+.api-page .prose :where(h3) {
+  font-size: 16px;
+}
+.api-page > .operation-id {
+  margin-top: -6px;
+}
+.api-page > .operation-id code {
+  color: var(--muted);
+  font: 400 13.5px/1.4 var(--font-mono);
+}
+
+/* Breadcrumb (the API reference folder) as the landing's mono eyebrow. */
+#conteudo > div:first-child:has(.fd-page-tree-item-name) .fd-page-tree-item-name {
+  color: var(--glow);
+  font: 500 13px/1.4 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Not found and error pages. */
+.not-found,
+.error-page {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  width: min(100% - 40px, 640px);
+  margin: 18vh auto;
+}
+.not-found h1,
+.error-page h1 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+.not-found p:not(.eyebrow),
+.error-page p {
+  margin: 0;
+  color: var(--muted);
+}
+.eyebrow {
+  color: var(--glow);
+  font: 500 13px/1.4 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  margin-top: 8px;
+  padding: 0 20px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--text);
+  font-weight: 500;
+  text-decoration: none;
+}
+.pill-primary {
+  border-color: var(--glow);
+  background: var(--glow);
+  color: var(--glow-ink);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}

@@ -1,0 +1,866 @@
+diff --git a/dist/component/_generated/component.d.ts b/dist/component/_generated/component.d.ts
+index c206c2ef40eb03eaecc541c20c1058471483d7bb..57a148421ba59670c13d853428a445bb2320a86a 100644
+--- a/dist/component/_generated/component.d.ts
++++ b/dist/component/_generated/component.d.ts
+@@ -127,6 +127,40 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
+             ok: false;
+             retryAfter: number;
+         }, Name>;
++        rateLimitMany: FunctionReference<"mutation", "internal", {
++            limits: Array<{
++                config: {
++                    capacity?: number;
++                    kind: "token bucket";
++                    maxReserved?: number;
++                    period: number;
++                    rate: number;
++                    shards?: number;
++                    start?: null;
++                } | {
++                    capacity?: number;
++                    kind: "fixed window";
++                    maxReserved?: number;
++                    period: number;
++                    rate: number;
++                    shards?: number;
++                    start?: number;
++                };
++                count?: number;
++                key?: string;
++                name: string;
++                reserve?: boolean;
++                throws?: boolean;
++            }>;
++            partitionShards?: number;
++            partitionLane?: number;
++        }, {
++            ok: true;
++            retryAfter?: number;
++        } | {
++            ok: false;
++            retryAfter: number;
++        }, Name>;
+         resetRateLimit: FunctionReference<"mutation", "internal", {
+             key?: string;
+             name: string;
+@@ -136,4 +170,3 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
+         getServerTime: FunctionReference<"mutation", "internal", {}, number, Name>;
+     };
+ };
+-//# sourceMappingURL=component.d.ts.map
+\ No newline at end of file
+diff --git a/dist/component/_generated/component.js b/dist/component/_generated/component.js
+index 92c00d6ccbb4801bb8c2149f1098399ddc4aaa0e..d588590f6fa8083db843b6a126e34140ce98941f 100644
+--- a/dist/component/_generated/component.js
++++ b/dist/component/_generated/component.js
+@@ -8,4 +8,3 @@
+  * @module
+  */
+ export {};
+-//# sourceMappingURL=component.js.map
+\ No newline at end of file
+diff --git a/dist/component/internal.d.ts b/dist/component/internal.d.ts
+index 8347c75bf3740fd297411dbfea1bd9427396ab0b..9639534c5dd72901a82b6d84e1b2c434f55cc22a 100644
+--- a/dist/component/internal.d.ts
++++ b/dist/component/internal.d.ts
+@@ -2,7 +2,7 @@ import { type RateLimitArgs, type RateLimitConfig, type RateLimitReturns } from
+ import type { Doc } from "./_generated/dataModel.js";
+ import type { DatabaseReader } from "./_generated/server.js";
+ export declare const MIN_CHOOSE_TWO = 3;
+-export declare function checkRateLimitOrThrow(db: DatabaseReader, args: RateLimitArgs): Promise<{
++export declare function checkRateLimitOrThrow(db: DatabaseReader, args: RateLimitArgs, lane?: number): Promise<{
+     status: RateLimitReturns;
+     updates: {
+         existing: Doc<"rateLimits"> | null;
+@@ -14,28 +14,28 @@ export declare function checkRateLimitOrThrow(db: DatabaseReader, args: RateLimi
+ export declare function configWithDefaults(config: RateLimitConfig): {
+     shards: number;
+     capacity: number;
+-    maxReserved?: number | undefined;
+     start?: null | undefined;
+-    kind: "token bucket";
++    maxReserved?: number | undefined;
+     rate: number;
+     period: number;
++    kind: "token bucket";
+ } | {
+     shards: number;
+     capacity: number;
+-    maxReserved?: number | undefined;
+     start?: number | undefined;
+-    kind: "fixed window";
++    maxReserved?: number | undefined;
+     rate: number;
+     period: number;
++    kind: "fixed window";
+ };
+ export declare function getShard(db: DatabaseReader, name: string, key: string | undefined, shard: number): Promise<{
+     _id: import("convex/values").GenericId<"rateLimits">;
+     _creationTime: number;
+     key?: string | undefined;
+     name: string;
++    shard: number;
+     value: number;
+     ts: number;
+-    shard: number;
+ } | null>;
+ export declare function _checkRateLimitInternal(existing: {
+     value: number;
+@@ -55,4 +55,3 @@ export declare function _checkRateLimitInternal(existing: {
+     value: number;
+     ts: number;
+ };
+-//# sourceMappingURL=internal.d.ts.map
+\ No newline at end of file
+diff --git a/dist/component/internal.js b/dist/component/internal.js
+index 6a806e924a01718b198a5dde473490d6eeb32c60..9123a42a1dfc6d822f7a6282c097750ce9f1564d 100644
+--- a/dist/component/internal.js
++++ b/dist/component/internal.js
+@@ -1,10 +1,12 @@
+ import { ConvexError } from "convex/values";
+ import { calculateRateLimit, } from "../shared.js";
++import { checkPartition, findPartition } from "./partitioned.js";
+ // If there are only two shards, it's not really worth checking them both
+ // since it'd introduce a read dependency on all shards anyways.
+ export const MIN_CHOOSE_TWO = 3;
+-export async function checkRateLimitOrThrow(db, args) {
+-    const result = await checkRateLimitSharded(db, args);
++export async function checkRateLimitOrThrow(db, args, lane) {
++    const layout = await findPartition(db, args);
++    const result = layout ? await checkPartition(db, args, layout, lane) : await checkRateLimitSharded(db, args);
+     if (result.status.retryAfter && args.throws) {
+         throw new ConvexError({
+             kind: "RateLimited",
+@@ -155,4 +157,3 @@ export function _checkRateLimitInternal(existing, config, count = 1, reserve = f
+     }
+     return { status: { ok: true, retryAfter }, value, ts };
+ }
+-//# sourceMappingURL=internal.js.map
+\ No newline at end of file
+diff --git a/dist/component/lib.d.ts b/dist/component/lib.d.ts
+index 77130e67e6e69647ad333b03b43fad5649d3f35f..8633767f6652f34546cca9c524a320c94d168796 100644
+--- a/dist/component/lib.d.ts
++++ b/dist/component/lib.d.ts
+@@ -5,21 +5,21 @@ export declare const rateLimit: import("convex/server").RegisteredMutation<"publ
+     throws?: boolean | undefined;
+     name: string;
+     config: {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: null | undefined;
+-        kind: "token bucket";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "token bucket";
+     } | {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: number | undefined;
+-        kind: "fixed window";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "fixed window";
+     };
+ }, Promise<{
+     retryAfter?: number | undefined;
+@@ -35,21 +35,21 @@ export declare const checkRateLimit: import("convex/server").RegisteredQuery<"pu
+     throws?: boolean | undefined;
+     name: string;
+     config: {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: null | undefined;
+-        kind: "token bucket";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "token bucket";
+     } | {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: number | undefined;
+-        kind: "fixed window";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "fixed window";
+     };
+ }, Promise<{
+     retryAfter?: number | undefined;
+@@ -58,48 +58,83 @@ export declare const checkRateLimit: import("convex/server").RegisteredQuery<"pu
+     ok: false;
+     retryAfter: number;
+ }>>;
++/** Consume independent budgets together, with no partial consumption on refusal. */
++export declare const rateLimitMany: import("convex/server").RegisteredMutation<"public", {
++    partitionShards?: number | undefined;
++    partitionLane?: number | undefined;
++    limits: {
++        key?: string | undefined;
++        count?: number | undefined;
++        reserve?: boolean | undefined;
++        throws?: boolean | undefined;
++        name: string;
++        config: {
++            shards?: number | undefined;
++            capacity?: number | undefined;
++            start?: null | undefined;
++            maxReserved?: number | undefined;
++            rate: number;
++            period: number;
++            kind: "token bucket";
++        } | {
++            shards?: number | undefined;
++            capacity?: number | undefined;
++            start?: number | undefined;
++            maxReserved?: number | undefined;
++            rate: number;
++            period: number;
++            kind: "fixed window";
++        };
++    }[];
++}, Promise<{
++    ok: false;
++    retryAfter: number;
++} | {
++    retryAfter?: number | undefined;
++    ok: true;
++}>>;
+ export declare const getValue: import("convex/server").RegisteredQuery<"public", {
+     key?: string | undefined;
+     sampleShards?: number | undefined;
+     name: string;
+     config: {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: null | undefined;
+-        kind: "token bucket";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "token bucket";
+     } | {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: number | undefined;
+-        kind: "fixed window";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "fixed window";
+     };
+ }, Promise<{
++    shard: number;
++    value: number;
++    ts: number;
+     config: {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: null | undefined;
+-        kind: "token bucket";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "token bucket";
+     } | {
+-        capacity?: number | undefined;
+-        maxReserved?: number | undefined;
+         shards?: number | undefined;
++        capacity?: number | undefined;
+         start?: number | undefined;
+-        kind: "fixed window";
++        maxReserved?: number | undefined;
+         rate: number;
+         period: number;
++        kind: "fixed window";
+     };
+-    value: number;
+-    ts: number;
+-    shard: number;
+ }>>;
+ export declare const resetRateLimit: import("convex/server").RegisteredMutation<"public", {
+     key?: string | undefined;
+@@ -109,4 +144,3 @@ export declare const clearAll: import("convex/server").RegisteredMutation<"publi
+     before?: number | undefined;
+ }, Promise<void>>;
+ export { getServerTime } from "./time.js";
+-//# sourceMappingURL=lib.d.ts.map
+\ No newline at end of file
+diff --git a/dist/component/lib.js b/dist/component/lib.js
+index e4bb6a62fbde5afbca1150a425223e1385b0ff94..259d907d50886a69dd078c8882ada32b6343e3f8 100644
+--- a/dist/component/lib.js
++++ b/dist/component/lib.js
+@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server.js";
+ import { calculateRateLimit, getValueReturns, rateLimitArgs, configValidator, rateLimitReturns, } from "../shared.js";
+ import { checkRateLimitOrThrow, configWithDefaults, getShard, } from "./internal.js";
+ import { api } from "./_generated/api.js";
++import { findPartition, preparePartition } from "./partitioned.js";
+ export const rateLimit = mutation({
+     args: rateLimitArgs,
+     returns: rateLimitReturns,
+@@ -29,6 +30,33 @@ export const checkRateLimit = query({
+         return status;
+     },
+ });
++/** Consume independent budgets together, with no partial consumption on refusal. */
++export const rateLimitMany = mutation({
++    args: { limits: v.array(v.object(rateLimitArgs)), partitionShards: v.optional(v.number()), partitionLane: v.optional(v.number()) },
++    returns: rateLimitReturns,
++    handler: async (ctx, { limits, partitionShards, partitionLane }) => {
++        if (limits.length < 1 || limits.length > 20 ||
++            new Set(limits.map(({ name, key }) => JSON.stringify([name, key ?? null]))).size !== limits.length)
++            throw new Error("Expected 1 to 20 distinct rate limit budgets");
++        if (partitionShards !== undefined)
++            for (const args of limits)
++                await preparePartition(ctx, args, partitionShards);
++        const checks = await Promise.all(limits.map((args) => checkRateLimitOrThrow(ctx.db, args, partitionLane)));
++        const retryAfter = Math.max(0, ...checks.map(({ status }) => status.retryAfter ?? 0));
++        if (checks.some(({ status }) => !status.ok))
++            return { ok: false, retryAfter };
++        for (let i = 0; i < checks.length; i++) {
++            const { name, key } = limits[i];
++            for (const { value, ts, existing, shard } of checks[i].updates) {
++                if (existing)
++                    await ctx.db.patch(existing._id, { ts, value });
++                else
++                    await ctx.db.insert("rateLimits", { name, key, ts, value, shard });
++            }
++        }
++        return { ok: true, ...(retryAfter > 0 ? { retryAfter } : {}) };
++    },
++});
+ export const getValue = query({
+     args: {
+         name: v.string(),
+@@ -38,6 +66,18 @@ export const getValue = query({
+     },
+     returns: getValueReturns,
+     handler: async (ctx, args) => {
++        const layout = await findPartition(ctx.db, args);
++        if (layout) {
++            const rows = await ctx.db.query("rateLimits").withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).take(33);
++            if (rows.length !== layout.shards)
++                throw new Error("Incomplete partitioned budget");
++            const ts = Math.max(...rows.map(row => row.ts));
++            const common = { rate: layout.rate, capacity: layout.capacity, period: layout.period };
++            const config = layout.kind === "fixed window" ? { ...common, kind: "fixed window", start: layout.start }
++                : { ...common, kind: "token bucket" };
++            const divided = { ...config, rate: layout.rate / layout.shards, capacity: layout.capacity / layout.shards };
++            return { value: rows.reduce((sum, row) => sum + calculateRateLimit(row, divided, ts).value, 0), ts, shard: -1, config };
++        }
+         const config = configWithDefaults(args.config);
+         const samplesToTake = Math.min(args.sampleShards || 1, config.shards);
+         const shardIndices = Array.from({ length: config.shards }, (_, i) => i);
+@@ -84,12 +124,18 @@ export const resetRateLimit = mutation({
+         for (const shard of allShards) {
+             await ctx.db.delete(shard._id);
+         }
++        const layout = await findPartition(ctx.db, args);
++        if (layout)
++            await ctx.db.delete(layout._id);
+     },
+ });
+ export const clearAll = mutation({
+     args: { before: v.optional(v.number()) },
+     returns: v.null(),
+     handler: async (ctx, args) => {
++        // Clearing individual lanes would grant capacity again or leave a broken layout.
++        if (await ctx.db.query("partitions").first())
++            throw new Error("Reset partitioned budgets by name and key before clearAll");
+         const results = await ctx.db
+             .query("rateLimits")
+             .withIndex("by_creation_time", (q) => q.lte("_creationTime", args.before ?? Date.now()))
+@@ -106,4 +152,3 @@ export const clearAll = mutation({
+     },
+ });
+ export { getServerTime } from "./time.js";
+-//# sourceMappingURL=lib.js.map
+\ No newline at end of file
+diff --git a/node_modules/@convex-dev/rate-limiter/dist/component/partitioned.d.ts b/dist/component/partitioned.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f4ad01ea893ec8fb95db0fb94268624d6b7a4c15
+--- /dev/null
++++ b/dist/component/partitioned.d.ts
+@@ -0,0 +1,27 @@
++import { type RateLimitArgs, type RateLimitReturns } from "../shared.js";
++import type { Doc } from "./_generated/dataModel.js";
++import type { DatabaseReader, MutationCtx } from "./_generated/server.js";
++export declare const findPartition: (db: DatabaseReader, args: Pick<RateLimitArgs, "name" | "key">) => Promise<{
++    _id: import("convex/values").GenericId<"partitions">;
++    _creationTime: number;
++    key?: string | undefined;
++    start?: number | undefined;
++    kind?: "token bucket" | "fixed window" | undefined;
++    name: string;
++    shards: number;
++    rate: number;
++    capacity: number;
++    period: number;
++} | null>;
++/** Lazy, atomic migration. Read the existing balance, never grant a new budget. */
++export declare function preparePartition(ctx: MutationCtx, args: RateLimitArgs, shards: number): Promise<void>;
++/** Fast path reads one lane; exhaustion searches the remainder before refusing. */
++export declare function checkPartition(db: DatabaseReader, args: RateLimitArgs, layout: Doc<"partitions">, lane?: number): Promise<{
++    status: RateLimitReturns;
++    updates: {
++        existing: Doc<"rateLimits">;
++        shard: number;
++        value: number;
++        ts: number;
++    }[];
++}>;
+diff --git a/node_modules/@convex-dev/rate-limiter/dist/component/partitioned.js b/dist/component/partitioned.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8416958310d0b35f6f87229a6998b8d97dfe4e0b
+--- /dev/null
++++ b/dist/component/partitioned.js
+@@ -0,0 +1,90 @@
++import { calculateRateLimit } from "../shared.js";
++export const findPartition = (db, args) => db.query("partitions").withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).unique();
++function validate(args, layout) {
++    const { config } = args;
++    const capacity = config.capacity ?? config.rate;
++    if ((config.kind === "fixed window" && config.start !== 0) || args.reserve || config.maxReserved ||
++        (config.shards ?? 1) !== 1 || (args.count ?? 1) !== 1 ||
++        ![config.rate, capacity, config.period].every(n => Number.isFinite(n) && n > 0))
++        throw new Error("Partitioned budgets require count=1 without reservations; fixed windows must start at zero");
++    if (layout && ((layout.kind ?? "token bucket") !== config.kind || layout.rate !== config.rate || layout.capacity !== capacity || layout.period !== config.period ||
++        (config.kind === "fixed window" && layout.start !== config.start)))
++        throw new Error("Partitioned budget configuration cannot change without migration");
++    const common = { rate: config.rate, capacity, period: config.period };
++    return config.kind === "fixed window" ? { ...common, kind: "fixed window", start: 0 }
++        : { ...common, kind: "token bucket" };
++}
++/** Lazy, atomic migration. Read the existing balance, never grant a new budget. */
++export async function preparePartition(ctx, args, shards) {
++    const layout = await findPartition(ctx.db, args);
++    const config = validate(args, layout);
++    if (!Number.isInteger(shards) || shards < 2 || shards > 32 || shards > config.capacity)
++        throw new Error("Expected 2 to 32 partitions, each with capacity >= 1");
++    if (layout) {
++        if (layout.shards !== shards)
++            throw new Error("Partition count cannot change without migration");
++        return;
++    }
++    const previous = await ctx.db.query("rateLimits")
++        .withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).take(33);
++    if (previous.length > 1 || (previous.length === 1 && previous[0].shard !== 0))
++        throw new Error("Only singleton budgets can migrate to partitions");
++    const now = Date.now();
++    const { value: balance, ts } = calculateRateLimit(previous[0] ?? null, args.config, now);
++    if (balance < 0)
++        throw new Error("Reserved debt must settle before partition migration");
++    await ctx.db.insert("partitions", { name: args.name, key: args.key, shards, ...config });
++    for (let shard = 0; shard < shards; shard++) {
++        const row = { name: args.name, key: args.key, shard, value: balance / shards, ts };
++        if (shard === 0 && previous[0])
++            await ctx.db.patch(previous[0]._id, row);
++        else
++            await ctx.db.insert("rateLimits", row);
++    }
++}
++/** Fast path reads one lane; exhaustion searches the remainder before refusing. */
++export async function checkPartition(db, args, layout, lane) {
++    const config = validate(args, layout);
++    const divided = { ...config, rate: config.rate / layout.shards,
++        capacity: config.capacity / layout.shards, period: config.period };
++    const now = Date.now();
++    const order = Array.from({ length: layout.shards }, (_, i) => i);
++    for (let i = order.length - 1; i > 0; i--) {
++        const j = Math.floor(Math.random() * (i + 1));
++        [order[i], order[j]] = [order[j], order[i]];
++    }
++    // A caller may name the lane to try first, so budgets charged together share one lane index.
++    // Which lane is read first never changes a balance or a refusal.
++    if (Number.isInteger(lane) && lane >= 0) {
++        const first = order.indexOf(lane % layout.shards);
++        [order[0], order[first]] = [order[first], order[0]];
++    }
++    const updates = [];
++    const read = async (shard) => {
++        const existing = await db.query("rateLimits").withIndex("name", q => q.eq("name", args.name).eq("key", args.key).eq("shard", shard)).unique();
++        if (!existing)
++            throw new Error("Incomplete partitioned budget");
++        return { existing, shard, ...calculateRateLimit(existing, divided, now) };
++    };
++    // A funded lane needs no second read: every extra lane expands the OCC conflict set.
++    // If it is short, prefer a funded second lane before combining partial balances.
++    const first = [await read(order.shift())];
++    if (first[0].value < 1) {
++        first.push(await read(order.shift()));
++        first.sort((a, b) => b.value - a.value);
++    }
++    let remaining = 1;
++    let windowEnd = now;
++    for (let i = 0; i < layout.shards; i++) {
++        const { existing, shard, value, ts } = i < first.length ? first[i] : await read(order[i - first.length]);
++        windowEnd = ts + config.period;
++        const consumed = Math.min(Math.max(0, value), remaining);
++        if (consumed > 0)
++            updates.push({ existing, shard, value: value - consumed, ts });
++        remaining -= consumed;
++        if (remaining <= 0)
++            return { status: { ok: true }, updates };
++    }
++    // Every lane is below one token here, so every lane refills at its divided rate.
++    return { status: { ok: false, retryAfter: config.kind === "fixed window" ? windowEnd - now : Math.ceil(remaining * config.period / config.rate) }, updates: [] };
++}
+diff --git a/dist/component/schema.d.ts b/dist/component/schema.d.ts
+index 59c4ba3d33437447aee486df1a0f13342e68fb1f..a60c13e1990d56f6e9cb9b222beb5b0746828311 100644
+--- a/dist/component/schema.d.ts
++++ b/dist/component/schema.d.ts
+@@ -1,19 +1,39 @@
+ declare const _default: import("convex/server").SchemaDefinition<{
++    partitions: import("convex/server").TableDefinition<import("convex/values").VObject<{
++        key?: string | undefined;
++        start?: number | undefined;
++        kind?: "token bucket" | "fixed window" | undefined;
++        name: string;
++        shards: number;
++        rate: number;
++        capacity: number;
++        period: number;
++    }, {
++        name: import("convex/values").VString<string, "required">;
++        key: import("convex/values").VString<string | undefined, "optional">;
++        shards: import("convex/values").VFloat64<number, "required">;
++        rate: import("convex/values").VFloat64<number, "required">;
++        capacity: import("convex/values").VFloat64<number, "required">;
++        period: import("convex/values").VFloat64<number, "required">;
++        kind: import("convex/values").VUnion<"token bucket" | "fixed window" | undefined, [import("convex/values").VLiteral<"token bucket", "required">, import("convex/values").VLiteral<"fixed window", "required">], "optional", never>;
++        start: import("convex/values").VFloat64<number | undefined, "optional">;
++    }, "required", "name" | "key" | "shards" | "rate" | "capacity" | "period" | "start" | "kind">, {
++        name: ["name", "key", "_creationTime"];
++    }, {}, {}>;
+     rateLimits: import("convex/server").TableDefinition<import("convex/values").VObject<{
+         key?: string | undefined;
+         name: string;
++        shard: number;
+         value: number;
+         ts: number;
+-        shard: number;
+     }, {
+         name: import("convex/values").VString<string, "required">;
+         key: import("convex/values").VString<string | undefined, "optional">;
+         shard: import("convex/values").VFloat64<number, "required">;
+         value: import("convex/values").VFloat64<number, "required">;
+         ts: import("convex/values").VFloat64<number, "required">;
+-    }, "required", "name" | "key" | "value" | "ts" | "shard">, {
++    }, "required", "name" | "key" | "shard" | "value" | "ts">, {
+         name: ["name", "key", "shard", "_creationTime"];
+     }, {}, {}>;
+ }, true>;
+ export default _default;
+-//# sourceMappingURL=schema.d.ts.map
+\ No newline at end of file
+diff --git a/dist/component/schema.js b/dist/component/schema.js
+index e985436c65e84737bdfccf9673ecf283b779bb1e..3eb6640be136a16fe2a9cab6c663cf0ed8e6051d 100644
+--- a/dist/component/schema.js
++++ b/dist/component/schema.js
+@@ -1,6 +1,16 @@
+ import { defineSchema, defineTable } from "convex/server";
+ import { v } from "convex/values";
+ export default defineSchema({
++    partitions: defineTable({
++        name: v.string(),
++        key: v.optional(v.string()),
++        shards: v.number(),
++        rate: v.number(),
++        capacity: v.number(),
++        period: v.number(),
++        kind: v.optional(v.union(v.literal("token bucket"), v.literal("fixed window"))),
++        start: v.optional(v.number()),
++    }).index("name", ["name", "key"]),
+     rateLimits: defineTable({
+         name: v.string(),
+         key: v.optional(v.string()), // undefined is singleton
+@@ -9,4 +19,3 @@ export default defineSchema({
+         ts: v.number(),
+     }).index("name", ["name", "key", "shard"]),
+ });
+-//# sourceMappingURL=schema.js.map
+\ No newline at end of file
+diff --git a/src/component/_generated/component.ts b/src/component/_generated/component.ts
+index ab4b74cd9c461fe7bc9db2891c0220fd48b1edb0..f348271771535e39901d349d8bfc705b8eb6077a 100644
+--- a/src/component/_generated/component.ts
++++ b/src/component/_generated/component.ts
+@@ -155,6 +155,42 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
+         { ok: true; retryAfter?: number } | { ok: false; retryAfter: number },
+         Name
+       >;
++      rateLimitMany: FunctionReference<
++        "mutation",
++        "internal",
++        {
++          limits: Array<{
++            config:
++              | {
++                  capacity?: number;
++                  kind: "token bucket";
++                  maxReserved?: number;
++                  period: number;
++                  rate: number;
++                  shards?: number;
++                  start?: null;
++                }
++              | {
++                  capacity?: number;
++                  kind: "fixed window";
++                  maxReserved?: number;
++                  period: number;
++                  rate: number;
++                  shards?: number;
++                  start?: number;
++                };
++            count?: number;
++            key?: string;
++            name: string;
++            reserve?: boolean;
++            throws?: boolean;
++          }>;
++          partitionShards?: number;
++          partitionLane?: number;
++        },
++        { ok: true; retryAfter?: number } | { ok: false; retryAfter: number },
++        Name
++      >;
+       resetRateLimit: FunctionReference<
+         "mutation",
+         "internal",
+diff --git a/src/component/internal.ts b/src/component/internal.ts
+index 2c73524430d15995b35d908fba3f5e61e12d8561..7538c8359c422c361e05dd5579bb847d3cfff5d8 100644
+--- a/src/component/internal.ts
++++ b/src/component/internal.ts
+@@ -8,6 +8,7 @@ import {
+ } from "../shared.js";
+ import type { Doc } from "./_generated/dataModel.js";
+ import type { DatabaseReader } from "./_generated/server.js";
++import { checkPartition, findPartition } from "./partitioned.js";
+ 
+ // If there are only two shards, it's not really worth checking them both
+ // since it'd introduce a read dependency on all shards anyways.
+@@ -16,8 +17,10 @@ export const MIN_CHOOSE_TWO = 3;
+ export async function checkRateLimitOrThrow(
+   db: DatabaseReader,
+   args: RateLimitArgs,
++  lane?: number,
+ ) {
+-  const result = await checkRateLimitSharded(db, args);
++  const layout = await findPartition(db, args);
++  const result = layout ? await checkPartition(db, args, layout, lane) : await checkRateLimitSharded(db, args);
+   if (result.status.retryAfter && args.throws) {
+     throw new ConvexError({
+       kind: "RateLimited",
+diff --git a/src/component/lib.ts b/src/component/lib.ts
+index a1598e9039490b0684ae8b92856025c1fa26328b..2bf2e2df968549c251329d1e1fb38cb143ee8ac8 100644
+--- a/src/component/lib.ts
++++ b/src/component/lib.ts
+@@ -14,6 +14,7 @@ import {
+   getShard,
+ } from "./internal.js";
+ import { api } from "./_generated/api.js";
++import { findPartition, preparePartition } from "./partitioned.js";
+ 
+ export const rateLimit = mutation({
+   args: rateLimitArgs,
+@@ -42,6 +43,30 @@ export const checkRateLimit = query({
+   },
+ });
+ 
++/** Consume independent budgets together, with no partial consumption on refusal. */
++export const rateLimitMany = mutation({
++  args: { limits: v.array(v.object(rateLimitArgs)), partitionShards: v.optional(v.number()), partitionLane: v.optional(v.number()) },
++  returns: rateLimitReturns,
++  handler: async (ctx, { limits, partitionShards, partitionLane }) => {
++    if (limits.length < 1 || limits.length > 20 ||
++      new Set(limits.map(({ name, key }) => JSON.stringify([name, key ?? null]))).size !== limits.length)
++      throw new Error("Expected 1 to 20 distinct rate limit budgets");
++    if (partitionShards !== undefined)
++      for (const args of limits) await preparePartition(ctx, args, partitionShards);
++    const checks = await Promise.all(limits.map((args) => checkRateLimitOrThrow(ctx.db, args, partitionLane)));
++    const retryAfter = Math.max(0, ...checks.map(({ status }) => status.retryAfter ?? 0));
++    if (checks.some(({ status }) => !status.ok)) return { ok: false as const, retryAfter };
++    for (let i = 0; i < checks.length; i++) {
++      const { name, key } = limits[i]!;
++      for (const { value, ts, existing, shard } of checks[i]!.updates) {
++        if (existing) await ctx.db.patch(existing._id, { ts, value });
++        else await ctx.db.insert("rateLimits", { name, key, ts, value, shard });
++      }
++    }
++    return { ok: true as const, ...(retryAfter > 0 ? { retryAfter } : {}) };
++  },
++});
++
+ export const getValue = query({
+   args: {
+     name: v.string(),
+@@ -51,6 +76,17 @@ export const getValue = query({
+   },
+   returns: getValueReturns,
+   handler: async (ctx, args): Promise<GetValueReturns> => {
++    const layout = await findPartition(ctx.db, args);
++    if (layout) {
++      const rows = await ctx.db.query("rateLimits").withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).take(33);
++      if (rows.length !== layout.shards) throw new Error("Incomplete partitioned budget");
++      const ts = Math.max(...rows.map(row => row.ts));
++      const common = { rate: layout.rate, capacity: layout.capacity, period: layout.period };
++      const config = layout.kind === "fixed window" ? { ...common, kind: "fixed window" as const, start: layout.start }
++        : { ...common, kind: "token bucket" as const };
++      const divided = { ...config, rate: layout.rate / layout.shards, capacity: layout.capacity / layout.shards };
++      return { value: rows.reduce((sum, row) => sum + calculateRateLimit(row, divided, ts).value, 0), ts, shard: -1, config };
++    }
+     const config = configWithDefaults(args.config);
+     const samplesToTake = Math.min(args.sampleShards || 1, config.shards);
+ 
+@@ -113,6 +149,8 @@ export const resetRateLimit = mutation({
+     for (const shard of allShards) {
+       await ctx.db.delete(shard._id);
+     }
++    const layout = await findPartition(ctx.db, args);
++    if (layout) await ctx.db.delete(layout._id);
+   },
+ });
+ 
+@@ -120,6 +158,8 @@ export const clearAll = mutation({
+   args: { before: v.optional(v.number()) },
+   returns: v.null(),
+   handler: async (ctx, args) => {
++    // Clearing individual lanes would grant capacity again or leave a broken layout.
++    if (await ctx.db.query("partitions").first()) throw new Error("Reset partitioned budgets by name and key before clearAll");
+     const results = await ctx.db
+       .query("rateLimits")
+       .withIndex("by_creation_time", (q) =>
+diff --git a/node_modules/@convex-dev/rate-limiter/src/component/partitioned.ts b/src/component/partitioned.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..eac6a9135175ec570205c4731d7543106b4e01e5
+--- /dev/null
++++ b/src/component/partitioned.ts
+@@ -0,0 +1,91 @@
++import { calculateRateLimit, type RateLimitArgs, type RateLimitReturns } from "../shared.js";
++import type { Doc } from "./_generated/dataModel.js";
++import type { DatabaseReader, MutationCtx } from "./_generated/server.js";
++
++export const findPartition = (db: DatabaseReader, args: Pick<RateLimitArgs, "name" | "key">) =>
++  db.query("partitions").withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).unique();
++
++function validate(args: RateLimitArgs, layout?: Doc<"partitions"> | null) {
++  const { config } = args;
++  const capacity = config.capacity ?? config.rate;
++  if ((config.kind === "fixed window" && config.start !== 0) || args.reserve || config.maxReserved ||
++    (config.shards ?? 1) !== 1 || (args.count ?? 1) !== 1 ||
++    ![config.rate, capacity, config.period].every(n => Number.isFinite(n) && n > 0))
++    throw new Error("Partitioned budgets require count=1 without reservations; fixed windows must start at zero");
++  if (layout && ((layout.kind ?? "token bucket") !== config.kind || layout.rate !== config.rate || layout.capacity !== capacity || layout.period !== config.period ||
++    (config.kind === "fixed window" && layout.start !== config.start)))
++    throw new Error("Partitioned budget configuration cannot change without migration");
++  const common = { rate: config.rate, capacity, period: config.period };
++  return config.kind === "fixed window" ? { ...common, kind: "fixed window" as const, start: 0 }
++    : { ...common, kind: "token bucket" as const };
++}
++
++/** Lazy, atomic migration. Read the existing balance, never grant a new budget. */
++export async function preparePartition(ctx: MutationCtx, args: RateLimitArgs, shards: number) {
++  const layout = await findPartition(ctx.db, args);
++  const config = validate(args, layout);
++  if (!Number.isInteger(shards) || shards < 2 || shards > 32 || shards > config.capacity)
++    throw new Error("Expected 2 to 32 partitions, each with capacity >= 1");
++  if (layout) {
++    if (layout.shards !== shards) throw new Error("Partition count cannot change without migration");
++    return;
++  }
++  const previous = await ctx.db.query("rateLimits")
++    .withIndex("name", q => q.eq("name", args.name).eq("key", args.key)).take(33);
++  if (previous.length > 1 || (previous.length === 1 && previous[0]!.shard !== 0))
++    throw new Error("Only singleton budgets can migrate to partitions");
++  const now = Date.now();
++  const { value: balance, ts } = calculateRateLimit(previous[0] ?? null, args.config, now);
++  if (balance < 0) throw new Error("Reserved debt must settle before partition migration");
++  await ctx.db.insert("partitions", { name: args.name, key: args.key, shards, ...config });
++  for (let shard = 0; shard < shards; shard++) {
++    const row = { name: args.name, key: args.key, shard, value: balance / shards, ts };
++    if (shard === 0 && previous[0]) await ctx.db.patch(previous[0]._id, row);
++    else await ctx.db.insert("rateLimits", row);
++  }
++}
++
++/** Fast path reads one lane; exhaustion searches the remainder before refusing. */
++export async function checkPartition(db: DatabaseReader, args: RateLimitArgs, layout: Doc<"partitions">, lane?: number) {
++  const config = validate(args, layout);
++  const divided = { ...config, rate: config.rate / layout.shards,
++    capacity: config.capacity / layout.shards, period: config.period };
++  const now = Date.now();
++  const order = Array.from({ length: layout.shards }, (_, i) => i);
++  for (let i = order.length - 1; i > 0; i--) {
++    const j = Math.floor(Math.random() * (i + 1));
++    [order[i], order[j]] = [order[j]!, order[i]!];
++  }
++  // A caller may name the lane to try first, so budgets charged together share one lane index.
++  // Which lane is read first never changes a balance or a refusal.
++  if (lane !== undefined && Number.isInteger(lane) && lane >= 0) {
++    const first = order.indexOf(lane % layout.shards);
++    [order[0], order[first]] = [order[first]!, order[0]!];
++  }
++  const updates: { existing: Doc<"rateLimits">; shard: number; value: number; ts: number }[] = [];
++  const read = async (shard: number) => {
++    const existing = await db.query("rateLimits").withIndex("name", q =>
++      q.eq("name", args.name).eq("key", args.key).eq("shard", shard)).unique();
++    if (!existing) throw new Error("Incomplete partitioned budget");
++    return { existing, shard, ...calculateRateLimit(existing, divided, now) };
++  };
++  // A funded lane needs no second read: every extra lane expands the OCC conflict set.
++  // If it is short, prefer a funded second lane before combining partial balances.
++  const first = [await read(order.shift()!)];
++  if (first[0]!.value < 1) {
++    first.push(await read(order.shift()!));
++    first.sort((a, b) => b.value - a.value);
++  }
++  let remaining = 1;
++  let windowEnd = now;
++  for (let i = 0; i < layout.shards; i++) {
++    const { existing, shard, value, ts } = i < first.length ? first[i]! : await read(order[i - first.length]!);
++    windowEnd = ts + config.period;
++    const consumed = Math.min(Math.max(0, value), remaining);
++    if (consumed > 0) updates.push({ existing, shard, value: value - consumed, ts });
++    remaining -= consumed;
++    if (remaining <= 0) return { status: { ok: true } as RateLimitReturns, updates };
++  }
++  // Every lane is below one token here, so every lane refills at its divided rate.
++  return { status: { ok: false, retryAfter: config.kind === "fixed window" ? windowEnd - now : Math.ceil(remaining * config.period / config.rate) } as RateLimitReturns, updates: [] };
++}
+diff --git a/src/component/schema.ts b/src/component/schema.ts
+index 69360334020dce3775cf13b26b77b0057aaf759e..346ad396b93063456114bc8b24f65082269ac184 100644
+--- a/src/component/schema.ts
++++ b/src/component/schema.ts
+@@ -2,6 +2,16 @@ import { defineSchema, defineTable } from "convex/server";
+ import { v } from "convex/values";
+ 
+ export default defineSchema({
++  partitions: defineTable({
++    name: v.string(),
++    key: v.optional(v.string()),
++    shards: v.number(),
++    rate: v.number(),
++    capacity: v.number(),
++    period: v.number(),
++    kind: v.optional(v.union(v.literal("token bucket"), v.literal("fixed window"))),
++    start: v.optional(v.number()),
++  }).index("name", ["name", "key"]),
+   rateLimits: defineTable({
+     name: v.string(),
+     key: v.optional(v.string()), // undefined is singleton

@@ -1,0 +1,100 @@
+---
+title: SDK TypeScript
+description: Cliente ESM com tipos gerados do contrato, retentativas seguras e o verificador de webhooks. Licença MIT. Publicado no npm.
+contract: true
+---
+
+## Instalar [#instalar]
+
+```bash title="npm"
+npm install @freecorps/sdk
+```
+
+O pacote é ESM, com tipos TypeScript e Zod como única dependência. Roda em Node 22 e 24. O verificador de webhooks em `@freecorps/sdk/webhooks` usa só Web Crypto e pode ser importado sozinho.
+
+## Criar o cliente [#cliente]
+
+```ts title="Cliente"
+import { FreecorpsClient } from "@freecorps/sdk";
+
+const client = new FreecorpsClient({
+  baseUrl: "https://api.nfe.freecorps.com.br",
+  apiKey: process.env.FREECORPS_API_KEY!,
+  environment: "sandbox",
+});
+```
+
+O cliente não lê variáveis de ambiente por conta própria: credenciais, ambiente e rede ficam com você. `baseUrl` é a origem da API, sem `/v1`.
+
+## Chamar uma operação [#chamar]
+
+Toda operação do contrato é chamada pelo nome, com `path`, `query` e `body` tipados:
+
+```ts title="Consultar um documento"
+const { data } = await client.call("getDocument", {
+  path: { documentId },
+  query: { companyId },
+  body: {},
+});
+```
+
+Os nomes são os `operationId` da [tabela de operações](/docs/contrato#operacoes). Escritas idempotentes recebem a chave no segundo argumento:
+
+```ts title="Reservar uma importação"
+await client.call("reserveImport", { path: {}, query: {}, body }, { idempotencyKey: "pedido-42" });
+```
+
+Além de `call`, o cliente tem `upload`, para enviar os bytes de uma importação, `downloadOriginal`, para baixar o XML original, `downloadDanfe`, para o PDF do DANFE de uma NF-e, e `downloadIssuanceArtifact`, para o XML e o DANFSe de uma emissão.
+
+## Erros, timeout e retentativas [#erros]
+
+Falhas da API viram `FreecorpsError`, com `status`, `code`, `requestId` e `retryable`. Erros de validação da emissão trazem também `field` e, quando falta algo no perfil, `missing`. `nextAllowedAt` traz, em epoch ms, o instante a partir do qual a chamada recusada pode ser feita de novo, quando a API informa; nos outros casos, é `null`.
+
+`retryable` indica se o SDK pode repetir a chamada sozinho com segurança, e não copia o campo da resposta. Por isso, `SOURCE_COOLDOWN` (409), recebido ao retomar uma [captura NF-e](/docs/captura-nfe#codigos) bloqueada pela Receita antes da hora, chega com `retryable` falso, embora a API mande `retryable: true`. Nesse caso, espere até `nextAllowedAt` e repita a retomada.
+
+`ORGANIZATION_ARCHIVED` (409) indica a organização em arquivo econômico: dados fiscais e novas operações ficam indisponíveis até a reativação, e repetir não adianta. Nesse estado continuam as consultas de empresas, de capacidades e de destinos de webhook, o desligamento de um destino e a rotação do seu segredo.
+
+Depois da reativação, os documentos, importações, operações e emissões voltam com IDs novos. O ID que você guardou antes continua valendo nas chamadas, e a resposta traz o `id` novo e, em `originalId`, o primeiro ID do recurso. Deduplique por `originalId ?? id`. Um recurso nunca arquivado não tem `originalId`.
+
+```ts title="Tratar erros"
+import { FreecorpsError } from "@freecorps/sdk";
+
+try {
+  await client.call("getDocument", request);
+} catch (error) {
+  if (error instanceof FreecorpsError && error.code === "NOT_FOUND") return null;
+  throw error;
+}
+```
+
+O timeout padrão é de 30 segundos para o conjunto de tentativas (`timeoutMs`). Leituras e escritas idempotentes são repetidas até duas vezes (`maxRetries`), respeitando `Retry-After` e o `signal` de cancelamento. Escritas sem idempotência, envios de arquivo e downloads binários fazem uma tentativa só.
+
+## Versão do contrato [#versao]
+
+O SDK confere cada resposta contra os schemas da versão do contrato com que foi gerado, e os objetos são estritos: um campo que ele não conhece faz a chamada falhar com `FreecorpsError` de código `INVALID_RESPONSE`, mesmo quando a API responde com sucesso. Por isso, uma versão major nova do contrato exige atualizar o SDK.
+
+A versão atual é a <ContractVersion />. Ela acrescentou à NF-e completa `declaredTotals`, `purpose` e os campos da NT 2026.008 ([quais](/docs/importar-xml#nfe-campos)). Um SDK de versão anterior recusa com `INVALID_RESPONSE` as respostas que trazem esses campos, como o JSON da NF-e completa e a página de itens. Atualize o pacote antes de ler documentos. Nenhuma rota nem campo antigo mudou de significado, então o código que já chama o SDK continua o mesmo.
+
+## Exemplos [#exemplos]
+
+<ul className="downloads">
+  <li>
+    <a href="/developer/quickstart.ts" download>
+      quickstart.ts
+    </a>
+  </li>
+  <li>
+    <a href="/developer/sdk-webhook-receiver.mjs" download>
+      sdk-webhook-receiver.mjs
+    </a>
+  </li>
+  <li>
+    <a href="/developer/nfse-issuance.ts" download>
+      nfse-issuance.ts
+    </a>
+  </li>
+</ul>
+
+`quickstart.ts` faz a [primeira chamada](/docs/primeira-chamada) com o SDK, usando as mesmas variáveis. Execute com `node --experimental-strip-types quickstart.ts`. O receptor está explicado em [Receber webhooks](/docs/webhooks) e a emissão, em [Emitir NFS-e](/docs/emitir-nfse).
+
+O <a href="/developer/SDK.md">guia completo do SDK</a> cobre rotação de segredos, diagnóstico e os limites do pacote.

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "strategy": "replace-legacy-empty",
+  "completedAt": "2026-09-29T20:08:05.899Z",
+  "reset": {
+    "version": 1,
+    "sha": "108e13af834164504a34efca89d839ead4ea79db",
+    "proof": {
+      "sha": "108e13af834164504a34efca89d839ead4ea79db",
+      "ciRun": 36622058903,
+      "sourceBranch": "feat/fiscal-platform-v1",
+      "legacyPublisher": "disabled_manually"
+    },
+    "deployment": "elated-possum-295",
+    "startedAt": "2026-09-29T20:07:37.293Z",
+    "state": "empty",
+    "tables": {
+      "apiKeys": 0,
+      "auditEvents": 321,
+      "emitterCertificates": 1,
+      "emitters": 1,
+      "fiscalDocuments": 2,
+      "fiscalEvents": 35,
+      "opsState": 8,
+      "rateLimits": 0,
+      "sequences": 1,
+      "webhookDeliveries": 0,
+      "webhookEndpoints": 0,
+      "emitterNfceConfigs": 0,
+      "nfceRequests": 0,
+      "nfceRevisions": 0,
+      "nfceCancellations": 0,
+      "nfceFiles": 0,
+      "webhookEvents": 0,
+      "nfseFiles": 0,
+      "certificateMetadata": 1
+    },
+    "storageDeleted": 16,
+    "cancelled": 0,
+    "maintenanceStartedAt": "2026-09-29T19:56:00.783Z",
+    "completedAt": "2026-09-29T20:07:53.437Z"
+  },
+  "environment": {
+    "version": 1,
+    "deployment": "elated-possum-295",
+    "observedAt": "2026-09-29T20:07:58.051Z",
+    "resetSha256": "0ea0584f493f8ddc4ba1dfa9a755c32cfd6811c2793c4b96ea3d9ff3efaff626",
+    "removedNames": [
+      "CLERK_JWT_ISSUER_DOMAIN",
+      "FNFE_ALLOW_PRODUCTION",
+      "FNFE_BACKOFFICE_ADMINS",
+      "FNFE_CERT_MASTER_KEY",
+      "FNFE_CERT_PFX_BASE64_1",
+      "FNFE_CERT_PFX_BASE64_2",
+      "FNFE_CERT_PFX_PASSWORD",
+      "FNFE_CUTOVER_TOKEN",
+      "FNFE_MIGRATION_FREEZE"
+    ],
+    "configuredNames": [
+      "ACCOUNT_EMAIL_FROM",
+      "ACCOUNT_EMAIL_RECIPIENTS",
+      "APP_ENV",
+      "AUTH_PROXY_MODE",
+      "AUTH_PROXY_SECRET",
+      "BETTER_AUTH_SECRET",
+      "CLOUDFLARE_EMAIL_API_TOKEN",
+      "EMAIL_MODE",
+      "FISCAL_ENV",
+      "FNFE_CRONS",
+      "FNFE_PLATFORM_CERT_KEYS",
+      "FNFE_WEBHOOK_MASTER_KEY",
+      "PRODUCT_ENV",
+      "SITE_URL",
+      "WEBHOOK_MODE"
+    ],
+    "checks": {
+      "legacyVariablesAbsent": true,
+      "configurationMatchesPrivateSource": true,
+      "accountPolicyValid": true,
+      "cronsEmpty": true
+    },
+    "secretsRecorded": false
+  },
+  "worker": {
+    "name": "freecorpsnfe-backoffice",
+    "accountId": "ceccd1846b474bb179054a3c2c4a6185",
+    "authProxySecretConfigured": true,
+    "source": "same private configuration as backend; Wrangler secret bulk succeeded"
+  },
+  "limitations": [
+    "Historical completed scheduler rows are provider history and were not deleted",
+    "No data of other Freecorps apps or other central deployments were wiped",
+    "New platform bootstrap and human login remain pending"
+  ],
+  "sanitizedFrom": {
+    "repository": "freecorps/freecorpsNFE-arquivo",
+    "sha256": "70bc319b6e7ac1a12d310070dde1768b8b1bc2f0fb7d4f0ead4c92b24f7c5064",
+    "sanitizedAt": "2026-11-03"
+  }
+}

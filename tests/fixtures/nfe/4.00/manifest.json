@@ -1,0 +1,1832 @@
+{
+  "version": 1,
+  "model": "55",
+  "parser": "nfe-parser/8",
+  "normalizer": "nfe-normalizer/1",
+  "rule": "nfe-status/2",
+  "evaluatedAt": "2026-09-12T15:00:00Z",
+  "source": "synthetic",
+  "redistribution": "Project-generated synthetic data; no real credential or fiscal document",
+  "cases": [
+    {
+      "id": "bytes-limit",
+      "path": "bytes-limit.xml",
+      "sha256": "71ac24a75f6bc57bc51b43b3d13c3009aa243986b77a92102a3097c9e53123e9",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_TOO_LARGE",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "invoice-prefixed",
+      "path": "invoice-prefixed.xml",
+      "sha256": "2232631a8a84d386e6ecb62209e2f7e795ca0ceb1fd62d340d38f9eaf48ba1ae",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "event-summary",
+      "path": "event-summary.xml",
+      "sha256": "77f8ed39362333a17a3294c87a4e2e11279158710e07ee0bfa07da738b43870b",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-summary-conflict",
+      "path": "event-summary-conflict.xml",
+      "sha256": "738ed8482638505f233c5773b7235650a0d9c7d5728cb3e8dc68f1e49dbce1de",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "invoice-signed",
+      "path": "invoice-signed.xml",
+      "sha256": "3969bf6f682cd2918792ee3727d85981a99b969584e98ebdfc4704518dee789f",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "invoice-authorized",
+      "path": "invoice-authorized.xml",
+      "sha256": "2aecfaf4ddf097f34e84f569d7dc2ba08df879b0cf418869b01aaf63dcfcb334",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "invoice-net-values",
+      "path": "invoice-net-values.xml",
+      "sha256": "22abb838a08f8745cc545ec401142f89c55e9944c6209a71ee6b4cbd353f4e7e",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "invoice-payment-link",
+      "path": "invoice-payment-link.xml",
+      "sha256": "f7a3c6b8268a720fd399671df2986aecbf0a4af726410f766ffac7ef56083d91",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "invoice-alphanumeric",
+      "path": "invoice-alphanumeric.xml",
+      "sha256": "cbdfe2c57bbf90dab4e3c0a6d9315f815b126e3fd3a3eada77a603827e9c3044",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "summary-authorized",
+      "path": "summary-authorized.xml",
+      "sha256": "c85983e1545b6c17a00807bc4f54a72c85a603a42cde3d23bdf3716dc3c0b305",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "summary-cancelled",
+      "path": "summary-cancelled.xml",
+      "sha256": "0cc54ca20c76a70b20a09e054d60274c1ff455102cfc4400fa1c70bfd0c07d68",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "summary-denied",
+      "path": "summary-denied.xml",
+      "sha256": "b422a9e09892dac253f66016e3b4726ab11a356f094c288386545b0ef1cfc1bd",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "summary-invalid-uf",
+      "path": "summary-invalid-uf.xml",
+      "sha256": "37411091b02b83691319784e78f67d265aea9af7088a4054795c45decb2d3e6e",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_KEY_COMPONENT_INVALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "summary-invalid-month",
+      "path": "summary-invalid-month.xml",
+      "sha256": "6e8d1fbfca0f5e400bff63d6efc7cef28fec5aa29691ce8c627a708838c33694",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_KEY_COMPONENT_INVALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "summary-zero-number",
+      "path": "summary-zero-number.xml",
+      "sha256": "20abe75bee88cafda9dde01992229eebc3ec8a750c25cf19f6f002818952affd",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_KEY_COMPONENT_INVALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "summary-invalid-emission",
+      "path": "summary-invalid-emission.xml",
+      "sha256": "89aedfdd30d3d85040b8f6c879975604388a7684892e1423451119b57a0f958d",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_KEY_COMPONENT_INVALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "summary-issued-at-mismatch",
+      "path": "summary-issued-at-mismatch.xml",
+      "sha256": "7b7a91e9445f39630864bc35ea10e5affdcfc27cf3d5fc3ba41667666c50172e",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_KEY_ISSUED_AT_MISMATCH",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "wide-tax-group",
+      "path": "wide-tax-group.xml",
+      "sha256": "7427fedb07ceaa0c50b51cc261fec189de9483f4cfc7f4aedc5e9576b0a53a52",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_MISSING",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "event-110111",
+      "path": "event-110111.xml",
+      "sha256": "9dd3c03c9f063f7f9334ab0657bd665dedf51a6f5db142007cb55fccf025d678",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-110110",
+      "path": "event-110110.xml",
+      "sha256": "df7b45b72cd2ad41eb793d5397093b6c2a32874961bfd0b439144f3ed89ee7d8",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-210200",
+      "path": "event-210200.xml",
+      "sha256": "41f0623d9923dfa39e3ac709da8a48553606f721127f095d02fb10cac23a6c84",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-210210",
+      "path": "event-210210.xml",
+      "sha256": "0959c10e333a7ccd42fb93ade4815396b31774b9f8a9305c89e9a345fb6b927d",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-210220",
+      "path": "event-210220.xml",
+      "sha256": "7d83ef28d09c4cb58da2e748f881c8b4c4bc2090a415c4f7acf53e0b0560b629",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-210240",
+      "path": "event-210240.xml",
+      "sha256": "58f2c7e1fc04b76257adc647791034299261f6c164fb80715748076528de1335",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112110",
+      "path": "event-112110.xml",
+      "sha256": "81aff793a10feefebbbd6953789b6d429f2111e43c686c05e8c71b21d5e7c2e5",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112120",
+      "path": "event-112120.xml",
+      "sha256": "296727715b67aa72ff2a2d551672bf09fef00329850b8aefbf799da84f379aab",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112130",
+      "path": "event-112130.xml",
+      "sha256": "600cd391ead4f232dd85acaefadaa2d2d7c71fd18c85d4971e3143c2a62ed757",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112140",
+      "path": "event-112140.xml",
+      "sha256": "474cb861371cc7f3233cbfa86ac0d9b31dcf9344373dcb24dd9002143f59b632",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112150",
+      "path": "event-112150.xml",
+      "sha256": "301d24b806ae51373bb06c49b6d3851d17824d160eb4002ac481ee2bc1abad4a",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-110300",
+      "path": "event-110300.xml",
+      "sha256": "9ffe776e4729656beaea627c7fcedc39a571b9dbc76e4f93bd4cb5e832cd6d66",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-112150-invalid-detail",
+      "path": "event-112150-invalid-detail.xml",
+      "sha256": "ba0a7310486537d9ed01c1cee250df77567ec5cf93b91cd16ade0209b5640f5d",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-summary-112150",
+      "path": "event-summary-112150.xml",
+      "sha256": "068353f714fd4e04263f6cb9153a3d49fb11889c9b8f3b1629efc66497019b69",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-110300-wrong-author",
+      "path": "event-110300-wrong-author.xml",
+      "sha256": "50c1e2ddf9b51eb99dc08e764b77eebd752214908035f1a9de0a5f3a4a067e5a",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-110300-invalid-detail",
+      "path": "event-110300-invalid-detail.xml",
+      "sha256": "77a9b87a11a7530feee6fa3a9fa6db5a5d268e5afbbf17e2b00171e6fc6bd40b",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-summary-110300",
+      "path": "event-summary-110300.xml",
+      "sha256": "09cbc08a3f36d7fdf1eaaad8464e2d547c99a6c575dd251fd96e7668b7d28e05",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "cancellation-rejected",
+      "path": "cancellation-rejected.xml",
+      "sha256": "4b434d3543311cd24ddb5333c751e9b8486c07a38e21cad0ddd137b4f6403b85",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-rejected-conflicting-claims",
+      "path": "event-rejected-conflicting-claims.xml",
+      "sha256": "b736d6d8d3ce506f0a0cd97ee7d16539641f5d46e145f087fbaada63ff8dc2a8",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-unlinked-conflicting-claims",
+      "path": "event-unlinked-conflicting-claims.xml",
+      "sha256": "ca4ef088755145c82a1df17e9e0670b53bd8d54e944d8b1ebb7d4f64f61c0ede",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-accepted-conflicting-claims",
+      "path": "event-accepted-conflicting-claims.xml",
+      "sha256": "8df9ce219841339d44e38f8007d0a8bff6e9a4797d2742e12800a9b9bc1e2b1a",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-110111-other-author",
+      "path": "event-110111-other-author.xml",
+      "sha256": "68aa802e28d5cc11650f169c6d10d9f7f71c7bf51e4dff77ba299cd2cb6d6e2d",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_EVENT_AUTHOR_NOT_ISSUER",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-110110-other-author",
+      "path": "event-110110-other-author.xml",
+      "sha256": "0e607bb2d83ccf8134af30f981addd1276f869ce58e84d8e92d3cc12949c09af",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_EVENT_AUTHOR_NOT_ISSUER",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-112110-other-author",
+      "path": "event-112110-other-author.xml",
+      "sha256": "be8d0861e8b4ea5731db57fe74a0efafe1af2cd14d4a6316c9d21d6e3431408a",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_EVENT_AUTHOR_NOT_ISSUER",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-110300-other-author",
+      "path": "event-110300-other-author.xml",
+      "sha256": "d5f7dd16e8e4a63f5dcd1648f16d91bf61f315a1b3e1f011847a2902f88a83d3",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_EVENT_AUTHOR_NOT_ISSUER",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-summary-other-author",
+      "path": "event-summary-other-author.xml",
+      "sha256": "8dc15ee6d156046c309f7d3e31f6d0010756bccdce546f7f16719e571dfc4f65",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_EVENT_AUTHOR_NOT_ISSUER",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "event-210200-other-author",
+      "path": "event-210200-other-author.xml",
+      "sha256": "f5f57158f46b5540d3acd914ee4af1e5c15d14e6b2be8cce6817e4ea76d77c8f",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "event-rejected-other-identity",
+      "path": "event-rejected-other-identity.xml",
+      "sha256": "d34adc9767af95c4b9af13ec542b84922c2a7ee478eb38089c91d594b3df98b7",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "invoice-monophase",
+      "path": "invoice-monophase.xml",
+      "sha256": "08adff38112189af85c31163c1347319223dfa0078469a4dec8405c25f0cf36d",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "summary-conflicting-total",
+      "path": "summary-conflicting-total.xml",
+      "sha256": "63399bc4a7a7464c8dd0069c0bc87c71afbacdcbc4deee8c128de4936d88024e",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "not_applicable",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SUMMARY_HAS_NO_DOCUMENT_SIGNATURE",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "protocol-digest-whitespace",
+      "path": "protocol-digest-whitespace.xml",
+      "sha256": "6f640e77a6a1529ff97589da63bcf61093d7ecd4cad5bef1d49876e6fb9f5cf3",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "passed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "PRESERVED_FISCAL_CLAIM_CONSISTENT"
+      }
+    },
+    {
+      "id": "signature-other-reference",
+      "path": "signature-other-reference.xml",
+      "sha256": "a9b69ca0e6ba3e49a6b5ae2fc506d5fb04df963aeb6cc9743e254859b2af304f",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INVALID_OR_UNSUPPORTED",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "signature-external-reference",
+      "path": "signature-external-reference.xml",
+      "sha256": "94e64be5e5a169a9352590ec100077931e1bc689f098d6272b3a8c3b42a76074",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INVALID_OR_UNSUPPORTED",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "signature-wrapping",
+      "path": "signature-wrapping.xml",
+      "sha256": "3d3e6b2f952705121f87fcf7ffdf25e7cfaa5a0ffd8e3838f7854847d4d2cd9a",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INVALID_OR_UNSUPPORTED",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "invalid-utf8",
+      "path": "invalid-utf8.xml",
+      "sha256": "eddf68639913a3cb8331cdfe7f87559e0beccf2c289c0d90ac4d89b3204004f8",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_ENCODING_INVALID",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "depth-limit",
+      "path": "depth-limit.xml",
+      "sha256": "5a35cdcf8a8dfd1040a03603ae7fdd8db7379bd5f9b12ac603952e68b54efba2",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_LIMIT_EXCEEDED",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "nodes-limit",
+      "path": "nodes-limit.xml",
+      "sha256": "6c06d42e5e9baad390dde46d95344d5fd1e3c8a23c15f74aec778ef3143f5365",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_LIMIT_EXCEEDED",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "invalid-calendar",
+      "path": "invalid-calendar.xml",
+      "sha256": "b0091bf3f55ea51404da120880d5ee5ed2925f879ec9cfebca0260bd8f7f0cf9",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_FIELD_INVALID",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "invoice-unsigned",
+      "path": "invoice-unsigned.xml",
+      "sha256": "8309ec176db43f41757e03bab7b935008e74735f072d1ffd15b6f45fb702911e",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_MISSING",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "signature-tampered",
+      "path": "signature-tampered.xml",
+      "sha256": "7218e5b983e500701427f133342ba43eebade7dcb82a22000bf68d3c7203ecb0",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "failed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INVALID_OR_UNSUPPORTED",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_TIME_NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    },
+    {
+      "id": "protocol-mismatch",
+      "path": "protocol-mismatch.xml",
+      "sha256": "0099c9cfd04c1c7e774a075f2651ff931cd08a4890434206431e873c0e5b1ac7",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "passed",
+        "signature": "passed",
+        "identity": "failed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "failed"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_VALID",
+        "identity": "NFE_PROTOCOL_MISMATCH",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_INCONSISTENT"
+      }
+    },
+    {
+      "id": "schema-unknown",
+      "path": "schema-unknown.xml",
+      "sha256": "983a62aac5a156040deb80f87ed7fa0da8bc6b63f952e7e35ad0415a6789f6a0",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "unsupported",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_SCHEMA_UNSUPPORTED",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "malformed",
+      "path": "malformed.xml",
+      "sha256": "704a56bd0d1e35ed11dce133142b8399269cfdc0b417982a7188e18f092a0990",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_MALFORMED",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "doctype",
+      "path": "doctype.xml",
+      "sha256": "7548c0f4cd058fecccb98ad355d9befb3c8e096e43e2338ed3b547353e62f27c",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_UNSAFE",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "duplicate-id",
+      "path": "duplicate-id.xml",
+      "sha256": "4fab113fa2961c6531fbe4b59a85dae5d27fc55824af08179d6bf9dfe47789f9",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "failed",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_DUPLICATE_ID",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "namespace-unknown",
+      "path": "namespace-unknown.xml",
+      "sha256": "6f1317b455f1ac660dc71220000fdf4d590a7c04b9a91ddb2ca8dc5ccb7a1856",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "unsupported",
+        "xsd": "not_checked",
+        "signature": "not_checked",
+        "identity": "not_checked",
+        "normalization": "not_checked",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "not_checked",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_NAMESPACE_UNSUPPORTED",
+        "xsd": "NOT_CHECKED",
+        "identity": "NOT_CHECKED",
+        "normalization": "NOT_CHECKED",
+        "signature": "NOT_CHECKED",
+        "certificateTrust": "NOT_CHECKED",
+        "certificateTime": "NOT_CHECKED",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "NOT_CHECKED"
+      }
+    },
+    {
+      "id": "extreme-decimal",
+      "path": "extreme-decimal.xml",
+      "sha256": "408a085be462d38d9ccdca57d87c90b7abdf2ade93e317ec7fce5ce4a44e28ed",
+      "origin": "scripts/generate-nfe-corpus.mjs",
+      "expected": {
+        "parsing": "passed",
+        "xsd": "failed",
+        "signature": "passed",
+        "identity": "passed",
+        "normalization": "passed",
+        "certificateTrust": "not_checked",
+        "originTrust": "not_checked",
+        "certificateTime": "passed",
+        "fiscalEvidence": "not_checked"
+      },
+      "expectedCodes": {
+        "parsing": "XML_PARSED",
+        "xsd": "XSD_INVALID",
+        "identity": "NFE_IDENTITY_VALID",
+        "normalization": "NORMALIZATION_VALID",
+        "signature": "SIGNATURE_INTEGRITY_VALID",
+        "certificateTrust": "CERTIFICATE_CHAIN_NOT_CHECKED",
+        "certificateTime": "CERTIFICATE_VALID_AT_EVALUATION",
+        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
+        "fiscalEvidence": "FISCAL_EVIDENCE_ABSENT"
+      }
+    }
+  ]
+}

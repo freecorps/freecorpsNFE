@@ -1,0 +1,161 @@
+/* Pricing (#planos): one board split by hairlines, not three floating cards,
+   so it reads apart from the infrastructure comparison. Nothing here is lit:
+   phosphor marks what is live, and the catalog is not on sale yet. */
+.pricing {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 140px var(--pad) 120px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1100px;
+}
+.price-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 56px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--night-2);
+  overflow: hidden;
+}
+.price-plan {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+.price-plan + .price-plan {
+  border-left: 1px solid var(--line);
+}
+/* The middle plan sits on a lifted surface: the rhythm of the board, not a badge. */
+.price-intermediario {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface) 70%);
+}
+.price-top {
+  display: grid;
+  gap: 10px;
+  padding: clamp(24px, 3vw, 36px);
+  border-bottom: 1px solid var(--line);
+}
+.price-top h3 {
+  color: var(--muted-hi);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.price-amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.price-value {
+  font-size: clamp(40px, 4.6vw, 60px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.price-cadence {
+  color: var(--muted);
+  font-size: 15px;
+}
+.price-annual {
+  color: var(--faint);
+  font: 13px/1.5 var(--font-mono);
+}
+.price-specs {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  margin: 0;
+  padding: clamp(24px, 3vw, 36px);
+}
+.price-specs > div {
+  display: grid;
+  gap: 2px;
+}
+.price-specs dt {
+  color: var(--faint);
+  font-size: 13.5px;
+}
+.price-specs dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.price-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 32px 48px;
+  margin-top: 14px;
+  padding: 26px clamp(24px, 3vw, 36px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.price-custom {
+  display: grid;
+  gap: 6px;
+}
+.price-custom h3 {
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+.price-custom p {
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 15px;
+}
+.price-terms {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.price-terms li {
+  position: relative;
+  padding-left: 20px;
+}
+.price-terms li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.68em;
+  width: 9px;
+  height: 1.5px;
+  background: var(--faint);
+}
+
+/* Phones: the board stacks, and each plan's specs pair label and value on one row. */
+@media (max-width: 760px) {
+  .pricing {
+    padding-block: 96px 88px;
+  }
+  .price-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .price-plan + .price-plan {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .price-specs {
+    gap: 12px;
+  }
+  .price-specs > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .price-specs dd {
+    font-size: 15.5px;
+    text-align: right;
+  }
+  .price-foot {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}

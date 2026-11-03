@@ -1,0 +1,83 @@
+name: Fiscal capture, unblock
+
+# Lifts the Freecorps block of one company after an emergency withdraw (ADR 0007, amendment of
+# 22/10/2026), so that its manager may release the fiscal capture again in the console. It
+# releases nothing by itself. Only a person in authorizedActors of deploy/issuance-gate.json may
+# trigger it; the command is fixed: `kind: "unblock"` in scripts/lib/capture-release.mjs. It is
+# refused for a company that is not blocked, and it never changes the release (#424). The company
+# comes only by its Convex id, because the inputs of a run are public; organization_id is optional.
+# Unlike the withdraw, it refuses when /health does not confirm the site.
+on:
+  workflow_dispatch:
+    inputs:
+      company:
+        description: Convex id of the company (not its CNPJ, the inputs of a run are public)
+        required: true
+        type: string
+      organization_id:
+        description: Convex id of the organization, optional, to cross-check the company
+        required: false
+        type: string
+      reason:
+        description: "Reason, 10 to 500 characters. Public: no customer name, CNPJ or personal data."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Its own group: an unblock never queues the emergency withdraw.
+concurrency:
+  group: capture-fiscal-unblock
+  cancel-in-progress: false
+
+jobs:
+  unblock:
+    name: Lift the block
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: capture-fiscal-emergency
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The Node of the runner image runs the executor, which only uses Node built-in modules
+      # (fetch and AbortSignal.timeout need 20 or newer); the action downloads nothing it depends on.
+      # Seals the full receipt for the custodians (scripts/lib/sealed-receipt.mjs). It never
+      # blocks the action: without age, the public receipt records sealed.state "unavailable".
+      - name: Install pinned age for the sealed receipt
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+      - name: Check the Node.js of the runner image
+        run: node -e 'const major = Number(process.versions.node.split(".")[0]); if (!(major >= 20)) { console.error("Node " + process.versions.node + " is older than 20"); process.exit(1); }'
+      - name: Check the run and the authorized person, then unblock
+        env:
+          GATE_COMPANY: ${{ inputs.company }}
+          GATE_ORGANIZATION_ID: ${{ inputs.organization_id }}
+          GATE_REASON: ${{ inputs.reason }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_SITE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/capture-release.mjs unblock
+      - name: Record the change or the refusal
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: capture-release-unblock-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/capture-release/receipt.json
+            .ci-results/capture-release/receipt.full.json.age
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

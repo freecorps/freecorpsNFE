@@ -1,0 +1,339 @@
+[
+  {
+    "name": "new",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "OK",
+    "producer": true
+  },
+  {
+    "name": "duplicate",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-duplicate",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=25f736c933dd1109f9a08d9df446956ea9a8e7cb4b3474211c9dfa3daeb15dbd;k=1,v1=0355bb27c7cc258e34e399a49760d9a799a109aaeb530bec7a7538f9c7f5eaf6"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "OK",
+    "producer": true
+  },
+  {
+    "name": "old",
+    "body": "{\"eventId\":\"event-old\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":2},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-old",
+      "x-fnfe-delivery-id": "delivery-old",
+      "x-fnfe-resource-version": "2",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=ed66204a5ff2176110b1c017b9fe22db02b9afe0e872d6e2839530106c7dbe98;k=1,v1=7a622b2bcdd2ff6a3b09e5c96221b68012e6c1925d16f5e8ed8443e556d74622"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "OK",
+    "producer": true
+  },
+  {
+    "name": "old-key-within-window",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "OK",
+    "producer": false
+  },
+  {
+    "name": "old-key-expired",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000001000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "bytes-altered",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false} ",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "wrong-key",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "wrong"
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "altered-x-fnfe-event-id",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new9",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "altered-x-fnfe-delivery-id",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new9",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "altered-x-fnfe-resource-version",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "39",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "SIGNATURE_INVALID",
+    "producer": false
+  },
+  {
+    "name": "altered-x-fnfe-webhook-version",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "19",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "HEADERS_INVALID",
+    "producer": false
+  },
+  {
+    "name": "expired",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000300001,
+    "expected": "TIMESTAMP_INVALID",
+    "producer": false
+  },
+  {
+    "name": "future",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=1800000000000;k=2,v1=50fd3a29590f6c9d1ba33e7d93ece78169ed8c898896a9ab2dc627438ba20b4a;k=1,v1=d0b6c24f20ae795c6fd0abb7c88e3e0c8c814b384f1fdc2d4dbc6258fc539de8"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1799999699999,
+    "expected": "TIMESTAMP_INVALID",
+    "producer": false
+  },
+  {
+    "name": "timestamp-malformed",
+    "body": "{\"eventId\":\"event-new\",\"type\":\"document.updated\",\"version\":\"1\",\"occurredAt\":1800000000000,\"environment\":\"sandbox\",\"companyId\":\"company\",\"resource\":{\"type\":\"document\",\"id\":\"document\",\"version\":3},\"synthetic\":false}",
+    "headers": {
+      "x-fnfe-event-id": "event-new",
+      "x-fnfe-delivery-id": "delivery-new",
+      "x-fnfe-resource-version": "3",
+      "x-fnfe-webhook-version": "1",
+      "x-fnfe-signature": "t=invalid;k=2,v1=abc"
+    },
+    "secrets": [
+      {
+        "version": 2,
+        "secret": "synthetic-new"
+      },
+      {
+        "version": 1,
+        "secret": "synthetic-old",
+        "validUntil": 1800000001000
+      }
+    ],
+    "now": 1800000000000,
+    "expected": "HEADERS_INVALID",
+    "producer": false
+  }
+]

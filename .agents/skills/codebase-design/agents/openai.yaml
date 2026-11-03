@@ -1,0 +1,3 @@
+interface:
+  display_name: "Design de módulos"
+  short_description: "Interfaces simples e responsabilidades bem definidas"

@@ -1,0 +1,544 @@
+/* Hero production line. Static state (no motion, no JS): the whole story lit,
+   a stamped sheet between press and tray, the stack authorized, the beam on.
+   With motion, one 7 s cycle: the sheet leaves the bin (0 to 26%), crosses the
+   light curtain (11 to 15%), is stamped (29%), rides to the tray (36 to 60%),
+   the signal climbs the mast (60 to 66%), the beam carries it to the SEFAZ
+   (66 to 73%), the windows answer (74%), the answer returns (76 to 82%), the
+   new sheet lights up as authorized (83%) and the stack settles one sheet
+   (84 to 96%), so the next cycle starts identical. Geometry never fades:
+   plain and stamped copies swap visibility in one step. */
+
+.fig-plant .paper {
+  fill: #1a2820;
+  stroke: #61786b;
+}
+.fig-plant .ink {
+  stroke: #61786b;
+}
+.fig-plant .roller {
+  fill: #0a130f;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .slat {
+  stroke: #1d2b24;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .strut,
+.fig-plant .leg {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .leg {
+  stroke: #4b6155;
+  stroke-width: 1.4;
+}
+.fig-plant .strut.back,
+.fig-plant .leg.back {
+  stroke: var(--line);
+}
+.fig-plant .plant-name {
+  fill: var(--glow-hi);
+  font: 600 5.2px var(--font-mono);
+  letter-spacing: 0.12em;
+  filter: url(#iso-soft);
+}
+.fig-plant .plant-tag {
+  fill: #b5c6bc;
+  font: 600 6px var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.fig-plant .face.pediment {
+  fill: #14211a;
+  stroke: #4b6155;
+}
+.fig-plant .face.die {
+  fill: #16231c;
+}
+.fig-plant .fly-rim {
+  fill: #0a130f;
+  stroke: #4b6155;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .fly-inner,
+.fig-plant .spoke {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .fly-mark {
+  fill: var(--glow);
+  filter: url(#iso-soft);
+}
+.fig-plant .beacon-halo {
+  fill: var(--glow);
+  opacity: 0.18;
+  filter: url(#iso-bloom);
+}
+.fig-plant .tympanum {
+  fill: #0a130f;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .emblem {
+  fill: var(--glow);
+  filter: url(#iso-soft);
+}
+.fig-plant .answer {
+  fill: var(--glow);
+  stroke: var(--glow-hi);
+  filter: url(#iso-glow);
+}
+.fig-plant .curtain-g .ray {
+  stroke: var(--glow);
+  stroke-opacity: 0.45;
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+.fig-plant .curtain-g .sweep {
+  stroke: var(--glow-hi);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-glow);
+  opacity: 0;
+}
+.fig-plant .glass.xsd {
+  fill: #1a2610;
+  stroke: var(--glow);
+  filter: url(#iso-soft);
+}
+.fig-plant .led.eye {
+  fill: var(--glow);
+  filter: url(#iso-soft);
+}
+.fig-plant .plant-pulse {
+  fill: none;
+  stroke: var(--glow-hi);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 12 200;
+  stroke-dashoffset: 12;
+  filter: url(#iso-glow);
+  opacity: 0;
+}
+.fig-plant .plant-flash {
+  fill: var(--glow);
+  filter: url(#iso-bloom);
+  opacity: 0;
+}
+.fig-plant .tv-plain,
+.fig-plant .tv-seal {
+  visibility: hidden;
+}
+.fig-plant .beam-core {
+  stroke-dasharray: 3 3;
+}
+
+/* Hover (plant.client.ts): the station under the pointer and its callout. */
+.fig-plant .st .face,
+.fig-plant .callout .leader,
+.fig-plant .callout-t {
+  transition:
+    stroke 220ms var(--ease-out),
+    fill 220ms var(--ease-out);
+}
+.fig-plant[data-focus="1"] [data-st="1"] .face,
+.fig-plant[data-focus="2"] [data-st="2"] .face,
+.fig-plant[data-focus="3"] [data-st="3"] .face,
+.fig-plant[data-focus="4"] [data-st="4"] .face,
+.fig-plant[data-focus="5"] [data-st="5"] .face {
+  stroke: var(--glow);
+}
+.fig-plant[data-focus="1"] .callout[data-step="1"] .callout-t,
+.fig-plant[data-focus="2"] .callout[data-step="2"] .callout-t,
+.fig-plant[data-focus="3"] .callout[data-step="3"] .callout-t,
+.fig-plant[data-focus="4"] .callout[data-step="4"] .callout-t,
+.fig-plant[data-focus="5"] .callout[data-step="5"] .callout-t {
+  fill: var(--glow-hi);
+}
+.fig-plant[data-focus="1"] .callout[data-step="1"] .leader,
+.fig-plant[data-focus="2"] .callout[data-step="2"] .leader,
+.fig-plant[data-focus="3"] .callout[data-step="3"] .leader,
+.fig-plant[data-focus="4"] .callout[data-step="4"] .leader,
+.fig-plant[data-focus="5"] .callout[data-step="5"] .leader {
+  stroke: var(--glow);
+}
+.fig-plant .st,
+.fig-plant .callout {
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-plant .at-rest {
+    display: none;
+  }
+  .fig-plant .tv-x,
+  .fig-plant .slats {
+    animation: plant-ride 7s infinite;
+  }
+  .fig-plant .tv-z {
+    animation: plant-drop 7s infinite;
+  }
+  .fig-plant .tv-plain {
+    animation: plant-plain 7s steps(1, end) infinite;
+  }
+  .fig-plant .tv-seal {
+    animation: plant-sealed 7s steps(1, end) infinite;
+  }
+  .fig-plant .stack-new {
+    animation: plant-landed 7s steps(1, end) infinite;
+  }
+  .fig-plant .stack-new .paper {
+    animation: plant-auth-paper 7s infinite;
+  }
+  .fig-plant .stack-new .ink,
+  .fig-plant .stack-new .seal-ring {
+    animation: plant-auth-ink 7s infinite;
+  }
+  .fig-plant .stack-new .check {
+    animation: plant-auth-check 7s steps(1, end) infinite;
+  }
+  .fig-plant .stack {
+    animation: plant-settle 7s infinite;
+  }
+  .fig-plant .curtain-g {
+    animation: plant-curtain 7s ease-in-out infinite;
+  }
+  .fig-plant .curtain-g .sweep {
+    animation: plant-sweep 7s infinite;
+  }
+  .fig-plant .glass.xsd {
+    animation: plant-xsd 7s infinite;
+  }
+  .fig-plant .led.eye {
+    animation: plant-eye 7s infinite;
+  }
+  .fig-plant .ram {
+    animation: plant-ram 7s infinite;
+  }
+  .fig-plant .plant-flash {
+    animation: plant-flash 7s infinite;
+  }
+  .fig-plant .fly {
+    animation: plant-fly 7s infinite;
+  }
+  .fig-plant .beacon-halo {
+    animation: plant-beacon 7s infinite;
+  }
+  .fig-plant .plant-pulse.up {
+    animation: plant-up 7s infinite;
+  }
+  .fig-plant .plant-pulse.out {
+    animation: plant-out 7s infinite;
+  }
+  .fig-plant .plant-pulse.in {
+    animation: plant-in 7s infinite;
+  }
+  .fig-plant .answer {
+    animation: plant-answer 7s infinite;
+  }
+  .fig-plant .beam-core {
+    animation: plant-flow 0.9s linear infinite;
+  }
+}
+
+/* One displacement profile for the sheet and the belt slats: 112 units to the
+   press, a dwell, 112 more to the tray (224 = 16 slat pitches, so the slats
+   wrap invisibly). Screen offsets are 112 * cos 30° by 112 * sin 30°. */
+@keyframes plant-ride {
+  0% {
+    transform: translate(0, 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+  }
+  26%,
+  36% {
+    transform: translate(96.99px, 56px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+  }
+  60%,
+  100% {
+    transform: translate(193.99px, 112px);
+  }
+}
+@keyframes plant-drop {
+  0%,
+  51% {
+    transform: translateY(0);
+    animation-timing-function: ease-in;
+  }
+  59%,
+  100% {
+    transform: translateY(1.5px);
+  }
+}
+@keyframes plant-plain {
+  0% {
+    visibility: visible;
+  }
+  29%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes plant-sealed {
+  0% {
+    visibility: hidden;
+  }
+  29% {
+    visibility: visible;
+  }
+  60%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes plant-landed {
+  0% {
+    visibility: hidden;
+  }
+  60%,
+  100% {
+    visibility: visible;
+  }
+}
+@keyframes plant-auth-paper {
+  0%,
+  82% {
+    fill: #1a2820;
+    stroke: #61786b;
+  }
+  85%,
+  100% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+}
+@keyframes plant-auth-ink {
+  0%,
+  82% {
+    stroke: #61786b;
+  }
+  85%,
+  100% {
+    stroke: var(--glow-ink);
+  }
+}
+@keyframes plant-auth-check {
+  0% {
+    visibility: hidden;
+  }
+  83%,
+  100% {
+    visibility: visible;
+  }
+}
+@keyframes plant-settle {
+  0%,
+  86% {
+    transform: translateY(0);
+    animation-timing-function: ease-in-out;
+  }
+  97%,
+  100% {
+    transform: translateY(1.4px);
+  }
+}
+@keyframes plant-curtain {
+  0%,
+  9%,
+  18%,
+  100% {
+    opacity: 0.5;
+  }
+  12%,
+  15% {
+    opacity: 1;
+  }
+}
+@keyframes plant-sweep {
+  0%,
+  10% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10.5% {
+    opacity: 1;
+  }
+  15.5% {
+    transform: translateY(40px);
+    opacity: 1;
+  }
+  16.5%,
+  100% {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+@keyframes plant-xsd {
+  0%,
+  15% {
+    fill: #08100c;
+    stroke: var(--line-2);
+  }
+  16.5%,
+  100% {
+    fill: #1a2610;
+    stroke: var(--glow);
+  }
+}
+@keyframes plant-eye {
+  0%,
+  10%,
+  17%,
+  100% {
+    fill: #23332b;
+  }
+  11%,
+  16% {
+    fill: var(--glow);
+  }
+}
+@keyframes plant-ram {
+  0%,
+  26.5% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5);
+  }
+  29%,
+  31% {
+    transform: translateY(19.4px);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  37%,
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes plant-flash {
+  0%,
+  28.8% {
+    opacity: 0;
+  }
+  29.4% {
+    opacity: 0.9;
+    animation-timing-function: ease-out;
+  }
+  36%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes plant-up {
+  0%,
+  60% {
+    stroke-dashoffset: 12;
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+  60.5% {
+    opacity: 1;
+  }
+  66% {
+    stroke-dashoffset: -100;
+    opacity: 1;
+  }
+  66.5%,
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+@keyframes plant-out {
+  0%,
+  66% {
+    stroke-dashoffset: 12;
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+  66.5% {
+    opacity: 1;
+  }
+  73% {
+    stroke-dashoffset: -100;
+    opacity: 1;
+  }
+  73.5%,
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+@keyframes plant-in {
+  0%,
+  76% {
+    stroke-dashoffset: 12;
+    opacity: 0;
+    animation-timing-function: ease-in-out;
+  }
+  76.5% {
+    opacity: 1;
+  }
+  82% {
+    stroke-dashoffset: -100;
+    opacity: 1;
+  }
+  82.5%,
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+@keyframes plant-answer {
+  0%,
+  73% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+  75%,
+  95% {
+    fill: var(--glow);
+    stroke: var(--glow-hi);
+  }
+  99%,
+  100% {
+    fill: #08100c;
+    stroke: var(--line);
+  }
+}
+@keyframes plant-fly {
+  0%,
+  25% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+  }
+  38%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes plant-beacon {
+  0%,
+  64%,
+  100% {
+    opacity: 0.18;
+  }
+  66.5% {
+    opacity: 0.75;
+  }
+  74% {
+    opacity: 0.18;
+  }
+}
+@keyframes plant-flow {
+  to {
+    stroke-dashoffset: -6;
+  }
+}

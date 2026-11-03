@@ -1,0 +1,93 @@
+name: Deploy NFS-e fiscal production
+
+# Publishes the second target: the NFS-e fiscal production deployment, with its own console and
+# API domains on its own Worker (#198, ADR 0004 §8). Manual dispatch only, never on push: the
+# hosted sandbox keeps `deploy.yml`, untouched. While deploy/issuance-production.json names no
+# deployment and release, the plan job fails before any secret, CI and publication never start,
+# and nothing is published. An approved_sha that is not this run's main SHA fails the plan job
+# too (APPROVED_SHA_MISMATCH), instead of silently skipping the publication. Before using the
+# deploy key, the publication reads this run and its approvals from the GitHub API and needs one
+# approval in `nfse-production-release` by a person in authorizedActors of
+# deploy/issuance-gate.json other than who dispatched (verifiedRun, as in nfse-gate-enable.yml).
+# Without required reviewers in the environment there is no approval, and nothing is published.
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Full main SHA approved for the fiscal production publication
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nfse-production-release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Versioned plan names the fiscal production deployment and its release
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The plan check uses Node built-in modules only.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      - name: Check the plan and the approved SHA
+        env:
+          APPROVED_SHA: ${{ inputs.approved_sha }}
+        run: node scripts/deploy-issuance-production.mjs plan
+
+  validate:
+    needs: plan
+    if: github.ref == 'refs/heads/main' && inputs.approved_sha == github.sha
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish the fiscal production
+    needs: [plan, validate]
+    if: needs.validate.outputs.tested_sha == github.sha
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 30
+    environment: nfse-production-release
+    # actions: read lets the runner read this run's approvals; nothing else is added.
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate.outputs.tested_sha }}
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          version-file: package.json
+          node-version: "24.22.1"
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Check the run and its approval, then publish backend, console and Worker
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_TESTED_SHA: ${{ needs.validate.outputs.tested_sha }}
+          RELEASE_APPROVED_SHA: ${{ inputs.approved_sha }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.FNFE_ISSUANCE_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: node scripts/deploy-issuance-production.mjs publish
+      - name: Record publication or partial failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nfse-production-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .ci-results/issuance-release/receipt.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

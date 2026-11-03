@@ -1,0 +1,44 @@
+---
+title: Privacidade da consulta CNPJ
+description: Como a Freecorps usa dados cadastrais da Receita Federal, por quanto tempo os conserva e como exercer seus direitos.
+---
+
+## Quem trata os dados [#responsaveis]
+
+A FREECORPS TECNOLOGIA DA INFORMACAO LTDA., CNPJ 63.113.119/0001-90, mantém a consulta cadastral da plataforma Freecorps Fiscal. Para falar com a equipe responsável por privacidade, escreva para [privacidade@nfe.freecorps.com.br](mailto:privacidade@nfe.freecorps.com.br). Você não precisa ter conta na plataforma para fazer um pedido.
+
+A Freecorps decide sobre a consulta à fonte, a projeção e o cache compartilhado entre clientes, atuando como controladora dessa etapa. A organização cliente decide sobre o cadastro que administra e as informações que confirma; a Freecorps trata esse cadastro em nome dela. Um pedido que alcance dados administrados pelo cliente é encaminhado ao controlador responsável.
+
+Esta página trata da consulta CNPJ. Os documentos fiscais, as contas de acesso e os dados de cobrança têm finalidades e regras próprias.
+
+## Finalidade, fonte e dados [#consulta]
+
+A consulta permite conferir nome empresarial, situação cadastral e endereço de uma empresa que o cliente cadastrou ou está cadastrando. O endereço inclui logradouro, número, complemento, bairro, município, UF e CEP. Nome e endereço de empresário individual podem identificar uma pessoa natural ou sua residência.
+
+A origem é o [Cadastro Nacional da Pessoa Jurídica da Receita Federal](https://dados.gov.br/dados/conjuntos-dados/cadastro-nacional-da-pessoa-juridica---cnpj), consultado pelo serviço [OpenCNPJ](https://opencnpj.org/), conjunto `receita`. A Freecorps seleciona e normaliza os campos usados no cadastro. O catálogo declara Creative Commons Attribution sem indicar a versão no rótulo exibido. Os órgãos e o provedor não endossam a plataforma.
+
+A consulta é solicitada por quem tem acesso à empresa no produto ou, antes de a empresa ser cadastrada, por quem administra a organização cliente. O cadastro manual continua disponível. A equipe do cliente escolhe se aplica o nome e/ou o endereço sugeridos; a consulta não altera esses campos automaticamente nem comprova regularidade fiscal. A data apresentada é a da consulta, não a data de atualização oficial da Receita.
+
+Quando esses campos identificam pessoas naturais, a finalidade de conferência cadastral é avaliada sob legítimo interesse, nos arts. 7º, IX, e 10 da LGPD, com minimização e proteção dos direitos dos titulares. A publicidade dos dados não dispensa essas condições. Não usamos essa consulta para publicidade direcionada, pontuação de crédito ou publicação de perfis pessoais.
+
+## Acesso e compartilhamento [#compartilhamento]
+
+A consulta envia o CNPJ ao OpenCNPJ. A plataforma recebe a resposta, mas conserva somente a projeção cadastral descrita acima e metadados de origem e datas. Não conserva o JSON completo, quadro societário, telefone ou e-mail recebidos nessa resposta.
+
+Os dados são processados na infraestrutura Cloudflare e Convex usada pela plataforma. O cache pode atender organizações diferentes que tenham cadastrado a mesma empresa, mas cada leitura exige as permissões da organização e da empresa. Os integrantes e aplicativos aos quais o cliente concede acesso podem receber o resultado. O cadastro confirmado de uma organização não é compartilhado com outra por esse cache.
+
+## Prazos e correções [#prazos]
+
+O resultado encontrado fica válido no cache por 24 horas e é removido em até 30 dias desde a última consulta bem-sucedida. Uma falha não prolonga a retenção dos dados anteriores. A consulta feita antes do cadastro guarda a organização, o CNPJ, a pessoa que consultou, as datas e dados de controle da chamada, sem nome ou endereço, e é apagada em 24 horas. O nome e o endereço confirmados, seus valores anteriores, a origem e a autoria da confirmação acompanham o cadastro da empresa. Após o encerramento da organização, essa classe é excluída depois de 30 dias para exportação e até 7 dias para execução. Cópias de backup podem permanecer por até 14 dias adicionais, com reaplicação das decisões de exclusão antes de restaurar o acesso.
+
+Uma correção feita pelo cliente na Freecorps não altera o cadastro na Receita Federal nem a base do OpenCNPJ. Se a fonte continua incorreta, avaliamos a suspensão de sua consulta para impedir que o dado volte a ser apresentado.
+
+## Seus direitos e como pedir [#direitos]
+
+Você pode solicitar confirmação de tratamento, acesso, correção, informação sobre compartilhamento e, quando cabível, bloqueio ou eliminação. Também pode se opor a tratamento realizado em desacordo com a LGPD. Envie ao canal de privacidade o CNPJ relacionado, a descrição do problema e o direito que deseja exercer. Não envie senha, certificado digital ou XML fiscal. Conferimos identidade e legitimidade antes de divulgar dados ou executar alterações.
+
+A confirmação e o acesso seguem o art. 19 da LGPD: resposta simplificada imediata ou declaração completa em até 15 dias. Os demais pedidos são avaliados conforme o direito exercido; eventual conservação ou impossibilidade de atendimento é explicada com seu fundamento.
+
+Uma oposição deferida à consulta retira a projeção do cache e impede novas consultas daquele CNPJ, inclusive em outras organizações. Uma chamada que já tenha saído pode chegar ao provedor, mas sua resposta não é incorporada ao cache. Conservamos o identificador e o registro mínimo da restrição enquanto ela precisar ser cumprida. O cadastro confirmado e seu histórico são avaliados separadamente com o cliente controlador; não apagamos documentos fiscais ou registros de terceiros por efeito automático de uma oposição à consulta.
+
+Os registros do atendimento são conservados por cinco anos após o encerramento do pedido. Para questionar nossa resposta, use o mesmo canal; você também pode peticionar à ANPD nos casos previstos em lei.

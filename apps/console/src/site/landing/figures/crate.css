@@ -1,0 +1,179 @@
+/* NF-e pallet. A 6 s loop: a scan line crosses the lit NF-e label and the
+   "lida" mark comes on. The last carton is set onto the stack once when the
+   figure enters the view and again on every click (client adds .settle).
+   Without motion: stack complete, label lit, mark on. */
+.fig-crate .face.top .tape,
+.fig-crate .tape {
+  fill: #1a2820;
+  stroke: #3a4f44;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-crate .hole {
+  fill: #060b08;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.fig-crate .mark {
+  fill: none;
+  stroke: #33473c;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.fig-crate .face.handle {
+  fill: #16231c;
+}
+.fig-crate .scr.big-code {
+  font-size: 6.4px;
+}
+.fig-crate .scr.tiny {
+  font-size: 3.4px;
+  letter-spacing: 0.1em;
+}
+.fig-crate .bar.ink-lit,
+.fig-crate .scr.ink-lit {
+  fill: var(--glow-ink);
+}
+.fig-crate .label-dim {
+  fill: #16221c;
+  stroke: #4b6155;
+}
+.fig-crate .bar.ink-dim,
+.fig-crate .scr.ink-dim {
+  fill: #4b6155;
+}
+.fig-crate .scr.big-code {
+  font-weight: 600;
+}
+.fig-crate .read-dot {
+  fill: var(--glow-ink);
+}
+.fig-crate .read-tick {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.fig-crate .wipe {
+  transform-box: fill-box;
+  transform-origin: 0 0;
+}
+.fig-crate .scan {
+  visibility: hidden;
+}
+.fig-crate .scan-halo {
+  fill: var(--glow);
+  opacity: 0.45;
+  filter: url(#iso-bloom);
+}
+.fig-crate .scan-core {
+  stroke: var(--glow-hi);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-glow);
+}
+.fig-crate.is-live {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-crate .scan {
+    animation: crate-scan 6s infinite;
+  }
+  .fig-crate .wipe {
+    animation: crate-wipe 6s infinite;
+  }
+  .fig-crate .read {
+    animation: crate-read 6s step-end infinite;
+  }
+  .fig-crate .label-card {
+    animation: crate-flash 6s infinite;
+  }
+  .fig-crate.settle .drop {
+    animation: crate-drop 1.3s both;
+  }
+}
+
+/* The scan line crosses the label left to right; the lit copy is revealed
+   right behind it. The label goes back to plain print as the loop restarts. */
+@keyframes crate-scan {
+  0%,
+  21% {
+    transform: translate(6px, 0);
+    visibility: hidden;
+  }
+  22% {
+    transform: translate(6px, 0);
+    visibility: visible;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  40% {
+    transform: translate(42px, 0);
+    visibility: visible;
+  }
+  41%,
+  100% {
+    transform: translate(42px, 0);
+    visibility: hidden;
+  }
+}
+@keyframes crate-wipe {
+  0%,
+  22% {
+    transform: scaleX(0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  40%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes crate-read {
+  0% {
+    visibility: hidden;
+  }
+  42%,
+  100% {
+    visibility: visible;
+  }
+}
+@keyframes crate-flash {
+  0%,
+  40% {
+    fill: var(--glow);
+  }
+  43% {
+    fill: var(--glow-hi);
+    animation-timing-function: var(--ease-out);
+  }
+  60%,
+  100% {
+    fill: var(--glow);
+  }
+}
+/* Lowered from above, it lands, the cardboard gives a little, it rests. */
+@keyframes crate-drop {
+  0% {
+    transform: translate(0, -30px);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  78% {
+    transform: translate(0, 0);
+    animation-timing-function: ease-out;
+  }
+  88% {
+    transform: translate(0, -1.4px);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+.fig-crate .face.handle-side {
+  fill: #121e18;
+}

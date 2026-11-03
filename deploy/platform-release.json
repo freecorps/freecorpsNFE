@@ -1,0 +1,36 @@
+{
+  "version": 3,
+  "productEnvironment": "sandbox",
+  "target": {
+    "deployment": "elated-possum-295",
+    "worker": "freecorpsnfe-backoffice",
+    "accountId": "ceccd1846b474bb179054a3c2c4a6185",
+    "frontend": "https://nfe.freecorps.com.br",
+    "api": "https://api.nfe.freecorps.com.br"
+  },
+  "installation": {
+    "strategy": "replace-legacy-empty",
+    "decisions": {
+      "discardLegacyData": true,
+      "reuseAddress": true,
+      "freshBetterAuthAccounts": true
+    },
+    "receipts": [
+      {
+        "gate": "legacyReset",
+        "path": "docs/v1.0/evidence/84/publico/legacy-reset.json",
+        "sha256": "3d741e3bfd6a46d7303189144cbe5638bdc08135f8231319d1df801efc78ccd8"
+      },
+      {
+        "gate": "consumerTransition",
+        "path": "docs/v1.0/evidence/84/publico/consumer-transition.json",
+        "sha256": "1d5854eae9336d6e9ef63866d14d0073ea1df3e25a4fabeb0e726d96850bbab2"
+      },
+      {
+        "gate": "authBootstrap",
+        "path": "docs/v1.0/evidence/84/publico/auth-bootstrap.json",
+        "sha256": "0752620731e6332dcd6142c005238b863bdfc6d1cb28cc247942ca38e9b56f58"
+      }
+    ]
+  }
+}

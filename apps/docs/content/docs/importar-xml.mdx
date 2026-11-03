@@ -1,0 +1,111 @@
+---
+title: Importar XML pela API
+description: Como a importação funciona para quem integra por programa. Reserva, envio dos bytes, confirmação, processamento assíncrono e leitura do documento, com o que fazer quando uma resposta se perde.
+contract: true
+---
+
+Este guia é para quem integra um sistema. Para enviar XMLs pelo painel, sem chave e sem programar, veja [Importar XML pelo painel](/docs/importar-pelo-painel); o processamento e os resultados são os mesmos. Se ainda não fez nenhuma chamada, comece pela [primeira chamada](/docs/primeira-chamada), que executa este fluxo com um script pronto.
+
+A importação aceita XML de NF-e modelo 55: nota completa, resumo ou evento. Os lotes NFS-e no leiaute de exportação ABRASF deixaram de ser aceitos e são recusados com `XML_NAMESPACE_UNSUPPORTED`. As permissões da chave, os [escopos](/docs/conceitos#escopos), precisam incluir `documents:import` para importar e `documents:read` para ler o resultado. No serviço hospedado, a importação roda em `sandbox`, e a chave deve ser desse ambiente.
+
+## O fluxo em quatro chamadas [#fluxo]
+
+<Steps>
+<Step>
+
+### Reserve [#reservar]
+
+<Op id="reserveImport" /> com `Idempotency-Key` e o JSON `{ companyId, files }`. Cada arquivo declara `name`, `size` em bytes e `sha256` em hexadecimal. A resposta traz `importId`, um `fileId` por arquivo e `reused`.
+
+A reserva vale por 24 horas. Repetir o pedido com a mesma chave devolve a mesma reserva com `reused: true`. Usar a mesma chave com outro conteúdo devolve `IDEMPOTENCY_CONFLICT`.
+
+</Step>
+<Step>
+
+### Peça o ticket de envio [#ticket]
+
+<Op id="createUpload" /> devolve a `url` de envio e um `token` restrito àquele arquivo, válido por
+até 15 minutos.
+
+</Step>
+<Step>
+
+### Envie os bytes [#enviar]
+
+Faça `POST` na `url` do ticket com os bytes originais no corpo e o token no header `X-Upload-Token`. A plataforma confere tamanho e SHA-256 contra a reserva antes de guardar o arquivo.
+
+</Step>
+<Step>
+
+### Confirme [#confirmar]
+
+<Op id="confirmImport" /> aceita o processamento e devolve um `operationId`. Repetir a confirmação
+devolve a mesma operação.
+
+</Step>
+</Steps>
+
+Depois de confirmar, acompanhe <Op id="getOperation" /> até `succeeded`, ou espere o webhook `import.completed`. <Op id="getImport" /> mostra o resultado de cada arquivo e o `documentId` criado.
+
+## Quando uma resposta se perde [#recuperar]
+
+Timeout não desfaz um pedido aceito. Antes de repetir qualquer passo, consulte <Op id="getImport" />:
+
+| Estado do arquivo | O que fazer                                               |
+| ----------------- | --------------------------------------------------------- |
+| `reserved`        | Os bytes não chegaram. Peça outro ticket e envie de novo. |
+| `uploaded`        | Os bytes chegaram. Confirme, sem reenviar.                |
+| `accepted`        | Já confirmado. Acompanhe a operação.                      |
+| `expired`         | A reserva venceu. Faça uma nova reserva.                  |
+
+## Resultados por arquivo [#resultados]
+
+| Resultado           | Significado                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Documento publicado | O XML virou documento ou uma nova versão de um documento existente.                                         |
+| `DUPLICATE`         | Os mesmos bytes já tinham sido importados. Nada muda.                                                       |
+| `ARTIFACT_CONFLICT` | Outro XML completo da mesma nota. Os dois originais ficam guardados e a versão anterior continua publicada. |
+| Diagnóstico         | Schema desconhecido, identidade inválida ou empresa incompatível. O original fica guardado, sem documento.  |
+
+A NF-e completa é aceita quando a empresa é emitente ou destinatária. Um resumo exige a empresa como emitente. As NFS-e de lotes ABRASF importados antes da retirada continuam como documentos só para leitura: aparecem na lista, na consulta, no download do lote original e na exportação, sem itens de mercadoria.
+
+## Ler o documento [#ler]
+
+Com o `documentId`, use <Op id="getDocument" /> para o resumo, <Op id="documentJson" /> para o JSON completo e <Op id="documentItems" /> para os itens, em páginas. <Op id="downloadOriginal" /> devolve os bytes exatos que você enviou. Para uma NF-e modelo 55 completa, <Op id="downloadDanfe" /> devolve o PDF do DANFE, a representação auxiliar gerada desse XML e dos cancelamentos guardados; a nota continua sendo o XML. A primeira chamada pode levar alguns segundos, e um documento sem DANFE responde `DANFE_UNAVAILABLE`.
+
+O campo `completeness` diz o que existe: `full-xml` para a nota completa, `summary` para resumo e `event-only` quando só há evento. Resumo e evento não trazem o número da nota; nesses casos, `number` vem da chave de acesso e é o mesmo que a nota completa mostra. Um resumo não vira nota completa nem situação fiscal presumida. Só ofereça o download quando `originalAvailable` for `true`; caso contrário, a resposta é `ORIGINAL_UNAVAILABLE`.
+
+A situação fiscal deriva do que foi importado, sem consulta ao fisco em tempo real. XML válido no schema não significa nota autorizada.
+
+### Totais, finalidade e campos das NT 2026.008 e 2026.006 [#nfe-campos]
+
+O JSON da NF-e completa (`payload.kind: "invoice"`) traz, desde a versão 7.0.0 do contrato (`nt2026006`, desde a 8.0.0):
+
+| Campo                   | O que é                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `total`                 | O `vNF` do grupo `ICMSTot`, como declarado. É o mesmo valor da listagem e não mudou.                                                                                                                                                                                                                                                                                                                                   |
+| `declaredTotals.vNF`    | Igual a `total`.                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `declaredTotals.vNFTot` | O "Valor total da NF-e com IBS / CBS / IS" da reforma tributária, como declarado. `null` quando o XML não o informa; nunca é calculado.                                                                                                                                                                                                                                                                                |
+| `purpose`               | A finalidade (`finNFe`) e os tipos de nota de crédito e de débito, com o código declarado e a descrição oficial. `inconsistencies` lista as combinações que a SEFAZ rejeitaria. Não muda a situação fiscal.                                                                                                                                                                                                            |
+| `nt2026008.vProdLiqTot` | O valor total líquido dos produtos, sem tributos, da NT 2026.008. Nos itens, `nt2026008` traz `vUnComLiq`, `vProdLiq` e `vICMSPrevisto`. `null` quando o XML não informa o campo.                                                                                                                                                                                                                                      |
+| `nt2026006.gPgtoVinc`   | A vinculação com a transação de pagamento da NT 2026.006: um item por pagamento, com `nPag`, `idTransacao`, `tpMeioPgto`, `CNPJReceb` e `CNPJBasePSP` em texto, como declarados. `tpMeioPgtoLabel` traz a descrição do meio de pagamento na tabela do IT DFe 2026.001 v1.01 (por exemplo, `17` é "Pix QRCode") e é `null` para um código fora dela, que continua como declarado. `null` quando o XML não traz o grupo. |
+
+A plataforma não soma nem recalcula nenhum desses valores: os valores são texto decimal exato, iguais ao XML. A descrição oficial de cada campo está na [referência da API](/docs/api/documentjson). A plataforma lê o grupo `gPgtoVinc` como o XML o declara e não avalia as regras de validação da NT 2026.006 nem confere o pagamento: um meio de pagamento fora da tabela do IT, cuja rejeição na autorização o IT prevê, não muda a importação nem a situação fiscal.
+
+Uma versão processada antes desses campos traz `purpose: null`, `nt2026008: null` ou `nt2026006: null`. [Reprocesse](#reprocessar) o documento para extraí-los do original guardado.
+
+O pacote oficial de schemas com os campos da NT 2026.008 ainda não foi publicado. Um XML que os usa vira documento, com o original guardado, mas a etapa XSD registra `XSD_INVALID` e a situação fiscal fica `unknown`. Quando o pacote sair, o reprocessamento repete as etapas com o schema novo.
+
+## Reprocessar [#reprocessar]
+
+<Op id="reprocessDocument" /> e <Op id="reprocessImport" /> processam de novo o original já
+guardado, com a versão atual do processador. O resultado anterior continua legível até a nova versão
+ficar completa.
+
+Reprocessar um lote NFS-e ABRASF já importado responde 409 `OPERATION_CONFLICT`: a plataforma não lê mais esse leiaute. As notas já importadas continuam disponíveis para consulta.
+
+## Limites [#limites]
+
+- Até 20 XMLs por reserva e 2 MiB por arquivo. ZIP não é aceito.
+- Até 20 novas reservas por minuto por organização.
+- JSON da reserva com até 16 KiB.

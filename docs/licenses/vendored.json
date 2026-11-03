@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "reason": "Code that a dependency ships inside its own dist, outside bun.lock. The npm copies are transformed (ESM), so the bytes differ from the registry tarball; the version comes from the vendored path, and the license text was taken from the registry tarball of that version, whose integrity is recorded. The C/C++ projects compiled into a WebAssembly file have no registry tarball: the source is the repository commit the host builds from, and the license text was read at that commit.",
+  "packages": [
+    {
+      "id": "fast-content-type-parse@4.0.1",
+      "vendoredIn": "fumadocs-openapi@12.5.5",
+      "path": "dist/node_modules/.pnpm/fast-content-type-parse@4.0.1/node_modules/fast-content-type-parse",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/fast-content-type-parse/4.0.1",
+      "integrity": "sha512-AAu9Ey/t6KDFqqeCfbwdlASlv7rQBG57gXYf2YU+MXJx1OIJn2q3BEJKmtnZaeGm1y5AYxLzRMmq9VWWXrfRcA==",
+      "repository": "git+https://github.com/fastify/fast-content-type-parse.git",
+      "licenseText": "docs/licenses/texts/fast-content-type-parse-4.0.1-LICENSE"
+    },
+    {
+      "id": "xml-js@1.6.11",
+      "vendoredIn": "fumadocs-openapi@12.5.5",
+      "path": "dist/node_modules/.pnpm/xml-js@1.6.11/node_modules/xml-js",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/xml-js/1.6.11",
+      "integrity": "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==",
+      "repository": "git+https://github.com/nashwaan/xml-js.git",
+      "licenseText": "docs/licenses/texts/xml-js-1.6.11-LICENSE"
+    },
+    {
+      "id": "zxing-cpp@2c3dcfeffa7878950a58c1703c86774a428b0c91",
+      "vendoredIn": "zxing-wasm@3.1.6",
+      "path": "dist/reader",
+      "declaredLicense": "Apache-2.0",
+      "source": "https://github.com/zxing-cpp/zxing-cpp/tree/2c3dcfeffa7878950a58c1703c86774a428b0c91",
+      "repository": "git+https://github.com/zxing-cpp/zxing-cpp.git",
+      "licenseText": "docs/licenses/texts/zxing-cpp-LICENSE",
+      "note": "Compiled into dist/reader/zxing_reader.wasm. zxing-wasm 3.1.6 pins this commit as its zxing-cpp submodule and exports it as ZXING_CPP_COMMIT."
+    },
+    {
+      "id": "stb_image",
+      "vendoredIn": "zxing-wasm@3.1.6",
+      "path": "dist/reader",
+      "declaredLicense": "MIT OR Unlicense",
+      "source": "https://github.com/nothings/stb/blob/003501f6d7a8668ce8b6d875e34dd97ad0d5d5b5/LICENSE",
+      "repository": "git+https://github.com/nothings/stb.git",
+      "licenseText": "docs/licenses/texts/stb-LICENSE",
+      "note": "Image decoder compiled into dist/reader/zxing_reader.wasm (its error strings are in the file). zxing-cpp fetches stb from the default branch, unpinned, so the exact commit is unknown; the LICENSE file is unchanged since 49cbedf (2020-02-02). The console hands the reader decoded pixels, not image files."
+    }
+  ]
+}

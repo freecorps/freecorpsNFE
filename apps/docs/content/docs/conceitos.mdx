@@ -1,0 +1,72 @@
+---
+title: Conceitos
+description: Quem é dono de quê na plataforma. Organizações, projetos, empresas, ambientes, escopos e chaves de API, e como a autorização é conferida em cada chamada.
+---
+
+## Organização, projeto e empresa [#entidades]
+
+| Conceito        | O que é                                                                                |
+| --------------- | -------------------------------------------------------------------------------------- |
+| **Organização** | A conta contratante. Reúne pessoas, projetos e empresas.                               |
+| **Projeto**     | A aplicação que integra com a API. É dono das chaves de API e dos destinos de webhook. |
+| **Empresa**     | A pessoa jurídica cujos documentos a organização administra, identificada pelo CNPJ.   |
+| **Concessão**   | A autorização que liga um projeto a uma empresa, com escopos e ambientes definidos.    |
+
+Uma chave de API só alcança as empresas que o projeto recebeu por concessão. Um ID de organização, empresa ou documento na chamada é um seletor, nunca uma prova de acesso: o servidor confere a permissão a cada pedido.
+
+## Pessoas e papéis [#papeis]
+
+As pessoas entram no painel com e-mail e senha. Ter conta não dá acesso a nada: é preciso ser membro de uma organização, por criação ou por convite.
+
+| Papel       | Pode                                                                            |
+| ----------- | ------------------------------------------------------------------------------- |
+| `owner`     | Tudo, inclusive convidar admins e encerrar a organização                        |
+| `admin`     | Administrar membros, empresas e projetos e conceder qualquer escopo             |
+| `developer` | Gerir os próprios projetos e chaves, com escopos de leitura e `webhooks:manage` |
+| `operator`  | Operar documentos e emissões pelo painel                                        |
+| `viewer`    | Consultar                                                                       |
+
+## Ambientes [#ambientes]
+
+Cada chave pertence a um único ambiente, `sandbox` ou `production`, e toda chamada repete o ambiente no header `X-Environment`. Um header diferente do ambiente da chave recebe `ENVIRONMENT_DENIED`.
+
+O sandbox do produto, a homologação do fisco e a produção fiscal são coisas diferentes. No ambiente hospedado, importação e emissão rodam só em `sandbox`, e a emissão usa transporte simulado. `production` existe para uma empresa só depois que ela ativa a [captura fiscal](/docs/captura-nfe#ativar) no console, e serve à captura, aos documentos capturados, à exportação e aos webhooks dela. Uma chave de `production` para empresa sem essa ativação recebe `ENVIRONMENT_DENIED`.
+
+## Escopos [#escopos]
+
+Os escopos da chave precisam caber na concessão do projeto para a empresa.
+
+| Escopo              | Libera                                                       |
+| ------------------- | ------------------------------------------------------------ |
+| `documents:import`  | Reservar, enviar, confirmar e reprocessar importações        |
+| `documents:read`    | Consultar documentos, itens, eventos, arquivos e exportações |
+| `documents:issue`   | Emitir NFS-e e consultar emissões                            |
+| `documents:cancel`  | Cancelar NFS-e e consultar emissões                          |
+| `webhooks:manage`   | Criar, editar, testar e rotacionar destinos de webhook       |
+| `connections:read`  | Consultar a captura de NF-e                                  |
+| `connections:write` | Ativar, sincronizar, pausar e retomar a captura de NF-e      |
+| `companies:read`    | Listar e consultar empresas                                  |
+| `references:read`   | Consultar municípios do IBGE e NCM                           |
+| `registry:read`     | Consultar o cadastro de um CNPJ                              |
+
+`companies:write`, `certificates:read` e `certificates:write` existem para operações feitas pelo painel e ainda não têm rota REST. A tabela completa, rota por rota, está em [Operações da API](/docs/contrato#operacoes).
+
+## Chaves de API [#chaves]
+
+- A chave começa com `fnfe_` e é exibida uma única vez, ao ser criada ou rotacionada. A plataforma guarda só o hash.
+- Envie-a em `Authorization: Bearer SUA_CHAVE`. A sessão do painel não substitui a chave.
+- Toda chave tem data de expiração. Para renovar, crie uma chave nova e revogue a anterior.
+- Uma chave alcança até 50 empresas do projeto.
+- Na rotação, você escolhe quanto tempo a chave anterior continua válida, até 24 horas, para trocar sem parar a integração.
+- Revogar a chave, desativar o projeto ou retirar a concessão corta o acesso nas chamadas seguintes. Reativar o projeto não revive as chaves antigas.
+
+## Documento, operação e versão [#documento]
+
+| Termo         | Significado                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| **Documento** | A nota normalizada: resumo, itens, eventos, arquivos e o XML original.                           |
+| **Versão**    | Cada processamento do documento. Tem `id` e o `sha256` dos bytes.                                |
+| **Operação**  | O trabalho assíncrono aceito pela plataforma, com estado e tentativas próprios.                  |
+| **Revisão**   | `resourceVersion`, um inteiro que sobe a cada mudança pública do recurso. Os webhooks o repetem. |
+
+A identidade de um documento combina organização, empresa, ambiente, modelo e chave de acesso. Importar o mesmo XML de novo não cria outro documento.

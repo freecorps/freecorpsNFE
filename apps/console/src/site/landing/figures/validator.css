@@ -1,0 +1,179 @@
+/* Station 2: index, scan, report, check. One 4.8 s cycle: the belt moves the
+   sheets one pitch (0 to 38%), the curtain sweeps the sheet under the arch
+   (45 to 70%) while the console reads, then the sheet is checked. */
+.fig-validator .veil-sheet {
+  fill: var(--glow);
+  fill-opacity: 0.12;
+  stroke: var(--glow);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-soft);
+}
+.fig-validator .veil-line {
+  stroke: var(--glow-hi);
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  filter: url(#iso-glow);
+  visibility: hidden;
+}
+.fig-validator .sheet.raw .paper {
+  fill: #1a2720;
+  stroke: #7d9287;
+}
+.fig-validator .sheet.raw .ink {
+  stroke: #7d9287;
+}
+.fig-validator .emitter {
+  fill: var(--glow);
+  filter: url(#iso-glow);
+}
+.fig-validator .bar-track {
+  fill: #0f1a12;
+}
+.fig-validator .bar {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+}
+.fig-validator .res-run,
+.fig-validator .checked-copy {
+  visibility: hidden;
+}
+.fig-validator .count {
+  fill: var(--glow);
+  font-size: 4px;
+}
+.fig-validator .console {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fig-validator .ride {
+    animation: validator-ride 4.8s ease-in-out infinite;
+  }
+  .fig-validator .ribs {
+    animation: validator-ribs 4.8s ease-in-out infinite;
+  }
+  .fig-validator .plain-copy {
+    animation: validator-plain 4.8s steps(1, end) infinite;
+  }
+  .fig-validator .checked-copy {
+    animation: validator-checked 4.8s steps(1, end) infinite;
+  }
+  .fig-validator .veil-sheet {
+    animation: validator-veil 4.8s ease-in-out infinite;
+  }
+  .fig-validator .veil-line {
+    animation: validator-sweep 4.8s linear infinite;
+  }
+  .fig-validator .bar {
+    animation: validator-bar 4.8s linear infinite;
+  }
+  .fig-validator .res-run {
+    animation: validator-run 4.8s steps(1, end) infinite;
+  }
+  .fig-validator .res-ok {
+    animation: validator-ok 4.8s steps(1, end) infinite;
+  }
+}
+
+@keyframes validator-ride {
+  0% {
+    transform: translate(0, 0);
+  }
+  38%,
+  100% {
+    transform: translate(31.18px, 18px);
+  }
+}
+@keyframes validator-ribs {
+  0% {
+    transform: translate(0, 0);
+  }
+  38%,
+  100% {
+    transform: translate(36px, 0);
+  }
+}
+@keyframes validator-plain {
+  0% {
+    visibility: visible;
+  }
+  70%,
+  100% {
+    visibility: hidden;
+  }
+}
+@keyframes validator-checked {
+  0% {
+    visibility: hidden;
+  }
+  70%,
+  100% {
+    visibility: visible;
+  }
+}
+@keyframes validator-run {
+  0%,
+  70%,
+  100% {
+    visibility: hidden;
+  }
+  45% {
+    visibility: visible;
+  }
+}
+@keyframes validator-ok {
+  0%,
+  70%,
+  100% {
+    visibility: visible;
+  }
+  45% {
+    visibility: hidden;
+  }
+}
+@keyframes validator-veil {
+  0%,
+  42%,
+  78%,
+  100% {
+    fill-opacity: 0.08;
+  }
+  50%,
+  68% {
+    fill-opacity: 0.22;
+  }
+}
+@keyframes validator-sweep {
+  0%,
+  45% {
+    visibility: hidden;
+    transform: translateY(0);
+  }
+  45.01% {
+    visibility: visible;
+    transform: translateY(0);
+  }
+  69.99% {
+    visibility: visible;
+    transform: translateY(32px);
+  }
+  70%,
+  100% {
+    visibility: hidden;
+    transform: translateY(32px);
+  }
+}
+@keyframes validator-bar {
+  0%,
+  45% {
+    transform: scaleX(1);
+  }
+  45.01% {
+    transform: scaleX(0);
+  }
+  70%,
+  100% {
+    transform: scaleX(1);
+  }
+}

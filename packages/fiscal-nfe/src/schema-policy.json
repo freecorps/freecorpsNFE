@@ -1,0 +1,1713 @@
+{
+  "catalogSha256": "4ffaa6a79dc4e99f6e07662f8629ffe9adb8fbb68ca59e920c70ed197765a4d1",
+  "decimalFields": {
+    "imposto.COFINS.COFINSAliq.pCOFINS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.COFINS.COFINSAliq.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINS.COFINSAliq.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINS.COFINSOutr.pCOFINS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.COFINS.COFINSOutr.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204v"
+    },
+    "imposto.COFINS.COFINSOutr.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.COFINS.COFINSOutr.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINS.COFINSOutr.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINS.COFINSQtde.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204v"
+    },
+    "imposto.COFINS.COFINSQtde.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.COFINS.COFINSQtde.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINSST.pCOFINS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.COFINSST.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204"
+    },
+    "imposto.COFINSST.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104"
+    },
+    "imposto.COFINSST.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.COFINSST.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.IBSCBS.gAjusteCompet.vCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gAjusteCompet.vIBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresIBSZFM.vCredPresIBSZFM": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gCBSCredPres.pCredPres": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gCBSCredPres.vCredPres": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gCBSCredPres.vCredPresCondSus": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gIBSCredPres.pCredPres": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gIBSCredPres.vCredPres": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.gIBSCredPres.vCredPresCondSus": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gCredPresOper.vBCCredPres": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gEstornoCred.vCBSEstCred": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gEstornoCred.vIBSEstCred": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gALCZFMCBS.pAliqEfetRegCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gALCZFMCBS.vTribRegCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gDevTrib.pDevTrib": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gDevTrib.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gDif.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gDif.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gRed.pAliqEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.gRed.pRedAliq": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.pCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gCBS.vCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gDevTrib.pDevTrib": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gDevTrib.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gDif.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gDif.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gRed.pAliqEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.gRed.pRedAliq": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.pIBSMun": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSMun.vIBSMun": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gDevTrib.pDevTrib": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gDevTrib.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gDif.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gDif.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gRed.pAliqEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.gRed.pRedAliq": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.pIBSUF": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gIBSUF.vIBSUF": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.pAliqCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.pAliqIBSMun": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.pAliqIBSUF": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.vTribCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.vTribIBSMun": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribCompraGov.vTribIBSUF": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegIBSMun": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.pAliqEfetRegIBSUF": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.vTribRegCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.vTribRegIBSMun": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.gTribRegular.vTribRegIBSUF": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.vBC": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBS.vIBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoPadrao.adRemCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoPadrao.qBCMono": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoPadrao.vCBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoRet.vCBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoReten.adRemCBSReten": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoReten.qBCMonoReten": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gMonoReten.vCBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gpBioDiferenca.qBCBioComb": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdRem.gpBioDiferenca.vCBSDiferenca": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoPadrao.pAliqMonoCBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoPadrao.vBCMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoPadrao.vCBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoRet.vCBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoReten.pAliqMonoReten": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoReten.vBCMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gMonoReten.vCBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gpBioDiferenca.qBCBioComb": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gCBSMonoAdValorem.gpBioDiferenca.vCBSDiferenca": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoPadrao.adRemIBS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoPadrao.qBCMono": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoPadrao.vIBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoRet.vIBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoReten.adRemIBSReten": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoReten.qBCMonoReten": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gMonoReten.vIBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gpBioDiferenca.qBCBioComb": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdRem.gpBioDiferenca.vIBSDiferenca": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.pAliqMonoMun": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.pAliqMonoUF": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.vBCMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.vIBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.vIBSMonoMun": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoPadrao.vIBSMonoUF": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoRet.vIBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoReten.pAliqMonoReten": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoReten.vBCMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gMonoReten.vIBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gpBioDiferenca.qBCBioComb": {
+      "scale": 4,
+      "xsdType": "TDec1104RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.gIBSMonoAdValorem.gpBioDiferenca.vIBSDiferenca": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.vTotCBSMonoItem": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gIBSCBSMono.vTotIBSMonoItem": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gTransfCred.vCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IBSCBS.gTransfCred.vIBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.ICMS.ICMS00.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS00.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS00.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS00.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS00.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS02.adRemICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS02.qBCMono": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS02.vICMSMono": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS10.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS10.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS10.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS10.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS10.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS10.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vBCFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS10.vICMSSTDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS15.adRemICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS15.adRemICMSReten": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS15.pRedAdRem": {
+      "scale": 2,
+      "xsdType": "TDec_0302Max100"
+    },
+    "imposto.ICMS.ICMS15.qBCMono": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS15.qBCMonoReten": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS15.vICMSMono": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS15.vICMSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS20.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS20.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS20.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS20.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS20.vBCFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS20.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS20.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS20.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS30.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS30.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS30.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS30.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS30.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS30.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS30.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS30.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS30.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS40.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Max100"
+    },
+    "imposto.ICMS.ICMS51.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS51.pFCPDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS51.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS51.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS51.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vBCFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vFCPDif": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vFCPEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vICMSDif": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS51.vICMSOp": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS53.adRemICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS53.adRemICMSDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS53.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Max100"
+    },
+    "imposto.ICMS.ICMS53.qBCMono": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS53.qBCMonoDif": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS53.vICMSMono": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS53.vICMSMonoDif": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS53.vICMSMonoOp": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.pFCPSTRet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS60.pICMSEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS60.pRedBCEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS60.pST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS60.vBCEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vBCFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vBCSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vICMSEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vICMSSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS60.vICMSSubstituto": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS61.adRemICMSRet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS61.qBCMonoRet": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.ICMS.ICMS61.vICMSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS70.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS70.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS70.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS70.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS70.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS70.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS70.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vBCFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS70.vICMSSTDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.pDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Max100"
+    },
+    "imposto.ICMS.ICMS90.pFCP": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.pFCPDif": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS90.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMS90.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMS90.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vBCFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vFCPDif": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vFCPEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMSDif": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMSOp": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMS90.vICMSSTDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.pBCOp": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSPart.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSPart.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSPart.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSPart.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSPart.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSPart.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSPart.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPart.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSPrevistoPagtoAntecip.vICMSPrevisto": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN101.pCredSN": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN101.vCredICMSSN": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN201.pCredSN": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN201.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN201.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN201.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN201.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN201.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN201.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN201.vCredICMSSN": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN201.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN201.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN202.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN202.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN202.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN202.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN202.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN202.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN202.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN202.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.pFCPSTRet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN500.pICMSEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN500.pRedBCEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN500.pST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN500.vBCEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vBCFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vBCSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vICMSEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vICMSSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN500.vICMSSubstituto": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.pCredSN": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN900.pFCPST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN900.pICMS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN900.pICMSST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMS.ICMSSN900.pMVAST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN900.pRedBC": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN900.pRedBCST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSSN900.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vBCFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vCredICMSSN": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSSN900.vICMSST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.pFCPSTRet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSST.pICMSEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSST.pRedBCEfet": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSST.pST": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04Opc"
+    },
+    "imposto.ICMS.ICMSST.vBCEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vBCFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vBCSTDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vBCSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vICMSEfet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vICMSSTDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vICMSSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMS.ICMSST.vICMSSubstituto": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMSUFDest.pFCPUFDest": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMSUFDest.pICMSInter": {
+      "scale": 2,
+      "xsdType": "inline-pICMSInter"
+    },
+    "imposto.ICMSUFDest.pICMSInterPart": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMSUFDest.pICMSUFDest": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ICMSUFDest.vBCFCPUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMSUFDest.vBCUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMSUFDest.vFCPUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMSUFDest.vICMSUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ICMSUFDest.vICMSUFRemet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.II.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.II.vDespAdu": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.II.vII": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.II.vIOF": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.IPI.IPITrib.pIPI": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.IPI.IPITrib.qUnid": {
+      "scale": 4,
+      "xsdType": "TDec_1204v"
+    },
+    "imposto.IPI.IPITrib.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.IPI.IPITrib.vIPI": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.IPI.IPITrib.vUnid": {
+      "scale": 4,
+      "xsdType": "TDec_1104"
+    },
+    "imposto.IS.adRemIS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IS.pIS": {
+      "scale": 4,
+      "xsdType": "TDec_0302_04RTC"
+    },
+    "imposto.IS.qTrib": {
+      "scale": 4,
+      "xsdType": "TDec_1104OpRTC"
+    },
+    "imposto.IS.vBCIS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.IS.vIS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "imposto.ISSQN.vAliq": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.ISSQN.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ISSQN.vDeducao": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.ISSQN.vDescCond": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.ISSQN.vDescIncond": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.ISSQN.vISSQN": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.ISSQN.vISSRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.ISSQN.vOutro": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.PIS.PISAliq.pPIS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.PIS.PISAliq.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.PIS.PISAliq.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.PIS.PISOutr.pPIS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.PIS.PISOutr.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204v"
+    },
+    "imposto.PIS.PISOutr.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.PIS.PISOutr.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.PIS.PISOutr.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.PIS.PISQtde.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204v"
+    },
+    "imposto.PIS.PISQtde.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104v"
+    },
+    "imposto.PIS.PISQtde.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.PISST.pPIS": {
+      "scale": 4,
+      "xsdType": "TDec_0302a04"
+    },
+    "imposto.PISST.qBCProd": {
+      "scale": 4,
+      "xsdType": "TDec_1204"
+    },
+    "imposto.PISST.vAliqProd": {
+      "scale": 4,
+      "xsdType": "TDec_1104"
+    },
+    "imposto.PISST.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "imposto.PISST.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "imposto.vTotTrib": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.IBSCBSTot.gCBS.vCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gCBS.vCredPres": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gCBS.vCredPresCondSus": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gCBS.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gCBS.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gEstornoCred.vCBSEstCred": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gEstornoCred.vIBSEstCred": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSMun.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSMun.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSMun.vIBSMun": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSUF.vDevTrib": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSUF.vDif": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.gIBSUF.vIBSUF": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.vCredPres": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.vCredPresCondSus": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gIBS.vIBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vCBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vCBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vCBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vIBSMono": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vIBSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.gMono.vIBSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.IBSCBSTot.vBCIBSCBS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.ICMSTot.qBCMono": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.qBCMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.qBCMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vBCST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vDesc": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vFCP": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vFCPST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vFCPSTRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vFCPUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vFrete": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSDeson": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSMono": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSMonoRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSMonoReten": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSUFDest": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vICMSUFRemet": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vII": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vIPI": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vIPIDevol": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vNF": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vOutro": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vProd": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vST": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vSeg": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ICMSTot.vTotTrib": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.ISSQNtot.vBC": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vDeducao": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vDescCond": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vDescIncond": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vISS": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vISSRet": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vOutro": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISSQNtot.vServ": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.ISTot.vIS": {
+      "scale": 2,
+      "xsdType": "TDec1302RTC"
+    },
+    "total.retTrib.vBCIRRF": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vBCRetPrev": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vIRRF": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vRetCOFINS": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vRetCSLL": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vRetPIS": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.retTrib.vRetPrev": {
+      "scale": 2,
+      "xsdType": "TDec_1302Opc"
+    },
+    "total.vNFTot": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    },
+    "total.vProdLiqTot": {
+      "scale": 2,
+      "xsdType": "TDec_1302"
+    }
+  }
+}

@@ -1,0 +1,115 @@
+---
+title: Importar XML pelo painel
+description: Envie o XML de uma NF-e pelo painel, sem programar e sem certificado, e veja a nota com itens e o original guardado. Começa pela empresa de demonstração, com um XML de exemplo.
+---
+
+Este guia é para quem opera pelo painel. Quem vai integrar um sistema usa a [primeira chamada](/docs/primeira-chamada) e o guia [Importar XML pela API](/docs/importar-xml), que descrevem o mesmo processamento com uma chave de API.
+
+## Antes de começar [#requisitos]
+
+- **Uma conta e uma organização.** <a href="/signup?redirect=%2Fconsole%3Ftarefa%3Dimportar">Crie a conta</a>, confirme o código recebido por e-mail e crie a organização. Quem foi convidado entra na organização de quem convidou.
+- **Um papel que importa.** Proprietário (`owner`), Administrador (`admin`) e Operador (`operator`) importam pelo painel; Leitura (`viewer`) consulta os documentos e Desenvolvedor (`developer`) trabalha pelas integrações. Os papéis estão em [Conceitos](/docs/conceitos#papeis).
+- **Uma empresa com acesso.** Para experimentar, use a empresa de demonstração: em <Ui>Primeiros passos</Ui>, clique em <Ui>Explorar demonstração</Ui>. Ela é fictícia e vem com um XML de exemplo. Para importar notas suas, cadastre a empresa em <Ui>Empresas</Ui> › <Ui>Cadastrar empresa</Ui>: informe o CNPJ e clique em <Ui>Consultar CNPJ</Ui> para preencher nome e endereço com o cadastro da Receita Federal, consultado pelo OpenCNPJ, ou em <Ui>Preencher manualmente</Ui>. Confira os dados preenchidos e desmarque <Ui>Usar nome</Ui> ou <Ui>Usar endereço</Ui> para digitar o seu; alterar um campo consultado também o torna digitado. Quando a fonte não encontra o CNPJ, está indisponível, não consulta o formato alfanumérico ou a cota acabou, o preenchimento manual continua disponível. Só Proprietário e Administrador criam a demonstração e cadastram empresas; um Operador importa nas empresas a que recebeu acesso, e quem administra a organização concede esse acesso.
+- **Um XML da empresa.** A NF-e completa precisa ter a empresa como emitente ou destinatária; o resumo, como emitente; o evento, como autora ou como o CNPJ da chave de acesso.
+- **Nenhum certificado.** A importação lê o arquivo que você envia e não consulta o fisco.
+
+Tem só o DANFE, sem o XML? A [consulta pelo DANFE](/docs/consultar-danfe) confere a chave de acesso e abre o resumo da nota no Portal da NF-e, sem importar nada.
+
+No serviço hospedado, a importação pelo painel roda no ambiente de teste, o `sandbox`, indicado no cabeçalho da página como <Ui>Documentos / Sandbox</Ui>. Os [ambientes](/docs/conceitos#ambientes) explicam o que isso muda.
+
+## Importar [#importar]
+
+<Steps>
+<Step>
+
+### Abra a importação [#abrir]
+
+No menu, em <Ui>Trabalho fiscal</Ui>, abra <Ui>Importar XML</Ui>. No campo <Ui>Empresa participante do XML</Ui>, escolha a empresa. No Início, a tarefa <Ui>Importar XML</Ui> leva ao mesmo lugar, já com a empresa escolhida.
+
+</Step>
+<Step>
+
+### Envie o XML de exemplo ou os seus arquivos [#enviar]
+
+Na empresa de demonstração, clique em <Ui>Importar o XML de exemplo</Ui>. O painel busca a NF-e sintética e a envia como enviaria um arquivo seu; nada precisa ser baixado. Se preferir conferir o arquivo antes, o link <Ui>baixe o XML sintético</Ui> entrega o mesmo XML.
+
+Com arquivos seus, arraste os XMLs para a área <Ui>Arraste os XMLs aqui ou escolha os arquivos</Ui> ou clique nela para escolhê-los. Valem de 1 a 20 arquivos por importação, com até 2 MiB cada: NF-e modelo 55 (nota completa, resumo ou evento). ZIP não é aceito. Depois clique em <Ui>Importar arquivos</Ui>.
+
+Enquanto os arquivos são lidos, o botão mostra <Ui>Lendo arquivos…</Ui>; durante o envio, cada arquivo mostra a própria barra de progresso. Mantenha a aba aberta até o fim do envio.
+
+</Step>
+<Step>
+
+### Confira o resultado [#resultado]
+
+Com os bytes entregues, o processamento continua no servidor e a tela acompanha cada arquivo. O resultado esperado do exemplo é um arquivo marcado como <Ui>Importado</Ui>, com o texto "Documento registrado" e o link <Ui>Consultar documento</Ui>. A importação inteira aparece como <Ui>Concluída</Ui>, com a data e a origem <Ui>Console</Ui>.
+
+| O arquivo mostra                                     | O que aconteceu                                                                                                                                                                                                                                                              |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <Ui>Importado</Ui>                                   | O XML virou um documento ou uma nova versão de um documento que já existia. Um lote NFS-e ABRASF importado antes da retirada desse leiaute mostra <Ui>Lote de NFS-e importado</Ui>, com um link por nota.                                                                    |
+| <Ui>Nota já importada antes; nada foi duplicado</Ui> | Os mesmos bytes já estavam na empresa. Nada muda e não há o que fazer.                                                                                                                                                                                                       |
+| <Ui>Importado com ressalva</Ui>                      | Outro XML completo da mesma nota já existia. Os dois originais ficam guardados e a versão publicada não muda. Compare os dois em <Ui>Arquivos e histórico</Ui>, no documento. A versão já publicada continua publicada; importar ou reprocessar o outro XML não a substitui. |
+| <Ui>XML recusado</Ui>                                | O arquivo foi lido e guardado, mas não virou documento. A linha diz o motivo em português e traz o <Ui>Código para suporte</Ui>, que vai no [pedido de ajuda](/docs/ajuda#pedir-ajuda). Veja [quando um XML é recusado](#recusado).                                          |
+| <Ui>Falha no processamento</Ui>                      | O servidor não concluiu. A linha diz o motivo; quando é cota ou vigência do plano, aponta <Ui>Uso e limites</Ui>, que quem administra a organização acompanha.                                                                                                               |
+| <Ui>Processamento pausado</Ui>                       | O processamento parou e pode continuar: a linha oferece <Ui>Retomar processamento de</Ui> com o nome do arquivo.                                                                                                                                                             |
+
+Importar prova que o XML foi lido e preservado. Não prova que a nota foi autorizada pelo fisco: a situação fiscal mostrada vem do que está no arquivo.
+
+</Step>
+</Steps>
+
+## Onde a nota fica [#onde]
+
+- **Documentos.** <Ui>Consultar documento</Ui> abre a nota em <Ui>Documentos</Ui>, na mesma empresa e no mesmo ambiente: <Ui>Dados</Ui>, <Ui>Itens</Ui> e, em <Ui>Arquivos e histórico</Ui>, o XML original com <Ui>Baixar original</Ui> e <Ui>Exibir XML como texto</Ui>. O original é guardado byte a byte, como foi enviado. Um resumo ou um evento não contém a nota completa, e a tela avisa.
+- **Importações recentes.** A lista mostra as dez últimas importações da empresa, com data, número de arquivos, resultado e origem (<Ui>Console</Ui> ou o nome da integração). Abrir uma importação mostra de novo o resultado de cada arquivo. As importações feitas por integrações aparecem na lista, mas só são alteradas pela própria integração.
+
+Para repetir o exemplo, clique em <Ui>Nova importação</Ui> e importe-o de novo. A nota volta como "Nota já importada antes; nada foi duplicado", porque a plataforma identifica o XML pelo conteúdo, não pelo nome do arquivo. O mesmo vale para os seus arquivos.
+
+## Quando algo não sai como esperado [#recuperar]
+
+### Um XML foi recusado [#recusado]
+
+Uma recusa fica na importação, com o original guardado, e não bloqueia os outros arquivos. Os motivos mais comuns:
+
+| Código para suporte                                                             | Causa e o que fazer                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `COMPANY_MISMATCH`                                                              | O XML não tem a empresa escolhida no papel exigido (veja [Antes de começar](#requisitos)). Escolha a empresa certa e importe de novo. O XML de exemplo só vale para a empresa de demonstração.                                           |
+| `XML_MALFORMED`, `XML_ENCODING_UNSUPPORTED`                                     | O arquivo está truncado, corrompido ou fora de UTF-8. Obtenha o XML original de novo, sem abrir e salvar por um editor que mude a codificação.                                                                                           |
+| `XML_MODEL_UNSUPPORTED`, `XML_NAMESPACE_UNSUPPORTED`, `NFSE_LAYOUT_UNSUPPORTED` | Não é NF-e modelo 55. NFC-e, CT-e, MDF-e e NFS-e, inclusive lotes ABRASF, não fazem parte da importação.                                                                                                                                 |
+| `XML_TOO_LARGE`, `XML_UNSAFE`                                                   | O arquivo passa de 2 MiB ou usa DTD e entidades. Envie o XML como o fisco o entregou.                                                                                                                                                    |
+| `IDENTITY_INVALID`                                                              | A chave de acesso não confere com o conteúdo. O arquivo foi alterado; obtenha o original.                                                                                                                                                |
+| `XML_SCHEMA_UNSUPPORTED`, `XML_EVENT_UNSUPPORTED`                               | A versão do leiaute ou o tipo de evento ainda não é lido. Depois de uma atualização do leitor, <Ui>Reprocessar recusas técnicas</Ui>, na seção <Ui>Arquivos sem documento reconhecido</Ui> de <Ui>Documentos</Ui>, reabre essas recusas. |
+
+Corrigido o arquivo, clique em <Ui>Nova importação</Ui> e envie-o de novo. Reenviar o mesmo arquivo recusado repete o mesmo resultado; por isso o painel só oferece <Ui>Reprocessar</Ui> quando o leitor mudou desde a recusa. Um lote NFS-e ABRASF importado antes da retirada desse leiaute também não oferece <Ui>Reprocessar</Ui>: a linha diz "A plataforma não lê mais lotes NFS-e ABRASF. As notas deste lote continuam disponíveis para consulta." Para os demais casos, a linha já diz o motivo em português; o código serve para o [suporte](/docs/ajuda#pedir-ajuda) e para o [resultado pela API](/docs/importar-xml#resultados).
+
+### O envio foi interrompido [#interrompido]
+
+A conexão caiu, a aba fechou ou o envio ficou 30 segundos sem progresso. Nada se perde: cada arquivo guarda o ponto em que parou, e a importação continua na lista de recentes.
+
+1. Abra a importação em <Ui>Importações recentes</Ui>. A linha de cada arquivo diz o que falta.
+2. Se o painel pedir o XML original de um arquivo, escolha de novo o mesmo arquivo. O navegador não guarda os arquivos ao recarregar a página. O painel só aceita o arquivo com o mesmo nome e o mesmo conteúdo do que foi reservado. Escolha de uma vez todos os que faltam.
+3. Clique em <Ui>Retomar esta importação</Ui>. O painel envia só o que ainda não chegou e confirma o que já chegou, sem repetir nada.
+
+Uma importação iniciada vale por 24 horas. Depois disso o painel diz que a reserva venceu: a reserva é o registro que o servidor cria antes de receber os bytes, e vencida ela não aceita mais envio. Clique em <Ui>Nova importação</Ui> e escolha os arquivos de novo. Se a linha disser que o conteúdo do arquivo escolhido difere do reservado, escolha o original; para importar o arquivo novo, use <Ui>Nova importação</Ui>.
+
+### Cancelar o que ainda não foi enviado [#cancelar]
+
+<Ui>Cancelar uploads pendentes</Ui> interrompe a sequência e encerra os envios que ainda não
+terminaram; cada arquivo cancelado fica como <Ui>Envio não concluído</Ui>. O que o servidor já
+aceitou continua processando e não é desfeito; um documento registrado continua em
+<Ui>Documentos</Ui>. Enquanto o cancelamento aguarda resposta, nada novo começa.
+
+### O acesso mudou [#acesso]
+
+Se a linha disser que o acesso mudou, seu papel ou o acesso da empresa foi alterado durante a importação. <Ui>Retomar esta importação</Ui> confere de novo; se a recusa continuar, peça a quem administra a organização para conferir o seu papel em <Ui>Membros</Ui> e o acesso à empresa na aba <Ui>Acesso</Ui> dela.
+
+## Limites [#limites]
+
+- Até 20 arquivos por importação e 2 MiB por arquivo. ZIP não é aceito.
+- Cada arquivo confirmado conta no uso do plano do ambiente da importação, em arquivos e bytes, inclusive o do exemplo, os recusados e os já importados antes. Quem administra a organização acompanha o saldo em <Ui>Uso e limites</Ui>.
+- Só NF-e modelo 55. A importação de lotes NFS-e ABRASF foi retirada: um lote ABRASF é recusado com `XML_NAMESPACE_UNSUPPORTED`. As NFS-e importadas antes continuam em <Ui>Documentos</Ui> só para leitura, com consulta, download e exportação. A NFS-e nacional e outros leiautes municipais não fazem parte da importação.
+
+## Próximos passos [#proximos]
+
+- Para que seu sistema receba a nota importada, faça a [primeira chamada](/docs/primeira-chamada) pela API e depois configure [webhooks](/docs/webhooks).
+- Para receber as NF-e emitidas contra o CNPJ da sua empresa sem enviar arquivo, veja [Captura de NF-e](/docs/captura-nfe).

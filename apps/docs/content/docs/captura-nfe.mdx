@@ -1,0 +1,148 @@
+---
+title: Captura de NF-e
+description: Receba as NF-e emitidas contra o CNPJ da empresa pela distribuição DF-e da Receita. Em produção, cada empresa ativa a própria captura no console, com o certificado A1 dela. A plataforma só lê a distribuição e não manifesta.
+contract: true
+---
+
+<Callout title="Onde a captura está hoje">
+  A captura consulta a Receita em produção, empresa por empresa, depois que quem administra a
+  empresa a ativa no console. A primeira captura real no site foi de uma empresa piloto, em
+  22/10/2026. A plataforma não registra Ciência da Operação nem outra manifestação do destinatário.
+</Callout>
+
+## Como funciona [#funcionamento]
+
+A captura consulta a distribuição DF-e da Receita em nome da empresa e guarda o que a fonte entrega: resumos, notas completas e eventos de interesse do destinatário. Cada item vira um documento, como numa [importação](/docs/importar-xml), no ambiente da captura.
+
+A fonte não garante o XML completo de toda nota nem o histórico inteiro. Ela guarda cada documento por 90 dias depois de recebê-lo. Ninguém informa NSU: a captura começa do primeiro registro que a fonte ainda tem e segue a fila sozinha.
+
+| Ambiente     | O que a captura faz                                                                                                               |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `sandbox`    | Não consulta a Receita: a consulta para com `FISCAL_TRANSPORT_DISABLED`, sem documento. Serve para ensaiar comandos e permissões. |
+| `production` | Consulta a Receita com o certificado A1 da empresa, depois que ela ativa a captura fiscal.                                        |
+
+A captura de NFS-e, NFC-e e CT-e não faz parte da 1.0.
+
+## Requisitos [#requisitos]
+
+- Empresa declarada. A empresa de demonstração não usa captura e recebe `CAPTURE_DEMONSTRATION_DENIED`.
+- Certificado A1 ativo da própria empresa, com o mesmo CNPJ e dentro da validade, enviado pelo painel.
+- Em produção, a captura fiscal ativada no console, como descrito abaixo.
+- Pela API, um projeto com concessão da empresa no ambiente e uma chave com `connections:read` e `connections:write`.
+
+## Ativar a captura fiscal [#ativar]
+
+No Início do painel, a tarefa <Ui>Capturar NF-e</Ui> pede a empresa, o certificado A1 e duas etapas separadas. <Ui>Autorizar a captura</Ui> é ativar a captura fiscal descrita aqui; <Ui>Iniciar a captura</Ui> é a [primeira consulta](#iniciar). Concluída a tarefa, o link <Ui>Acompanhar a captura</Ui> abre a aba <Ui>Captura</Ui> da empresa, onde ficam o estado, a próxima consulta e os códigos.
+
+Na empresa, abra a aba <Ui>Captura</Ui>. O cartão <Ui>Captura fiscal (Produção)</Ui> aparece quando a Freecorps oferece a captura fiscal no ambiente. Só `owner` e `admin` ativam, mudam o intervalo e desativam; os outros papéis veem a situação.
+
+<Steps>
+<Step>
+
+### Escolha o intervalo mínimo [#intervalo-minimo]
+
+De 1 a 24 horas. É quanto a captura espera, depois de chegar ao fim da fila, para consultar de novo. Aumente se outros sistemas, como o ERP ou o contador, consultam o mesmo CNPJ. Depois de ativar, <Ui>Alterar intervalo</Ui> muda o valor sem desativar.
+
+</Step>
+<Step>
+
+### Aceite os termos [#termos]
+
+O console mostra a versão vigente dos termos da captura fiscal. O aceite fica registrado com a versão, a pessoa e a hora, e o cartão mostra depois quem aceitou e quando.
+
+</Step>
+<Step>
+
+### Ative [#ativar-agora]
+
+<Ui>Ativar captura fiscal</Ui> libera a empresa em produção. Ativar **revoga as chaves de API de
+produção** que alcançam a empresa: uma chave criada antes não passa a funcionar sozinha. Se uma
+integração for usar a captura ou os documentos de produção, gere chaves novas de produção depois de
+ativar.
+
+</Step>
+</Steps>
+
+Ativar não consulta nada. A primeira consulta sai quando alguém inicia a captura.
+
+## Iniciar [#iniciar]
+
+No console, `owner`, `admin` ou `operator` clica em <Ui>Iniciar captura fiscal</Ui>. Pela API, uma chave de produção chama <Op id="controlCapture" /> com `action: "activate"`. Cada CNPJ tem um único responsável por ambiente: uma segunda ativação por outro projeto recebe `STREAM_CONFLICT`. Uma captura iniciada por uma integração aparece no console, mas só a API dessa integração a controla. A exceção é aceitar a perda de uma [lacuna](#lacunas).
+
+Os documentos capturados ficam em <Ui>Documentos</Ui>, na aba <Ui>Produção</Ui> da empresa. Pela API, uma chave de produção com `documents:read` os lê; <Op id="listDocuments" /> com `source=distribution-xml` lista só os capturados.
+
+## Intervalo e fila pendente [#agenda]
+
+Depois da primeira consulta, a captura agenda a seguinte sozinha, sem ação de ninguém:
+
+| Situação                                     | Próxima consulta                                       |
+| -------------------------------------------- | ------------------------------------------------------ |
+| A fonte ainda tem documentos na fila         | Um segundo depois                                      |
+| A fila chegou ao fim                         | Depois do intervalo mínimo da empresa, de 1 a 24 horas |
+| Receita fora do ar (108 ou 109)              | Uma hora depois                                        |
+| Bloqueio por consumo indevido (656)          | Só por retomada, depois de uma hora                    |
+| Busca de um registro que faltou na sequência | Um segundo depois, até 6 buscas por hora               |
+
+O intervalo mínimo vale só no fim da fila: uma empresa com muitos documentos pendentes recebe todos em sequência. `nextAllowedAt` traz o instante da próxima consulta permitida. `sync` pede uma consulta, sem antecipar essa janela. `sourceMaxNsu` é o último NSU que a Receita informou (`maxNSU`): enquanto `checkpoint` estiver abaixo dele, ainda há documentos para receber. Ele fica `null` até a primeira consulta respondida.
+
+A captura em Produção exige um plano vigente atribuído pela Freecorps, com cotas de consultas (ou notas, no Gratuito) e bytes, inclusive no plano gratuito. Cada consulta admitida conta na cota de capturas, e os bytes recebidos contam na cota de volume, no saldo de Produção. No plano Gratuito, a Produção conta notas em vez de consultas: até 100 notas novas por mês, somando importação e captura, e cada chave de acesso nova da empresa conta uma vez, com resumo, XML completo e eventos juntos. Uma consulta já admitida entra inteira, mesmo que passe de 100. O Sandbox tem saldo próprio e não gasta a cota de Produção. Com a cota esgotada, a captura para em atenção com `QUOTA_EXCEEDED` e volta sozinha quando houver saldo e plano elegível. Os documentos já recebidos continuam disponíveis para consulta e exportação.
+
+## Nota só com resumo [#resumo]
+
+Uma nota pode chegar só como resumo (`resNFe`), com `completeness: "summary"`: chave, emitente e valor, sem itens. A Receita pode liberar o XML completo depois que a empresa registra a Ciência da Operação, fora da plataforma, e ele pode chegar numa consulta seguinte. No console, a nota aparece como <Ui>Só resumo, sem itens</Ui>, e o filtro <Ui>Conteúdo: Só resumo, sem itens</Ui> lista só essas notas.
+
+## Estados e códigos [#codigos]
+
+<Op id="getCapture" /> traz `state` (`active`, `paused` ou `attention`) e `code`, o motivo. Quando a
+captura entra em atenção, a plataforma envia `connection.attention_required` aos destinos de webhook
+do projeto dono da captura. Uma captura iniciada no console não tem destinos, e o aviso aparece no
+painel e no Início do console.
+
+- `SOURCE_COOLDOWN`: a Receita só aceita a próxima consulta depois de um intervalo. Nada a fazer: a captura consulta sozinha em `nextAllowedAt`.
+- `SOURCE_CONSUMPTION_BLOCKED`: a Receita bloqueou o CNPJ por uma hora por consumo indevido (656), em geral porque outro sistema consulta o mesmo CNPJ. Espere `nextAllowedAt` e retome. Antes disso, a retomada é recusada.
+- `CAPTURE_FISCAL_DENIED`: a ativação ou o certificado A1 da empresa deixou de valer antes da consulta, e nada foi enviado à Receita. Confira a captura fiscal e o certificado da empresa e retome.
+- `CERTIFICATE_UNAVAILABLE`: a empresa não tem A1 próprio válido. Envie ou renove o A1. A captura volta sozinha quando o certificado é ativado.
+- `PLAN_REQUIRED`: falta plano atribuído com cotas de consultas (ou notas, no Gratuito) e bytes para Produção. Um gestor da organização deve [solicitar o plano à Freecorps](/docs/ajuda#pedir-ajuda). A atribuição do plano rearma a captura.
+- `PLAN_INACTIVE`: o plano está fora da vigência. Um gestor deve conferir a vigência e solicitar a revisão à Freecorps.
+- `QUOTA_EXCEEDED`: a cota de capturas, de notas novas (no Gratuito) ou de bytes do plano em Produção foi atingida. A captura volta sozinha quando houver saldo e plano elegível. Cada consulta precisa de 18 MiB disponíveis para a reserva temporária; só os bytes efetivamente recebidos ficam contabilizados.
+- `CAPTURE_RELEASE_WITHDRAWN`: a captura fiscal foi desativada, pela empresa ou pela Freecorps. Ative de novo a captura fiscal no console e retome.
+- `CAPTURE_FISCAL_HALTED`: a Freecorps parou por um tempo a captura fiscal de todas as empresas, e o `state` continua `active`. Nada a fazer: a captura volta sozinha, sem gastar cota durante a parada.
+- `RECONCILIATION_UNAVAILABLE`: a Receita não tem mais um trecho da fila. Veja [lacunas](#lacunas).
+
+Retomar um bloqueio 656 antes da hora é recusado com `SOURCE_COOLDOWN`, no console e pela API. Pela API, a resposta é 409 com `retryable: true` e `nextAllowedAt` no corpo do erro, o instante a partir do qual a retomada é aceita; espere esse horário em vez de repetir em laço. O SDK não repete a chamada sozinho: no `FreecorpsError`, `retryable` vem `false`, porque ele só repete automaticamente 429, 502, 503 e 504, e o horário fica em `error.nextAllowedAt`. Com `SOURCE_COOLDOWN`, espere até `nextAllowedAt` e envie a retomada de novo, mesmo com `retryable` falso.
+
+## Controlar pela API [#api]
+
+<Op id="getCapture" /> mostra o estado, a última tentativa e a próxima janela.
+<Op id="controlCapture" /> recebe `companyId` e `action`:
+
+| `action`   | Efeito                                         |
+| ---------- | ---------------------------------------------- |
+| `activate` | Inicia a captura da empresa neste ambiente     |
+| `sync`     | Pede uma consulta, respeitando a janela mínima |
+| `pause`    | Pausa as consultas                             |
+| `resume`   | Retoma uma captura pausada ou em atenção       |
+
+Exceto na ativação, envie `expectedVersion` com a versão que você leu. Pausar não desfaz uma consulta já enviada. Retomar continua do último NSU guardado, sem pular documento.
+
+## Desativar [#desativar]
+
+No cartão, <Ui>Desativar</Ui> pede confirmação. A captura pausa na hora com `CAPTURE_RELEASE_WITHDRAWN`, e nenhuma consulta nova sai. Uma consulta que já tinha saído para a Receita fica com resultado incerto, e a retomada a confere antes de seguir. A plataforma envia `connection.release_withdrawn`, o último evento dessa captura, que chega mesmo depois da desativação ([webhooks](/docs/webhooks#eventos)).
+
+Os documentos já recebidos continuam em <Ui>Documentos</Ui> → <Ui>Produção</Ui>, para leitura e exportação. Para voltar a consultar, ative de novo, com o aceite dos termos, e retome a captura: ela continua de onde parou.
+
+## Suspensão pela Freecorps [#suspensao]
+
+A Freecorps pode suspender a captura fiscal de uma empresa. O efeito é o de desativar, com `CAPTURE_RELEASE_WITHDRAWN` e o mesmo evento final, e a empresa não consegue ativar de novo sozinha: o console mostra <Ui>Captura fiscal suspensa pela Freecorps</Ui> e pede contato com o suporte. Depois que a Freecorps desfaz a suspensão, a empresa ativa de novo e retoma.
+
+A parada geral é outra coisa: vale para todas as empresas, mantém a captura `active` com `CAPTURE_FISCAL_HALTED` e termina sem ação do cliente.
+
+## Lacunas [#lacunas]
+
+Se a fila pula um NSU, a captura busca o registro que faltou, com um segundo entre buscas e até 6 buscas por hora. No dia seguinte a um bloqueio 656, o limite cai para 3 por hora. A margem fica para os outros sistemas que consultam o mesmo CNPJ.
+
+Uma captura parada por mais de 90 dias, ao voltar, encontra um trecho que a fonte já descartou. A captura localiza onde esse trecho termina e para em atenção com `RECONCILIATION_UNAVAILABLE`.
+
+Seguir em frente exige aceitar a perda, e só o `owner` da organização decide. No console, ele vê o período sem consulta e o trecho perdido, escreve o motivo, com até 500 caracteres, e confirma em <Ui>Aceitar a perda e continuar</Ui>. A decisão fica registrada com a pessoa, o trecho e o motivo. Os outros papéis veem a lacuna, sem a ação.
+
+A regra vale também para uma captura iniciada por uma integração. Essa é a única ação do console sobre ela: a consulta seguinte continua com a chave, o projeto e os webhooks da integração. A API e o SDK não têm essa ação. Quando o `owner` aceita a perda, a integração recebe o webhook `connection.history_limited`, com os NSU que não vão chegar ([webhooks](/docs/webhooks#eventos)).

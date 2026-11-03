@@ -1,0 +1,118 @@
+name: NFS-e production probe and verification
+
+# Read-only checks of the fiscal production (#198): the mTLS and adhesion probe
+# (`issuanceProbe:verify`) and the verification of an authorized note (`issuanceProbe:verifyIssued`,
+# one single NFS-e for the DPS id). Only GET requests to the production hosts fixed in the code;
+# neither needs the gate. Only a person in authorizedActors of deploy/issuance-gate.json may
+# trigger it, and the operator recorded is the run's triggering_actor from the GitHub API. While
+# deploy/issuance-production.json names no deployment, the plan job fails and nothing reaches
+# Convex.
+on:
+  workflow_dispatch:
+    inputs:
+      check:
+        description: Probe the company's certificate, or verify an authorized note
+        required: true
+        type: choice
+        options: [probe, verify-issued]
+      organization_id:
+        description: Convex id of the organization (organizations)
+        required: true
+        type: string
+      company_id:
+        description: Convex id of the company (companies)
+        required: true
+        type: string
+      issuance_id:
+        description: Convex id of the issuance (issuances), only to verify a note
+        required: false
+        type: string
+      reason:
+        description: "Reason, 10 to 500 characters. Public: no customer name, CNPJ or personal data."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nfse-production-read
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Versioned plan names the fiscal production deployment
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The runner only needs Node: it uses Node built-in modules and installs no dependency.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      - run: node scripts/issuance-gate.mjs plan
+
+  read:
+    name: Read-only check
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+    environment: nfse-production-read
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      # The runner only needs Node: it uses Node built-in modules and installs no dependency.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+      # Seals the full receipt for the custodians (scripts/lib/sealed-receipt.mjs). It never
+      # blocks the action: without age, the public receipt records sealed.state "unavailable".
+      - name: Install pinned age for the sealed receipt
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "AGE_BIN=$RUNNER_TEMP/age/age" >> "$GITHUB_ENV"
+      - name: Probe mTLS and adhesion
+        if: inputs.check == 'probe'
+        env:
+          GATE_ORGANIZATION_ID: ${{ inputs.organization_id }}
+          GATE_COMPANY_ID: ${{ inputs.company_id }}
+          GATE_REASON: ${{ inputs.reason }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/issuance-gate.mjs probe
+      - name: Verify an authorized note
+        if: inputs.check == 'verify-issued'
+        env:
+          GATE_ORGANIZATION_ID: ${{ inputs.organization_id }}
+          GATE_COMPANY_ID: ${{ inputs.company_id }}
+          GATE_ISSUANCE_ID: ${{ inputs.issuance_id }}
+          GATE_REASON: ${{ inputs.reason }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/issuance-gate.mjs verify-issued
+      - name: Record the answer or the refusal
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nfse-production-read-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .ci-results/issuance-gate/receipt.json
+            .ci-results/issuance-gate/receipt.full.json.age
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30

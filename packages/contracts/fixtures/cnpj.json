@@ -1,0 +1,22 @@
+{
+  "references": [
+    {
+      "source": "Receita Federal / Serpro, Manual de Cálculo do DV do CNPJ, páginas 3 e 4",
+      "url": "https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf",
+      "accessedAt": "2026-09-11",
+      "input": "12.ABC.345/01DE-35",
+      "normalized": "12ABC34501DE35",
+      "firstSum": 459,
+      "secondSum": 424,
+      "expectedDv": "35"
+    }
+  ],
+  "synthetic": [
+    {
+      "input": "00.000.000/0001-91",
+      "normalized": "00000000000191",
+      "expectedDv": "91",
+      "provenance": "Synthetic numeric fixture; sums 2 and 21. Not a registry lookup or assertion of an existing company."
+    }
+  ]
+}

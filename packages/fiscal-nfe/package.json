@@ -1,0 +1,45 @@
+{
+  "name": "@freecorps/fiscal-nfe",
+  "version": "0.1.0",
+  "description": "Independent NF-e parsing, versioned normalization and technical validation",
+  "license": "SEE LICENSE IN LICENSING.md",
+  "files": [
+    "dist",
+    "README.md",
+    "schemas/manifest.json",
+    "LICENSE",
+    "NOTICE",
+    "LICENSING.md",
+    "THIRD_PARTY_NOTICES.txt"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./danfe": {
+      "types": "./dist/danfe.d.ts",
+      "default": "./dist/danfe.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vp test run --root ../.. packages/fiscal-nfe"
+  },
+  "dependencies": {
+    "@freecorps/fiscal-core": "workspace:*",
+    "@xmldom/xmldom": "0.8.15",
+    "fast-xml-parser": "5.11.2",
+    "libxml2-wasm": "0.7.2",
+    "pdf-lib": "1.17.1",
+    "xml-crypto": "6.4.0"
+  },
+  "engines": {
+    "node": ">=20.20.2"
+  }
+}
