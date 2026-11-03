@@ -7,7 +7,7 @@ export const packageLicenses = {
   "@freecorps/fiscal-core": "SEE LICENSE IN LICENSING.md",
   "@freecorps/fiscal-nfe": "SEE LICENSE IN LICENSING.md",
   "@freecorps/fiscal-nfse": "SEE LICENSE IN LICENSING.md",
-  "@freecorps/sdk": "MIT",
+  "@freecorps/freecorpsnfe-sdk": "MIT",
 };
 export function firstPartyScope() {
   return JSON.parse(readFileSync("docs/licenses/first-party.json", "utf8"));
@@ -21,7 +21,7 @@ export function packageLicenseText(name) {
   assert.ok(Object.hasOwn(packageLicenses, name), "Pacote sem política de licença");
   const scope = firstPartyScope();
   return readFileSync(
-    name === "@freecorps/sdk" ? scope.mit.text : scope.default.text,
+    name === "@freecorps/freecorpsnfe-sdk" ? scope.mit.text : scope.default.text,
     "utf8",
   ).replaceAll("\r\n", "\n");
 }

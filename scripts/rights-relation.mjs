@@ -142,7 +142,10 @@ function classify(pkg, path) {
 const artifacts = proof.artifacts
   .filter((artifact) => !artifact.private)
   .map((artifact) => {
-    const pkg = artifact.name.slice("@freecorps/".length);
+    const pkg =
+      artifact.name === "@freecorps/freecorpsnfe-sdk"
+        ? "sdk"
+        : artifact.name.slice("@freecorps/".length);
     return {
       name: artifact.name,
       version: artifact.version,

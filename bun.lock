@@ -20,7 +20,7 @@
       "devDependencies": {
         "@axe-core/playwright": "4.14.0",
         "@cloudflare/workers-types": "5.20261023.1",
-        "@freecorps/sdk": "workspace:*",
+        "@freecorps/freecorpsnfe-sdk": "workspace:*",
         "@napi-rs/canvas": "1.0.10",
         "@testing-library/react": "^16.3.3",
         "@testing-library/user-event": "^14.6.8",
@@ -126,7 +126,7 @@
       },
     },
     "packages/sdk": {
-      "name": "@freecorps/sdk",
+      "name": "@freecorps/freecorpsnfe-sdk",
       "version": "0.1.0",
       "dependencies": {
         "@freecorps/contracts": "workspace:*",
@@ -354,7 +354,7 @@
 
     "@freecorps/fiscal-platform": ["@freecorps/fiscal-platform@workspace:platform"],
 
-    "@freecorps/sdk": ["@freecorps/sdk@workspace:packages/sdk"],
+    "@freecorps/freecorpsnfe-sdk": ["@freecorps/freecorpsnfe-sdk@workspace:packages/sdk"],
 
     "@fuma-translate/react": ["@fuma-translate/react@1.0.2", "", { "peerDependencies": { "@types/react": "*", "react": "^19.2.0", "react-dom": "^19.2.0" }, "optionalPeers": ["@types/react"] }, "sha512-uOiOtBx3nRXR8Nu1GzBf1tApgF1FErDBTHxRIAQeyQdyOoZbrNRN6H4kDCWObY4qyGeGbHydG0DHzgeUgFDMIw=="],
 

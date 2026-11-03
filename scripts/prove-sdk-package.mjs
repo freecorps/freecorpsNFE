@@ -16,13 +16,13 @@ const dirty = !!git("status", "--porcelain");
 execFileSync(process.execPath, ["scripts/build-sdk.mjs"], { stdio: "inherit" });
 const consumer = mkdtempSync(join(tmpdir(), "freecorps-sdk-consumer-"));
 const tarball = resolve(sdkTarballPath());
-inspectTarball(tarball, "@freecorps/sdk");
+inspectTarball(tarball, "@freecorps/freecorpsnfe-sdk");
 writeFileSync(
   join(consumer, "package.json"),
   JSON.stringify({
     private: true,
     type: "module",
-    dependencies: { "@freecorps/sdk": `file:${tarball.replaceAll("\\", "/")}` },
+    dependencies: { "@freecorps/freecorpsnfe-sdk": `file:${tarball.replaceAll("\\", "/")}` },
   }),
 );
 execFileSync(process.execPath, ["install", "--ignore-scripts"], { cwd: consumer, stdio: "pipe" });
@@ -63,15 +63,15 @@ copyFileSync("packages/contracts/fixtures/webhooks.json", join(consumer, "vector
 }
 writeFileSync(
   join(consumer, "sdk-client.mjs"),
-  'export { FreecorpsClient } from "@freecorps/sdk";\n',
+  'export { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";\n',
 );
 writeFileSync(
   join(consumer, "verify.mjs"),
   `
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { verifyWebhook } from "@freecorps/sdk/webhooks";
-import { FreecorpsClient } from "@freecorps/sdk";
+import { verifyWebhook } from "@freecorps/freecorpsnfe-sdk/webhooks";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 import { createReceiver } from "./sdk-webhook-receiver.mjs";
 let requests = 0;
 const options = { baseUrl: "https://example.invalid", apiKey: "synthetic", environment: "sandbox", maxRetries: 0,
@@ -126,7 +126,7 @@ const stdout = execFileSync("node", ["verify.mjs"], { cwd: consumer, encoding: "
 writeFileSync(
   join(consumer, "typecheck.ts"),
   `
-import { FreecorpsClient } from "@freecorps/sdk";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 const client = new FreecorpsClient({ baseUrl: "https://example.invalid", apiKey: "synthetic", environment: "sandbox" });
 const result = await client.call("documentItems", { path: { documentId: "doc" }, query: { companyId: "company", versionId: "version" }, body: {} });
 const exact: string = result.data.page[0]!.unitPrice;

@@ -24,7 +24,7 @@ THE SOFTWARE.
 */
 import { DatabaseSync } from "node:sqlite";
 import { createServer } from "node:http";
-import { verifyWebhook, FreecorpsClient } from "@freecorps/sdk";
+import { verifyWebhook, FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 
 /** Persistent inbox and local business effect commit together. Verification never performs I/O. */
 export function createReceiver({ database, secrets, client, now = Date.now }) {

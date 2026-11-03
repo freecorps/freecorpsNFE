@@ -44,7 +44,7 @@ describe("distribuição aceita na #83", () => {
   it("separa o aceite do SDK dos direitos sobre motor e XSDs", () => {
     const files = valid();
     const manifest = JSON.parse(files[0]!.bytes.toString());
-    manifest.name = "@freecorps/sdk";
+    manifest.name = "@freecorps/freecorpsnfe-sdk";
     manifest.license = "MIT";
     files[0]!.bytes = Buffer.from(JSON.stringify(manifest));
     files.push({ path: "types/sdk/src/index.d.ts", bytes: Buffer.from("export {};") });

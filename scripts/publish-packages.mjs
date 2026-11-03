@@ -35,7 +35,7 @@ const order = [
   "@freecorps/fiscal-core",
   "@freecorps/fiscal-nfe",
   "@freecorps/fiscal-nfse",
-  "@freecorps/sdk",
+  "@freecorps/freecorpsnfe-sdk",
 ];
 assert.deepEqual(accepted.packages.map((p) => p.name).sort(), [...order].sort());
 for (const name of order) {

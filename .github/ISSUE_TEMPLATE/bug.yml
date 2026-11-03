@@ -13,7 +13,7 @@ body:
       label: Onde
       options:
         - API REST
-        - SDK (@freecorps/sdk)
+        - SDK (@freecorps/freecorpsnfe-sdk)
         - Pacotes fiscais (fiscal-core, fiscal-nfe, fiscal-nfse)
         - Console
         - Documentação ou site

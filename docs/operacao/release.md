@@ -67,7 +67,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
       Não adicionar arquivos ao escopo MIT apenas para contornar uma falha.
 - [ ] Conferir as versões finais no registry. Npm/2FA e nomes foram conferidos
       pelo mantenedor em 29/10 na #83; repetir essa conferência se houver mudança.
-      Os nomes preparados são `@freecorps/sdk`, `@freecorps/contracts`,
+      Os nomes preparados são `@freecorps/freecorpsnfe-sdk` (até 03/11/2026, `@freecorps/sdk`), `@freecorps/contracts`,
       `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse`
       (decisão 5 de 28/10).
 - [ ] Regerar pacotes do candidato limpo (`packages:build`, `contracts:build`,

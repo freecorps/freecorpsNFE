@@ -28,7 +28,7 @@ const acceptance = {
   record: "docs/v1.0/evidence/83/2026-11-01/README.md",
 };
 const acceptedPackages = new Set([
-  "@freecorps/sdk",
+  "@freecorps/freecorpsnfe-sdk",
   "@freecorps/fiscal-core",
   "@freecorps/fiscal-nfe",
   "@freecorps/fiscal-nfse",
@@ -213,7 +213,7 @@ export function checkPackageFiles(entries, expectedName, corpus) {
     )
       throw new Error("Schemas incorporados divergem dos hashes do manifesto");
   }
-  if (expectedName === "@freecorps/sdk") assertSdkDeclarations([...paths]);
+  if (expectedName === "@freecorps/freecorpsnfe-sdk") assertSdkDeclarations([...paths]);
   return {
     name: manifest.name,
     version: manifest.version,
@@ -301,7 +301,8 @@ export function inspectTarball(path, expectedName) {
   const mit = entries.find((entry) => entry.path === "LICENSE-MIT");
   if (
     mit &&
-    mit.bytes.toString("utf8").replaceAll("\r\n", "\n") !== packageLicenseText("@freecorps/sdk")
+    mit.bytes.toString("utf8").replaceAll("\r\n", "\n") !==
+      packageLicenseText("@freecorps/freecorpsnfe-sdk")
   )
     throw new Error("Texto MIT incorreto no tarball");
   return { tarballSha256: sha256(tarball), ...report };

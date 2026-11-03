@@ -24,7 +24,7 @@ THE SOFTWARE.
 */
 import { writeFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
-import { FreecorpsClient, FreecorpsError } from "@freecorps/sdk";
+import { FreecorpsClient, FreecorpsError } from "@freecorps/freecorpsnfe-sdk";
 
 // NFS-e issuance in the sandbox: the simulated transport answers without validity before the
 // tax authority. The key needs `documents:issue` (and `documents:cancel` to cancel), granted to

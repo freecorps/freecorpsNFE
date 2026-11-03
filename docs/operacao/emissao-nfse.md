@@ -839,7 +839,7 @@ ela, este critério fica aberto.
    `webhook.test` precisa terminar em 2xx no histórico. Prova o transporte e a
    assinatura, não o evento da nota.
 5. **Assinatura.** O receptor confere `X-Fnfe-Signature` com `verifyWebhook`
-   (`@freecorps/sdk/webhooks`) sobre os bytes originais do corpo, recusa
+   (`@freecorps/freecorpsnfe-sdk/webhooks`) sobre os bytes originais do corpo, recusa
    qualquer outro resultado e deduplica por `eventId` na mesma transação do
    efeito, como `examples/webhook-receiver.mjs`
    ([assinatura](../plataforma/WEBHOOKS.md#assinatura-e-verificação)).
