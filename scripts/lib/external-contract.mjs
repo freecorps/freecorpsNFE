@@ -171,6 +171,10 @@ export function contractGateFailures({ base, published, next }) {
  * lives only in the archived one), `readSnapshot(path)` reads that versioned copy instead. Either
  * way its SHA-256 and version must match the record, so the baseline cannot drift from what was
  * published.
+ * @param {any} record
+ * @param {(commit: string) => string} readAtCommit
+ * @param {(text: string) => string} sha256
+ * @param {((path: string) => string) | null} [readSnapshot]
  */
 export function publishedBaseline(record, readAtCommit, sha256, readSnapshot = null) {
   if (record.published === null) return null;
