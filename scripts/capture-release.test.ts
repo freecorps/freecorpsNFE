@@ -104,7 +104,7 @@ describe("alvo e entradas", () => {
   it("a parada geral só recebe o motivo; uma empresa informada recusa a parada", () => {
     for (const action of ["halt", "resume"]) {
       expect(captureInputs({ ...reason }, action)).toEqual({ reason: reason.GATE_REASON });
-      // One form serves every operation (#52): an id given to halt means the person meant one
+      // One form serves every operation (#57): an id given to halt means the person meant one
       // company, so the stop of every company is refused instead of running without it.
       for (const env of [
         { ...ids, ...reason },
@@ -408,7 +408,7 @@ describe("workflow", () => {
   const runner = job.steps.find((step) => step.run?.startsWith("node scripts/"))!;
 
   it("todas as operações passam por um workflow, com o environment dele", () => {
-    // One file since #52; the run check still confirms it.
+    // One file since #57; the run check still confirms it.
     expect(new Set(Object.values(CAPTURE_WORKFLOWS).map(({ file }) => file))).toEqual(
       new Set([CAPTURE_WORKFLOW]),
     );

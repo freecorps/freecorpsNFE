@@ -2,7 +2,7 @@ name: Fiscal capture
 run-name: "Fiscal capture: ${{ inputs.operation }}"
 
 # The Freecorps operations over the fiscal capture of the hosted site (ADR 0007, amendment of
-# 22/10/2026, #422, #424 and #463), one workflow since #52, each operation chosen in `operation`:
+# 22/10/2026, #422, #424 and #463), one workflow since #57, each operation chosen in `operation`:
 # - list: internal view of every company with a release record, its stream, certificate and
 #   latest alerts (`captureSupervisor:survey`). Changes no release, stream or customer record; it
 #   only arms the supervision of a released company that has none scheduled. No other input.

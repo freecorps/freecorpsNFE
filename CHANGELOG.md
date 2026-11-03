@@ -3,7 +3,7 @@
 ## Não publicado
 
 - Os seis workflows da captura fiscal viram um, **Fiscal capture**
-  (`capture-fiscal.yml`, #52), com a operação escolhida em `operation`:
+  (`capture-fiscal.yml`, #57), com a operação escolhida em `operation`:
   `list`, que é o padrão, `alert_test`, `emergency_withdraw`, `unblock`,
   `halt` e `resume`. Mesmo environment, mesmas pessoas autorizadas e uma fila
   por operação. Como o formulário mostra todas as entradas, o runner recusa

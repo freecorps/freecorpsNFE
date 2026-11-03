@@ -693,7 +693,7 @@ atende: documentos, captura e webhooks. Importação e emissão ficam de fora.
 
 **Emergência e desbloqueio (Freecorps).** Workflows sem aprovação, para
 quem está em `authorizedActors` de `deploy/issuance-gate.json`, a mesma lista
-do gate da NFS-e. Desde a #52 todas passam por um workflow,
+do gate da NFS-e. Desde a #57 todas passam por um workflow,
 `capture-fiscal.yml`, escolhidas na entrada `operation`; o runner recusa
 uma entrada que a operação escolhida não recebe (`INPUT_UNEXPECTED`):
 
