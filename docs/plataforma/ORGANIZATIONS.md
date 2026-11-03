@@ -368,7 +368,7 @@ barraram menos; além das 100, não há página seguinte. `version` aceita
 outra versão; sem ela, vale a vigente.
 
 - **`pending`:** `bunx convex run termsOfUseNotice:resumePending '{}'
---deployment <deployment>` agenda de novo o envio das linhas `pending` da versão vigente criadas há mais de 60
+  --deployment <deployment>` agenda de novo o envio das linhas `pending` da versão vigente criadas há mais de 60
   minutos (`olderThanMinutes` muda o prazo), até 100 por chamada; repita
   enquanto `resumed` não for zero. Repetir é seguro: só uma reserva da linha
   vence, então um envio original atrasado e o retomado não mandam duas vezes.

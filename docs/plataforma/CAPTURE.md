@@ -744,7 +744,7 @@ Ela não libera nem retira empresa e não pede nada ao cliente:
   parada longa nunca a esgota numa pausa que o cliente teria de retomar. Se
   a parada começa entre o `prepare` e o cofre, o cofre adia do mesmo jeito;
 - `GET /v1/connections/nfe` e o console mostram o stream como `state:
-"active"` com `code: "CAPTURE_FISCAL_HALTED"`; o console diz "Parada pela
+  "active"` com `code: "CAPTURE_FISCAL_HALTED"`; o console diz "Parada pela
   Freecorps" e que a captura volta sozinha.
 
 `capture-fiscal-resume.yml` desfaz a parada, sem aprovação como o

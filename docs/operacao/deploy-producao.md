@@ -403,7 +403,7 @@ Hoje os três valem `null`. `issuanceReleaseTarget`
 `workflow_dispatch` na `main`, com `approved_sha`, nunca em push:
 
 1. o job `plan`, sem segredo, roda `scripts/deploy-issuance-production.mjs
-plan`; com o plano de hoje, falha com `PLAN_NOT_NAMED` e o motivo, e a CI e
+   plan`; com o plano de hoje, falha com `PLAN_NOT_NAMED` e o motivo, e a CI e
    a publicação nem começam;
 2. a CI (`ci.yml`) valida o SHA aprovado;
 3. o job `publish`, no environment `nfse-production-release`, roda
