@@ -410,11 +410,11 @@ Limites conhecidos, anteriores a esta nota e não alterados por ela: com a
 revisão publicada desconhecida, o gate lê só o `CODEOWNERS` novo e o dispatch
 de um dono dele publica sem conferir commit a commit; o
 `operation: bootstrap` não passa pelo gate
-([#525](https://github.com/freecorps/freecorpsNFE/issues/525)); e o
+([#525](https://github.com/freecorps/freecorpsNFE-arquivo/issues/525)); e o
 `--operator`, rodado localmente com as credenciais de produção, também não.
 
 Atualização de 26/10/2026
-([#525](https://github.com/freecorps/freecorpsNFE/issues/525)): o
+([#525](https://github.com/freecorps/freecorpsNFE-arquivo/issues/525)): o
 `operation: bootstrap` deixou de ser um desses limites. O preflight do
 `bootstrap` roda o mesmo gate do `release`, com a mesma regra do dispatch, e
 o `bootstrap` só vale numa instalação que ainda aguarda a prova de login,
@@ -431,13 +431,13 @@ Registrada para expor uma divergência, sem reescrever a decisão acima. O §2
 diz que, ao desligar, "sobra a leitura do que foi capturado". Duas mudanças
 foram além disso em Produção do site:
 
-- A [#420](https://github.com/freecorps/freecorpsNFE/issues/420) manteve,
+- A [#420](https://github.com/freecorps/freecorpsNFE-arquivo/issues/420) manteve,
   depois da retirada, o processamento automático dos envelopes que a captura
   já tinha recebido (`capture-processing` em
   `platform/convex/lib/environmentAccess.ts`): sem ele, o que estava atrás do
   checkpoint ficaria escondido para sempre. Nenhuma consulta à fonte, nenhum
   certificado.
-- A [#499](https://github.com/freecorps/freecorpsNFE/issues/499) acrescenta
+- A [#499](https://github.com/freecorps/freecorpsNFE-arquivo/issues/499) acrescenta
   uma ação de pessoa no mesmo propósito: owner, admin ou operator pede no
   console "Reprocessar recusas técnicas" (`documents.reprocess_refusals`),
   que `environmentPurpose` confere como `capture-processing`. Com a liberação

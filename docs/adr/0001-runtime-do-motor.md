@@ -5,7 +5,7 @@ Data: 29/08/2026 · Status: **decidido** (gate da Fase 2 do plano)
 ## Situação em 21/10/2026
 
 > O motor legado de `convex/engine/` e os `convex/spike*.ts` citados aqui foram
-> removidos pela PR [#373](https://github.com/freecorps/freecorpsNFE/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE/commit/e1156c58a126bcc664403163e63bd69c17e3b611). A decisão de rodar o
+> removidos pela PR [#373](https://github.com/freecorps/freecorpsNFE-arquivo/pull/373), no commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/e1156c58a126bcc664403163e63bd69c17e3b611). A decisão de rodar o
 > motor em actions Convex `"use node"` continua valendo para a plataforma, que
 > hoje usa o núcleo de `packages/fiscal-nfse` (ver
 > [ADR 0004](0004-motor-de-emissao-nfse.md)).

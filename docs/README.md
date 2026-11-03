@@ -25,6 +25,11 @@ conforme a [ADR 0011](adr/0011-entregas-graduais.md). Não há lançamento
 global da plataforma 1.0; `docs/v1.0` conserva seu nome e os contratos técnicos. Recibos
 conservam SHA, data, ambiente e limites e não são atribuídos ao HEAD.
 
+As referências `#NNN` escritas nos documentos até 03/11/2026 são issues e PRs
+do repositório arquivado, `freecorps/freecorpsNFE-arquivo`, que é privado; as
+issues que continuavam abertas foram recriadas aqui com números novos, e cada
+uma cita o número antigo na primeira linha.
+
 ## Fluxo de desenvolvimento
 
 ### 1. Preparar o ambiente

@@ -3,19 +3,19 @@
 Data: 29/10/2026 · Status: **Aceita** pelo dono do projeto,
 nas onze decisões da seção [Decisão](#decisão), tomadas em sessão de
 trabalho em 29/10/2026 e registradas na
-[#642](https://github.com/freecorps/freecorpsNFE/issues/642). As decisões 9,
+[#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642). As decisões 9,
 10 e 11 resolvem as antigas pendências 4, 5 e 6 e estão no
-[comentário da #642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6510521089) que as registra. As
+[comentário da #642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6510521089) que as registra. As
 [Pendências do dono](#pendências-do-dono) que restam não estão decididas.
 
 Esta ADR complementa a [ADR 0009](0009-custodia-fria-de-organizacoes-abertas.md);
 as decisões 5 e 6 a ajustam. A emenda da
-[#643](https://github.com/freecorps/freecorpsNFE/pull/643) diz que a PR 6 da
+[#643](https://github.com/freecorps/freecorpsNFE-arquivo/pull/643) diz que a PR 6 da
 série da 0009 reidrata só a janela quente e que a capacidade conta só a
 janela; esta ADR substitui esses dois pontos (decisão 5). Ela substitui
 também a atribuição às PRs 4 e 6 da referência por hash aos objetos frios
 (decisão 6). O texto da 0009 será alinhado pela
-[#644](https://github.com/freecorps/freecorpsNFE/pull/644), PR da série da
+[#644](https://github.com/freecorps/freecorpsNFE-arquivo/pull/644), PR da série da
 0009 (acesso com organização arquivada). Da ADR, estão implementadas as 5
 empresas do Intermediário (decisão 4, item 1) e, na fase D2, a cota de notas
 do Gratuito (decisão 4, item 3, e decisões 10 e 11); o resto não está
@@ -140,7 +140,7 @@ Decorrência, como invariante: a reidratação sempre recria o resíduo quente
 de toda nota (`fiscalDocuments`, o índice e as linhas que ficam no banco),
 para preservar a listagem e a deduplicação.
 
-Implementada na fase C2 ([#689](https://github.com/freecorps/freecorpsNFE/issues/689)),
+Implementada na fase C2 ([#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689)),
 com o desenho descrito no fim da seção [Fases](#fases).
 
 ### 6. Pacote da 0009 e camada fria no R2
@@ -172,7 +172,7 @@ fase C.
 ### 9. Anual: reembolso e ciclo
 
 Resolve a antiga pendência 4
-([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6510521089)).
+([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6510521089)).
 
 - Até 7 dias depois da compra, o reembolso é integral (arrependimento, CDC
   art. 49).
@@ -192,7 +192,7 @@ Resolve a antiga pendência 4
 - Pix assistido segue as mesmas regras, com reembolso manual.
 - A seção 5A dos termos precisa de revisão jurídica antes da oferta.
 - Decidido pelo dono em 30/10/2026
-  ([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6523073174)):
+  ([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6523073174)):
   - o reembolso integral em 7 dias vale para cada cobrança anual, inclusive
     as renovações, a confirmar na revisão jurídica;
   - "Não renovar" é pelo próprio cliente, sem reembolso e com os meses pagos
@@ -223,7 +223,7 @@ Resolve a antiga pendência 4
 ### 10. Importação e cota de notas do Gratuito
 
 Resolve a antiga pendência 5
-([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6510521089)).
+([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6510521089)).
 
 - Em Produção, o limite é de 100 notas novas por mês, somando importação e
   captura. Ele substitui a cota de consultas de captura em Produção.
@@ -236,7 +236,7 @@ Implementada na fase D2, com a decisão 11: `notes` no catálogo do Gratuito,
 contada pela unidade Documento de Produção e conferida na admissão
 ([USAGE.md](../plataforma/USAGE.md#cota-de-notas-do-gratuito)).
 
-Lote NFS-e ([#649](https://github.com/freecorps/freecorpsNFE/issues/649)):
+Lote NFS-e ([#649](https://github.com/freecorps/freecorpsNFE-arquivo/issues/649)):
 cada arquivo admitido reserva uma nota provisória, mas um lote NFS-e publica
 até 20. O dono decidiu, em 30/10/2026, conferir a cota quando o lote é lido:
 as notas novas do lote, somadas às publicadas e pendentes do mês sem a
@@ -248,7 +248,7 @@ Gratuito e um teto de arquivos pendentes, que só reduziria o pior caso.
 ### 11. Definição de nota
 
 Resolve a antiga pendência 6
-([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6510521089)).
+([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6510521089)).
 
 - Uma chave de acesso distinta conta 1 nota. Resumo, XML e eventos da mesma
   chave contam uma vez só.
@@ -478,7 +478,7 @@ de uma NF-e cai de 22,7 KB para 5,9 KB por nota
 (recibo).
 
 A fase C entra em PRs pela
-[#689](https://github.com/freecorps/freecorpsNFE/issues/689). A C1 move o
+[#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689). A C1 move o
 conteúdo da versão (o blob da fase B) para um bucket R2 próprio da camada
 fria e lê dali (`coldTier.ts`, `coldTierWorker.ts`, `lib/coldObjects.ts`).
 O procedimento está em [camada-fria.md](../operacao/camada-fria.md).
@@ -568,10 +568,10 @@ projeção fiscal e o reprocessamento. O expurgo da guarda enfileira o objeto
 em `coldObjectDeletions`, e a coleta de órfãos trata a chave de um original
 como segura. A REST e o SDK não mudam. O backup e o pacote da 0009 leem os
 mesmos campos e a mesma chave
-([#740](https://github.com/freecorps/freecorpsNFE/pull/740)).
+([#740](https://github.com/freecorps/freecorpsNFE-arquivo/pull/740)).
 
 A C2 reidrata só a janela quente (decisão 5, na
-[#689](https://github.com/freecorps/freecorpsNFE/issues/689)). O executor da
+[#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689)). O executor da
 ADR 0009 não grava no bucket frio e não recebe credencial nova, por decisão
 do dono: os arquivos passam por lotes no Convex. O executor deixa fora da
 etapa de arquivos os arquivos das notas fora da janela. Depois das linhas e
@@ -649,7 +649,7 @@ destinatários e as credenciais do R2.
 
 ## Pendências do dono
 
-Decididas pelo dono em 30/10/2026 ([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6527244446)):
+Decididas pelo dono em 30/10/2026 ([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6527244446)):
 
 - **1. Versão de resumo depois do XML completo:** compactada, nunca descartada.
 - **2. Alcance da camada quente:** no banco ficam só metadados e um cartão
@@ -661,7 +661,7 @@ Decididas pelo dono em 30/10/2026 ([#642](https://github.com/freecorps/freecorps
   com a NFS-e medida sinteticamente; a camada fria da NFS-e espera a fase C.
 
 Decididas pelo dono em 02/11/2026
-([#689](https://github.com/freecorps/freecorpsNFE/issues/689)):
+([#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689)):
 
 - **3. Data da idade quente para fria:** a primeira entrada na plataforma
   (`fiscalDocuments.createdAt`), e não a emissão. Uma nota antiga recém-importada
@@ -694,4 +694,4 @@ As demais não estão decididas.
 - Backup uma vez por dia.
 - Converter as cotas dos planos pagos para notas.
 - Limitar a guarda a um mês; o dono considerou e escolheu as camadas
-  ([#642](https://github.com/freecorps/freecorpsNFE/issues/642)).
+  ([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642)).

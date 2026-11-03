@@ -3,8 +3,8 @@
 ## Situação em 21/10/2026
 
 > O adaptador NFC-e SP descrito aqui vivia no backend legado
-> (`convex/engine/nfce/`) e foi removido com ele pela PR [#373](https://github.com/freecorps/freecorpsNFE/pull/373), no
-> commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE/commit/e1156c58a126bcc664403163e63bd69c17e3b611). A plataforma atual não emite NFC-e; uma retomada exige
+> (`convex/engine/nfce/`) e foi removido com ele pela PR [#373](https://github.com/freecorps/freecorpsNFE-arquivo/pull/373), no
+> commit [`e1156c5`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/e1156c58a126bcc664403163e63bd69c17e3b611). A plataforma atual não emite NFC-e; uma retomada exige
 > decisão nova.
 > O código histórico continua no Git: `git show e1156c5^:<caminho>` mostra
 > cada arquivo como era antes da remoção. O texto abaixo registra a decisão

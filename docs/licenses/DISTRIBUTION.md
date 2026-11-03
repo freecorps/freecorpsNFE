@@ -154,7 +154,7 @@ pareceres por decisão própria, assumindo o risco, e registrou:
 - **Canal de segurança:** `seguranca@nfe.freecorps.com.br` foi ativado e
   ensaiado com mensagem externa em 21/10/2026 e está no `SECURITY.md`
   ([roteiro](../operacao/seguranca-email.md#ensaio-externo-em-21102026),
-  [#266](https://github.com/freecorps/freecorpsNFE/issues/266)).
+  [#266](https://github.com/freecorps/freecorpsNFE-arquivo/issues/266)).
 - **Lançamento:** sem data. O lançamento ocorre quando o mantenedor
   considerar o produto pronto, então sujeito à #51. Essa organização foi
   substituída em 31/10 pela ADR 0011; a decisão de licença permanece.

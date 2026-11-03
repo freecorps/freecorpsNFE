@@ -17,7 +17,7 @@ Em 27/10/2026, o mantenedor decidiu manter o catálogo desligado e registrar
 o déficit da guarda quente de organizações abertas como bloqueio de
 lançamento, sem rever agora preços, cotas, estoque ou aportes. O financiamento
 dessa guarda, o backup integral do Grande, o R2 real, os textos e o aceite da
-oferta seguem na [#549](https://github.com/freecorps/freecorpsNFE/issues/549).
+oferta seguem na [#549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549).
 A #429 fica com plano obrigatório na captura em Produção, reserva de bytes,
 migração do consumo por ambiente e prova complementar de carga.
 
@@ -26,7 +26,7 @@ fria de organizações abertas, com reidratação sob IDs novos
 ([ADR 0009](../adr/0009-custodia-fria-de-organizacoes-abertas.md)). Recusou
 aporte maior, revisão de preço ou estoque e reserva mensal de margem. A
 custódia está implementada e desligada, sem prova operacional completa
-([consolidação na #549](https://github.com/freecorps/freecorpsNFE/issues/549#issuecomment-6530738648)).
+([consolidação na #549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549#issuecomment-6530738648)).
 O catálogo continua desligado.
 
 Em 29/10/2026, o mantenedor decidiu levar o Intermediário a 5 empresas

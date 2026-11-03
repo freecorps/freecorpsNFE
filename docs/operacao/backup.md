@@ -38,10 +38,10 @@ De 09/10 a 18/10/2026 todas as execuções agendadas falharam ao localizar os
 arquivos de storage, e o último backup íntegro chegou a 238 horas, acima do
 RPO de 24 horas. A #244 corrigiu a busca pelo id; as execuções manuais de
 `snapshot` e `check` de 18/10 passaram e o alerta #218 foi encerrado. Em
-19/10 as execuções agendadas de [08:19](https://github.com/freecorps/freecorpsNFE/actions/runs/39221926587) e
-[10:06 UTC](https://github.com/freecorps/freecorpsNFE/actions/runs/39235052818) passaram, assim como o [`snapshot`](https://github.com/freecorps/freecorpsNFE/actions/runs/39258590020)
-e o [`check`](https://github.com/freecorps/freecorpsNFE/actions/runs/39258800492) manuais com os novos custodiantes. A violação foi registrada na
-[#51](https://github.com/freecorps/freecorpsNFE/issues/51#issuecomment-6256889730).
+19/10 as execuções agendadas de [08:19](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39221926587) e
+[10:06 UTC](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39235052818) passaram, assim como o [`snapshot`](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39258590020)
+e o [`check`](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39258800492) manuais com os novos custodiantes. A violação foi registrada na
+[#51](https://github.com/freecorps/freecorpsNFE-arquivo/issues/51#issuecomment-6256889730).
 
 ## Como funciona
 
@@ -562,7 +562,7 @@ R2 com lock por run, renovação, import isolado e upload reais numa origem
 descartável. Faltam duas cópias independentes, a decifração com as
 identidades dos custodiantes reais e backup integral do Grande acima de
 1 GiB, além de textos jurídicos, margem medida e
-fundos reais ([#549](https://github.com/freecorps/freecorpsNFE/issues/549#issuecomment-6530738648)).
+fundos reais ([#549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549#issuecomment-6530738648)).
 
 O formato 2 inclui `coldArchives` no manifesto do backup. Cada referência
 leva o manifesto frio imutável e seu SHA-256, conferidos contra o catálogo

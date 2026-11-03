@@ -113,9 +113,9 @@ alteraram DNS nem o deployment hospedado. O ensaio abaixo continua pendente.
 
 ## Ativação hospedada em 21/10/2026
 
-A [PR #331](https://github.com/freecorps/freecorpsNFE/pull/331) foi integrada
+A [PR #331](https://github.com/freecorps/freecorpsNFE-arquivo/pull/331) foi integrada
 em `d7e24a05b280650778205b7a03b848cfc3995113`. A
-[publicação](https://github.com/freecorps/freecorpsNFE/actions/runs/39621304666)
+[publicação](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39621304666)
 passou no Blacksmith. Console, API e backend responderam com essa revisão.
 
 Foram configurados o bucket privado, o Worker, os secrets, Email Sending e
@@ -217,7 +217,7 @@ na caixa externa só ficam nas anotações.
 
 ## Primeiro atendimento pelo substituto
 
-Pendência da [#692](https://github.com/freecorps/freecorpsNFE/issues/692).
+Pendência da [#692](https://github.com/freecorps/freecorpsNFE-arquivo/issues/692).
 O ensaio do responsável, de 21/10, não prova que o substituto atende sozinho.
 Esta prova usa a caixa, o Worker e a allowlist já ativados. Não se cria outra
 caixa nem se repete o ensaio do responsável. O mantenedor só envia a mensagem

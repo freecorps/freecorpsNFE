@@ -1,7 +1,7 @@
 # E-mail de segurança
 
 Canal privado para relatos de vulnerabilidade, acompanhado pela
-[#266](https://github.com/freecorps/freecorpsNFE/issues/266). O endereço é
+[#266](https://github.com/freecorps/freecorpsNFE-arquivo/issues/266). O endereço é
 `seguranca@nfe.freecorps.com.br`, no mesmo subdomínio da caixa de
 privacidade. A caixa é lida e respondida em `/console/seguranca`.
 
@@ -34,7 +34,7 @@ Auth com o e-mail verificado.
 - `FNFE_SECURITY_OPERATOR_EMAILS` configurada em `prod:elated-possum-295`.
 - Regra de Email Routing `Segurança Fiscal`, literal
   `seguranca@nfe.freecorps.com.br`, para o Worker `freecorpsnfe-privacy-mail`.
-- A [publicação](https://github.com/freecorps/freecorpsNFE/actions/runs/39634126654)
+- A [publicação](https://github.com/freecorps/freecorpsNFE-arquivo/actions/runs/39634126654)
   do merge da #332 (`5d7949f`) passou entre 16:22 e 16:28 UTC. Às 16:28 UTC,
   a versão `8ed3fea4-a4d6-44a6-a888-77525f81e5d1` do Worker foi
   publicada; o código baixado da Cloudflare é idêntico ao bundle da `main`.

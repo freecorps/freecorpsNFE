@@ -91,7 +91,7 @@ O início sem cobrança após Pix e o anual continuam com
 `proration_behavior: none`, sem cupom nem item avulso. Upgrades de assinaturas ativas continuam em
 modo `payment`. O formato anterior do mensal, item avulso com `none`, foi
 recusado com HTTP 400 pelo Stripe de teste na
-[#668](https://github.com/freecorps/freecorpsNFE/issues/668).
+[#668](https://github.com/freecorps/freecorpsNFE-arquivo/issues/668).
 
 O Checkout expira em até 24 horas e sempre antes da virada do mês; a 45 minutos
 da virada a contratação é recusada (`PERIOD_CLOSING`). Enquanto há Checkout
@@ -278,7 +278,7 @@ com o interruptor ligado.
   Checkout anual é recusado enquanto há cartão que renova
   (`SUBSCRIPTION_RENEWING`) ou outro Checkout aberto (`CHECKOUT_PENDING`).
   Assim nenhum termo nasce ao lado de um cartão que renova.
-- **Decisões de 30/10/2026** ([#642](https://github.com/freecorps/freecorpsNFE/issues/642#issuecomment-6523073174)).
+- **Decisões de 30/10/2026** ([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6523073174)).
   As três estão implementadas ([Rescisão do anual](#rescisão-do-anual) e
   [Upgrade do anual](#upgrade-do-anual)):
   - O reembolso integral em 7 dias vale para cada cobrança anual, inclusive

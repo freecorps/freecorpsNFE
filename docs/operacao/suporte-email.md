@@ -1,7 +1,7 @@
 # E-mail de suporte
 
 Canal geral de ajuda, acompanhado pela
-[#519](https://github.com/freecorps/freecorpsNFE/issues/519). O endereço é
+[#519](https://github.com/freecorps/freecorpsNFE-arquivo/issues/519). O endereço é
 `suporte@nfe.freecorps.com.br`, no mesmo subdomínio das caixas de privacidade
 e de segurança. A caixa é lida e respondida em `/console/suporte`.
 

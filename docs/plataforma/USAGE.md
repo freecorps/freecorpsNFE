@@ -128,7 +128,7 @@ atribuí-lo a um Personalizado, que passa a seguir a mesma regra.
   com a mesma chave de idempotência devolve o lote existente e não reserva de
   novo.
 - **O lote NFS-e ABRASF conferia as notas na leitura
-  ([#649](https://github.com/freecorps/freecorpsNFE/issues/649)).** Até a
+  ([#649](https://github.com/freecorps/freecorpsNFE-arquivo/issues/649)).** Até a
   [retirada da importação ABRASF](IMPORTS.md#lotes-nfs-e-abrasf-retirados),
   em 02/11/2026, um lote reservava só a nota provisória, mas podia publicar
   até 20. Em Produção e num plano com `notes`, o processamento conferia a cota

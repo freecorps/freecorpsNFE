@@ -1,7 +1,7 @@
 # Custódia fria de organizações abertas
 
 Data: 28/10/2026 · Status: **Aceita** pelo dono do projeto
-em 28/10/2026, na [#549](https://github.com/freecorps/freecorpsNFE/issues/549).
+em 28/10/2026, na [#549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549).
 Esta ADR registra a decisão e as regras da implementação; o código vem em PRs
 seguintes. Até a implementação ser publicada e provada, organizações abertas
 conservam todos os registros e originais quentes, como descreve o
@@ -60,7 +60,7 @@ A elegibilidade reutiliza a avaliação que já existe em `coldArchive.ts`:
   inclusive leituras REST, downloads e exports. Login isolado não conta.
   Contam também as leituras de dados fiscais pelo console, como abrir a
   lista ou o detalhe de um documento
-  ([#641](https://github.com/freecorps/freecorpsNFE/issues/641)).
+  ([#641](https://github.com/freecorps/freecorpsNFE-arquivo/issues/641)).
 - **Plano pago:** 30 dias depois do fim do período pago (`endsAt`) sem
   renovação.
 
@@ -503,7 +503,7 @@ aviso também fica fora do modelo. Fechar essa diferença fica em aberto.
 ## Decisões de 29/10/2026
 
 O dono do projeto decidiu, na
-[#549](https://github.com/freecorps/freecorpsNFE/issues/549), duas regras que
+[#549](https://github.com/freecorps/freecorpsNFE-arquivo/issues/549), duas regras que
 completam a seção 1. O texto acima continua como foi aceito; onde ele diverge,
 valem estas.
 
@@ -545,7 +545,7 @@ valem estas.
 ### Emendas tomadas com a ADR 0010
 
 Com a ADR 0010, da guarda em camadas
-([#642](https://github.com/freecorps/freecorpsNFE/issues/642), talvez ainda
+([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642), talvez ainda
 não integrada), o dono do projeto decidiu duas emendas a esta ADR. O texto
 das seções 4 e 5 continua como foi aceito; onde diverge, valem estas.
 
@@ -561,7 +561,7 @@ das seções 4 e 5 continua como foi aceito; onde diverge, valem estas.
    depende da PR 6. Esta emenda entra na fase C2 da ADR 0010, depois da fase C.
    Até lá não há custo real: o catálogo e o arquivamento continuam
    desligados. A C2 foi implementada na
-   [#689](https://github.com/freecorps/freecorpsNFE/issues/689), com o desenho
+   [#689](https://github.com/freecorps/freecorpsNFE-arquivo/issues/689), com o desenho
    na [ADR 0010](0010-guarda-em-camadas-e-custo-dos-planos.md#fases).
 2. **Pacote por referência** (emenda ao empacotamento das seções 4 e 5). O
    pacote desta ADR referencia por hash os objetos que já estão na camada
@@ -634,7 +634,7 @@ PR 8 deixou em aberto:
   encerramento pela Freecorps da organização aberta só com Sandbox.
 
   **Entregue antes da PR 6 do plano
-  ([#641](https://github.com/freecorps/freecorpsNFE/issues/641)):** a
+  ([#641](https://github.com/freecorps/freecorpsNFE-arquivo/issues/641)):** a
   leitura de documentos e emissões no console, na lista ou no detalhe, conta
   como atividade de qualquer membro ativo. Como as queries não gravam, o
   console chama `archiveNotice.markFiscalRead` depois da leitura, que move
@@ -813,7 +813,7 @@ PR 8 deixou em aberto:
   ([Decisões de 30/10/2026](#decisões-de-30102026)).
 
   **Entregue na PR 9 do plano (exportação assistida,
-  [#658](https://github.com/freecorps/freecorpsNFE/issues/658)):**
+  [#658](https://github.com/freecorps/freecorpsNFE-arquivo/issues/658)):**
   `scripts/cold-archive.mjs export` aplica as três decisões. Grava o pedido na
   origem (`assistedExport:request`, tabela `assistedExports`, classe
   `closure`) antes de ler o R2. Aceita só o Proprietário ativo, achado pela
@@ -874,7 +874,7 @@ PR 8 deixou em aberto:
   - duas cópias independentes do pacote e a decifração com as identidades
     dos custodiantes reais, que o ensaio da #691 não cobriu.
 
-  **Emendas da ADR 0010** ([#642](https://github.com/freecorps/freecorpsNFE/issues/642)):
+  **Emendas da ADR 0010** ([#642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642)):
   a PR 6 reidrata o histórico inteiro no quente; a reidratação só da janela
   quente (emenda 1) veio na fase C2 da ADR 0010, depois da fase C; o pacote
   por referência à camada fria (emenda 2) vem na fase C da ADR 0010. Na PR 5,
@@ -907,9 +907,9 @@ PR 8 deixou em aberto:
 - **Backup integral do Grande**: o incremental recusa conjuntos acima de
   1 GiB, incluindo arquivos, e o Grande admite 2 GiB de arquivos.
 - **Textos jurídicos** de aviso, arquivamento e reativação
-  ([#428](https://github.com/freecorps/freecorpsNFE/issues/428)).
+  ([#428](https://github.com/freecorps/freecorpsNFE-arquivo/issues/428)).
 - **Margem medida e fundos reais** configurados e conciliados.
 - **Aceite final** e ligar o catálogo
-  ([#51](https://github.com/freecorps/freecorpsNFE/issues/51)).
+  ([#51](https://github.com/freecorps/freecorpsNFE-arquivo/issues/51)).
 
 Nada desta decisão foi medido em produção.
