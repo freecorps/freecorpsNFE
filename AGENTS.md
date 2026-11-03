@@ -268,9 +268,19 @@ proteção: um padrão errado imprime o segredo inteiro.
   dado fictício, gerado com dígito válido. Workflows e scripts de operação
   seguem a mesma regra no log e no artefato, e evidência restrita segue
   [EVIDENCE-STORAGE.md](docs/v1.0/EVIDENCE-STORAGE.md#evidência-restrita).
-  `scripts/public-identifiers.test.ts` falha se um CNPJ ou uma chave fora da
-  lista de fictícios aparecer em `docs/`, `apps/docs/` ou nos Markdown da
-  raiz.
+- **O que barra o vazamento nos arquivos.** O hook `pre-push`
+  (`.vite-hooks/pre-push`, instalado pelo `vp install`) varre cada commit
+  enviado com as regras do workflow `Public scan`: credenciais, CNPJ, CPF e
+  chave de acesso reais, e-mail externo e caminho local. Push recusado é
+  achado a corrigir nos commits ainda não enviados; não use `--no-verify`
+  nem `VP_GIT_HOOKS=0` para passar. O `Public scan` repete a varredura no PR
+  com o Gitleaks e os nomes restritos e é check obrigatório da `main`
+  ([ci.md](docs/desenvolvimento/ci.md#varredura-pública)).
+- **O texto do GitHub não passa por varredura.** Título e corpo de PR,
+  issue, comentário e mensagem de commit ficam fora do hook e do
+  `Public scan`; o secret scanning do GitHub só reconhece tokens de
+  provedores. Releia esses textos antes de publicar: neles vale a mesma
+  regra de dado real.
 - **Se vazar, diga.** Avise o dono do projeto no mesmo turno, com o que vazou
   e onde, e peça a revogação da credencial. Não reescreva o histórico por
   conta própria.
