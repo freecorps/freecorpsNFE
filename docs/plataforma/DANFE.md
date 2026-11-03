@@ -289,6 +289,11 @@ duplicatas e ISSQN.
 Desempenho, medido em 31/10/2026 na máquina de desenvolvimento: com 600 itens
 de `infAdProd` de 500 caracteres sem espaço (XML de 740 KB), o leiaute leva
 cerca de 1,1 s e a verificação da importação (`processNfe`, XSD e assinatura)
-cerca de 2 s. O teste mede o leiaute descontando a verificação. Nenhum desses
-XMLs foi autorizado; a leitura por scanner do código de barras impresso não
-foi testada.
+cerca de 2 s. O teste não mede tempo: no CI, sob carga, o mesmo leiaute já
+levou 5,2 s, mais que uma quebra de linha quadrática leva na máquina de
+desenvolvimento. Ele conta os caracteres que a quebra de linha
+(`breakLines`) pede para medir e exige no máximo três por caractere do texto,
+com custo que dobra quando o texto dobra; hoje são dois. Os dois casos extremos
+continuam gerando o PDF inteiro, sem limite de tempo. Nenhum desses XMLs foi
+autorizado; a leitura por scanner do código de barras impresso não foi
+testada.
