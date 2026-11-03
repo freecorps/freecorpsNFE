@@ -1,0 +1,54 @@
+name: Defeito
+description: Algo da plataforma, do SDK ou dos pacotes não funciona como a documentação diz.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esta issue é pública. Use só dados inventados: nada de XML de nota real, CNPJ ou CPF de cliente, chave de acesso, certificado A1, senha, CSC, API key, URL assinada ou dump.
+        Vulnerabilidade não entra aqui: relate em privado pela aba Security ("Report a vulnerability"), como diz o [SECURITY.md](https://github.com/freecorps/freecorpsNFE/blob/main/SECURITY.md).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Onde
+      options:
+        - API REST
+        - SDK (@freecorps/sdk)
+        - Pacotes fiscais (fiscal-core, fiscal-nfe, fiscal-nfse)
+        - Console
+        - Documentação ou site
+        - Instalação própria
+        - Outro
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versão ou revisão
+      description: Versão do pacote, SHA do `build.json` do site ou commit da instalação própria.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: O menor caminho até o defeito, com dados inventados.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que era esperado e o que aconteceu
+      description: Inclua o código de erro e o `requestId` da resposta, se houver; nunca o corpo de uma nota real.
+    validations:
+      required: true
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Dados
+      options:
+        - label: Confirmo que esta issue não contém dado real de cliente, credencial nem documento fiscal real.
+          required: true

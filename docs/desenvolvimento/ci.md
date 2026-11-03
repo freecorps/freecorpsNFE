@@ -13,7 +13,7 @@ histórico das entregas no CI.
 `.github/workflows/ci.yml` executa em PRs, incluindo Draft, por
 `workflow_dispatch` e como workflow reutilizável. `deploy.yml` o chama em
 pushes para a `main` e `deploy-validation.yml`, quando disparado manualmente na
-`main`. Não usa `pull_request_target`, environments com credenciais ou secrets
+`main`. Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
 herdados. O token do job tem apenas `contents: read`; checkout não persiste
 credenciais. Em PR, um push novo cancela a execução anterior do mesmo PR.
 
@@ -436,6 +436,21 @@ estão ligados (`security_and_analysis` de `gh api repos/freecorps/freecorpsNFE`
 Em 21/10/2026, com o repositório privado, a API não informava nenhum dos dois
 (`security_and_analysis: null`). Eles não substituem `ci:secrets`, que roda no
 mesmo grafo do job Validate.
+
+### Termos de contribuição
+
+O workflow `Contribution terms` (`.github/workflows/contribution-terms.yml`)
+roda em toda PR aberta, editada ou atualizada. Uma PR de dono, membro ou
+colaborador do repositório, ou de um bot, passa. As demais só passam com a
+frase de aceite de `CONTRIBUICOES.md` no texto visível da descrição; a
+frase dentro de um comentário HTML, como no modelo de PR, não conta. A
+frase vem do próprio `CONTRIBUICOES.md` (`scripts/contribution-terms.mjs`).
+
+É o único workflow que usa `pull_request_target`: assim o workflow e o script
+são os da `main`, e a PR não muda o check que a julga, e ele roda numa PR de
+fork sem esperar a aprovação dos workflows de contribuidores externos. Ele
+não faz checkout, build nem execução do código da PR, não tem secret e só lê
+do evento a associação e o tipo do autor e a descrição, por `env:`.
 
 ### Varredura pública
 

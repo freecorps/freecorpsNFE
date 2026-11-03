@@ -41,7 +41,10 @@ comandos descritos. CI aprovado não comprova autorização fiscal real.
 Contribuições seguem a licença do arquivo de destino: Freecorps 1.0 por padrão,
 MIT apenas no escopo explícito de [LICENSING.md](LICENSING.md). Antes de integrar
 contribuições externas, registre o aceite expresso dos [termos de contribuição](CONTRIBUICOES.md)
-pelo titular ou representante autorizado. Eles preservam autoria e concedem
+pelo titular ou representante autorizado: o check `Contribution terms` só
+passa uma PR de quem não é dono, membro ou colaborador do repositório com a
+frase de aceite de `CONTRIBUICOES.md` na descrição, fora de comentário HTML.
+O modelo de PR traz a frase pronta para copiar. Eles preservam autoria e concedem
 os direitos necessários ao licenciamento comercial. Não presuma aceite por
 abertura de PR nem aplique a concessão retroativamente. Identifique origem,
 versão, alterações e licença
