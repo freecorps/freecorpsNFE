@@ -17,8 +17,12 @@ deste pacote, versão e hash. O lote tem só o SDK: `fiscal-core`,
 | `@freecorps/freecorpsnfe-sdk` | 0.1.0  | `36c29407c77216f798aeb73601020554c51fb8bcf5c8a41f2cb80b6c72ba5159` |
 
 - `accepted.json`: o lote passado a `scripts/publish-packages.mjs`.
-- `rights.json`: a relação de `scripts/rights-relation.mjs` para os arquivos
-  do tarball.
+- Relação de `rights`: gerada por `node scripts/rights-relation.mjs <saída>`
+  num checkout limpo da revisão abaixo, depois de `distribution:prove`. A
+  saída gravada no aceite, com os quatro pacotes publicáveis, tinha SHA-256
+  `3ef4b0e038a7439626e4184b7dea479a0820a75383a2758768c33bc76cae78cf`; a entrada do SDK relaciona os 14 arquivos do tarball. Ela não é
+  versionada aqui porque identifica os autores pelo login, e a cópia pública
+  cita o mantenedor pelo papel.
 
 A prova é `bun run distribution:prove`, num checkout limpo de
 `c138d933bf390b3908026198e5b4b67aecc06611` (merge da #72), com Node
