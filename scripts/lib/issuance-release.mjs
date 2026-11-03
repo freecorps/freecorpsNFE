@@ -16,8 +16,8 @@ const refuse = (code, message) => {
 /**
  * The publication is an approved action, like the gate's `enable` (`verifiedRun`): this workflow,
  * approved in its environment by a person in `authorizedActors` other than who dispatched it. The
- * environment's required reviewers alone are not the check: without them (GitHub Free, private
- * repository) the run has no approval and nothing is published.
+ * environment's required reviewers alone are not the check: without them (as on GitHub Free
+ * while the repository was private) the run has no approval and nothing is published.
  */
 export const RELEASE_WORKFLOWS = {
   publish: {

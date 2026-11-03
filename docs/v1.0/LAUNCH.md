@@ -23,7 +23,8 @@ Cada empresa a ativa no console, com o certificado A1 dela, e a plataforma só
 lê a distribuição DF-e. A primeira captura real no site foi de uma empresa
 piloto, em 22/10/2026. Emissão com validade fiscal e cálculo tributário não
 fazem parte da oferta disponível. O SDK e as bibliotecas fiscais estão no npm
-desde 01/11/2026; o repositório continua privado. Anunciar cada artefato
+desde 01/11/2026, e o código está no repositório público desde 03/11/2026.
+Anunciar cada artefato
 somente depois do aceite e da publicação correspondentes.
 
 ## Notas da versão
@@ -150,8 +151,9 @@ ou casos de piloto sem autorização de divulgação e dados publicáveis.
 - [ ] Gerar o build com `PUBLIC_SITE_ORIGIN` somente após a autorização e
       verificar URLs, headers, canonical e sitemap no destino final; testar
       acesso ao painel, cadastro quando habilitado e recuperação de conta.
-- [ ] Atualizar links que hoje apontam para o GitHub privado quando o
-      repositório ou os artefatos mudarem de condição.
+- [x] Atualizar os links que apontavam para o GitHub privado. Em 03/11/2026
+      o repositório passou a público, e guias e landing deixaram de marcá-lo
+      como privado ([PUBLIC.md](../plataforma/PUBLIC.md#promessas-e-evidências)).
 - [ ] Registrar na issue da entrega e na #85 o escopo divulgado, SHA, ambiente,
       recibos, limites e pendências. O merge não comprova publicação ou habilitação.
 

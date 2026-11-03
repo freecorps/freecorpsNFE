@@ -320,9 +320,9 @@ transicao-legado.md.
 Estas notas não declaram licença. O estado vigente de cada artefato está em
 [LICENSING.md](../../LICENSING.md) e na
 [avaliação por artefato](../licenses/DISTRIBUTION.md). sdk, fiscal-core,
-fiscal-nfe e fiscal-nfse estão no npm desde 01/11/2026 (#83). Contracts e o
-repositório permanecem privados; o formato de publicação do repositório segue
-na #267.
+fiscal-nfe e fiscal-nfse estão no npm desde 01/11/2026 (#83). Contracts continua privado.
+O código está no repositório público https://github.com/freecorps/freecorpsNFE
+desde 03/11/2026 (#267), sem o histórico anterior.
 
 ## Pendências antes de publicar estas notas
 

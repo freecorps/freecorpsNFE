@@ -449,7 +449,7 @@ const publish = (operation: string) =>
   });
 it("o publicador recusa o bootstrap da instalação concluída antes de ler credenciais", (context) => {
   // A prova usa o plano versionado; ela só vale enquanto ele registra a instalação concluída.
-  // Cópia pública: os recibos do corte que o plano cita ficam no repositório privado.
+  // Repositório público: os recibos do corte que o plano cita ficam no repositório arquivado.
   if (!existsSync(join(repository, "docs/v1.0/evidence")))
     return context.skip("recibos do corte fora da cópia pública");
   const live = JSON.parse(readFileSync(join(repository, "deploy/platform-release.json"), "utf8"));

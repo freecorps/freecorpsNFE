@@ -419,7 +419,7 @@ O plano de publicação permanece em [release.md](../operacao/release.md).
 | SDK e receptor independente                          | Contrato e SDK; no npm desde 01/11/2026 (recibo).                                                                                                                                       |
 | Webhooks assinados com retentativas                  | Entrega e negativos e ativação hospedada de 07/10; envio depende da instalação, sem garantia de ordem ou efeito exatamente uma vez.                                                     |
 | Captura fiscal de NF-e por empresa, sem manifestação | Rodada de produção da #50 com avanço real do NSU e primeira captura no site, de uma empresa piloto, com recibo de lotes e hashes lido do deployment. Formulação aprovada em 26/10/2026. |
-| Instalação própria                                   | Ensaio Docker, integrado pela #115; #82 encerrada em 05/10/2026 no escopo técnico local, sem backup fora do host nem custódia (#51), e com o repositório privado.                       |
+| Instalação própria                                   | Ensaio Docker, integrado pela #115; #82 encerrada em 05/10/2026 no escopo técnico local, sem backup fora do host nem custódia (#51). O repositório é público desde 03/11/2026.          |
 | Licenças distintas                                   | [Matriz vigente](../../LICENSING.md), integrada pela #116; #83 conserva bloqueios de distribuição.                                                                                      |
 | Contas novas e mesmo endereço                        | Corte concluído. Não há migração dos documentos descartados nem das sessões Clerk.                                                                                                      |
 
@@ -500,6 +500,27 @@ saiu do roteiro do SDK. O teste passou a se chamar
 `condiciona nos guias cada clone e link do repositório privado`: conserva o
 `Callout` "Repositório ainda privado" e recusa nos guias a frase de que um
 pacote ainda não está no npm.
+
+Em 03/11/2026 o código passou ao repositório público
+`freecorps/freecorpsNFE`, sem o histórico anterior, que fica num repositório
+arquivado e privado (#267, decisão 6 de [ACCEPTANCE.md](../v1.0/ACCEPTANCE.md)).
+Consultas anônimas às 19:53 UTC (16h53 em Brasília):
+`https://github.com/freecorps/freecorpsNFE`,
+`https://api.github.com/repos/freecorps/freecorpsNFE` e
+`https://github.com/freecorps/freecorpsNFE/blob/main/LICENSE` responderam
+200, e `git clone` sem credencial funcionou; `@freecorps/contracts` continuou
+em 404 no npm. Por isso os guias e a landing deixaram de condicionar o
+repositório. Os `Callout` "Repositório ainda privado" de `instalacao.mdx` e
+`licencas.mdx` saíram, o `git clone` e os links para o GitHub aparecem como
+comandos e links que funcionam, e o link do GitHub no menu dos guias, no
+rodapé e na seção de infraestrutura da landing não leva mais a marca
+"(privado)". O teste passou a se chamar
+`apresenta nos guias o repositório público, sem condição de acesso`: recusa
+nos guias e na landing a frase de que o repositório é privado, um `Callout`
+de acesso privado e a de que um pacote publicado não está no npm, e confere
+que o guia de instalação mantém o clone e o link. `@freecorps/contracts`
+continua privado no npm; isso é um pacote, não o repositório, e continua fora
+dos guias.
 
 ## Aceites restantes
 

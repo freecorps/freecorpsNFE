@@ -206,5 +206,7 @@ decisão, planejamento, evidência e legado.
   [instruções para agentes](AGENTS.md) e [skills do projeto](.agents/README.md).
 
 Plataforma e motor usam a Licença de Código Disponível Freecorps 1.0; o SDK
-cliente usa MIT. O repositório continua privado. Condições para schemas,
+cliente usa MIT. O código é público desde 03/11/2026 em
+https://github.com/freecorps/freecorpsNFE; o histórico anterior fica num
+repositório arquivado e privado. Condições para schemas,
 dados, dependências e servidor Convex estão em [LICENSING.md](LICENSING.md).

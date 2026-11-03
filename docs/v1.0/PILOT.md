@@ -127,7 +127,7 @@ Se o transporte estiver desativado, registrar essa etapa como não executada.
 
 O caminho curl exige Node e curl, sem SDK. Para TypeScript e o receptor, o
 participante instala `@freecorps/sdk` pelo npm, publicado em 01/11/2026 (#83);
-registrar a versão instalada. Não presumir acesso ao repositório privado. Senhas
+registrar a versão instalada. O roteiro não depende de clonar o repositório. Senhas
 e chaves são digitadas somente nas telas e terminal do participante, sem
 gravação desses momentos.
 

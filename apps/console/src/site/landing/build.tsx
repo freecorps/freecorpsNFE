@@ -238,14 +238,14 @@ export function Infrastructure() {
     <section className="infra" id="infra" aria-labelledby="infra-title">
       <div className="infra-grid">
         <div className="infra-copy">
-          <h2 id="infra-title">Código disponível. Repositório, por enquanto, privado.</h2>
+          <h2 id="infra-title">Código disponível. Repositório público.</h2>
           <p>
             Hoje a plataforma roda na nuvem da Freecorps. A instalação própria com Docker foi
-            ensaiada e depende de acesso ao repositório, que continua privado.
+            ensaiada e parte de um clone do repositório, sob a Licença Freecorps 1.0.
           </p>
           <a className="repo-chip" href={repository}>
             <GitHubMark />
-            freecorps/freecorpsNFE (privado)
+            freecorps/freecorpsNFE
             <Arrow />
           </a>
         </div>

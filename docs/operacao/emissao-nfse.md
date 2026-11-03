@@ -516,9 +516,10 @@ baixar ferramenta.
 `deploy/`, desses scripts e do código do gate e do perfil de produção fiscal,
 por decisão dele de 26/10/2026 (ADR 0007). A lista de quem dispara e aprova
 este gate é outra, `authorizedActors` de `deploy/issuance-gate.json`, e não
-mudou. A regra do `CODEOWNERS` só obriga a revisão depois do passo humano da
-proteção da `main`, abaixo, que o plano atual do GitHub não permite
-([bloqueio](#bloqueio-o-plano-do-github)).
+mudou. A regra do `CODEOWNERS` só obriga a revisão quando a proteção da
+`main`, no passo humano abaixo, exigir a aprovação de code owner. O ruleset
+da `main` de 03/11/2026 ainda não a exige
+([proteções do GitHub](#proteções-do-github)).
 
 **Console.** No deployment de produção fiscal:
 
@@ -576,9 +577,12 @@ região padrão; os domínios próprios são os do Worker.
 ### Passos humanos
 
 Configurações do repositório e do Convex que nenhuma PR faz. Os sócios fazem
-cada uma e registram a evidência na #198. Os passos 1, 2 e 9 dependem de uma
-decisão que os sócios ainda não tomaram
-([bloqueio](#bloqueio-o-plano-do-github)).
+cada uma e registram a evidência na #198. Desde 03/11/2026, com o repositório
+público, os environments dos passos 2, 3, 4, 9 e 10 existem e aceitam só a
+`main`, ainda sem segredos; os dos passos 2 e 9 já têm required reviewers com
+_Prevent self-review_. No passo 1, o ruleset da `main` exige PR e os checks
+da CI, sem bypass, mas não a revisão aprovada nem a de code owner
+([proteções do GitHub](#proteções-do-github)).
 
 1. **Proteção da `main`.** Exigir PR com revisão aprovada e de code owner
    (`.github/CODEOWNERS`), sem bypass de administrador, com os checks da CI
@@ -609,68 +613,63 @@ decisão que os sócios ainda não tomaram
 11. **Plano.** Num commit revisado, nomear `deployment`, `url` e `release` em
     `deploy/issuance-production.json`.
 
-#### Bloqueio: o plano do GitHub
+#### Proteções do GitHub
 
-Conferido em 23/10/2026: a organização `freecorps` está no plano Free
-(`gh api orgs/freecorps --jq .plan.name` devolve `free`) e o repositório é
-privado. Nesse plano, o GitHub não oferece o que o desenho de duas pessoas da
+A organização `freecorps` está no plano Free do GitHub
+(`gh api orgs/freecorps --jq .plan.name` devolve `free`). Até 03/11/2026 o
+repositório era privado, e nesse plano repositório privado não tem required
+reviewers nem _Prevent self-review_ em environment; a proteção da `main` e os
+rulesets respondiam 403, "Upgrade to GitHub Pro or make this repository
+public to enable this feature" (conferido em 23/10/2026). O desenho de duas
+pessoas da
 [ADR 0004, §8](../adr/0004-motor-de-emissao-nfse.md#8-ambientes-e-gates)
-pressupõe:
+ficou bloqueado, e a decisão pendente da #198 era mudar o plano, tornar o
+repositório público ou emendar a ADR.
 
-- **Required reviewers**, e com eles o _Prevent self-review_, só existem em
-  repositório público nos planos Free, Pro e Team
-  ([Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#required-reviewers)).
-  Em repositório privado, só no Enterprise.
-- **Proteção de branch** em repositório privado exige Pro, Team ou Enterprise
-  ([About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)).
-  `GET repos/freecorps/freecorpsNFE/branches/main/protection` e
-  `GET repos/freecorps/freecorpsNFE/rulesets` respondem 403, "Upgrade to
-  GitHub Pro or make this repository public to enable this feature".
-- **Environments e segredos de environment** em repositório privado também
-  pedem plano pago pela documentação: no Free, só em repositório público
-  ([Managing environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
-  e a seção "Environment secrets" de Deployments and environments). O
-  repositório, porém, já tem `capture-fiscal-emergency`, `offsite-backup`,
-  `production` e `validation`, com regra de branch, e o run `39969590818` de
-  `capture-fiscal-halt.yml`, em 23/10/2026, recebeu `FNFE_SITE_DEPLOY_KEY`,
-  segredo que só existe em `capture-fiscal-emergency`, e terminou com
-  sucesso. Documentação e comportamento observado divergem aqui; required
-  reviewers não foram testados, porque criá-los é escrita no repositório.
-  Nenhum dos cinco environments da NFS-e (`nfse-production-gate`,
-  `nfse-production-emergency`, `nfse-production-read`,
-  `nfse-production-release` e `offsite-backup-issuance`) existe.
+Desde 03/11/2026 o código está no repositório público
+`freecorps/freecorpsNFE` (decisão 6 de
+[ACCEPTANCE.md](../v1.0/ACCEPTANCE.md), revista em 03/11/2026), e o plano
+Free oferece esses recursos em repositório público
+([Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#required-reviewers),
+[About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)).
+Conferido em 03/11/2026 com `gh api repos/freecorps/freecorpsNFE/rulesets`,
+`gh api repos/freecorps/freecorpsNFE/environments` e
+`gh api repos/freecorps/freecorpsNFE`:
 
-O que acontece com o código da `main` nesse plano, tomando a documentação como
-certa para os required reviewers:
+- **Ruleset `main`**, ativo na branch padrão e sem bypass. Exige PR, os
+  checks `Validate` e `Public scan` e as conversas resolvidas, e recusa
+  force-push e exclusão da branch. Exige 0 aprovações e não pede revisão de
+  code owner.
+- **Environments.** `nfse-production-gate` e `nfse-production-release` têm
+  required reviewers com _Prevent self-review_. Todos os environments do
+  repositório aceitam deploy só da `main`. Os cinco da NFS-e
+  (`nfse-production-gate`, `nfse-production-emergency`,
+  `nfse-production-read`, `nfse-production-release` e
+  `offsite-backup-issuance`) existem e ainda não têm segredos.
+- **Segurança.** Secret scanning, push protection e private vulnerability
+  reporting estão ligados.
 
-- `nfse-gate-enable.yml` recusa sempre. Sem required reviewers, o run não
-  tem aprovação em `/actions/runs/{id}/approvals`, e `verifiedRun`
-  (`scripts/lib/issuance-gate.mjs`) termina em `APPROVAL_MISSING` antes de
-  chamar o Convex. O gate não liga; a falha é fechada.
-- `deploy-issuance-production.yml` também recusa sempre. Antes de usar a
-  chave de deploy, `scripts/deploy-issuance-production.mjs publish` lê o run
-  e `/actions/runs/{id}/approvals` e passa pelo mesmo `verifiedRun` do ligar,
-  com `RELEASE_WORKFLOWS` (`scripts/lib/issuance-release.mjs`). Sem required
-  reviewers não há aprovação, e a publicação termina em `APPROVAL_MISSING`
-  sem chamar o Convex nem a Cloudflare. `approved_sha` continua sendo entrada
-  de quem dispara e não conta como aprovação: só confere que o SHA do run é o
-  pretendido. A falha é fechada.
-- Sem proteção da `main`, `.github/CODEOWNERS` não obriga revisão. Quem tem
-  escrita no repositório altera um workflow que recebe a chave de deploy sem
-  outra pessoa ver, e a segunda emenda da ADR 0004 põe a `main` com revisão
-  obrigatória como requisito da publicação do segundo alvo.
+O que isso muda no código da `main`:
 
-**Decisão pendente dos sócios**, antes dos passos 1, 2 e 9 e de qualquer
-publicação do segundo alvo:
+- `nfse-gate-enable.yml` e `deploy-issuance-production.yml` passam a ter
+  aprovação no run. `verifiedRun` (`scripts/lib/issuance-gate.mjs`) continua
+  exigindo, em `/actions/runs/{id}/approvals`, a aprovação de alguém em
+  `authorizedActors` que não disparou o run, com `RELEASE_WORKFLOWS`
+  (`scripts/lib/issuance-release.mjs`) na publicação. Sem ela, os dois
+  terminam em `APPROVAL_MISSING` antes de chamar o Convex ou a Cloudflare.
+  `approved_sha` continua sendo entrada de quem dispara e não conta como
+  aprovação: só confere que o SHA do run é o pretendido. Enquanto os
+  environments não têm `FNFE_ISSUANCE_DEPLOY_KEY` e o plano não nomeia o
+  deployment, nenhum dos dois chega à produção fiscal.
+- Com 0 aprovações no ruleset, `.github/CODEOWNERS` ainda não obriga revisão:
+  quem tem escrita mescla a própria PR com os checks verdes, inclusive num
+  workflow que recebe a chave de deploy. A segunda emenda da ADR 0004 põe a
+  `main` com revisão obrigatória como requisito da publicação do segundo
+  alvo; esse requisito continua aberto no passo humano 1.
 
-1. mudar o plano. Team libera a proteção da `main`, mas não os required
-   reviewers em repositório privado; o desenho da ADR inteiro pede
-   Enterprise;
-2. tornar o repositório público;
-3. emendar a ADR 0004, §8, com outro controle de duas pessoas, e mudar
-   workflows e scripts numa PR própria.
-
-Este runbook não escolhe; registre a decisão na #198.
+A abertura do repositório tirou o bloqueio do plano. Exigir a revisão
+aprovada na `main` continua a cargo dos sócios; registre na #198 quando for
+feito.
 
 ### Pré-condições para ligar o gate
 
@@ -684,10 +683,10 @@ do primeiro `enable`:
    `aderenteEmissorNacional` 1 no ADN de produção;
 3. a confirmação escrita do contador sobre alíquota, `regApTribSN` e campos de
    exportação;
-4. a decisão dos sócios sobre o [plano do GitHub](#bloqueio-o-plano-do-github).
-   Bloqueante: no plano atual, `nfse-gate-enable.yml` recusa todo `enable`
-   e `deploy-issuance-production.yml` recusa toda publicação, ambos com
-   `APPROVAL_MISSING`;
+4. as [proteções do GitHub](#proteções-do-github). Desde 03/11/2026, com o
+   repositório público, os environments `nfse-production-gate` e
+   `nfse-production-release` têm required reviewers; falta exigir a revisão
+   aprovada na `main`;
 5. os [passos humanos](#passos-humanos) feitos;
 6. o leiaute da DPS de produção conferido. A DPS com `tpAmb` 1 segue o XSD
    v1.01-20260209, o único publicado na Documentação Atual do Portal NFS-e.
@@ -738,8 +737,8 @@ mesma mudança ao contrário, também registrada.
 
 Todos os comandos já existem e recusam rodar enquanto o plano não nomear o
 deployment. Os passos 1 e 4 pressupõem a aprovação de outra pessoa no
-environment, que o plano atual do GitHub não oferece
-([bloqueio](#bloqueio-o-plano-do-github)).
+environment, disponível desde 03/11/2026
+([proteções do GitHub](#proteções-do-github)).
 `<org>`, `<empresa>` e `<emissão>` são os `_id` das tabelas `organizations`,
 `companies` e `issuances`.
 

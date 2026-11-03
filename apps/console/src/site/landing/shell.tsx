@@ -142,7 +142,7 @@ export function Footer() {
           <a href="/docs/contrato">Contrato REST</a>
           <a href="/docs/agentes">Agentes de IA</a>
           <a href="/docs/instalacao">Instalação</a>
-          <a href={repository}>GitHub (privado)</a>
+          <a href={repository}>GitHub</a>
         </nav>
         <nav aria-label="Condições">
           <h2>Condições</h2>
