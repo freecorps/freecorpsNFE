@@ -37,6 +37,11 @@ agentes e verificação formal com diagramas de estados. O catálogo passa a
 preparação de PR também receberam trechos adaptados. Consulte
 [origem e limites](skills/EXTERNAS.md#importação-do-cursor-plugins-em-27102026).
 
+Em 03/11/2026, `file-issue` entrou como skill local, irmã de `file-pr`, e
+levou o catálogo a 101. Ela decide se o relato pode ser público, busca
+duplicatas, segue os formulários de `.github/ISSUE_TEMPLATE/` e varre título
+e corpo com `scripts/scan-public-text.mjs` antes de publicar.
+
 Os diretórios vindos do projeto de origem preservam seu conteúdo e arquivos de apoio,
 salvo as adaptações documentadas; as importações seguintes seguem o fluxo local.
 Consulte [origem e adaptações](skills/EXTERNAS.md) antes de aplicar as convenções
@@ -152,7 +157,7 @@ sequência obrigatória de trabalho.
 - [review-animations](skills/review-animations/SKILL.md)
 - [write-swift](skills/write-swift/SKILL.md)
 
-## Diagnóstico, planejamento, escrita e PRs — 39 skills
+## Diagnóstico, planejamento, escrita e PRs — 40 skills
 
 - [arena](skills/arena/SKILL.md)
 - [babysit-pr](skills/babysit-pr/SKILL.md)
@@ -166,6 +171,7 @@ sequência obrigatória de trabalho.
 - [dependency-maintenance](skills/dependency-maintenance/SKILL.md)
 - [diagnosing-bugs](skills/diagnosing-bugs/SKILL.md)
 - [domain-modeling](skills/domain-modeling/SKILL.md)
+- [file-issue](skills/file-issue/SKILL.md)
 - [file-pr](skills/file-pr/SKILL.md)
 - [full-output-enforcement](skills/full-output-enforcement/SKILL.md)
 - [grilling](skills/grilling/SKILL.md)

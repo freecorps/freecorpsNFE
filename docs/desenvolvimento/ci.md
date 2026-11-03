@@ -510,7 +510,10 @@ Limites:
   adicionado num commit intermediário e removido no seguinte passa pelos dois
   e fica no histórico público.
 - Título e corpo de PR, issue, comentário e mensagem de commit não são
-  arquivos e ficam fora do hook e do `Public scan`.
+  arquivos e ficam fora do hook e do `Public scan`. Quem escreve passa o
+  texto, gravado em arquivo, por `node scripts/scan-public-text.mjs`, que
+  aplica as regras de credenciais e identificadores, sem Gitleaks nem nomes
+  restritos.
 - `git push --no-verify` e `VP_GIT_HOOKS=0` pulam o hook. Agentes não usam
   nenhum dos dois para passar um bloqueio (AGENTS.md, Credenciais e dados
   reais).
