@@ -216,7 +216,9 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
     return (
       <Card
         title="Cobrança"
-        description={data.pixEnabled ? "Pagamento por Pix assistido." : "Pagamento por cartão."}
+        description={
+          data.pixEnabled ? "Pagamento por Pix assistido." : "Contratação indisponível no momento."
+        }
       >
         <DescriptionList
           items={[

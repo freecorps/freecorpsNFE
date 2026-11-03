@@ -933,8 +933,9 @@ async function configureSwitch(
   if (args.evidence.length < 8 || args.evidence.length > 500) deny("INVALID_REQUEST");
   if (!prior || (args.enabled && !prior.enabled)) deny("PLANS_DISABLED");
   const now = Date.now();
+  const value = { enabled: args.enabled, evidence: args.evidence, updatedAt: now };
   await ctx.db.patch("platformPlanSettings", prior._id, {
-    [field]: { enabled: args.enabled, evidence: args.evidence, updatedAt: now },
+    ...(field === "annual" ? { annual: value } : { pix: value }),
     version: prior.version + 1,
     updatedAt: now,
   });

@@ -1093,7 +1093,7 @@ Variáveis do deployment Convex, as duas juntas ou nenhuma:
 
 Configuração parcial ou inválida derruba as funções de cobrança com
 `Invalid platform configuration: STRIPE_BILLING`; a tela trata como cartão
-indisponível e o Pix continua. A chave restrita precisa de escrita em
+indisponível, e o Pix, se ligado, continua. A chave restrita precisa de escrita em
 Customers, Checkout Sessions, Coupons, Subscriptions e Billing Portal, e leitura de
 Prices, Invoices e Charges.
 
@@ -1301,7 +1301,8 @@ mantenedor.
 1. **Conta de teste.** Preparar os itens 1 a 4 de
    [Configuração](#configuração), com o endpoint em
    `https://freecorpsnfe-validation.freecorps.workers.dev/v1/billing/stripe/events`.
-   `node scripts/check-billing-stripe.mjs --endpoint <essa URL>` passa com a chave de teste.
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo> --endpoint <essa URL>`
+   passa com a chave de teste.
 2. **Deployment.** Antes das variáveis, um `POST` sem assinatura nessa URL
    responde 404; depois de gravar `STRIPE_BILLING_SECRET_KEY` (`rk_test_…`) e
    `STRIPE_BILLING_WEBHOOK_SECRET`, responde 400. Ligar só na validação o
@@ -1326,15 +1327,19 @@ mantenedor.
    responde `PIX_DISABLED`.
 6. **Repetição.** Reenviar pelo painel um evento já processado não cria
    efeito novo.
-7. **Limpeza.** Cancelar as assinaturas de teste, desligar o anual e o
-   catálogo na validação e retirar as variáveis, salvo decisão de manter o
-   cartão de teste ali.
+7. **Limpeza.** Cancelar as assinaturas de teste, desligar o anual
+   (`plans:configureAnnual`) e fechar a janela de admissão na validação
+   (`plans:configure` com `admissionsUntil` no passado: a mutation não
+   desliga um catálogo já ligado) e retirar as variáveis, salvo decisão de
+   manter o cartão de teste ali.
 8. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado na
    validação, os estados e códigos observados e o resultado de
-   `node scripts/check-billing-stripe.mjs`, sem chaves nem ids da conta.
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo>`, sem chaves
+   nem ids da conta.
 
 Depois da prova, a ativação em produção segue esta ordem:
-`node scripts/check-billing-stripe.mjs` com a chave `live` contra o endpoint de produção, os
+`node scripts/check-billing-stripe.mjs --key-file <arquivo>` com a chave
+`live` contra o endpoint de produção, os
 segredos no deployment de produção, o catálogo ligado e
 `plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O
 Pix continua desligado.

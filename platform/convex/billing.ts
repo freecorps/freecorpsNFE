@@ -195,7 +195,7 @@ export const overview = query({
     try {
       cfg = config();
     } catch {
-      // Misconfigured card billing reads as unavailable; Pix keeps working.
+      // Misconfigured card billing reads as unavailable; Pix, if switched on, keeps working.
     }
     const now = Date.now();
     const current = await planFor(ctx, args.organizationId);

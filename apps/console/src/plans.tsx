@@ -413,6 +413,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
       {data.terms.map((term) => (
         <AnnualTerm
           annualEnabled={data.annualEnabled}
+          pixEnabled={data.pixEnabled}
           key={term.id}
           term={term}
           actions={
@@ -721,10 +722,13 @@ function AnnualTerm({
   term,
   actions,
   annualEnabled,
+  pixEnabled,
 }: {
   term: Term;
   actions: ReactNode;
   annualEnabled: boolean;
+  /** A Pix term renews by a new Pix request, offered only while Pix is on sale. */
+  pixEnabled: boolean;
 }) {
   const rescinded = term.state === "rescinded";
   return (
@@ -793,7 +797,7 @@ function AnnualTerm({
               ? `No cartão, os próximos 12 meses, pelo ${tierNames[lastTier(term)]} anual, são cobrados nessa data. “Cancelar renovação”, em Cobrança, mantém os meses pagos, sem reembolso.`
               : term.source === "stripe"
                 ? "No cartão, este plano anual não renova: termina nessa data, e os meses pagos continuam até lá."
-                : annualEnabled
+                : annualEnabled && pixEnabled
                   ? "No Pix, a renovação é um novo pedido anual, feito no último mês. Sem ele, o plano termina nessa data, e os meses pagos continuam até lá."
                   : "No Pix, o plano termina nessa data, sem renovação automática, e os meses pagos continuam até lá."}
           </p>

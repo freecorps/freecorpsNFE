@@ -472,5 +472,5 @@ it("com o Pix desligado, a cobrança fala só do cartão", () => {
   cleanup();
   state.data = overview({ card: false, pixEnabled: false });
   show();
-  expect(screen.getByText("Pagamento por cartão.")).toBeTruthy();
+  expect(screen.getByText("Contratação indisponível no momento.")).toBeTruthy();
 });

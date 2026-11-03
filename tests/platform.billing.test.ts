@@ -746,6 +746,22 @@ describe("respostas inconsistentes do portal", () => {
   });
 });
 
+describe("interruptor do Pix na cobrança", () => {
+  it("billing:overview traz pixEnabled, com e sem o cartão configurado", async () => {
+    const f = await fixture();
+    expect((await f.billing()).pixEnabled).toBe(true);
+    await f.t.mutation(internal.plans.configurePix, {
+      enabled: false,
+      expectedVersion: 1,
+      evidence: "synthetic-pix-off",
+    });
+    expect((await f.billing()).pixEnabled).toBe(false);
+    vi.stubEnv("STRIPE_BILLING_SECRET_KEY", "");
+    vi.stubEnv("STRIPE_BILLING_WEBHOOK_SECRET", "");
+    expect(await f.billing()).toMatchObject({ card: false, pixEnabled: false });
+  });
+});
+
 describe("permissões e isolamento", () => {
   it("recusa papel sem gestão, sessão ausente, outra organização e cobrança desligada", async () => {
     const f = await fixture();

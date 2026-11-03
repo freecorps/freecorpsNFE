@@ -822,3 +822,14 @@ it("with Pix off, paid tiers point to the card and a Pix term offers no upgrade"
   show();
   expect(screen.getByRole("button", { name: "Mudar para Grande anual" })).toBeTruthy();
 });
+
+it("with Pix off, a Pix term does not promise a renewal by a new Pix request", () => {
+  clock();
+  state.data = { ...annualOn(), pixEnabled: false, terms: [term()] };
+  show();
+  const card = screen.getByRole("region", { name: "Plano anual em vigor" });
+  expect(card.textContent).toContain(
+    "No Pix, o plano termina nessa data, sem renovação automática",
+  );
+  expect(card.textContent).not.toContain("novo pedido anual");
+});
