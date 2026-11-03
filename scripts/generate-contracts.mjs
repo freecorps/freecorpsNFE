@@ -33,8 +33,11 @@ if (baseIndex !== -1) {
     );
   // Decisão de 26/10/2026: a comparação usa o último contrato publicado, não a base do PR.
   const record = JSON.parse(readFileSync("packages/contracts/published.json", "utf8"));
-  const published = publishedBaseline(record, openapiAt, (text) =>
-    createHash("sha256").update(text).digest("hex"),
+  const published = publishedBaseline(
+    record,
+    openapiAt,
+    (text) => createHash("sha256").update(text).digest("hex"),
+    (path) => readFileSync(path, "utf8"),
   );
   const failures = contractGateFailures({
     base: files.trim() ? JSON.parse(openapiAt(base)) : null,

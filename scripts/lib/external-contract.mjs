@@ -166,14 +166,24 @@ export function contractGateFailures({ base, published, next }) {
 
 /**
  * The last published contract, from the versioned record in packages/contracts/published.json.
- * `readAtCommit(commit)` returns the text of docs/v1.0/openapi.json at that commit; its SHA-256
- * and version must match the record, so the baseline cannot drift from what was published.
+ * `readAtCommit(commit)` returns the text of docs/v1.0/openapi.json at that commit; when the
+ * record names a `snapshot` (a contract published before the public repository, whose commit
+ * lives only in the archived one), `readSnapshot(path)` reads that versioned copy instead. Either
+ * way its SHA-256 and version must match the record, so the baseline cannot drift from what was
+ * published.
  */
-export function publishedBaseline(record, readAtCommit, sha256) {
+export function publishedBaseline(record, readAtCommit, sha256, readSnapshot = null) {
   if (record.published === null) return null;
-  const { version, commit, openapiSha256 } = record.published;
+  const { version, commit, openapiSha256, snapshot } = record.published;
   if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error("Contrato publicado: commit inválido");
-  const text = readAtCommit(commit);
+  if (
+    snapshot !== undefined &&
+    !/^packages\/contracts\/published\/[a-z0-9.-]+\.json$/.test(snapshot)
+  )
+    throw new Error("Contrato publicado: snapshot inválido");
+  if (snapshot !== undefined && !readSnapshot)
+    throw new Error("Contrato publicado: o registro pede o snapshot");
+  const text = snapshot === undefined ? readAtCommit(commit) : readSnapshot(snapshot);
   if (sha256(text) !== openapiSha256)
     throw new Error(`Contrato publicado: SHA-256 de ${commit} difere do registro`);
   const document = JSON.parse(text);

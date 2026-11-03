@@ -398,6 +398,27 @@ describe("contract gate against the last published contract (decision of 26/10/2
       publishedBaseline({ published: { ...record.published, version: "7.0.0" } }, () => text, sha),
     ).toThrow("versão");
     expect(publishedBaseline({ published: null }, () => text, sha)).toBeNull();
+    const withSnapshot = {
+      published: {
+        ...record.published,
+        snapshot: "packages/contracts/published/openapi-8.0.0.json",
+      },
+    };
+    const readAtCommit = () => {
+      throw new Error("commit fora do histórico");
+    };
+    expect(publishedBaseline(withSnapshot, readAtCommit, sha, () => text)?.info.version).toBe(
+      "8.0.0",
+    );
+    expect(() => publishedBaseline(withSnapshot, readAtCommit, sha)).toThrow("snapshot");
+    expect(() =>
+      publishedBaseline(
+        { published: { ...withSnapshot.published, snapshot: "../segredo.json" } },
+        readAtCommit,
+        sha,
+        () => text,
+      ),
+    ).toThrow("snapshot inválido");
   });
   it("records the contract published with the SDK on 01/11/2026 (#83)", () => {
     const record = JSON.parse(
@@ -408,8 +429,12 @@ describe("contract gate against the last published contract (decision of 26/10/2
       commit: "08e85d807a8687d655066289bac689215f49ebc8",
       openapiSha256: "edfcb60eb1adaa170d3c7f1232153162d51bd94ad4924132a8e1e79b3e548c1a",
       publishedAt: "2026-11-01T20:17:03.175Z",
+      snapshot: "packages/contracts/published/openapi-8.0.0.json",
     });
     expect(record.note).toMatch(/@freecorps\/sdk@0\.1\.0/);
+    // The commit lives in the archived repository: the versioned copy keeps the same bytes.
+    const copy = readFileSync(new URL(`../${record.published.snapshot}`, import.meta.url));
+    expect(createHash("sha256").update(copy).digest("hex")).toBe(record.published.openapiSha256);
   });
 });
 it("keeps XML filename validation identical in Zod and the generated JSON Schema", () => {
