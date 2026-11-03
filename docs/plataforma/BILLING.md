@@ -18,10 +18,10 @@ testes, mas toda contratação passa por `requirePlanAdmissions`: sem
 Mensal e anual foram exercitados numa conta Stripe de teste, conforme a
 matriz de assinaturas.
 Não houve cobrança real nem configuração de cobrança no deployment.
-Ligar a oferta continua sujeito à viabilidade da #34 e aos termos e provas da
-modalidade na issue da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md).
-A viabilidade do anual foi aprovada com o fechamento da #34, em 03/11/2026;
-a prova hospedada e a ativação do anual ficam na #35
+A viabilidade dos planos foi aprovada com o fechamento da #34, em 03/11/2026.
+Ligar a oferta continua sujeito aos termos e às provas da modalidade na issue
+da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md): a prova
+hospedada e a ativação do anual ficam na #35
 ([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
 
 Não confundir com a [conexão Stripe](STRIPE.md) (ADR 0006): ela recebe os
@@ -1095,7 +1095,8 @@ Configuração parcial ou inválida derruba as funções de cobrança com
 `Invalid platform configuration: STRIPE_BILLING`; a tela trata como cartão
 indisponível, e o Pix, se ligado, continua. A chave restrita precisa de escrita em
 Customers, Checkout Sessions, Coupons, Subscriptions e Billing Portal, e leitura de
-Prices, Invoices e Charges.
+Prices, Invoices e Charges. Essa chave não lê Webhook Endpoints nem a
+configuração do portal: a conferência abaixo usa outra chave, só de leitura.
 
 No painel do Stripe, antes de ligar:
 
@@ -1127,12 +1128,16 @@ Convex:
 node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]
 ```
 
-O arquivo guarda a chave (`sk_` ou `rk_`, `test` ou `live`), com leitura em
-Prices, Webhook Endpoints e Customer portal. `--endpoint` muda a URL esperada,
+O arquivo guarda uma chave restrita própria da conferência (`rk_`, ou `sk_`;
+`test` ou `live`), só com leitura em Prices, Webhook Endpoints e Customer
+portal, separada da que o deployment usa. Sem `--endpoint`, a URL esperada é a
+de produção. `--endpoint` muda a URL esperada,
 por exemplo para a validação. O comando confere os quatro preços com as regras
 de `readCatalogPrices` e `readAnnualPrices`, um único endpoint ativo nessa URL
 com todos os eventos assinados e a configuração padrão do portal com as regras
-de `readPortalSession`. Sai com 0 se tudo passar e 1 se algum item falhar, e
+de `readPortalSession`. Sai com 0 se tudo passar, 1 se algum item falhar e 2
+se não conseguiu conferir (argumento, chave, rede ou resposta de erro do
+Stripe), e
 imprime um relatório sem chave nem ids da conta, com os itens 5 e 6 e os
 e-mails do Stripe listados para conferência manual no painel.
 `scripts/billing-stripe-check.test.ts` impede que essas regras se afastem das
@@ -1301,7 +1306,7 @@ mantenedor.
 1. **Conta de teste.** Preparar os itens 1 a 4 de
    [Configuração](#configuração), com o endpoint em
    `https://freecorpsnfe-validation.freecorps.workers.dev/v1/billing/stripe/events`.
-   `node scripts/check-billing-stripe.mjs --key-file <arquivo> --endpoint <essa URL>`
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <essa URL>`
    passa com a chave de teste.
 2. **Deployment.** Antes das variáveis, um `POST` sem assinatura nessa URL
    responde 404; depois de gravar `STRIPE_BILLING_SECRET_KEY` (`rk_test_…`) e
@@ -1311,7 +1316,7 @@ mantenedor.
 3. **Mensal.** O owner sintético contrata o Intermediário mensal pelo console
    com cartão de teste. Conferir os eventos `processed` em `billingEvents`, a
    concessão `applied` em `billingGrants` e o plano no console, sem
-   "Conferir pagamento". "Abrir portal" mostra só cartão e faturas.
+   "Conferir pagamento". "Cartão e faturas" abre o portal só com cartão e faturas.
 4. **Anual no cartão.** Depois de "Cancelar renovação" na mensal, "Assinar …
    anual no cartão" termina `no_payment_required`, sem fatura, e o console
    mostra o termo agendado com a reserva de admissão. O Customer nasce no
@@ -1334,11 +1339,12 @@ mantenedor.
    manter o cartão de teste ali.
 8. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado na
    validação, os estados e códigos observados e o resultado de
-   `node scripts/check-billing-stripe.mjs --key-file <arquivo>`, sem chaves
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
+   sem chaves
    nem ids da conta.
 
 Depois da prova, a ativação em produção segue esta ordem:
-`node scripts/check-billing-stripe.mjs --key-file <arquivo>` com a chave
+`node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave
 `live` contra o endpoint de produção, os
 segredos no deployment de produção, o catálogo ligado e
 `plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O

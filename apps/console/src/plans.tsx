@@ -528,8 +528,11 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               cell: (item) => {
                 const free = item.tier === "free";
                 // The paid tiers here are Pix requests; with Pix off, the card sells them below.
+                // Only managers see Cobrança; the others already read who can contract above.
                 if (!free && !data.pixEnabled)
-                  return <p className="gestao-help">Assine pelo cartão em Cobrança.</p>;
+                  return canManage ? (
+                    <p className="gestao-help">Assine pelo cartão em Cobrança.</p>
+                  ) : null;
                 const yearly = !free && annualView;
                 const unavailable =
                   blocked ||

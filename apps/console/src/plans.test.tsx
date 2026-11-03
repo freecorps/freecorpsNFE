@@ -833,3 +833,11 @@ it("with Pix off, a Pix term does not promise a renewal by a new Pix request", (
   );
   expect(card.textContent).not.toContain("novo pedido anual");
 });
+
+it("with Pix off, a member who cannot contract gets no pointer to Cobrança", () => {
+  state.data = { ...overview(), pixEnabled: false };
+  show("viewer");
+  expect(screen.getByText(/Apenas o proprietário e administradores/)).toBeTruthy();
+  expect(screen.queryByText("Assine pelo cartão em Cobrança.")).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
+});
