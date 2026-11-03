@@ -12,7 +12,8 @@ import { projectRepository } from "./repository.mjs";
  * autor ou pelo dispatch do próprio dono, antes de qualquer build ou escrita
  * (`scripts/lib/owner-review.mjs`). Só lê: a revisão publicada pelos endereços públicos, o
  * histórico do checkout e a API do GitHub com `GH_TOKEN`. O publicador o chama no preflight; o
- * job `Owner review` do `deploy.yml` o chama antes, sem credenciais, para reprovar em segundos.
+ * job `Owner review and validation reuse` do `deploy.yml` o chama antes, sem credenciais, para
+ * reprovar em segundos.
  * @param {{ root: string, sha: string, target: object, env: NodeJS.ProcessEnv }} options
  */
 export async function reviewGate({ root, sha, target, env }) {

@@ -65,11 +65,11 @@ de uma destas aprovações:
   Com um dono só, que também é o autor dos commits, este caminho não passa;
   fica para quando houver outro dono.
 
-O job `Owner review` do `deploy.yml` antecipa esse gate
-(`scripts/owner-review-check.mjs`, #51). Ele roda ao lado do `validate`, sem
-environment nem secrets, só com o `GITHUB_TOKEN` de leitura, e o
-`Publish production` depende dele: um commit sem aprovação reprova a
-publicação em segundos, em vez de depois de 3 a 4 minutos de validação. O
+O job `Owner review and validation reuse` do `deploy.yml` antecipa esse gate
+(`scripts/owner-review-check.mjs`, #51). Ele roda antes do `validate`, sem
+environment nem secrets, só com o `GITHUB_TOKEN` de leitura, e o `validate`
+e o `Publish production` dependem dele: um commit sem aprovação reprova a
+publicação em segundos e não gasta validação. O
 preflight do publicador continua chamando o mesmo gate
 (`scripts/lib/owner-review-gate.mjs`), contra a revisão servida no momento da
 publicação; o job antecipado não substitui essa conferência.
@@ -202,7 +202,10 @@ marcador ([ISSUANCE.md](../plataforma/ISSUANCE.md#deployment-de-produção-fisca
 
 O merge de uma PR na `main` dispara o workflow. O job `validate` executa o CI
 sem credenciais de produção; somente após sua aprovação o job `publish`
-publica o checkout exato. O plano é `deploy/platform-release.json` daquele
+publica o checkout exato. Quando a PR entrou atualizada e o `Validate` dela já
+aprovou a mesma árvore contra a mesma `main` anterior, o `validate` não roda
+de novo e o `publish` usa essa aprovação
+([Validação reaproveitada](../desenvolvimento/ci.md#validação-reaproveitada)). O plano é `deploy/platform-release.json` daquele
 commit, com SHA-256 calculado no runner e recibos conferidos pelo publicador.
 Cada publicação inclui todos os merges que pertencem ao commit publicado.
 Não é preciso publicar PRs antigas uma por uma.
