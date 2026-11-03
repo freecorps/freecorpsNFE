@@ -466,7 +466,7 @@ ausente. Com `"false"`, ela só avisaria. Para rodar localmente, com o Gitleaks 
 
 ## Instalação reproduzível e cache
 
-Bun `1.4.0`, Node `24.22.1`, Vite+ `0.3.3` e dependências resolvidas pelo
+Bun `1.4.0`, Node `24.22.1`, Vite+ `1.4.0` e dependências resolvidas pelo
 `bun.lock`. Actions são fixadas por SHA; upload de artifacts usa v7.0.1. O CI
 não usa cache de dependências ou build e executa `vp install --frozen-lockfile`
 em runner novo. O grafo de tarefas também roda com `--no-cache`. Um checkout
@@ -477,10 +477,10 @@ A atualização de dependências mantém Better Auth em 1.6.x, conforme o peer
 do adaptador Convex, e React/tipos em 19.2.x; mudar de linha fica separado.
 TypeScript 6 continua disponível para os scripts que usam sua API JavaScript;
 o alias `typescript-7` atende às checagens nativas. Os tipos do Node seguem a
-linha 24 do CI. Vite+ e seu alias `vite` avançam juntos em 0.3.x; a migração
-para 1.0/Vitest 5 fica separada, assim como as mudanças de linha do plugin
-React e xmldom. O adaptador `@convex-dev/better-auth`, Workpool e Rate Limiter
-preservam as versões dos patches locais em `patchedDependencies`.
+linha 24 do CI. Vite+ e seu alias `vite` avançam juntos, com `oxfmt`, `oxlint`
+e `oxlint-tsgolint` na versão exata que o Vite+ exige; a linha 1.x traz o
+Vitest 5. Mudanças de linha do plugin React e xmldom ficam separadas. O
+adaptador `@convex-dev/better-auth`, Workpool e Rate Limiter preservam as versões dos patches locais em `patchedDependencies`.
 
 Se cache for introduzido no CI, usar OS, arquitetura, Node, Bun e hash do
 lockfile na chave. Nunca restaurar `node_modules`, builds ou o recibo de

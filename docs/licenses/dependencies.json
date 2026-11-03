@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "862bba4be836affccfadb151b24ac41255a8e573727776e7f29eff7ef5bc86fa",
+  "lockSha256": "b34fd5a22b952e3d5d2b1439f0001461652937d0eabeb564fd7fa466d743920f",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -298,10 +298,10 @@
       "direct": []
     },
     {
-      "id": "@blazediff/core@1.9.1",
+      "id": "@blazediff/core@1.10.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40blazediff%2Fcore/1.9.1",
-      "integrity": "sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA==",
+      "source": "https://registry.npmjs.org/%40blazediff%2Fcore/1.10.0",
+      "integrity": "sha512-AOQff0zgR7cGsZL+4E7hVkmujoPUpm0J9xzWGWZj5wCjd3gmxESXAPfKyuzs93VdpQNFhHlBhfOjrcZ+XTERtQ==",
       "repository": "git+https://github.com/teimurjan/blazediff.git",
       "direct": []
     },
@@ -1465,378 +1465,378 @@
       "direct": []
     },
     {
-      "id": "@oxc-project/runtime@0.150.0",
+      "id": "@oxc-project/runtime@0.155.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxc-project%2Fruntime/0.150.0",
-      "integrity": "sha512-vC4tN4n2c+gVq69Oi6CoZxGk/1mYjLiN4hVEYwvtuns/S4QwUBiJYViwLGLxPaLQnsY5FQDgGs+h6moAmSedvA==",
+      "source": "https://registry.npmjs.org/%40oxc-project%2Fruntime/0.155.0",
+      "integrity": "sha512-VbW9raczGS5ZZ1FMunUBYHe4uV/R684qlQCoMdE3n5JT1PcqQsvmFpMYkF8AD+W04fBLGAq6Tr7YsTk0jjvDBA==",
       "repository": "https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxc-project/types@0.150.0",
+      "id": "@oxc-project/types@0.155.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxc-project%2Ftypes/0.150.0",
-      "integrity": "sha512-rDS5/31E9HfPl/CIzGrn0DOlvBbXFseQ5URJ9sYMfstbKLD/c6Gm9vmRzRGDdAXyOIL4zmO37lc9RIwYqVruZw==",
+      "source": "https://registry.npmjs.org/%40oxc-project%2Ftypes/0.155.0",
+      "integrity": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-android-arm-eabi@0.68.0",
+      "id": "@oxfmt/binding-android-arm-eabi@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-android-arm-eabi/0.68.0",
-      "integrity": "sha512-dhfYPbzv/h9JgHjNkl2R6sOjUfxDyLGOZVb3g8/ScaTNwwJcYgmHh8kcYFDUhinuy1QAoANCWUvw1jlk+z6gAg==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-android-arm-eabi/0.74.0",
+      "integrity": "sha512-xxQwrf5EPI5zxvuCTW8r6tzCTjPQ+h6+HqJ0iRKRy2zS1yBllt/xLVjoIyUc+FnR7g0a5g1SZv2yyDYhTItLbA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-android-arm64@0.68.0",
+      "id": "@oxfmt/binding-android-arm64@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-android-arm64/0.68.0",
-      "integrity": "sha512-v3Njdi6qY0O/5eGfg01ww2w6gTn2mUvZ72Bnx1/UN53A9wruh3Nk6otc3WkgJLkXD4Qgz1SOcVQieH1oD03V9Q==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-android-arm64/0.74.0",
+      "integrity": "sha512-FJW3sATVvrWbV64al8xofCPZj4500Z/1W0ad7Tg1rcCUyh0EMbuSrsf3jsZS7CEbwQ5fQ0mRhmkc129GFgofSQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-darwin-arm64@0.68.0",
+      "id": "@oxfmt/binding-darwin-arm64@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-darwin-arm64/0.68.0",
-      "integrity": "sha512-ei4MCMzHFREmZwPJ7KuWUB4kBuHdsgDrnXGJVcEAopU7fj7S42I8BChdFILWdHvhFqR08FLJtOfbZIr2CDw0cA==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-darwin-arm64/0.74.0",
+      "integrity": "sha512-TfmNKBD30dGyMu9GCLiaw2rt/z7fms9LS+5cKcNOyWst0QgAs8oZs6wPxMbVaaDVE0/PCdCosgWM1vbu6f5NUg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-darwin-x64@0.68.0",
+      "id": "@oxfmt/binding-darwin-x64@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-darwin-x64/0.68.0",
-      "integrity": "sha512-UrKgzZxYhwB9DSvTX+vdgl9M32wLUNKJcAKIoiyx/Kzn/zveqi7W6kYVcRroFMhS3Kwz0KhTk3WBeSuQn4YCTg==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-darwin-x64/0.74.0",
+      "integrity": "sha512-5Usf8+DfC4Q3o/MD8FkN47GrI6y0KbhQ4KhZ2HGzMZcXjcW1AeldwbUn51aKih+1TVuJFF9qkNm6X1nzm6NYng==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-freebsd-x64@0.68.0",
+      "id": "@oxfmt/binding-freebsd-x64@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-freebsd-x64/0.68.0",
-      "integrity": "sha512-6jrEKgpJbilM1QaRv7hEtKXr4p4AK4jvvyOtajwyhu0kOz3e0O7OLnSTk6tBotRqCcUC4ehZRJ1Zx+Y99wieLw==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-freebsd-x64/0.74.0",
+      "integrity": "sha512-eL+1O3gykw1XihbZh2MRAciQvU2988LByrnjhyo/dmNG74X4oZ7XzigRoWPRFLfJCp8hzRkp/LbEhwe7uuT2eA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-arm-gnueabihf@0.68.0",
+      "id": "@oxfmt/binding-linux-arm-gnueabihf@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm-gnueabihf/0.68.0",
-      "integrity": "sha512-YOIVnKOBaLeGullskS179N12hjSAdFYnzLjOaKiLhAKNWgnShq9w4xRdtmUm6BlnP65l2/EA9Aw/KlftNxDM7Q==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm-gnueabihf/0.74.0",
+      "integrity": "sha512-Xt0QtO2hJ4stnul8IL4LJGVLyp0xnc6ccN9fZ30yuubv8FWSRYxWwd1Za62KsEqAfmPSazoS/cLSUUJpja6npA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-arm-musleabihf@0.68.0",
+      "id": "@oxfmt/binding-linux-arm-musleabihf@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm-musleabihf/0.68.0",
-      "integrity": "sha512-xW5XoEHVNqydPBv2KXvk9lmEzyAlOQHVEazKoXUuAacqekjya+OdiaFjjEBl0oJD02raG8g3TRl9OVCh9PDIHA==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm-musleabihf/0.74.0",
+      "integrity": "sha512-/4wYQ0gZl4vUR0QoBTGaay73FmQ1GAjUa9z9101TR2xbGNrg4a+grazlR0yzEOe3/E+PJr5BGfj66MMzm/54vg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-arm64-gnu@0.68.0",
+      "id": "@oxfmt/binding-linux-arm64-gnu@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm64-gnu/0.68.0",
-      "integrity": "sha512-QCvYwVVQieu6oyJglAgV9vH/YMDxZyR4cwVSYtoq9oOXd5N+D3TDUBjNwxFrLn5AdcJZOcvn/7IB17vJGp+2Og==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm64-gnu/0.74.0",
+      "integrity": "sha512-846bKzF+HJd+JkOFh3rxzmYvSq4Cm+GMT+p+mW7S13ZYo6GAAGv8bL8cAOi/XcdeMqxEJDCIMTVQLVBXHMCdig==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-arm64-musl@0.68.0",
+      "id": "@oxfmt/binding-linux-arm64-musl@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm64-musl/0.68.0",
-      "integrity": "sha512-4TVz5iFQ8ndrHnhX50UXiz9BIWAtUSOHJ6Nus4qWFfJBXq/Ed/krXbF/ehJu42BXM5tIvBs99jNIM22s9agY5A==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-arm64-musl/0.74.0",
+      "integrity": "sha512-nI5FJwZ4Flo6CBdscpwxymZXxO3m3IErQJX55ZS6h+ObfGXu8FostL85L/RWPFaCLnIVE4/WfLw+2q8XvVEeUA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-ppc64-gnu@0.68.0",
+      "id": "@oxfmt/binding-linux-ppc64-gnu@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-ppc64-gnu/0.68.0",
-      "integrity": "sha512-qLe3ao0RP84bnPxBvRI+GnlK/jybo538NWu0Xrm+zYeTmJtpzqLhnnd5BH21NafqKnplbGZjtN1cnrOlWF73lw==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-ppc64-gnu/0.74.0",
+      "integrity": "sha512-BoQYKuqUdsKAFAkK6DLBvkdv4+t0hppSm79sB0wIcE2o/eOwNj+6Z3OlKY4q3Eta/tlssP65FaS9vHn8TeF7vQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-riscv64-gnu@0.68.0",
+      "id": "@oxfmt/binding-linux-riscv64-gnu@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-riscv64-gnu/0.68.0",
-      "integrity": "sha512-Yvyl7a6gbb0vM6r925KW2dO+/CmXySO5TVbcX7o/uZJ+d108HFOG0TxIyHApmn5USuj5mhDPxzhiVwOlGP7uSA==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-riscv64-gnu/0.74.0",
+      "integrity": "sha512-FSroRrM12+jCdSQklF9aOxsKpI6wFs4ZCo/1cSYG80RWZS6z4LV+l9tXRMT8lDGu+yohIZBwi9M76FzGPFDE2A==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-riscv64-musl@0.68.0",
+      "id": "@oxfmt/binding-linux-riscv64-musl@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-riscv64-musl/0.68.0",
-      "integrity": "sha512-mJlFuFVCxzrYM5sFStN433D/s/mb6Wq4aCQAM02vs/OudHywnaSAd2rb1vlYUJtqdYIciJtiasuxvfbYkv5fLg==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-riscv64-musl/0.74.0",
+      "integrity": "sha512-0VLQD0dhGBLY9Ik/w+otMvD81D0YXi4VDwql65macV+O9UzmSWmUr6CKf+dMtysDeC0PnG3y6kBkRO08BJx52g==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-s390x-gnu@0.68.0",
+      "id": "@oxfmt/binding-linux-s390x-gnu@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-s390x-gnu/0.68.0",
-      "integrity": "sha512-RlfSg++qs1hbKltRR6lYvV9EoI3MdlfSQD9w1hdHVYjHqjIn1tkH4FWOpMSmjKGN20zr+nI+W9o4ARogCDudGQ==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-s390x-gnu/0.74.0",
+      "integrity": "sha512-6X7BbZNz34+OHM6Oqjf6TRcUyRn6aRcB4VtIDZAF/uQRyeVhg+G2hv6MlMvmnRekVSyTJ/8rG/u8W2dRFW6glg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-x64-gnu@0.68.0",
+      "id": "@oxfmt/binding-linux-x64-gnu@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-x64-gnu/0.68.0",
-      "integrity": "sha512-nyzRB9U+dlYUKu3pMo3afHzZBUv/oTHZMG36ZfJViNVfOIzp70Q4GS8FFRGgYJ/p0zcyDCgpBvYISOdJOMh+jQ==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-x64-gnu/0.74.0",
+      "integrity": "sha512-4kYIQK53yJXrxwxSzx8H2bojlf6/KezLGYLRXzV9QCCkoiCsvBTCid9Bg83dUPTLPa3g9K0730f6MKDbck1+OA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-linux-x64-musl@0.68.0",
+      "id": "@oxfmt/binding-linux-x64-musl@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-x64-musl/0.68.0",
-      "integrity": "sha512-iCx3sbZRIvGrL1RafphEiUKBaW1lc0/tAjKOIB/Wjw2+STRBEdu5+fH1Gc1faEWEmc2k5Ks4iUUV54Zd5C9a1A==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-linux-x64-musl/0.74.0",
+      "integrity": "sha512-MfWz4wDREjp/JQDmuxtKieix4FHGa1z5rBvB3betdcPwZvf5fqeQrlCm1mmoyuUVQOh9Pt3M61HwN94kJCxw7Q==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-openharmony-arm64@0.68.0",
+      "id": "@oxfmt/binding-openharmony-arm64@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-openharmony-arm64/0.68.0",
-      "integrity": "sha512-x2X5AZez7OgyLLFpwIgItoXBUqudDM7yiaTsxv8R8vKQ6e81l0jVw0NFeUCXzcl1sAJq8h+tC8N4mY8EiMeL4w==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-openharmony-arm64/0.74.0",
+      "integrity": "sha512-6rmAApkq5s1kbDjvNI6Nl5A+JqQkLORb2sR941pf5HWsrd01WGKyagK/B4vX9+kh1FfvRkNgEu59FHvVk4H8cQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-win32-arm64-msvc@0.68.0",
+      "id": "@oxfmt/binding-win32-arm64-msvc@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-arm64-msvc/0.68.0",
-      "integrity": "sha512-AHVPjXkenLPQUh6kB8zSC8pX2ct9r4T1Edk9r/RNJyov6wPsS5uAfYtipwG4chn6+3bPFG5rI/3DxEeH8vib1w==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-arm64-msvc/0.74.0",
+      "integrity": "sha512-+5SpRUnZNGeXTyumHnpHa791tQtt04qZs076WT8eTcGF2OJ631VLnf7S0kQSPuDG+PtJM0phadEB2WAr5n1w9g==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-win32-ia32-msvc@0.68.0",
+      "id": "@oxfmt/binding-win32-ia32-msvc@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-ia32-msvc/0.68.0",
-      "integrity": "sha512-n09SjEk5VH7z8Hl4WVP7hho+cCwGViENkQFiM45vbW85dJd7kEhWaHRUobaPzEmrWyu6uumd4EuNfNyDKLtzDA==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-ia32-msvc/0.74.0",
+      "integrity": "sha512-1Fg+wYBO3Dsti1QX+/6EYHjeQzLC84tLOAqPu/r7ah3UJlUs9C/DB703Ay9Vcg+8VMzqZA2P5VGhzJraVUD4OQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxfmt/binding-win32-x64-msvc@0.68.0",
+      "id": "@oxfmt/binding-win32-x64-msvc@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-x64-msvc/0.68.0",
-      "integrity": "sha512-gPe+dJLXaPuWPWqlpklDAJp0k+K9KhQPYiQLHfb+i2rmFuUGfJ/5Qlj6tr1mO6of5g0DiLjG/XCFHIaPhotqqA==",
+      "source": "https://registry.npmjs.org/%40oxfmt%2Fbinding-win32-x64-msvc/0.74.0",
+      "integrity": "sha512-y9jXUgPBm2TZIWbQhMYRRYAQM57+r4fbykgc+j24ICIIZl+pcuoNhnq1CRGm3oFiHnEUnZO00qOtSPGQdJ2ziQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/darwin-arm64@7.0.2001",
+      "id": "@oxlint-tsgolint/darwin-arm64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fdarwin-arm64/7.0.2001",
-      "integrity": "sha512-CUJEdbSZ54+Xy9OXqOhWLTKZKV0BBiV7C2i/ygyVmXtkUNXx5YCzN8DpSSshTAKktoL7S+tnQ/ftFG/i7X896w==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fdarwin-arm64/7.0.2004",
+      "integrity": "sha512-uJk3ttju7Lz+Nv8WG4CsLyewoL1qf/Ny8S8OksJ7Bm/F14Tc9gMfW6arM1PCc57IzH/X/I79YsCWTgxX1FKibQ==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/darwin-x64@7.0.2001",
+      "id": "@oxlint-tsgolint/darwin-x64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fdarwin-x64/7.0.2001",
-      "integrity": "sha512-pXfBb5BqONCcgrXQNUZWXgiYmRSWJzd97S8i41VVOh6ut0tyo+cJ5FKFpczDHxiVNfj/3e7c9B4MtztNdpIVCw==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fdarwin-x64/7.0.2004",
+      "integrity": "sha512-0BFfHTzDxNDFPcu0UZAXT6CyCJHAXM0dZveyDb4KEHa2qF/DSnOKOrmvK/wFuFol9kvijbGM9JfuOsor+zWXRw==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/linux-arm64@7.0.2001",
+      "id": "@oxlint-tsgolint/linux-arm64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Flinux-arm64/7.0.2001",
-      "integrity": "sha512-roP7zujb/QDPzDwEKsFFpzNHHy91/Y7oX9vQXk78ekyZtcQj1QXDIMH33gjDdHBfRl4K9pZ36xhRgrP4Zr+R8A==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Flinux-arm64/7.0.2004",
+      "integrity": "sha512-TAehQc+qdRXyDN3nl/r/3/oPrBVrbtrDeGMkFyG6mf+XphpoJ2lAMVFLclyvrVZCw02RbKROjyw8h72XwQQHcw==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/linux-x64@7.0.2001",
+      "id": "@oxlint-tsgolint/linux-x64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Flinux-x64/7.0.2001",
-      "integrity": "sha512-UDezNqdECVmngu2TPnjaS1YoAmcTaBoI5lV9vk3VahBxoi+I5r9k3iJTT7qZoYWOXTD/7T7bNcwRgrocR6BscQ==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Flinux-x64/7.0.2004",
+      "integrity": "sha512-LPunZvm6ZbWPfHMAyfZf9ci3HHvNEzLejO8zdqO3GoVGoSEHqqufHUD7+OgeatVSaJP7uXDJ2HaNOHIoH7go4Q==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/win32-arm64@7.0.2001",
+      "id": "@oxlint-tsgolint/win32-arm64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fwin32-arm64/7.0.2001",
-      "integrity": "sha512-uJZhqB6pdXLuN+AD1F5082byyQti/NPmJA77GtcFlmT2HzRelqbNls3SaIqxpjdFgvSBF9g0yOKGBkGFg7kX8Q==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fwin32-arm64/7.0.2004",
+      "integrity": "sha512-FVWplzDImWhiuawnIZVETaQecv4GWom6Jv4Fx2xj7hhXXDZ5okEgiw1gTCImHTIQsi2ycC5oSxVwrn69bMh7iw==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint-tsgolint/win32-x64@7.0.2001",
+      "id": "@oxlint-tsgolint/win32-x64@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fwin32-x64/7.0.2001",
-      "integrity": "sha512-FkDRm8hx9OwzGQqyWG1tO5QrTLRApff9DzSgpz9QZau37BR8d1VYKOxMLGf6shPZntJFoTwIIJYT68VndYDCog==",
+      "source": "https://registry.npmjs.org/%40oxlint-tsgolint%2Fwin32-x64/7.0.2004",
+      "integrity": "sha512-7PsxuUx11Ry9DYTWcljTzRbmZY9B6O9fFFfZV+aodQEMy6pfRT3fhoQRv9PtGN/89z1pPz3nFKrsFm6WqNtX7w==",
       "repository": "github:oxc-project/tsgolint",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-android-arm-eabi@1.83.0",
+      "id": "@oxlint/binding-android-arm-eabi@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-android-arm-eabi/1.83.0",
-      "integrity": "sha512-0yGY24EwsLk5YDe6F+VkmZyRHSwJDALa3nIrPpq7FXmp2lV2d0TzvBCGeZk+wgiULRGr5blhyr4QMp5KCXJUqA==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-android-arm-eabi/1.89.0",
+      "integrity": "sha512-Pflpba5F3gRAQ12sWglRxvWTHEdAusNDvmi4Y5N1T5SY1AGkM7AixOnET8qkrnLJ/F32qAlNokO6eCknT8tmnw==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-android-arm64@1.83.0",
+      "id": "@oxlint/binding-android-arm64@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-android-arm64/1.83.0",
-      "integrity": "sha512-hHfJ0vc17A4iUjH5p9BsTUPYbYRNxGpvD2lbu1aBRk54bzNIx9o5TtYF39QPZcV95DagZd+4DEAw2RH3G2ZsMg==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-android-arm64/1.89.0",
+      "integrity": "sha512-dYmyD1x7LaPlb79vZWUcpTShk8dI9z1I+IubtqrBxWNJaDhQdPHwcsvg7q5StTU4xWyd9AwPfLaTYFZY8NZgtQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-darwin-arm64@1.83.0",
+      "id": "@oxlint/binding-darwin-arm64@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-darwin-arm64/1.83.0",
-      "integrity": "sha512-hsOjYjszLb/3zym/TkzUMPAoQlTJcuzSyEPOAyA+skXJIX9M0o+4JfOtqopX/Vf4hSLrJ98j0nvFo23gzk8auQ==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-darwin-arm64/1.89.0",
+      "integrity": "sha512-Z/oxOPiIqiS7fItRdxaaOEC+6GD3OpGi0IxoR0dMefzQHolsKLzScw2DNcu/5gUPok3tv+G9mslvYB5bo3i0qg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-darwin-x64@1.83.0",
+      "id": "@oxlint/binding-darwin-x64@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-darwin-x64/1.83.0",
-      "integrity": "sha512-mjh5oH2EA+wl5yRJYT9K9G61O2zFlpuv+yf2JwZOi0+dq2FnTUtm1h8i+5Ik0fXPWIu/k84I1psZR9aQsLAnyA==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-darwin-x64/1.89.0",
+      "integrity": "sha512-eAjTkHSjAxrdCPJxO6y5sPQL5pYLKb2kvxZz9UU7tXnOZk9I/HLtkvx9S7GHY883k+AmL/eC7mqFt+w7WCwk0w==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-freebsd-x64@1.83.0",
+      "id": "@oxlint/binding-freebsd-x64@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-freebsd-x64/1.83.0",
-      "integrity": "sha512-fNHr64/YaO8YssuoDVC8+F4Uk5enR86q5uxfHkQrjAPs1dbAILOrD2uaud+J7MO8Fx774g44ERLD0IGIvZE48w==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-freebsd-x64/1.89.0",
+      "integrity": "sha512-0lNCA9Tl1n1FKpqy2/9ckp0kIuSrtJ/l9bMRgaEhOtM7TsOHshFuwOcvW8oA9teXLMOJT61LjEKWiaHDFGxF/w==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-arm-gnueabihf@1.83.0",
+      "id": "@oxlint/binding-linux-arm-gnueabihf@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm-gnueabihf/1.83.0",
-      "integrity": "sha512-Qpwy3zzAwMj+8/lyYItHmkSMwbkprFNWTK7jPYDOxSyxEhaSLOWYUTCMkjF334J8/WD0nznCCsoBbIH6hpsuIw==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm-gnueabihf/1.89.0",
+      "integrity": "sha512-OTFEvi9W+JczaZD1Caj17SGCoW8H7TE+fvx0D7ATEWa1Lohn91UMxFQ6r145SiGy/yCxeIwptMys/RAM7gSVSQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-arm-musleabihf@1.83.0",
+      "id": "@oxlint/binding-linux-arm-musleabihf@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm-musleabihf/1.83.0",
-      "integrity": "sha512-s+BirYLFq7JL2k9sP0XI3ZXJ9dYvJ8sX3jLCLoag7tt+zrSHpZxP0jqznfL+Gdgwu7ay0dYgGYJXrQvq3iWloA==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm-musleabihf/1.89.0",
+      "integrity": "sha512-fRxgNHvBLswj6MrhW2uBq5UDhPRQlCbHeq/Nf8yuG9zOxhDsXqX/mi2PX1axgsQxMm88el7HLiJAzglAnflYxw==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-arm64-gnu@1.83.0",
+      "id": "@oxlint/binding-linux-arm64-gnu@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm64-gnu/1.83.0",
-      "integrity": "sha512-7lihXt3vKr+GIyapNbHrnFHm/biiW30le6Zv/DExbAFPF6YwCQXVFlONPFehxs0CpGO4CBfYPM9rdDT+XMoIlg==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm64-gnu/1.89.0",
+      "integrity": "sha512-v9ENzHvwrQoYSWTtviH1pOYc7R9UovDxVofnck50cNmPihRRTcrg5X0UlRbLOZ7IVtxPOlh2hb7kDO+FpE8SfQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-arm64-musl@1.83.0",
+      "id": "@oxlint/binding-linux-arm64-musl@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm64-musl/1.83.0",
-      "integrity": "sha512-q63JalLYVkZiZvls1z3PPUnpmQluOMXp0khqQMznCeAPLGydfNY8JhvuA4WlK57JfrvikU8wB5lPVveqpIXvew==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-arm64-musl/1.89.0",
+      "integrity": "sha512-vfffe8mQ484AzVadlUOFpgL+JDwhvs9hrzxTgQP1FVfi4ZEUUYeffXlzC9dFV7Dgnu5s/KrNKvfmG6HxBd/ISQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-ppc64-gnu@1.83.0",
+      "id": "@oxlint/binding-linux-ppc64-gnu@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-ppc64-gnu/1.83.0",
-      "integrity": "sha512-krQmDF+dRbxvdqVPV88ZuOoPPu8X5BuqDA8Hd+qcS4YMRQCb+nexA57DazgGsc/rGdKBe3QmV0mnv0bdpW/p5g==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-ppc64-gnu/1.89.0",
+      "integrity": "sha512-Buonlp4hVS7RGNP5M7bPpGNQrenyzA2C64JcO/oz9C1c6dGOXJ7VEAnaiAMY7voou0JYyCJdvDVlFQc5DZX3DQ==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-riscv64-gnu@1.83.0",
+      "id": "@oxlint/binding-linux-riscv64-gnu@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-riscv64-gnu/1.83.0",
-      "integrity": "sha512-MmOl8Y6txEAXZU1RG8Rr264jQ6D7VPmqFsU/45x/FeWsGe32hklTqGrLE6UxHzp5Rjt0wP+20tY8YXKgSFB3mw==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-riscv64-gnu/1.89.0",
+      "integrity": "sha512-1eVwJJrJ3lYIPT+cm7BcBBZZXY6IQZP/oyonaruTor/MrVyWOpvnwt1oD5CLdsHg5aVBIxXodQSvt+1gK6ck5w==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-riscv64-musl@1.83.0",
+      "id": "@oxlint/binding-linux-riscv64-musl@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-riscv64-musl/1.83.0",
-      "integrity": "sha512-u1rMymh0W3JZkq370kzQsYPULGWqhE09pZRqnZvUSoYaI9pVO5yVX+iYIslmWuEgwuzH9YAaOsScJiobWCHoOw==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-riscv64-musl/1.89.0",
+      "integrity": "sha512-fRQQsKUGShdEL5Fl9o9uhj3grkZbeXKLv0icQ5tspUCNYSDy8wzzEcP1WC2bKdTQ0rSszbKlO3iiHORxV22DLg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-s390x-gnu@1.83.0",
+      "id": "@oxlint/binding-linux-s390x-gnu@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-s390x-gnu/1.83.0",
-      "integrity": "sha512-y0zK3HNwGysu7rqtE+BQG/d0bx5gh/KwlOtghN8oWeK1KcWzeaLqtZrbm8owqdma1lFyrce/hTO5ismuNu+INQ==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-s390x-gnu/1.89.0",
+      "integrity": "sha512-dEtYjIy6+fHcjKklsmtmMkZRhwHr2UbzjmpvuPtQYSeN9awQ2hx5JLms5Wvri+8P/NZtD8v5hfgHALUql+/Ycg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-x64-gnu@1.83.0",
+      "id": "@oxlint/binding-linux-x64-gnu@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-x64-gnu/1.83.0",
-      "integrity": "sha512-rS5gM0NgD7ngmuJmbIehsidtrOwKkLFwCQbKEeb9KuyQrrWNq5Zkn0uV6AYdXOMJ0grrWEiLwBuvMxt8w5vsNw==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-x64-gnu/1.89.0",
+      "integrity": "sha512-hqjwIj5KOYM8Wjef/p7IruNi1iByLhSzbMBk62y22P/E8q7Jj0Pp+DeUTKTRYyZYCDtU1wEGlnWOnttHbyNIww==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-linux-x64-musl@1.83.0",
+      "id": "@oxlint/binding-linux-x64-musl@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-x64-musl/1.83.0",
-      "integrity": "sha512-W2IH4EtpcPaWcvNGCA95YoDg4vxqE/ZiPCi3arrxEEpsK7+JQN9WYwrlYFx9pcdP6KPXqRqkv3zdQPHcx7b6YQ==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-linux-x64-musl/1.89.0",
+      "integrity": "sha512-iAQN3e6o9UgUCcdGwqRx/jYcKbG3HK7ur3rH6lTqVcQeNGZ85AeWIg6cgn/edwFQ0ofEZZItMwkzyCVTahnvEA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-openharmony-arm64@1.83.0",
+      "id": "@oxlint/binding-openharmony-arm64@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-openharmony-arm64/1.83.0",
-      "integrity": "sha512-6LyKkUyoajssTPLlZmDbZIbu4IZ5B4bGuRUnBgCGpEvHP3FQMaYITncHA/unPUo7q+Z+pIu2HhdkQ+8d1SG7iA==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-openharmony-arm64/1.89.0",
+      "integrity": "sha512-MNxjEByz3N/7Q4qFQuPWvc14TpN9LoD3pECEDsJTZbP/wyB7U+hduUXEl7QAbbgVezFwsb9sWtNUO6XVBndOhg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-win32-arm64-msvc@1.83.0",
+      "id": "@oxlint/binding-win32-arm64-msvc@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-arm64-msvc/1.83.0",
-      "integrity": "sha512-Uz/fObEtF0jmNJQJ8CGRBKfefYstS0/wjD3s6IGzP8nUwsJykHQJBiN3npHwKiGRGn/vvBEgNr4B3cCzmmatvg==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-arm64-msvc/1.89.0",
+      "integrity": "sha512-xxe+i9wfuFso/VnoL4mfj0UlzE+cfCFiUB06vkXCMyQdgVVmItF5FfAF4tATAktSU6uHruWR+FjqvAT9cHZZzg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-win32-ia32-msvc@1.83.0",
+      "id": "@oxlint/binding-win32-ia32-msvc@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-ia32-msvc/1.83.0",
-      "integrity": "sha512-u7XcvPW6Bk58tY5iWs2ESb0vJjoE/kuSpHxopbwp/p3ZtWVQXZ6wor5w3ssVTHOqd/v8b+QdhSFWQ4grEUNWpA==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-ia32-msvc/1.89.0",
+      "integrity": "sha512-saFy07cO94E664glwgLmKLI40HgTL1PY86y4T6+ud4niX4H0Kdqjcmqmjps7mQNdBytV5guGbXDdyQtRfeLbLA==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/binding-win32-x64-msvc@1.83.0",
+      "id": "@oxlint/binding-win32-x64-msvc@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-x64-msvc/1.83.0",
-      "integrity": "sha512-LZRubd7ph13QmAg4fFecTYVZkiYbROR2Htaxh/ufWRkDhPOm2wrwaEYR89e0YpPFD3dqBrPoxS7myBw5hmYA7Q==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fbinding-win32-x64-msvc/1.89.0",
+      "integrity": "sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
     {
-      "id": "@oxlint/plugins@1.79.0",
+      "id": "@oxlint/plugins@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40oxlint%2Fplugins/1.79.0",
-      "integrity": "sha512-S0uyoxakDINJ4DPgqxGlEEvrdSMeQb7Z2lKVjxoY2gwsbZbfg2Xr8Klfeo5ZeraHmmdBCELFUHkSe6KEmBpMvg==",
+      "source": "https://registry.npmjs.org/%40oxlint%2Fplugins/1.89.0",
+      "integrity": "sha512-TJBBNl4KIxbxrSk7gsqlz6iM1kxidfyTizEzfWqXvijF2Ou8/Da58GvjemBVmCmaUamwRij+JwsVc0kpBFuqfg==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
       "direct": []
     },
@@ -2948,82 +2948,74 @@
       ]
     },
     {
-      "id": "@vitest/browser-preview@4.1.11",
+      "id": "@vitest/browser-preview@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fbrowser-preview/4.1.11",
-      "integrity": "sha512-iPKSE6Ibayey6HFgK1V1/aHgyhx7HSRk1YMi+lnBZGmlIiNV5Uc7xRkD9Su8RDylTxDECK23t7kTHdRKoqSYDQ==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fbrowser-preview/5.0.5",
+      "integrity": "sha512-ViNg4UlomGSJHtnnr7Txm+55P7/aAMMoS+1WYnWjp5w5tzf7YEUAICcs2sb1uMovEnC8el/8zUfkWZ8+7fPCKA==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/browser@4.1.11",
+      "id": "@vitest/browser@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fbrowser/4.1.11",
-      "integrity": "sha512-bwMovvAeuTFOK5kIFevw4VEf+1gVEICv4SYK4k3knJOxl6b1zEWud8mYKD73e1B0odAn174h1MofURy2TPWf3w==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fbrowser/5.0.5",
+      "integrity": "sha512-IDMoZX/iZ8rkilw7weaSgN8tJ7iZ9hUv0wYoKXyiyjWjWFwLSWAY707DcVTgxTYOudWC1E3HA9LYn7kVa9a7uQ==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/expect@4.1.11",
+      "id": "@vitest/mocker@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fexpect/4.1.11",
-      "integrity": "sha512-VX2x5vNJXET47KAFzwERI+KRMtTTCSWTfSMKsW7JsUsXV4psq++e3DvZpuTDOpHcxytiDs6p2nhVb2tVDiiUYw==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fmocker/5.0.5",
+      "integrity": "sha512-xLL3lkDegJZw+MGoGaCCsFayDZthGgpAtr3Vziyfc4p7xH89K7KRPcRBBh/kEYm0Aqkt5DtTmkYpBtRV/FrHZg==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/mocker@4.1.11",
+      "id": "@vitest/pretty-format@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fmocker/4.1.11",
-      "integrity": "sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fpretty-format/5.0.5",
+      "integrity": "sha512-24sSdIlMA9DVPXnYiB9siwU0bTd887Y9jX3+vabztCSsvHwo7ipvJ/a2L3Rljw8+2rK1f5fCj3h5U9I/Jsqgbw==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/pretty-format@4.1.11",
+      "id": "@vitest/snapshot@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fpretty-format/4.1.11",
-      "integrity": "sha512-yiZzPbGTS9Sr/JpFl8zHrcIkAofNbFV6k21vIgQN/cY/oxZeXhJv5sc/MBJ5jFKWmWs+oJHw0UXLZjmf931+Vw==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fsnapshot/5.0.5",
+      "integrity": "sha512-dHyFElWMQy0wFBGrIaPPeUWfJFh+jAUrv46ImIJGd8CADdKV3mlrAu3FyD0wesdxELFCs9M807e040Kba/XKtA==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/runner@4.1.11",
+      "id": "@vitest/spy@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Frunner/4.1.11",
-      "integrity": "sha512-LztvUgdwMNJMIkj3hQnnxiC2Xy1zNxq928W/xhjCLaNCzqTZOudjwbQf6v9IntZGPw132i2Lq2rgTRZHD3JHNw==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fspy/5.0.5",
+      "integrity": "sha512-lwJRExuH417257Q5wv9QYugN9IMJkoxcrKrYxGPQkBzl7wlNpTUxD/5yNX4ESKVUIShKPgkGchYPFMWOOk0wzw==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/snapshot@4.1.11",
+      "id": "@vitest/ui@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fsnapshot/4.1.11",
-      "integrity": "sha512-pN7ikn1ON7h8ee4gIAp4AzyK+zBtJPzVbqOgu5LCEh4VaJVbPQcgYQYJIMGQPXVeJJq1fnfazis7a5pFNPahog==",
+      "source": "https://registry.npmjs.org/%40vitest%2Fui/5.0.5",
+      "integrity": "sha512-dCoGUOdgmCaSB2g+WQ/spPCBkytAWdNUkFSXY4z+eYp2d8JEOY8v0uDRaJTG9qf/kTlTVZ4CuYMYMz/f1HS/qQ==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/spy@4.1.11",
+      "id": "@vitest/utils@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Fspy/4.1.11",
-      "integrity": "sha512-apNa/prQy2qCeywhnixOHPRCgGNhvg7T4Dapfl1GahLp/R+uhBm5cPyFoNVyqsNd2h1nJxL6BqqdIjiABL60YA==",
+      "source": "https://registry.npmjs.org/%40vitest%2Futils/5.0.5",
+      "integrity": "sha512-/rBu7gzLDQI/SC79Tn98b5DwOgaHU/Gt4I9OVeP3YofzNaYtbImRCOJQmT1S6vOJg9gEIlWC+r3QxKkjuSa1nQ==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
     {
-      "id": "@vitest/utils@4.1.11",
+      "id": "@voidzero-dev/vite-plus-core@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40vitest%2Futils/4.1.11",
-      "integrity": "sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==",
-      "repository": "git+https://github.com/vitest-dev/vitest.git",
-      "direct": []
-    },
-    {
-      "id": "@voidzero-dev/vite-plus-core@0.3.3",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-core/0.3.3",
-      "integrity": "sha512-Ui92VENIZG+p0nMJuVGMsHBHrQqgUNxXObdo5PlSDEBOdRmD8AHKr8tOClZTVU1U5blLQKtHKplxtTun0yZEmw==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-core/1.4.0",
+      "integrity": "sha512-LTGXCdZ58qJKfuCOmf0hnZOVA64eOgzDQOqYpI+71tPxk/0cGqPQhYDGQQZoEvNLAn1G2Lo4gKadsQdWxb99WQ==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": [
         {
@@ -3034,66 +3026,66 @@
       ]
     },
     {
-      "id": "@voidzero-dev/vite-plus-darwin-arm64@0.3.3",
+      "id": "@voidzero-dev/vite-plus-darwin-arm64@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-darwin-arm64/0.3.3",
-      "integrity": "sha512-1hwUfQGqvzlO+qQ7r1i5XQWkKaWq/JcdAAZOPloMQsZq7P8rgiY1pq/0q4stzcNxFF74k4aEFOlDUKi6D149YA==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-darwin-arm64/1.4.0",
+      "integrity": "sha512-5Ie3vnrFrF5GFU+0VhbLuyoSmnzd8m42BvbLjncMOmAb6D1sEq4g37dlxPiVcJEqITM0t4zFnLkNSF4YAlk0FQ==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-darwin-x64@0.3.3",
+      "id": "@voidzero-dev/vite-plus-darwin-x64@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-darwin-x64/0.3.3",
-      "integrity": "sha512-nM2+EC1BPochRhtf48FWZX3wPnrsy8aBSI5TPqjxr0OS0bydvPavrhdSUmgUGZG9/hp0NTeXhhqY9A7yuvZLZQ==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-darwin-x64/1.4.0",
+      "integrity": "sha512-vaR7F+ix/91EycJYXOQ24Nzw470U12x3L+YLbbtuRwHDMW67fCbhXzcW+otZS8q4eRdIzEcA5svv9P8kcsaRkA==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-linux-arm64-gnu@0.3.3",
+      "id": "@voidzero-dev/vite-plus-linux-arm64-gnu@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-arm64-gnu/0.3.3",
-      "integrity": "sha512-WC8/kT0/btxnwgYR5QvvelbgUaLQ6lbxs8aMQpjc63p1QdMTNZEbp3vnTV2l9KgoUYeyHnALJVBW9l1CJAM+fA==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-arm64-gnu/1.4.0",
+      "integrity": "sha512-58/PZrp+f3Hy6kFVKqbrZVenjo5t012rTOgRSgMoJyOhJjXBHqvORh9lB9GIip9r9maoWN31R1a44obPX9MD7g==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-linux-arm64-musl@0.3.3",
+      "id": "@voidzero-dev/vite-plus-linux-arm64-musl@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-arm64-musl/0.3.3",
-      "integrity": "sha512-iy3AgJK9wwOGjlEzq0Sm1bqK5pDSWF4nz29Ey5BmK7bGciyfufeKRqRASKJdMhRMEQ7WVUQz5luC5GddLEDwXg==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-arm64-musl/1.4.0",
+      "integrity": "sha512-Ij08vPrxG1J23wQVm0LtLPrQevv4tos8TirP/jGTpQQmQAgYOpmIfMrx8BF+vOGMncOIo+kKacp4jPVmhctfhg==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-linux-x64-gnu@0.3.3",
+      "id": "@voidzero-dev/vite-plus-linux-x64-gnu@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-x64-gnu/0.3.3",
-      "integrity": "sha512-ZHN3RCA422XrGYmSDE9IZqx/eM5PsFCXHn8hUttQEwcSVXsuKBArDyb/uxonn1n0bPNW8c4G4HvNmIS3ckLXzA==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-x64-gnu/1.4.0",
+      "integrity": "sha512-RbM21Y5cSx5WesaFV/Swo22JRvimjO6NDItoL5wNI6NTa987ck7v19HBmp+V4nkOCFHbMdxwfhyALDw0y06xEA==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-linux-x64-musl@0.3.3",
+      "id": "@voidzero-dev/vite-plus-linux-x64-musl@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-x64-musl/0.3.3",
-      "integrity": "sha512-lDmmjrgh6qNvBlzapzKMjxiqRigkyPjIimkxrk8CSz+/AyQp6I/wuIAyjBmNfeh14SQoDNVgf03CTJzmJycrpg==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-linux-x64-musl/1.4.0",
+      "integrity": "sha512-Q+p+YJztEmqjJoumTmPaBQ/PEx3eFhiNTQTn5+85gkBUiRexkFQ8A86TMFxbKVgrJbiAOltkrJRmVRhRs5Q0sA==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-win32-arm64-msvc@0.3.3",
+      "id": "@voidzero-dev/vite-plus-win32-arm64-msvc@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-win32-arm64-msvc/0.3.3",
-      "integrity": "sha512-/5/YdLItQH9KC+jL49uw9CidC7MeO3Q8ojRcuOPcH5ujU5tU4P4lO2qJ9RbM8ckC1lfiZYTtVtJUSkbPn1R/YQ==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-win32-arm64-msvc/1.4.0",
+      "integrity": "sha512-PLGVov8c4/QfveOM/AYjYDlgMCQ0SxCmJp392qBgxaSXP0nEg6yP4hn5UtnhxvluhHEzVkTf2r1Q3LNlZRI7kw==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
     {
-      "id": "@voidzero-dev/vite-plus-win32-x64-msvc@0.3.3",
+      "id": "@voidzero-dev/vite-plus-win32-x64-msvc@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-win32-x64-msvc/0.3.3",
-      "integrity": "sha512-npbLQAAKdWHEB0qOFkmF/2OUzdraNBe1w7gY1LjXQFvqORAKZlHyQ2rgF5nBtG5+LKvbKWL6XpvyP+cQEh7MZg==",
+      "source": "https://registry.npmjs.org/%40voidzero-dev%2Fvite-plus-win32-x64-msvc/1.4.0",
+      "integrity": "sha512-DYG7wDsMLLs2/+8qfeyLScdoMh+aPM4IZanoVPSNt8fMeeXR2GQiiZDKc0qZHKN9+YcdCGK1HLAdMAGSywKvsA==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": []
     },
@@ -3128,102 +3120,6 @@
           "dependency": "@xmldom/xmldom"
         }
       ]
-    },
-    {
-      "id": "@yuku-codegen/binding-android-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-android-arm64/0.9.5",
-      "integrity": "sha512-jrOY5WM+AaAqkv51fHP1x28ifto4WgcZVzodLUyMU1jMWn5Sq+VciRdk/n8E0Ey5w4p4cWWE+m5GfXWOYh7Kzw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-darwin-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-darwin-arm64/0.9.5",
-      "integrity": "sha512-4O4lkCQIzPZGjiNB1GORSI6hBECbiiSBS/APZXPvNKYH+nhY4uuqv03LNXA+SET3hoBjvr95P5rIhY8KQaQUBA==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-darwin-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-darwin-x64/0.9.5",
-      "integrity": "sha512-9EvoUO0SEhD6/d8VHdWuPerepPMSR1y84+UEgz8Un1Ope14Oe7xMvePpEQLTLovoIFZ8Zg3iZ8z8E11pZMqC3g==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-freebsd-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-freebsd-x64/0.9.5",
-      "integrity": "sha512-HqT78WwgHTmp8lwujoUa9CrIortX4DdpuiVC18ZPSGvuuJf4ylpIEI6QrQEM78Zwz3muhAWAOXZ5irdiYY+AyA==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-arm-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-arm-gnu/0.9.5",
-      "integrity": "sha512-QJXwIW6Ms3QIawbcBIedmrmXnfdpuAOjZJ/eAABq5XTzWvSxZ7lutu9W5yIHahlaTaFnBo7ikrVMD1szLTpPUw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-arm-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-arm-musl/0.9.5",
-      "integrity": "sha512-eHbFy3IHGb+IYarrYwAo0yWSEQV3eAmEn6VrsKA6I1Wy1YPJxWqSJlV69JhqsHtJuJlljUIF3ex0y46yaKIu9w==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-arm64-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-arm64-gnu/0.9.5",
-      "integrity": "sha512-ByoJMbySTaDhjAXSu8q6Lh7HKg3YoesXpcT72aYk0Aiw4PCznmY4ybpLTq0RCvp0RIPhFm/6yECFiGBwyCC1nw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-arm64-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-arm64-musl/0.9.5",
-      "integrity": "sha512-gD9vfXIoBw1toSxhO9rgmSu/FEfy3PMznJAxVjIuH8DrWEiDKXmJO0pJKfj1Ltbe/TmtWVZR+TjISqeSIGQzMg==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-x64-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-x64-gnu/0.9.5",
-      "integrity": "sha512-BARvdnvqMGjOr5Iel2JH+9H5vAIE0R6H0Z2fsT02xrvmI/1ZXNB8lkuX+ZGevPhZb3zJ9WeC/R8JZstrsUOK5g==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-linux-x64-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-linux-x64-musl/0.9.5",
-      "integrity": "sha512-x8flcevS1fbb7ESrmpOY/pON4eInSaE/7Ktjqx2udOE2W33BNSZmJuwpyUgo54AoHNqrcaM7szqydyJn5fNvew==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-win32-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-win32-arm64/0.9.5",
-      "integrity": "sha512-KOL/rBatWqH4ZpCNoF8ZtSNdOJbAxBJLmk/VeRciepGROPTbPum1A9t67GpFgOU7qrkUWlPJdJ+KHKbvbmOt+w==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-codegen/binding-win32-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-codegen%2Fbinding-win32-x64/0.9.5",
-      "integrity": "sha512-FxENahEjWSan59Syh/us/Kf4wNq8qrJLFJ3R2N4Oiwtb6yNdz/rWLNTIoNSssnsp7IoWJdUP6o/Z8ppg7lXMcg==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
     },
     {
       "id": "@yuku-core/binding-android-arm64@0.19.0",
@@ -3322,114 +3218,10 @@
       "direct": []
     },
     {
-      "id": "@yuku-parser/binding-android-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-android-arm64/0.9.5",
-      "integrity": "sha512-A2JCFCSHfnficqYEw4Iujpx7XrkMM3UfFcgJFmYpZSo9zM4nyhmdIIE0FogSduuU60lhM0/UcfuUBXIVNBMlGQ==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-darwin-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-darwin-arm64/0.9.5",
-      "integrity": "sha512-3PiyU+Eare4YuKaQ22N98/yAiROPY5o/NQJHraICzDvk4pgS+m+bgLKOvkGBRn33OnV95Vdv1Mn38b+MQHpULQ==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-darwin-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-darwin-x64/0.9.5",
-      "integrity": "sha512-blFMAFI7AInI83XaiOF8cIeiRM46Nz9EfpZtZPRLbKxSA9aAr5v8aHYpmfN6NoyXxAv/10pwS4gsAuc1W6fy5Q==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-freebsd-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-freebsd-x64/0.9.5",
-      "integrity": "sha512-TsNuL4qsZdO0tHp5GW43Y5fHeLPpPHA675wdcPNTcdq2ZO5AvsQWFFoiDg8CH4oBktfsQ9tdvKhjLnLYwKvp4g==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-arm-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-arm-gnu/0.9.5",
-      "integrity": "sha512-b0afYK5gHeV8RdmOcqAlgM8ONsye4cax4DMnIBaoJyPMd1UTGvTbpkqQcPVdhmHlcfcGVGMV1laeVovlr/dscw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-arm-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-arm-musl/0.9.5",
-      "integrity": "sha512-fD3lKzl+r6j6n8DwiMY53qnh5DLqD8KJjCp+NbVud54Nnh3Q9Wprqss3YzyMHP3NSJk663Wlg1E1X5qOuFVFig==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-arm64-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-arm64-gnu/0.9.5",
-      "integrity": "sha512-aRU/aCphV1MWCl/lvI6NX8LgucHQ68Fx+vz7NBb/5MEr2EuzCxiPOQqeFcMdWh+2AED/p0AvAREch0c+cSnlhA==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-arm64-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-arm64-musl/0.9.5",
-      "integrity": "sha512-5+Guro0l8H473YXlEjVNBRLN/IbPbJdnQh1zo0OLt49xxnON+XMJRRaEyTOTfkn9QSRg0+BhEKGR4W9Gu2uZJQ==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-x64-gnu@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-x64-gnu/0.9.5",
-      "integrity": "sha512-pwwSyV9q+GlvzSXlsMZBMlgk22L5bud714/vqZCdeUTivzeUVltQzUaf3IQXOGXdpc59JYTeuMCtbGquaAUoCA==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-linux-x64-musl@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-linux-x64-musl/0.9.5",
-      "integrity": "sha512-z18j6JN3lBHH8vzN7gG1M8fI0nlgItSfnC9PfbmUbt97iHViKfw2iA2G9fGwRMe5LyPRZBrejIlapbygPbpdaw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-win32-arm64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-win32-arm64/0.9.5",
-      "integrity": "sha512-s6Gwttb1dQvtPX6Bgkw+UPC9IO3UBDXc6Zezog8MMgvu3UfJBBB9TQqKBX/2quu0Eyh+lLSAyNlIyyecaagUPg==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-parser/binding-win32-x64@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-parser%2Fbinding-win32-x64/0.9.5",
-      "integrity": "sha512-FrERt9YWatY3bJfSUdi4YWY+6iQcyo3MzCC821BxlWM5TFZEHijnpz/bknR79VHlXY/9CvXz8ZlaAGPsTtN3nw==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
       "id": "@yuku-toolchain/types@0.19.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/%40yuku-toolchain%2Ftypes/0.19.0",
       "integrity": "sha512-tFkNbsP4WXX9UMUC5syJGdK9dPMLK0PPaIuXCcCYH75sZ8MrebfBZ2XvCILRTw8AgLivSSCfDa4R67iYBDa4Kg==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "@yuku-toolchain/types@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/%40yuku-toolchain%2Ftypes/0.9.5",
-      "integrity": "sha512-KiuLNNgX9uNealaWAR+G3/cMXnRk9x4TY2EkYe/KIag+UPdwiA0RRf1hr1WAxzTP8KGzCTkqUdLPvqh32sEO3w==",
       "repository": "git+https://github.com/yuku-toolchain/yuku.git",
       "direct": []
     },
@@ -4212,6 +4004,14 @@
       "source": "https://registry.npmjs.org/find-up/4.1.0",
       "integrity": "sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==",
       "repository": "git+https://github.com/sindresorhus/find-up.git",
+      "direct": []
+    },
+    {
+      "id": "flatted@3.4.4",
+      "declaredLicense": "ISC",
+      "source": "https://registry.npmjs.org/flatted/3.4.4",
+      "integrity": "sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==",
+      "repository": "git+https://github.com/WebReflection/flatted.git",
       "direct": []
     },
     {
@@ -5393,10 +5193,10 @@
       "direct": []
     },
     {
-      "id": "obug@2.2.1",
+      "id": "obug@3.0.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/obug/2.2.1",
-      "integrity": "sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==",
+      "source": "https://registry.npmjs.org/obug/3.0.0",
+      "integrity": "sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==",
       "repository": "git+https://github.com/sxzz/obug.git",
       "direct": []
     },
@@ -5417,10 +5217,10 @@
       "direct": []
     },
     {
-      "id": "oxfmt@0.68.0",
+      "id": "oxfmt@0.74.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/oxfmt/0.68.0",
-      "integrity": "sha512-Z0XMofcXCGUXbcpBHnWyUiX93BGiw1B+lcHNbQDWEtOhX06ewoFfu4zXkyiLhRrNnMq0twqXRHUcJetf+GsiQQ==",
+      "source": "https://registry.npmjs.org/oxfmt/0.74.0",
+      "integrity": "sha512-G4OP7FgwGYZR5ttRpCOOfJdyRsSyvtn34vSXnjDq6Oqed5Dufg5mB44mank+51nAdHOKuTJ0lj0mksY7L+N61A==",
       "repository": "git+https://github.com/oxc-project/oxc",
       "direct": [
         {
@@ -5431,10 +5231,10 @@
       ]
     },
     {
-      "id": "oxlint-tsgolint@7.0.2001",
+      "id": "oxlint-tsgolint@7.0.2004",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/oxlint-tsgolint/7.0.2001",
-      "integrity": "sha512-KjK/XLcXr1DSyonKhsuFqJRiuKqcyG9j3LJ8nkOsrLzGvodBPqzHOKauy10asLMDI0sUpvb+1sxlzff3udZvfg==",
+      "source": "https://registry.npmjs.org/oxlint-tsgolint/7.0.2004",
+      "integrity": "sha512-vQ9WDF3fiZJvRdSDosNOflerOCOpwol6vWzVDxW76RcU19cjTh7engvkHLvmv+tzedR8fAiJUVUGr6IVZdkzXQ==",
       "repository": "github:oxc-project/tsgolint",
       "direct": [
         {
@@ -5445,10 +5245,10 @@
       ]
     },
     {
-      "id": "oxlint@1.83.0",
+      "id": "oxlint@1.89.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/oxlint/1.83.0",
-      "integrity": "sha512-cyDzSzaw3uzP0TeCeq3lLRPPoaUxkbB4ZOXj+kn+5r+BX9V+4bNVGk9lxer+WrgcpebH4JxLlJ3KQjveVztOLQ==",
+      "source": "https://registry.npmjs.org/oxlint/1.89.0",
+      "integrity": "sha512-a25hkfo61okGPvJz432fRIPoxlKtNnOVy9w4rzrmGgNm4iVTPwpSQlmdqNWnp6p9QyyPVfAZRgnf5XvSBZFk/A==",
       "repository": "git+https://github.com/oxc-project/oxc",
       "direct": [
         {
@@ -6098,14 +5898,6 @@
       ]
     },
     {
-      "id": "siginfo@2.0.0",
-      "declaredLicense": "ISC",
-      "source": "https://registry.npmjs.org/siginfo/2.0.0",
-      "integrity": "sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==",
-      "repository": "git+https://github.com/emilbayes/siginfo.git",
-      "direct": []
-    },
-    {
       "id": "sirv@3.0.2",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/sirv/3.0.2",
@@ -6135,14 +5927,6 @@
       "source": "https://registry.npmjs.org/space-separated-tokens/2.0.2",
       "integrity": "sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==",
       "repository": "git+https://github.com/wooorm/space-separated-tokens.git",
-      "direct": []
-    },
-    {
-      "id": "stackback@0.0.2",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/stackback/0.0.2",
-      "integrity": "sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==",
-      "repository": "git://github.com/shtylman/node-stackback.git",
       "direct": []
     },
     {
@@ -6240,11 +6024,11 @@
       "direct": []
     },
     {
-      "id": "tinybench@2.9.0",
+      "id": "tinybench@6.2.3",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/tinybench/2.9.0",
-      "integrity": "sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==",
-      "repository": "git+https://github.com/tinylibs/tinybench.git",
+      "source": "https://registry.npmjs.org/tinybench/6.2.3",
+      "integrity": "sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==",
+      "repository": "tinylibs/tinybench",
       "direct": []
     },
     {
@@ -6272,10 +6056,10 @@
       "direct": []
     },
     {
-      "id": "tinypool@2.1.2",
+      "id": "tinypool@2.2.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/tinypool/2.1.2",
-      "integrity": "sha512-9YodfrxS9g9IbFr/KOjE5bAeJ0p61n3bW6mqvy0jtoeKd1kTW1Cxm0oulm6KX2lyM9Gl6WIe8nEbY7LWv5ZJww==",
+      "source": "https://registry.npmjs.org/tinypool/2.2.0",
+      "integrity": "sha512-jBrmx4lYmaC9k/mgPbylxs7kBUxHtD8256up+HjLaDFfXScKJQyil+SWXSvhAtT7XHo+yTVlpB81PGmHP8oLSQ==",
       "repository": "git+https://github.com/tinylibs/tinypool.git",
       "direct": []
     },
@@ -6580,10 +6364,10 @@
       "direct": []
     },
     {
-      "id": "vite-plus@0.3.3",
+      "id": "vite-plus@1.4.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/vite-plus/0.3.3",
-      "integrity": "sha512-gr3t8ZIsytJnpPE0YPxtkouf+asMsc+TWlKXYzEdY6rRXUdCGYxgaPmzRePx1Gyip2gmARRLogAwoMMW9BvSUA==",
+      "source": "https://registry.npmjs.org/vite-plus/1.4.0",
+      "integrity": "sha512-bLyUKNFl0XjbHe20FpDM6OuknOb2E4ueoWKCW4n+wMO2+lQtA9tmAjW+Xs0Xe9rg2+tCgY3W13GOgDh2wjwjAQ==",
       "repository": "git+https://github.com/voidzero-dev/vite-plus.git",
       "direct": [
         {
@@ -6594,10 +6378,10 @@
       ]
     },
     {
-      "id": "vitest@4.1.11",
+      "id": "vitest@5.0.5",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/vitest/4.1.11",
-      "integrity": "sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==",
+      "source": "https://registry.npmjs.org/vitest/5.0.5",
+      "integrity": "sha512-cPODOMF8YnkiiYtDdHo6n4wWmBrOBBbOIYH2d33M4l3CdNn72h+qMmO6uXffUN6A5AZFXNND/d+krS9mgkXRfg==",
       "repository": "git+https://github.com/vitest-dev/vitest.git",
       "direct": []
     },
@@ -6650,10 +6434,10 @@
       "direct": []
     },
     {
-      "id": "why-is-node-running@2.3.0",
+      "id": "why-is-node-running@3.2.1",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/why-is-node-running/2.3.0",
-      "integrity": "sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==",
+      "source": "https://registry.npmjs.org/why-is-node-running/3.2.1",
+      "integrity": "sha512-Tb2FUhB4vUsGQlfSquQLYkApkuPAFQXGFzxWKHHumVz2dK+X1RUm/HnID4+TfIGYJ1kTcwOaCk/buYCEJr6YjQ==",
       "repository": "git+https://github.com/mafintosh/why-is-node-running.git",
       "direct": []
     },
@@ -6692,6 +6476,14 @@
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/ws/8.21.0",
       "integrity": "sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==",
+      "repository": "git+https://github.com/websockets/ws.git",
+      "direct": []
+    },
+    {
+      "id": "ws@8.22.1",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/ws/8.22.1",
+      "integrity": "sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==",
       "repository": "git+https://github.com/websockets/ws.git",
       "direct": []
     },
@@ -6830,22 +6622,6 @@
       "direct": []
     },
     {
-      "id": "yuku-ast@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/yuku-ast/0.9.5",
-      "integrity": "sha512-Q8qW8WwQnN5Cm0ZZivdRIfv0sRLTjUq0YumXJkw8CYN1aCdICH9rk4C47/4n6kA5EqDtlj+F608twoTSV2MwdQ==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
-      "id": "yuku-codegen@0.9.5",
-      "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/yuku-codegen/0.9.5",
-      "integrity": "sha512-zGUVyDpSK4b6c9B0yyxi2P0wujn1XZTbG9dCb7d6gyAoP63EMgyLzUwPUvwxPG5jgYqhlI7w+S3oCyapqGr4PA==",
-      "repository": "git+https://github.com/yuku-toolchain/yuku.git",
-      "direct": []
-    },
-    {
       "id": "yuku-core@0.19.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/yuku-core/0.19.0",
@@ -6854,10 +6630,10 @@
       "direct": []
     },
     {
-      "id": "yuku-parser@0.9.5",
+      "id": "yuku-parser@0.19.0",
       "declaredLicense": "MIT",
-      "source": "https://registry.npmjs.org/yuku-parser/0.9.5",
-      "integrity": "sha512-IBnAdNVMswWbJcM7woPluOudectJzFjJ1N8jVRxP9Uq4CIv5hZdBIcdmtRbFDYF/Ph2j2gVup4YJ4N9mh0jYFA==",
+      "source": "https://registry.npmjs.org/yuku-parser/0.19.0",
+      "integrity": "sha512-XrBh9ZiQK5mJVRxZBAvD6LwRyAYrK3MFtH3+onyuxFL5hFD44EC3QOmIC1FjTj6H2MMwq46/NAI+NZxLZPZgxg==",
       "repository": "git+https://github.com/yuku-toolchain/yuku.git",
       "direct": []
     },

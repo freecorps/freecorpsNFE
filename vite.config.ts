@@ -107,9 +107,11 @@ export default defineConfig({
           {
             command: areaCommand(name),
             // O Vitest grava a ordem dos testes em node_modules/.vite/vitest.
-            input: [{ auto: true }, "!node_modules/.vite/**", "!.ci-results/**"],
-            output: [],
-            untrackedEnv: ["VITEST_MAX_WORKERS", "VITEST_TEST_TIMEOUT"],
+            cache: {
+              input: [{ auto: true }, "!node_modules/.vite/**", "!.ci-results/**"],
+              output: [],
+              untrackedEnv: ["VITEST_MAX_WORKERS", "VITEST_TEST_TIMEOUT"],
+            },
           },
         ]),
       ),
@@ -117,17 +119,19 @@ export default defineConfig({
       // A própria saída não é entrada.
       "ci:packages": {
         command: "node scripts/build-fiscal-packages.mjs",
-        input: [
-          { auto: true },
-          "!packages/fiscal-core/dist/**",
-          "!packages/fiscal-nfe/dist/**",
-          "!packages/fiscal-nfse/dist/**",
-        ],
-        output: [
-          "packages/fiscal-core/dist/**",
-          "packages/fiscal-nfe/dist/**",
-          "packages/fiscal-nfse/dist/**",
-        ],
+        cache: {
+          input: [
+            { auto: true },
+            "!packages/fiscal-core/dist/**",
+            "!packages/fiscal-nfe/dist/**",
+            "!packages/fiscal-nfse/dist/**",
+          ],
+          output: [
+            "packages/fiscal-core/dist/**",
+            "packages/fiscal-nfe/dist/**",
+            "packages/fiscal-nfse/dist/**",
+          ],
+        },
       },
       // Compila o SDK (packages/sdk/dist, incluído pelo tsconfig da raiz) e
       // prova o tarball num consumidor limpo. O que lê a árvore espera por ele,
@@ -143,7 +147,7 @@ export default defineConfig({
       "ci:contracts": {
         command: "bun scripts/check-contracts-ci.mjs",
         dependsOn: ["ci:packages"],
-        env: ["CONTRACT_BASE"],
+        cache: { env: ["CONTRACT_BASE"] },
       },
       "ci:xml-prove": {
         command: "node scripts/prove-xml-package.mjs",
@@ -175,8 +179,7 @@ export default defineConfig({
       // O Miniflare regrava o cache de request.cf em node_modules/.mf.
       "ci:tooling": {
         command: "node .github/scripts/check-tooling.mjs",
-        input: [{ auto: true }, "!node_modules/.mf/**"],
-        output: [],
+        cache: { input: [{ auto: true }, "!node_modules/.mf/**"], output: [] },
       },
       // Documentação pública (apps/docs) compilada para apps/docs/dist, o
       // artefato que o build do console copia para /docs. Entradas automáticas:
@@ -185,23 +188,27 @@ export default defineConfig({
       // inline. O que o próprio build apaga e recria não é entrada.
       "ci:docs": {
         command: "node apps/docs/scripts/build.mjs",
-        input: [
-          { auto: true },
-          "!apps/docs/build/**",
-          "!apps/docs/dist/**",
-          "!apps/docs/.react-router/**",
-        ],
-        output: ["apps/docs/dist/**"],
+        cache: {
+          input: [
+            { auto: true },
+            "!apps/docs/build/**",
+            "!apps/docs/dist/**",
+            "!apps/docs/.react-router/**",
+          ],
+          output: ["apps/docs/dist/**"],
+        },
       },
       // Compõe landing, painel e documentação. A origem pública muda canonical,
       // sitemap e headers da saída.
       "ci:console": {
         command: "node scripts/console.mjs package",
         dependsOn: ["ci:packages", "ci:sdk", "ci:docs"],
-        input: [{ auto: true }, "!apps/console/.wrangler/**"],
-        output: [{ auto: true }, "!apps/console/.wrangler/**"],
-        env: ["PUBLIC_SITE_ORIGIN"],
-        untrackedEnv: ["WRANGLER_SEND_METRICS"],
+        cache: {
+          input: [{ auto: true }, "!apps/console/.wrangler/**"],
+          output: [{ auto: true }, "!apps/console/.wrangler/**"],
+          env: ["PUBLIC_SITE_ORIGIN"],
+          untrackedEnv: ["WRANGLER_SEND_METRICS"],
+        },
       },
       "ci:auth-worker": {
         command: "node --experimental-strip-types scripts/prove-auth-worker.mjs",

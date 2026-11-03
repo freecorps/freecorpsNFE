@@ -534,7 +534,7 @@ criado antes de `before`, com `runId`, `organizationId`, o estado do run,
 `noticeAt` e, nos `sending`, `claimedAt`.
 
 - **`pending`:** `bunx convex run archiveNotice:resumePending '{}'
---deployment <deployment>` agenda de novo o envio dos avisos `pending`
+  --deployment <deployment>` agenda de novo o envio dos avisos `pending`
   criados há mais de 60 minutos (`olderThanMinutes` muda o prazo), até 100
   por chamada; repita enquanto `resumed` não for zero. Repetir é seguro: só
   uma reserva vence, então o envio original atrasado e o retomado não mandam
