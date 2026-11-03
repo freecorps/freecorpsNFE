@@ -114,6 +114,8 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
    `node scripts/rights-relation.mjs <evidência>/rights.json`. Registre em
    `docs/v1.0/evidence/83/<data>/` o recibo, a relação e um `accepted.json`
    com `codeSha` e, por pacote, `name`, `version` e `sha256`.
+   O lote pode listar só parte dos pacotes, como o SDK com o nome novo; os
+   demais precisam já estar no registry com os bytes de um lote anterior.
 3. O mantenedor aceita na #83 cada linha: pacote, versão, hash, `rights` e
    `release-acceptance`.
 4. Com `npm login` na conta da organização `freecorps`, no mesmo checkout:
