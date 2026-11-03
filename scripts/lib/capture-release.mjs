@@ -10,6 +10,12 @@
 import { GateRefusal, hasUnsafeText } from "./issuance-gate.mjs";
 
 /**
+ * Every operation runs through one workflow, chosen by its `operation` input (#52); the run check
+ * (`verifiedRun`) still confirms the file, and the runner refuses inputs the operation does not take.
+ */
+export const CAPTURE_WORKFLOW = ".github/workflows/capture-fiscal.yml";
+
+/**
  * The environment holds the site's deploy key, limited to `main`; no reviewers. `scope` says what
  * the action names: one company, the whole deployment, or nothing (`read` and `alert`, without
  * inputs).
@@ -18,37 +24,37 @@ import { GateRefusal, hasUnsafeText } from "./issuance-gate.mjs";
  */
 export const CAPTURE_WORKFLOWS = {
   emergency_withdraw: {
-    file: ".github/workflows/capture-release-emergency.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "company",
     stops: true,
   },
   unblock: {
-    file: ".github/workflows/capture-release-unblock.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "company",
     stops: false,
   },
   halt: {
-    file: ".github/workflows/capture-fiscal-halt.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "deployment",
     stops: true,
   },
   resume: {
-    file: ".github/workflows/capture-fiscal-resume.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "deployment",
     stops: false,
   },
   list: {
-    file: ".github/workflows/capture-release-list.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "read",
     stops: false,
   },
   alert_test: {
-    file: ".github/workflows/capture-alert-test.yml",
+    file: CAPTURE_WORKFLOW,
     environment: "capture-fiscal-emergency",
     scope: "alert",
     stops: false,
@@ -131,7 +137,19 @@ const CONVEX_ID = /^[a-z0-9]{16,64}$/;
  */
 export function captureInputs(env, action) {
   const workflow = workflowOf(action);
-  if (workflow.scope === "read" || workflow.scope === "alert") return {};
+  // One workflow serves every operation (#52), so its form shows every input: one the chosen
+  // operation does not take is refused, never ignored. A company id given to `halt` means the
+  // person meant one company and chose the operation that stops all of them.
+  const given = (name) => (env[name] ?? "").trim() !== "";
+  if (workflow.scope !== "company" && (given("GATE_COMPANY") || given("GATE_ORGANIZATION_ID")))
+    refuse(
+      "INPUT_UNEXPECTED",
+      `${action} não recebe company nem organization_id; para uma empresa, use emergency_withdraw ou unblock.`,
+    );
+  if (workflow.scope === "read" || workflow.scope === "alert") {
+    if (given("GATE_REASON")) refuse("INPUT_UNEXPECTED", `${action} não recebe reason.`);
+    return {};
+  }
   const reason = (env.GATE_REASON ?? "").trim();
   if (reason.length < 10 || reason.length > 500 || hasUnsafeText(reason))
     refuse("INPUT_INVALID", "reason precisa ter de 10 a 500 caracteres, sem controles.");

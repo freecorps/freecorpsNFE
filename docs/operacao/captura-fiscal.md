@@ -15,9 +15,22 @@ está em [CAPTURE.md](../plataforma/CAPTURE.md#liberação-fiscal-no-site) e na
   valendo;
 - `disabled`: falta uma das variáveis.
 
-Só os workflows abaixo, disparados por quem está em
-`deploy/issuance-gate.json`, mudam a situação de uma empresa ou a parada
-geral. Nenhum deles pede aprovação.
+Só o workflow **Fiscal capture** (`capture-fiscal.yml`), disparado por quem
+está em `deploy/issuance-gate.json`, muda a situação de uma empresa ou a
+parada geral. Ele não pede aprovação. Em **Actions → Fiscal capture → Run
+workflow**, escolha a operação em `operation` e preencha só as entradas
+dela; uma entrada que a operação não recebe recusa o run com
+`INPUT_UNEXPECTED`, antes de qualquer chamada. O padrão é `list`, que não
+muda nada.
+
+| Operação             | Faz                                 | Entradas                                        |
+| -------------------- | ----------------------------------- | ----------------------------------------------- |
+| `list`               | Lista as empresas com liberação     | nenhuma                                         |
+| `alert_test`         | Manda um e-mail de teste do alerta  | nenhuma                                         |
+| `emergency_withdraw` | Desliga e bloqueia uma empresa      | `company`, `organization_id` opcional, `reason` |
+| `unblock`            | Tira o bloqueio de uma empresa      | `company`, `organization_id` opcional, `reason` |
+| `halt`               | Para a captura de todas as empresas | `reason`                                        |
+| `resume`             | Desfaz a parada geral               | `reason`                                        |
 
 ## Desligar tudo agora
 
@@ -25,8 +38,8 @@ Qualquer uma das opções basta. Nenhuma apaga documentos já capturados nem
 muda a liberação das empresas, e o que a última consulta já recebeu ainda
 aparece em Documentos e na exportação (#420).
 
-1. **GitHub, sem editar variável**: **Actions → Fiscal capture, stop every
-   company → Run workflow**, com o motivo. Ele grava a parada geral no banco
+1. **GitHub, sem editar variável**: **Actions → Fiscal capture → Run
+   workflow**, com `operation` em `halt` e o motivo, sem `company`. Ele grava a parada geral no banco
    do site, e nenhuma empresa consulta a Receita: cada consulta é adiada em
    uma hora, sem gastar cota nem janela, e o cofre recusa abrir. Os streams
    continuam ativos, sem alerta nem webhook para o cliente, e o console
@@ -72,15 +85,15 @@ fazer à mão além da retomada.
   empresa, cartão Captura fiscal (Produção) › **Desativar**, e confirmar no
   diálogo. Para consultar menos, sem desligar, **Alterar intervalo** na mesma
   linha.
-- **A Freecorps, em emergência**: no GitHub, **Actions → Fiscal capture,
-  emergency withdraw → Run workflow**. Em `company`, o id da empresa no
+- **A Freecorps, em emergência**: no GitHub, **Actions → Fiscal capture →
+  Run workflow**, com `operation` em `emergency_withdraw`. Em `company`, o id da empresa no
   Convex ([onde achar](#onde-achar-os-ids)); em `organization_id`,
   opcional, o id da organização, para conferir; e o motivo. Os inputs de um
   run são públicos: o CNPJ é recusado, e o motivo não leva nome, CNPJ nem
   dado de cliente. Ele desliga, pausa o stream de produção e impede a
   empresa de religar.
-- **Desbloquear**: **Actions → Fiscal capture, unblock**, com as mesmas
-  entradas. Ele só tira o bloqueio: não liga nem desliga a captura, e é
+- **Desbloquear**: **Actions → Fiscal capture**, com `operation` em
+  `unblock` e as mesmas entradas. Ele só tira o bloqueio: não liga nem desliga a captura, e é
   recusado (`CAPTURE_RELEASE_NOT_BLOCKED`) para empresa que não está
   bloqueada. Depois, a empresa liga de novo no console e alguém com acesso
   clica em **Retomar captura**: a captura não volta sozinha, e a consulta
@@ -101,7 +114,7 @@ inputs de um run ficam públicos no repositório, e um CNPJ é recusado com
      da organização** e a **Referência da empresa**, com botão de copiar, a
      qualquer papel que vê a empresa.
    - **Pela lista.** Rode [a lista](#listar-as-empresas-liberadas) e baixe o
-     artefato `capture-release-list-<run>-<tentativa>`. O `receipt.json`
+     artefato `capture-fiscal-list-<run>-<tentativa>`. O `receipt.json`
      traz, por empresa com liberação, o `organizationId` e o `companyId`. O
      nome está só no `receipt.full.json.age`, cifrado para os custodiantes de
      `deploy/offsite-backup.json`: um custodiante o decifra fora do
@@ -136,7 +149,7 @@ O caminho depende de como a captura foi desligada. Confira antes no
 
 ### Depois da parada geral
 
-1. Em Actions, rode **Fiscal capture, resume after the general stop**, com o
+1. Em Actions, rode **Fiscal capture** com `operation` em `resume` e o
    motivo.
 2. Confira `captureFiscal: "enabled"` no `/health`.
    - Run vermelho com `CAPTURE_FISCAL_NOT_HALTED`: não havia parada; nada a
@@ -217,10 +230,11 @@ nenhuma em atenção.
 
 ## Listar as empresas liberadas
 
-1. Em Actions, rode **Fiscal capture, list the companies**
-   (`capture-release-list.yml`), sem entradas. Só quem está em
+1. Em Actions, rode **Fiscal capture** (`capture-fiscal.yml`) com
+   `operation` em `list`, sem outras entradas. Só quem está em
    `deploy/issuance-gate.json` dispara.
-2. No log do passo "Check the run and the authorized person, then list", a
+2. No log do passo "Check the run, the authorized person and the inputs,
+   then act", a
    primeira linha é o resumo do deployment: `captureFiscal`, `transport`,
    `halted`, o número de empresas e `armed`. Depois vem uma linha por empresa
    que já teve liberação, com `organizationId`, `companyId`, `release`,
@@ -233,7 +247,7 @@ nenhuma em atenção.
    `released` aqui, e o resumo traz `captureFiscal: false`.
 4. O nome de cada empresa e os 10 alertas mais recentes dela ficam só no
    recibo cifrado (`receipt.full.json.age`) do artefato
-   `capture-release-list-<run>-<tentativa>`. O `receipt.json` público traz
+   `capture-fiscal-list-<run>-<tentativa>`. O `receipt.json` público traz
    os ids, os estados e o SHA-256 da resposta completa. O CNPJ não aparece
    no log nem nos recibos.
 
@@ -295,14 +309,14 @@ Configuração não prova entrega. Depois de gravar ou trocar
 `FNFE_CAPTURE_ALERT_EMAIL`, prove que o e-mail chega sem esperar um alerta
 real. Não expire certificado nem provoque consulta à Receita para gerar um.
 
-1. Em Actions, rode **Fiscal capture, test the alert e-mail**
-   (`capture-alert-test.yml`), sem entradas. Só quem está em
+1. Em Actions, rode **Fiscal capture** (`capture-fiscal.yml`) com
+   `operation` em `alert_test`, sem outras entradas. Só quem está em
    `deploy/issuance-gate.json` dispara, e o `/health` precisa confirmar o
    site.
-2. No log do passo "Check the run and the authorized person, then send the
-   test", a linha de resumo traz `alertDestination`, `recipients`,
+2. No log do passo "Check the run, the authorized person and the inputs,
+   then act", a linha de resumo traz `alertDestination`, `recipients`,
    `delivery` e `sentAt`. O recibo fica no artefato
-   `capture-alert-test-<run>-<tentativa>`. Nenhum dos dois mostra os
+   `capture-fiscal-alert_test-<run>-<tentativa>`. Nenhum dos dois mostra os
    endereços.
 3. Em `/console/operacao` (ou em cada caixa de `FNFE_CAPTURE_ALERT_EMAIL`), procure o assunto
    `[Freecorps Fiscal] Teste do alerta da captura: run <run>/<tentativa>` e

@@ -74,7 +74,7 @@ const boxes = {
     items: "Alertas",
     caution: "Confira o alerta na lista da captura antes de agir",
     guidance:
-      "Os alertas da captura fiscal chegam aqui. O e-mail não comprova o alerta: confira a empresa pelo workflow capture-release-list.yml, siga o runbook da captura e registre o que foi feito em notas internas.",
+      "Os alertas da captura fiscal chegam aqui. O e-mail não comprova o alerta: confira a empresa pelo workflow capture-fiscal.yml, operação list, siga o runbook da captura e registre o que foi feito em notas internas.",
   },
 } as const;
 type Box = (typeof boxes)[Mailbox];

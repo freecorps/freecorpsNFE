@@ -184,12 +184,7 @@ const workflow = (file: string) =>
 describe("workflows de operação no repositório público", () => {
   const backup = workflow("offsite-backup.yml").env!;
   const operational = [
-    ["capture-alert-test.yml", "capture-release"],
-    ["capture-fiscal-halt.yml", "capture-release"],
-    ["capture-fiscal-resume.yml", "capture-release"],
-    ["capture-release-emergency.yml", "capture-release"],
-    ["capture-release-list.yml", "capture-release"],
-    ["capture-release-unblock.yml", "capture-release"],
+    ["capture-fiscal.yml", "capture-release"],
     ["nfse-gate-emergency.yml", "issuance-gate"],
     ["nfse-gate-enable.yml", "issuance-gate"],
     ["nfse-production-probe.yml", "issuance-gate"],

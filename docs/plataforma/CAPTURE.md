@@ -693,12 +693,14 @@ atende: documentos, captura e webhooks. Importação e emissão ficam de fora.
 
 **Emergência e desbloqueio (Freecorps).** Workflows sem aprovação, para
 quem está em `authorizedActors` de `deploy/issuance-gate.json`, a mesma lista
-do gate da NFS-e:
+do gate da NFS-e. Desde a #52 todas passam por um workflow,
+`capture-fiscal.yml`, escolhidas na entrada `operation`; o runner recusa
+uma entrada que a operação escolhida não recebe (`INPUT_UNEXPECTED`):
 
-- `capture-release-emergency.yml` retira a captura e bloqueia a empresa de
+- `emergency_withdraw` retira a captura e bloqueia a empresa de
   ligar de novo; os documentos já capturados continuam legíveis e
   exportáveis;
-- `capture-release-unblock.yml` desfaz o bloqueio, sem ligar nem desligar
+- `unblock` desfaz o bloqueio, sem ligar nem desligar
   nada. Ele é recusado para empresa que não está bloqueada
   (`CAPTURE_RELEASE_NOT_BLOCKED`) e mantém a liberação gravada, então nunca
   retira uma captura ativa (#424).
@@ -726,7 +728,7 @@ de novo no console e alguém retomar a captura; a consulta retomada parte do
 checkpoint onde a captura parou, sem pular NSU
 ([continuidade](#continuidade-da-captura-em-produção)).
 
-**Parada geral (Freecorps, #424).** `capture-fiscal-halt.yml` grava em
+**Parada geral (Freecorps, #424).** A operação `halt` grava em
 `captureFiscalHalts` uma parada do deployment inteiro, sem editar variável.
 Ela não libera nem retira empresa e não pede nada ao cliente:
 
@@ -747,7 +749,7 @@ Ela não libera nem retira empresa e não pede nada ao cliente:
   "active"` com `code: "CAPTURE_FISCAL_HALTED"`; o console diz "Parada pela
   Freecorps" e que a captura volta sozinha.
 
-`capture-fiscal-resume.yml` desfaz a parada, sem aprovação como o
+A operação `resume` desfaz a parada, sem aprovação como o
 desbloqueio, e não abre nada sozinho nem reagenda: a próxima checagem de
 cada stream consulta, em até uma hora. `/health` informa `captureFiscal:
 "halted"` enquanto a parada vale. Os adiamentos não contam como falha da
@@ -794,7 +796,7 @@ reconcilia primeiro.
 
 O runner (`scripts/capture-release.mjs`) lê do GitHub quem disparou, confere
 o `/health` do site e chama `captureRelease:set` ou `captureRelease:setHalt`;
-na lista (`capture-release-list.yml`), `captureSupervisor:survey`
+na lista (operação `list`), `captureSupervisor:survey`
 ([visão interna](#supervisão-e-alertas-422)).
 A emergência e a parada geral seguem com aviso quando o `/health` não
 confirma o site; o desbloqueio e a retomada recusam
@@ -1044,7 +1046,7 @@ O e-mail traz tipo, código, estado e ids, e aponta a lista e o
 [runbook](../operacao/captura-fiscal.md#alertas-da-captura).
 
 **Teste do destino (#463).** `captureSupervisor.sendTestAlert`, pelo workflow
-`capture-alert-test.yml` (`scripts/capture-release.mjs alert_test`), manda um
+`capture-fiscal.yml`, operação `alert_test` (`scripts/capture-release.mjs alert_test`), manda um
 e-mail de teste aos mesmos endereços pela mesma chamada ao provedor. Assim a
 chegada prova o destino sem esperar nem provocar o alerta de uma empresa. O
 teste não lê nem grava registro, não conta no teto por hora e não é
@@ -1059,7 +1061,7 @@ GitHub pediria um token do GitHub no deployment ou um workflow agendado com a
 deploy key do site.
 
 **Visão interna.** `captureSupervisor.survey`, pelo workflow
-`capture-release-list.yml` (`scripts/capture-release.mjs list`), lista cada
+`capture-fiscal.yml`, operação `list` (`scripts/capture-release.mjs list`), lista cada
 empresa com registro de liberação (liberada, retirada ou bloqueada), com a
 situação do stream, o código, a última consulta respondida, a operação, o
 certificado (próprio ou não, vencimento), o intervalo mínimo, a supervisão e
@@ -1108,7 +1110,7 @@ Ligar e desligar no dia a dia: [captura-fiscal.md](../operacao/captura-fiscal.md
 4. Gravar `FNFE_CAPTURE_TRANSPORT=sefaz` só quando a primeira empresa
    estiver pronta, e conferir `captureFiscal: "enabled"` no `/health`.
 5. O corte de emergência de tudo é a parada geral pelo GitHub
-   (`capture-fiscal-halt.yml`) ou, sem o GitHub, remover qualquer uma das
+   (`capture-fiscal.yml`, operação `halt`) ou, sem o GitHub, remover qualquer uma das
    duas no painel do Convex.
 6. Ensaiar os workflows numa empresa de ensaio e registrar a evidência,
    pelo [roteiro](../operacao/captura-fiscal.md#ensaio-dos-workflows).
@@ -1119,7 +1121,7 @@ Ligar e desligar no dia a dia: [captura-fiscal.md](../operacao/captura-fiscal.md
    [teste do e-mail](../operacao/captura-fiscal.md#testar-o-e-mail-dos-alertas).
    Feito em 28/10/2026: `operacao@nfe.freecorps.com.br`, com o teste do run
    40701209624 recebido na caixa de operação (#463).
-8. Depois do primeiro deploy da #422, disparar `capture-release-list.yml` uma
+8. Depois do primeiro deploy da #422, disparar a lista (então `capture-release-list.yml`) uma
    vez para armar a supervisão das empresas já liberadas e conferir
    `supervised: true` em cada uma. Feito no run 40146214809, de 24/10/2026,
    com as duas empresas liberadas.
