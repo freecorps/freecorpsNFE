@@ -65,7 +65,6 @@
     "cold:prove-rehydration": "node scripts/prove-cold-rehydration-local.mjs",
     "content:prove-hosted": "node scripts/prove-document-content-hosted.mjs",
     "plans:browser": "node apps/console/e2e/plans.mjs",
-    "billing:check-stripe": "node scripts/check-billing-stripe.mjs",
     "test:changed": "vp test run --changed origin/main --passWithNoTests",
     "worktree:mail": "bun scripts/worktree.mjs mail",
     "platform:browser": "node --experimental-strip-types apps/console/e2e/foundation.mjs",

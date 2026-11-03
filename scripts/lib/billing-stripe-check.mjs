@@ -35,7 +35,7 @@ export const MANUAL_ITEMS = [
 ];
 
 export const usage =
-  "uso: bun run billing:check-stripe --key-file <arquivo absoluto> [--endpoint <url>]\n" +
+  "uso: node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]\n" +
   "A chave (sk_ ou rk_, test ou live) precisa de leitura em Prices, Webhook Endpoints e\n" +
   "Customer portal. Nada é escrito no Stripe; a saída não traz chaves nem ids da conta.";
 

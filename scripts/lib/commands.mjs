@@ -60,11 +60,6 @@ export const commands = {
     "worktree",
     "Prova contratação e upgrade com conta e pagamentos sintéticos no Convex local",
   ],
-  "billing:check-stripe": [
-    "plataforma",
-    "conta Stripe da cobrança, só leitura",
-    "Confere preços, endpoint de eventos e portal antes de ligar o catálogo ou o anual; exige --key-file",
-  ],
   help: ["repositório", "nenhum", "Lista os comandos, a aplicação e o ambiente de cada um"],
   "bench:workflow": [
     "repositório",

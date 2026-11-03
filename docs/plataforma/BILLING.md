@@ -1124,7 +1124,7 @@ Os itens 1 a 4 são conferidos só lendo a conta, sem escrever no Stripe nem no
 Convex:
 
 ```sh
-bun run billing:check-stripe --key-file <arquivo absoluto> [--endpoint <url>]
+node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]
 ```
 
 O arquivo guarda a chave (`sk_` ou `rk_`, `test` ou `live`), com leitura em
@@ -1301,7 +1301,7 @@ mantenedor.
 1. **Conta de teste.** Preparar os itens 1 a 4 de
    [Configuração](#configuração), com o endpoint em
    `https://freecorpsnfe-validation.freecorps.workers.dev/v1/billing/stripe/events`.
-   `billing:check-stripe --endpoint <essa URL>` passa com a chave de teste.
+   `node scripts/check-billing-stripe.mjs --endpoint <essa URL>` passa com a chave de teste.
 2. **Deployment.** Antes das variáveis, um `POST` sem assinatura nessa URL
    responde 404; depois de gravar `STRIPE_BILLING_SECRET_KEY` (`rk_test_…`) e
    `STRIPE_BILLING_WEBHOOK_SECRET`, responde 400. Ligar só na validação o
@@ -1331,10 +1331,10 @@ mantenedor.
    cartão de teste ali.
 8. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado na
    validação, os estados e códigos observados e o resultado de
-   `billing:check-stripe`, sem chaves nem ids da conta.
+   `node scripts/check-billing-stripe.mjs`, sem chaves nem ids da conta.
 
 Depois da prova, a ativação em produção segue esta ordem:
-`billing:check-stripe` com a chave `live` contra o endpoint de produção, os
+`node scripts/check-billing-stripe.mjs` com a chave `live` contra o endpoint de produção, os
 segredos no deployment de produção, o catálogo ligado e
 `plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O
 Pix continua desligado.

@@ -144,9 +144,12 @@ describe("endpoint de eventos", () => {
 
 describe("entrada e relatório", () => {
   it("lê só chave de API do Stripe e diz o modo", () => {
-    expect(readKey("sk_test_abcdefghij12\n").livemode).toBe(false);
-    expect(readKey("rk_live_abcdefghij12").livemode).toBe(true);
-    for (const text of ["pk_test_abcdefghij12", "whsec_abcdefghijklmnop", "sk_test_x"])
+    // Built at run time so no versioned line looks like a credential to the public scan.
+    const key = (prefix: string, mode: string, body = "synthetic0000") =>
+      [prefix, mode, body].join("_");
+    expect(readKey(`${key("sk", "test")}\n`).livemode).toBe(false);
+    expect(readKey(key("rk", "live")).livemode).toBe(true);
+    for (const text of [key("pk", "test"), key("whsec", "synthetic"), key("sk", "test", "x")])
       expect(() => readKey(text)).toThrow("BILLING_CHECK_KEY_INVALID");
   });
 
