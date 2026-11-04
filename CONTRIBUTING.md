@@ -14,8 +14,9 @@ público, inclusive issues, PRs, logs e artefatos do CI: use só dados
 fictícios em commits, screenshots, recibos e comentários. Não use produção
 como seed nem inclua segredos ou documentos reais.
 
-Rode a menor prova do comportamento e depois os checks aplicáveis. A escolha
-por área está na seção "Verificando" do [AGENTS.md](AGENTS.md#verificando); o
+Rode a menor prova do comportamento e depois os checks aplicáveis. Os checks
+estão na seção "Verificando" do [AGENTS.md](AGENTS.md#verificando) e os testes
+por área em [ci.md](docs/desenvolvimento/ci.md#testes); o
 que o CI confere e como reproduzi-lo com `bun run ci:local`, em
 [docs/desenvolvimento/ci.md](docs/desenvolvimento/ci.md). Antes de abrir a PR,
 confira conforme a mudança (num checkout recém-instalado, rode antes

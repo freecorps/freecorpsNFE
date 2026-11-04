@@ -148,8 +148,8 @@ bun run ci:local
 ```
 
 `bun run help` lista todos os scripts, com a aplicação e o ambiente que cada um
-atinge. A escolha de testes por área está no [AGENTS.md](AGENTS.md#verificando)
-e o que o CI confere, em [ci.md](docs/desenvolvimento/ci.md). Nenhum script
+atinge. Os testes por área estão em [ci.md](docs/desenvolvimento/ci.md#testes), que
+também descreve o que o CI confere. Nenhum script
 publica em produção; isso cabe ao workflow `Deploy production`, disparado a
 cada push na `main`.
 

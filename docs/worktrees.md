@@ -199,6 +199,10 @@ O setup mantém apenas a allowlist definida em
 e webhooks a permanecerem desligados. Não copia certificados A1, senhas,
 chaves de e-mail ou credenciais de serviços fiscais.
 
+As variáveis do backend ficam no deployment Convex; as `VITE_*` do frontend
+entram no bundle durante o build. O runtime Node das actions do Convex não é o
+runtime que serve os assets estáticos na Cloudflare.
+
 ## Crons, filas e previews
 
 Um incidente em outro projeto do mantenedor veio de previews Convex que continuavam executando crons

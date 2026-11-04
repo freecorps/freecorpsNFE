@@ -362,6 +362,33 @@ scripts `.mjs`, `deploy/` e workflows rodam a suíte toda
 (`forceRerunTriggers`, com caminhos absolutos porque o `**` do Vitest não
 atravessa `.claude/worktrees/`).
 
+### Rodar e escrever testes
+
+Durante o desenvolvimento, rode só a área alterada:
+
+| Comando                 | O que roda                                                 |
+| ----------------------- | ---------------------------------------------------------- |
+| `vp run test:<área>`    | Um projeto; repete o resultado aprovado se nada lido mudou |
+| `bun run platform:test` | `test:platform` e `test:packages`                          |
+| `test` de um workspace  | Só aquele workspace; em `platform/`, a área `platform`     |
+| `bun run test:changed`  | Só os testes alcançados pelas mudanças desde `origin/main` |
+| `vp test run <arquivo>` | Um arquivo, sem cache                                      |
+| `vp test run`           | A suíte toda, sem cache                                    |
+
+Com vários agentes na mesma máquina, `VITEST_MAX_WORKERS=2` (ou `50%`) divide
+os núcleos e `VITEST_TEST_TIMEOUT` amplia o limite por teste.
+
+Os testes importam de `vite-plus/test`. Um caminho novo de teste entra num
+único projeto em `scripts/lib/test-projects.mjs`, que define também a suíte do
+relatório do CI. A integração da plataforma fica em
+`platform/convex/<módulo>.test.ts`, ao lado do módulo, com o schema de
+`platform/convex`, os módulos de `tests/helpers/convex-modules.ts` e os
+componentes registrados por `platform/test-setup.ts`; sessões Better Auth são
+simuladas com `t.withIdentity`. Parsing e validação de NF-e têm testes em
+`packages/fiscal-nfe` (`bun run xml:test`), e a montagem e a assinatura da DPS
+NFS-e em `packages/fiscal-nfse` (`bun run nfse:test`). Nenhum desses testes
+comprova autorização ou emissão homologada.
+
 `platform/convex/publicSurface.test.ts` varre a superfície pública do Convex:
 descobre toda query, mutation e action pública de `platform/convex`, inclusive
 de módulos novos, gera argumentos válidos pelo validador com IDs forjados e
