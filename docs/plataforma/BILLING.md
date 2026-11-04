@@ -232,13 +232,21 @@ com o interruptor ligado.
   ADR (#642), a viabilidade, foi aprovada com o fechamento da #34; o anual
   só é ligado depois da prova da #35.
 - **Cálculo.** `platform/convex/lib/annualTerms.ts`, puro, em centavos
-  inteiros e meses civis UTC: o período vai do dia 1 de um mês ao dia 1 do
-  12º mês seguinte, às 00:00 UTC; o mês corrente conta inteiro. Até 7 × 24 h
-  da compra, o reembolso é integral; depois, é o valor pago menos os meses
-  usados pelo preço mensal, nunca negativo. O Intermediário cancelado no
-  4º mês devolve R$ 894; a partir do 10º mês, nada. O upgrade do
-  Intermediário para o Grande cobra (R$ 4.990 − R$ 1.490) × meses restantes
-  / 12, arredondado para baixo uma vez, no total.
+  inteiros e instantes UTC em ms. O termo pode começar em qualquer instante
+  e termina no aniversário: o mesmo dia e horário 12 meses depois
+  (`termEndsAt`). O mês `k` do termo vai de `termMonthStart(início, k)` a
+  `termMonthStart(início, k + 1)`, sempre contado do início: o dia fica o
+  mesmo, limitado ao último dia do mês, então um termo de 31/01 às 10:00
+  vira o mês em 28/02 (29/02 no bissexto) e em 31/03, e termina em 31/01 do
+  ano seguinte; um de 29/02 termina em 28/02. Cada mês começa no seu
+  instante exato, nem 1 ms antes. Um termo que começa no dia 1 às 00:00 UTC,
+  como os vendidos hoje, tem os meses civis UTC como meses do termo. O mês
+  do termo em curso conta inteiro. Até 7 × 24 h da compra, o reembolso é
+  integral; depois, é o valor pago menos os meses do termo usados pelo preço
+  mensal, nunca negativo. O Intermediário cancelado no 4º mês devolve
+  R$ 894; a partir do 10º mês, nada. O upgrade do Intermediário para o
+  Grande cobra (R$ 4.990 − R$ 1.490) × meses do termo restantes / 12,
+  arredondado para baixo uma vez, no total.
 - **Termo.** Cada anual pago é uma linha de `platformPlanTerms`
   (`planSchema.ts`): `tier` a partir de `firstPeriod` (dia 1, 00:00 UTC, em
   ms), `endsAt`, `source` (`stripe` ou `pix`), `references` (faturas ou
@@ -260,17 +268,20 @@ com o interruptor ligado.
   (`lib/planCore.ts`).
 - **Formato.** Todo termo é gravado por `insertTerm` (`lib/planTerms.ts`),
   que chama `assertTermShape` (`lib/annualTerms.ts`) e recusa:
-  - `firstPeriod` fora do dia 1, 00:00 UTC, ou `endsAt` diferente de
-    `termEndsAt(firstPeriod)`;
+  - `firstPeriod` que não seja um instante inteiro de ms, não negativo, ou
+    `endsAt` diferente de `termEndsAt(firstPeriod)`;
   - `paidCents` que não seja inteiro maior que zero, ou `purchasedAt`
     inválido;
   - `references` vazio, repetido ou fora do formato `[a-zA-Z0-9_-]{8,120}`;
-  - um segmento que não comece num dia 1, depois do anterior (o primeiro,
-    depois de `firstPeriod`) e antes de `endsAt`, ou cujo `tier` não seja
-    maior que o anterior. O downgrade só vale na renovação, e um upgrade no
-    primeiro mês cobre os 12 meses, então muda `tier` em vez de abrir
-    segmento;
-  - uma cobrança de upgrade fora de um dia 1 dentro do termo, com `tier`
+  - um segmento que não comece no início de um mês do termo
+    (`isTermMonthStart`), depois do anterior (o primeiro, depois de
+    `firstPeriod`) e antes de `endsAt`, ou cujo `tier` não seja maior que o
+    anterior. Num termo de 15/10 às 14:30, o 5º mês começa em 15/02 às
+    14:30, e um segmento em 01/02 é recusado. O downgrade só vale na
+    renovação, e um upgrade no primeiro mês do termo cobre os 12 meses, então
+    muda `tier` em vez de abrir segmento;
+  - uma cobrança de upgrade fora do início de um mês do termo, antes de
+    `endsAt`, com `tier`
     diferente do que o termo tem nesse mês ou não maior que `fromTier`, com
     referência fora de `references` ou repetida, com centavos que não sejam
     inteiros maiores que zero, ou cuja soma não fique abaixo de `paidCents`.

@@ -12,7 +12,7 @@ import { USAGE_PAUSES, resumeOrganizationCaptures } from "./lib/captureAttention
 import { capacityPolicy, reserveCapacity, commitCapacity } from "./lib/capacityCore";
 import { assertOrganizationHot, assertPlanChangeable } from "./lib/coldArchiveCore";
 import { allocateOffer } from "./lib/planCore";
-import { monthStart, termCovering } from "./lib/planTerms";
+import { monthlyBlockedByTerm } from "./lib/planTerms";
 import { nextUsagePeriodStart } from "./lib/usageValues";
 import { internal } from "./_generated/api";
 
@@ -158,8 +158,8 @@ export const assignPlan = internalMutation({
         .first()
     )
       deny("ORGANIZATION_CLOSED");
-    // The row would replace the annual plan of the current month; the term ends or is rescinded first.
-    if (await termCovering(ctx, args.organizationId, monthStart(Date.now())))
+    // The row would replace or overlap the annual plan; the term ends or is rescinded first.
+    if (await monthlyBlockedByTerm(ctx, args.organizationId, Date.now(), args.endsAt))
       deny("ANNUAL_TERM_ACTIVE");
     // Same rule as `allocateOffer`: an archived organization takes a plan, an archiving one waits.
     await assertPlanChangeable(ctx, args.organizationId);

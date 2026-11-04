@@ -4,12 +4,12 @@ import {
   assertTermShape,
   remainingMonths,
   rescissionCents,
+  termMonthAt,
   termMonthStart,
   upgradeCents,
   usedMonths,
   withinWithdrawal,
 } from "./annualTerms";
-import { nextUsagePeriodStart } from "./usageValues";
 import { deny } from "./organizationAccess";
 import { PLATFORM_PLANS, type paidTier } from "./planCatalog";
 
@@ -28,7 +28,7 @@ export function monthStart(at: number) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
 }
 
-/** Tier of the term in the month of `at`: the last upgrade segment begun by then, or `tier`. */
+/** Tier of the term at `at`: the last upgrade segment begun by then, or `tier`. */
 export function termTierAt(term: Pick<Doc<"platformPlanTerms">, "tier" | "segments">, at: number) {
   return term.segments.findLast((segment) => segment.fromPeriod <= at)?.tier ?? term.tier;
 }
@@ -70,19 +70,19 @@ export async function termsInForce(
 }
 
 /**
- * Why a new annual term starting at `firstPeriod` cannot be sold: a term already covers that
- * month, or another term is scheduled and not yet ended at `now`. A `next` request in an active
- * term's last month starts at its `endsAt`, which it no longer covers, so the renewal leaves no
- * gap; a scheduled term that ended blocked (`TERM_ENDED`) no longer stops new sales.
+ * Why a new annual term starting at the instant `start` cannot be sold: a term already covers
+ * that instant, or another term is scheduled and not yet ended at `now`. A renewal requested in an
+ * active term's last month starts at its `endsAt`, which it no longer covers, so the renewal
+ * leaves no gap; a scheduled term that ended blocked (`TERM_ENDED`) no longer stops new sales.
  */
 export async function annualTermBlocks(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  firstPeriod: number,
+  start: number,
   now: number,
 ) {
   return !!(
-    (await termCovering(ctx, organizationId, firstPeriod)) ||
+    (await termCovering(ctx, organizationId, start)) ||
     (await ctx.db
       .query("platformPlanTerms")
       .withIndex("by_organizationId_and_state_and_endsAt", (q) =>
@@ -93,33 +93,53 @@ export async function annualTermBlocks(
 }
 
 /**
- * The `scheduled` or `active` term covering the month that starts at `periodStart`
- * (`firstPeriod <= periodStart < endsAt`). A monthly payment or activation for a covered month
- * would overlap the annual plan, so it is refused or blocked (`ANNUAL_TERM_ACTIVE`); a month
- * before a term scheduled for later is still sold monthly (ADR 0010, decision 9).
+ * A `scheduled` or `active` term overlapping the instants `[from, to)`: `endsAt > from` and
+ * `firstPeriod < to`. Empty when `to <= from`.
  */
-export async function termCovering(
+export async function termOverlapping(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
-  periodStart: number,
+  from: number,
+  to: number,
 ) {
   for (const state of HOLDING) {
-    // At most the current term and its renewal end after any given month.
+    // At most the current term and its renewal end after any given instant.
     const terms = await ctx.db
       .query("platformPlanTerms")
       .withIndex("by_organizationId_and_state_and_endsAt", (q) =>
-        q.eq("organizationId", organizationId).eq("state", state).gt("endsAt", periodStart),
+        q.eq("organizationId", organizationId).eq("state", state).gt("endsAt", from),
       )
       .take(10);
-    const term = terms.find((row) => row.firstPeriod <= periodStart);
+    const term = terms.find((row) => row.firstPeriod < to);
     if (term) return term;
   }
   return null;
 }
 
+/** The `scheduled` or `active` term covering the instant `at` (`firstPeriod <= at < endsAt`). */
+export async function termCovering(ctx: QueryCtx, organizationId: Id<"organizations">, at: number) {
+  return termOverlapping(ctx, organizationId, at, at + 1);
+}
+
 /**
- * The term an annual upgrade raises (ADR 0010, decision 9): the `active` term covering the month
- * of `now`. Refused while a term has not started yet, this one or a renewal scheduled after it
+ * The term that refuses or blocks a monthly plan from `startsAt` to `endsAt`
+ * (`ANNUAL_TERM_ACTIVE`): one overlapping it, which the plan would shorten or overlap. A plan
+ * without end, the Gratuito, only checks `startsAt`: the term's activation replaces it. The
+ * instant `startsAt` is always checked, even for an `endsAt` already past. A plan that ends before
+ * a term scheduled for later is still sold monthly (ADR 0010, decision 9).
+ */
+export async function monthlyBlockedByTerm(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  startsAt: number,
+  endsAt: number | null,
+) {
+  return termOverlapping(ctx, organizationId, startsAt, Math.max(endsAt ?? 0, startsAt + 1));
+}
+
+/**
+ * The term an annual upgrade raises (ADR 0010, decision 9): the `active` term covering `now`.
+ * Refused while a term has not started yet, this one or a renewal scheduled after it
  * (`ANNUAL_TERM_SCHEDULED`): the renewal was paid at its own tier, and a term not yet started is
  * upgraded once it starts. Without any term, `ANNUAL_TERM_REQUIRED`.
  */
@@ -128,7 +148,7 @@ export async function upgradableTerm(
   organizationId: Id<"organizations">,
   now: number,
 ) {
-  const term = await termCovering(ctx, organizationId, monthStart(now));
+  const term = await termCovering(ctx, organizationId, now);
   const scheduled = await ctx.db
     .query("platformPlanTerms")
     .withIndex("by_organizationId_and_state_and_endsAt", (q) =>
@@ -141,9 +161,9 @@ export async function upgradableTerm(
 }
 
 /**
- * What raising `term` to `tier` from the month of `from` costs: the difference of the annual
- * prices over the months left, the current one whole, floored once (`upgradeCents`). `null` when
- * `tier` is not above the tier the term has in that month.
+ * What raising `term` to `tier` from `from`, the start of one of its term months, costs: the
+ * difference of the annual prices over the term months left, that one whole, floored once
+ * (`upgradeCents`). `null` when `tier` is not above the tier the term has in that month.
  */
 export function termUpgradeCents(
   term: Pick<Doc<"platformPlanTerms">, "tier" | "segments" | "firstPeriod" | "endsAt">,
@@ -168,11 +188,11 @@ type TermMoney = Pick<
 /**
  * What rescinding `term` at `now` gives back (ADR 0010, decision 9, and the owner's decision of
  * 30/10/2026). Within 7 days of `purchasedAt`, the payment of its annual charge: everything paid,
- * and access ends now. Afterwards: `paidCents` minus each used month, the current one whole, at
- * the full monthly price of the tier the term had in it, never negative; access lasts until the
- * end of the current civil month. A term not started yet used nothing, so it gives everything
- * back and grants nothing more: one before its 1st, and one still `scheduled` after it, whose
- * activation was refused (`blockedCode`) and which never granted a plan.
+ * and access ends now. Afterwards: `paidCents` minus each used term month, the current one whole,
+ * at the full monthly price of the tier the term had in it, never negative; access lasts until the
+ * end of the current term month. A term not started yet used nothing, so it gives everything
+ * back and grants nothing more: one before its `firstPeriod`, and one still `scheduled` after it,
+ * whose activation was refused (`blockedCode`) and which never granted a plan.
  */
 export function termRescission(term: TermMoney, now: number) {
   const withdrawal = withinWithdrawal(term.purchasedAt, now);
@@ -192,7 +212,10 @@ export function termRescission(term: TermMoney, now: number) {
       usedMonthlyCents,
       withinWithdrawal: withdrawal,
     }),
-    accessEndsAt: withdrawal || !started ? now : Math.min(nextUsagePeriodStart(now), term.endsAt),
+    accessEndsAt:
+      withdrawal || !started
+        ? now
+        : Math.min(termMonthAt(term.firstPeriod, now).endsAt, term.endsAt),
   };
 }
 

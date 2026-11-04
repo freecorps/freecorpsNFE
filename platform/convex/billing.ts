@@ -23,7 +23,6 @@ import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from ".
 import {
   activeTerm,
   annualTermBlocks,
-  monthStart,
   rescindedSubscription,
   subscriptionHasTerm,
   termTierAt,
@@ -31,6 +30,7 @@ import {
   termsInForce,
   upgradableTerm,
 } from "./lib/planTerms";
+import { termMonthAt } from "./lib/annualTerms";
 import { assertPlanChangeable } from "./lib/coldArchiveCore";
 import { planFor } from "./lib/usageCore";
 import { nextUsagePeriodStart, planEnded, usagePeriod } from "./lib/usageValues";
@@ -470,8 +470,9 @@ export const prepareCheckout = internalMutation({
       // at the old tier. Paid at the latest when the session expires (24 h), the switch still has
       // two days; from the 1st the new term is upgraded in its first month instead.
       if (term.endsAt - now < UPGRADE_SWITCH_MARGIN) deny("PERIOD_CLOSING");
-      // Already at this tier or above: a downgrade only happens at renewal.
-      const price = termUpgradeCents(term, args.tier, monthStart(now));
+      // Already at this tier or above: a downgrade only happens at renewal. Priced from the
+      // start of the term month under way, which counts whole.
+      const price = termUpgradeCents(term, args.tier, termMonthAt(term.firstPeriod, now).startsAt);
       if (price === null) return deny("PLAN_UNAVAILABLE");
       kind = "upgrade";
       grantCents = price;

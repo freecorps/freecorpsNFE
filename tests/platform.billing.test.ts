@@ -1364,7 +1364,7 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
   it("nunca grava um termo fora do formato", async () => {
     const f = await fixture();
     await expect(
-      annual(f, f.organizationId, "active", { firstPeriod: Date.UTC(2026, 9, 15) }),
+      annual(f, f.organizationId, "active", { firstPeriod: Date.UTC(2026, 9, 15) + 0.5 }),
     ).rejects.toThrow(RangeError);
     expect(await f.t.run((ctx) => ctx.db.query("platformPlanTerms").collect())).toEqual([]);
   });

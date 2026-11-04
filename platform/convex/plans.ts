@@ -53,7 +53,7 @@ import {
   termUpgradeCents,
   upgradableTerm,
 } from "./lib/planTerms";
-import { remainingMonths, termEndsAt } from "./lib/annualTerms";
+import { remainingMonths, termEndsAt, termMonthAt } from "./lib/annualTerms";
 
 const scope = { organizationId: v.id("organizations") };
 const requestResult = v.object({
@@ -130,8 +130,7 @@ function startOf(request: Doc<"platformPlanRequests">) {
 /**
  * The organization's annual terms for the console: in force or scheduled, and the rescinded ones
  * whose access has not ended, except a renewal rescinded with the term it followed (`after`).
- * The upgrade is
- * offered on the active term of the current month while no term is scheduled, as
+ * The upgrade is offered on the active term covering `now` while no term is scheduled, as
  * `upgradableTerm` sells it.
  */
 async function termViews(
@@ -158,16 +157,17 @@ async function termViews(
     .take(2);
   const renewing = (subscriptionId: string | undefined) =>
     accounts.some((account) => renews(account) && account.subscription!.id === subscriptionId);
-  const month = monthStart(now);
   const scheduled = holding.some((term) => term.state === "scheduled");
   return [...holding, ...rescinded]
     .sort((a, b) => a.firstPeriod - b.firstPeriod)
     .flatMap((term): TermView[] => {
       if (term.state === "expired") return [];
-      const amountCents =
-        annualOnSale && !scheduled && term.state === "active" && term.firstPeriod <= month
-          ? termUpgradeCents(term, "large", month)
+      // Priced from the start of the term month under way, which counts whole.
+      const from =
+        annualOnSale && !scheduled && term.state === "active" && term.firstPeriod <= now
+          ? termMonthAt(term.firstPeriod, now).startsAt
           : null;
+      const amountCents = from === null ? null : termUpgradeCents(term, "large", from);
       return [
         {
           id: term._id,
@@ -184,14 +184,14 @@ async function termViews(
             term.source === "stripe" &&
             renewing(term.stripeSubscriptionId),
           upgrade:
-            amountCents === null
+            from === null || amountCents === null
               ? null
               : {
                   tier: "large" as const,
                   amountCents,
                   months: remainingMonths(
                     { startsAt: term.firstPeriod, endsAt: term.endsAt },
-                    month,
+                    from,
                   ),
                   cardUntil: term.source === "stripe" ? term.endsAt - UPGRADE_SWITCH_MARGIN : null,
                 },
@@ -359,7 +359,7 @@ export const overview = query({
       annualEnabled: annualOnSale,
       pixEnabled: pixOn(settings),
       annualStarts: {
-        now: !(await annualTermBlocks(ctx, args.organizationId, monthStart(now), now)),
+        now: !(await annualTermBlocks(ctx, args.organizationId, now, now)),
         next: !(await annualTermBlocks(ctx, args.organizationId, nextUsagePeriodStart(now), now)),
       },
       checkout: !!(await openCheckout(ctx, args.organizationId, now)),
