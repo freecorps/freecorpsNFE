@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { getFunctionName } from "convex/server";
 import { ConvexError } from "convex/values";
 import {
@@ -16,6 +16,11 @@ import {
 } from "./connect-system";
 import { Projects } from "./projects";
 import { integrationScopes, releasedProductionScopes } from "@freecorps/contracts";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 
 // "Conectar meu sistema" (#512): project, grants and key in one path, resumable from the server.
 

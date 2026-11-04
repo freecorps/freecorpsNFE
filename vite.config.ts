@@ -253,8 +253,33 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: ["platform/convex/_generated/**", "apps/console/public/developer/**"],
-    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
-    rules: { "vite-plus/prefer-vite-plus-imports": "error" },
+    jsPlugins: [
+      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+      // Regras do AGENTS.md como verificação mecânica (docs/desenvolvimento/lint.md).
+      { name: "freecorps", specifier: "./tooling/oxlint-plugin-freecorps/index.mjs" },
+    ],
+    rules: {
+      "vite-plus/prefer-vite-plus-imports": "error",
+      "freecorps/no-float-fiscal-values": "error",
+      "freecorps/require-suppression-reason": "error",
+    },
+    overrides: [
+      // O núcleo fiscal é quem implementa a aritmética decimal exata.
+      { files: ["packages/fiscal-core/**"], rules: { "freecorps/no-float-fiscal-values": "off" } },
+      // Gerado pelo wrangler com `/* eslint-disable */`; fica no lint por causa dos tipos.
+      {
+        files: ["**/worker-configuration.d.ts"],
+        rules: { "freecorps/require-suppression-reason": "off" },
+      },
+      {
+        files: ["platform/convex/**/*.ts"],
+        rules: { "freecorps/require-access-helper-in-convex-functions": "error" },
+      },
+      {
+        files: ["**/*.test.{ts,tsx,mts,mjs,js}"],
+        rules: { "freecorps/no-wall-clock-in-tests": "error" },
+      },
+    ],
     options: { typeAware: true, typeCheck: true },
   },
 });

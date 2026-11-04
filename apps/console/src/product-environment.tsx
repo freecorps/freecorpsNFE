@@ -109,8 +109,7 @@ export function ProductEnvironmentProvider({
   );
   const value = useMemo(
     () => ({ environment, offered, choose }),
-    // `offered` is a fresh array only when the answer changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `offered` is a fresh array only when the answer changes.
     [environment, offered?.join(","), choose],
   );
   return (

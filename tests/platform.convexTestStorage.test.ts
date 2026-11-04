@@ -1,4 +1,4 @@
-import { setTimeout as sleep } from "node:timers/promises";
+import { setImmediate as yieldMacrotask } from "node:timers/promises";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { platformTest } from "./helpers/platform";
 
@@ -18,11 +18,12 @@ it("an action stores a file in a transaction of its own while another function h
   const t = platformTest();
   let locked!: () => void;
   const holding = new Promise<void>((resolve) => (locked = resolve));
-  // A mutation that holds the lock for a moment. Its timer cannot fire before the action below
-  // reaches its store, which runs on the microtask queue alone.
+  // A mutation that holds the lock until the microtask queue drains: the action below reaches
+  // its store on the microtask queue alone, so the order needs a macrotask turn, not real time
+  // (freecorps/no-wall-clock-in-tests).
   const holder = t.run(async () => {
     locked();
-    await sleep(20);
+    await yieldMacrotask();
   });
   await holding;
   const type = "application/x-synthetic-test";

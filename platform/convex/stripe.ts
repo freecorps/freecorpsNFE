@@ -254,6 +254,7 @@ async function disableInCustody(
   await integrationAudit(ctx, project, user._id, "stripe.connection_disabled", connection._id);
   return view((await ctx.db.get("stripeConnections", connection._id))!);
 }
+// freecorps-access: delegada — inCustody só escolhe o caminho; manageAccess e disableInCustody conferem
 export const updateConnection = mutation({
   args: {
     connectionId: v.id("stripeConnections"),

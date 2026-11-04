@@ -14,6 +14,7 @@ import { MAX_EVENT_BYTES } from "./lib/stripeValues";
 const answer = (status: number, code: string) =>
   Response.json({ code }, { status, headers: { "Cache-Control": "no-store" } });
 
+// freecorps-access: assinatura — webhook da conexão Stripe; a assinatura é conferida com o segredo dela
 export const route = httpAction(async (ctx, request) => {
   requirePlatformEnvironment();
   const match = /^\/v1\/stripe\/connections\/([^/]{1,64})\/events$/.exec(

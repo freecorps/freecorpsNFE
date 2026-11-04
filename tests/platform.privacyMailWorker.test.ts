@@ -1,5 +1,5 @@
 import type { R2Bucket, ForwardableEmailMessage } from "@cloudflare/workers-types";
-import { afterEach, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, expect, it, vi } from "vite-plus/test";
 import { receive, deliver, drain, type PrivacyMailEnv } from "../apps/console/privacy-mail-worker";
 import {
   PRIVACY_ADDRESS,
@@ -10,6 +10,11 @@ import {
   mailSignature,
   MAINTENANCE_HELD_HEADER,
 } from "../platform/convex/lib/privacyMailProtocol";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 
 afterEach(() => vi.unstubAllGlobals());
 function fixture() {

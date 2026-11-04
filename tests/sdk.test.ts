@@ -252,7 +252,9 @@ it("honors cancellation during Retry-After instead of starting another attempt",
     { path: { importId: "import" }, query: {}, body: {} },
     { signal: controller.signal },
   );
-  setTimeout(() => controller.abort(), 20);
+  // Aborta durante a espera do Retry-After, assim que a primeira tentativa respondeu.
+  await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+  controller.abort();
   await expect(pending).rejects.toMatchObject({ code: "ABORTED" });
   expect(send).toHaveBeenCalledTimes(1);
 });

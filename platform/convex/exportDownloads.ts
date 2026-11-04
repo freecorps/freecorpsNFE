@@ -91,6 +91,7 @@ export const authorize = internalMutation({
     };
   },
 });
+// freecorps-access: ticket — o token de download é conferido por exportDownloads.authorize
 export const route = observedAction(async (ctx, request) => {
   const origin = request.headers.get("Origin");
   const allowed = origin === process.env.SITE_URL;

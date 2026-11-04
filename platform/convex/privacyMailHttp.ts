@@ -13,6 +13,7 @@ import {
   sameSignature,
   SIGNATURE_WINDOW,
 } from "./lib/privacyMailProtocol";
+// freecorps-access: assinatura — e-mail recebido, assinatura do remetente conferida antes do sweep
 export const receive = httpAction(async (ctx, request) => {
   const secret = process.env.INBOUND_EMAIL_SECRET;
   if (!secret) return new Response("Indisponível", { status: 503 });
@@ -89,6 +90,7 @@ export const receive = httpAction(async (ctx, request) => {
   }
   return new Response(null, { status: 204 });
 });
+// freecorps-access: ticket — o token de download é resgatado por privacyMail.redeem
 export const file = httpAction(async (ctx, request) => {
   const token = new URL(request.url).pathname.split("/").at(-1) ?? "";
   const headers = { "cache-control": "no-store", "x-content-type-options": "nosniff" };

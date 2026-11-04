@@ -1,4 +1,4 @@
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { spawnOwnedProcess } from "../scripts/lib/worktree/owned-process.mjs";
@@ -135,7 +135,6 @@ it.skipIf(process.platform === "win32")(
 
 // O recurso observável é um socket real. A folha ignora TERM, então matar só o
 // CLI (ou esperar só a saída dele) não satisfaz a asserção.
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function canBind(port: number) {
   const server = createServer();
   return new Promise<boolean>((resolve) => {
@@ -172,8 +171,7 @@ it.skipIf(process.platform === "win32").each(["alive", "exited", "unowned-contro
       await once(owner, "spawn");
       const pid = owner.pid!;
       const record = { pids: [pid], identities: { [pid]: readProcessIdentity(pid) } };
-      const deadline = Date.now() + 5000;
-      while (!existsSync(ready) && Date.now() < deadline) await delay(20);
+      await vi.waitFor(() => expect(existsSync(ready)).toBe(true), { timeout: 5000, interval: 20 });
       const resource = JSON.parse(readFileSync(ready, "utf8"));
       leafRecord = {
         pids: [resource.pid],

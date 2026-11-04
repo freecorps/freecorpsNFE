@@ -894,8 +894,7 @@ export const routes = {
         files: z
           .array(
             object({
-              // Filenames must exclude control bytes as well as path separators.
-              // eslint-disable-next-line no-control-regex
+              // eslint-disable-next-line no-control-regex -- Filenames must exclude control bytes as well as path separators.
               name: text.regex(/^[^/\\\x00-\x1f\x7f]{1,180}\.[xX][mM][lL]$/),
               size: positive.max(2097152),
               sha256: z.string().regex(/^[a-f0-9]{64}$/),

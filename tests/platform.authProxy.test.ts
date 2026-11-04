@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, expect, it, vi } from "vite-plus/test";
 import { proxyAuthentication } from "../apps/console/auth-proxy";
 import { proxyApi } from "../apps/console/api-proxy";
 import {
@@ -9,6 +9,11 @@ import {
   clientIp,
   ipBucket,
 } from "../platform/auth-transport";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 
 const origin = "https://freecorpsnfe-validation.freecorps.workers.dev";
 const secret = "a".repeat(64);

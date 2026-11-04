@@ -23,6 +23,7 @@ it("encerra um CLI local bloqueado e devolve o controle para a limpeza", () => {
     "import { writeFileSync } from 'node:fs'; writeFileSync(process.argv[2], String(process.pid)); process.on('SIGTERM', () => {}); setTimeout(() => process.exit(0), 4000);",
   );
   let cleanupReached = false;
+  // oxlint-disable-next-line freecorps/no-wall-clock-in-tests -- mede o encerramento de um processo real bloqueado
   const start = Date.now();
   try {
     expect(() =>
@@ -36,6 +37,7 @@ it("encerra um CLI local bloqueado e devolve o controle para a limpeza", () => {
     cleanupReached = true;
   }
   expect(cleanupReached).toBe(true);
+  // oxlint-disable-next-line freecorps/no-wall-clock-in-tests -- mede o encerramento de um processo real bloqueado
   expect(Date.now() - start).toBeLessThan(3000);
   const pid = Number(readFileSync(pidFile, "utf8"));
   expect(() => process.kill(pid, 0)).toThrow();

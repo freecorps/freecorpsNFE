@@ -105,6 +105,7 @@ export const attach = internalMutation({
     return null;
   },
 });
+// freecorps-access: ticket — o token de upload é conferido por importUpload.inspect
 export const route = observedAction(async (ctx, request) => {
   const requestId = request.headers.get("X-Request-Id")!;
   const origin = request.headers.get("Origin");

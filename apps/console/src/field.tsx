@@ -52,8 +52,7 @@ export function ErrorSummary({
       ref.current?.focus({ preventScroll: true });
       ref.current?.scrollIntoView?.({ block: "start" });
     }
-    // Only a new refused submit moves the focus; typing does not.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only a new refused submit moves the focus; typing does not.
   }, [focusKey]);
   if (!visible) return null;
   // The danger callout of `ui/`, focusable: it receives the focus on every refused submit.

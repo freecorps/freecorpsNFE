@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
 import { api, internal, components } from "../platform/convex/_generated/api";
 import { register } from "../platform/test-setup";
@@ -10,6 +10,11 @@ import { canonicalEntries, sha256 } from "../lib/reference-dataset";
 import { FreecorpsClient } from "../packages/sdk/src/index";
 import { routes } from "../packages/contracts/src/external";
 import { referencePage, referenceLookup } from "../packages/contracts/src/references";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 const modules = import.meta.glob("../platform/convex/**/*.ts");
 beforeEach(() => {
   for (const [key, value] of Object.entries({

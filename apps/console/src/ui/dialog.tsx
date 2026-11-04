@@ -73,8 +73,7 @@ export function ConfirmDialog({
       release();
       restoreFocus(opener.current, returnFocusTo?.());
     };
-    // returnFocusTo and initialFocus are read when opening or closing, not a reason to reopen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- returnFocusTo and initialFocus are read when opening or closing, not a reason to reopen.
   }, [open]);
   if (!open || typeof document === "undefined") return null;
   /** A click that belongs to the gesture that opened the dialog, not a decision. */

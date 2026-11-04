@@ -16,6 +16,7 @@ async function actor(ctx: QueryCtx) {
   return { name: user.name, email: user.email, role: grant?.role ?? null };
 }
 
+// freecorps-access: sem-tenant — papel de quem chama na validação (validationAccess), sem organização
 export const session = query({
   args: {},
   returns: v.union(
@@ -25,6 +26,7 @@ export const session = query({
   handler: actor,
 });
 
+// freecorps-access: sem-tenant — papel de quem chama na validação (validationAccess), sem organização
 export const overview = query({
   args: {},
   returns: v.object({
@@ -44,6 +46,7 @@ export const overview = query({
   },
 });
 
+// freecorps-access: sem-tenant — exige o papel operator da validação, sem dado de organização
 export const diagnostics = query({
   args: {},
   returns: v.object({

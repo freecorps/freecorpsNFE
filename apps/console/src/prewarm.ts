@@ -18,7 +18,6 @@ export function usePrewarm<Query extends FunctionReference<"query">>(
   const key = args === "skip" ? null : JSON.stringify(convexToJson(args as Value));
   useEffect(() => {
     if (args !== "skip") convex.prewarmQuery({ query, args });
-    // The serialized arguments identify the query; a new object with the same ones is the same.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- The serialized arguments identify the query; a new object with the same ones is the same.
   }, [convex, query, key]);
 }

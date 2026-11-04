@@ -409,10 +409,12 @@ describe("situação impressa: mesmas regras da importação", () => {
       expect.objectContaining({ code: "DANFE_EVIDENCE_INVALID", field: "procEventoNFe" }),
     );
     // Origem de 13 mil caracteres: recusada na hora, sem paginar.
+    // oxlint-disable-next-line freecorps/no-wall-clock-in-tests -- limite de tempo real contra paginação patológica da origem
     const started = performance.now();
     await expect(
       renderDanfe(xml, { events: [eventXml(KEY)], origin: "x".repeat(13_000) }),
     ).rejects.toMatchObject({ code: "DANFE_EVIDENCE_INVALID", field: "origin" });
+    // oxlint-disable-next-line freecorps/no-wall-clock-in-tests -- limite de tempo real contra paginação patológica da origem
     expect(performance.now() - started).toBeLessThan(5_000);
     expect(
       statusOf(xml, { events: [eventXml(KEY)], origin: "o".repeat(MAX_ORIGIN_LENGTH) }),
