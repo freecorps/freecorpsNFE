@@ -4,15 +4,18 @@
     {
       "id": "VAL04-independent-package-boundaries",
       "status": "delivered",
-      "evidence": ["scripts/package-boundaries.test.ts", "scripts/check-package-boundaries.mjs"]
+      "evidence": [
+        "scripts/build/package-boundaries.test.ts",
+        "scripts/build/check-package-boundaries.mjs"
+      ]
     },
     {
       "id": "VAL04-canonical-contract-generation-and-shared-corpus",
       "status": "delivered",
       "evidence": [
-        "scripts/generate-contracts.mjs",
-        "scripts/prove-contract-drift.mjs",
-        "scripts/contract-drift.test.ts",
+        "scripts/contracts/generate-contracts.mjs",
+        "scripts/contracts/prove-contract-drift.mjs",
+        "scripts/contracts/contract-drift.test.ts",
         "tests/fixtureCorpus.test.ts",
         "packages/fiscal-nfe/pipeline.test.ts",
         "docs/v1.0/evidence/47-51/README.md"
@@ -31,7 +34,7 @@
         "tests/validationBackup.test.ts",
         "tests/validationDeploy.test.ts",
         "tests/validationSmoke.test.ts",
-        "scripts/prove-smoke-diagnostics.mjs",
+        "scripts/validation/prove-smoke-diagnostics.mjs",
         "docs/v1.0/evidence/65/README.md",
         "tests/consoleTarget.test.ts",
         "tests/ci.contract.test.ts",
@@ -57,7 +60,7 @@
         "tests/platform.hostedAuth.test.ts",
         "tests/platform.authProxy.test.ts",
         "tests/platform.mail.test.ts",
-        "scripts/prove-auth-worker.mjs"
+        "scripts/proofs/prove-auth-worker.mjs"
       ]
     },
     {
@@ -143,9 +146,9 @@
         "packages/fiscal-nfe/pipeline.test.ts",
         "tests/platform.xml.test.ts",
         "packages/contracts/index.test.ts",
-        "scripts/package-boundaries.test.ts",
-        "scripts/prove-nfe-runtime.mjs",
-        "scripts/prove-excluded-events.mjs",
+        "scripts/build/package-boundaries.test.ts",
+        "scripts/fiscal/prove-nfe-runtime.mjs",
+        "scripts/fiscal/prove-excluded-events.mjs",
         "tests/platform.documents.test.ts",
         "docs/v1.0/evidence/69/README.md"
       ]
@@ -166,7 +169,7 @@
       "evidence": [
         "tests/platform.operations.test.ts",
         "tests/platform.imports.test.ts",
-        "scripts/prove-operations.mjs",
+        "scripts/proofs/prove-operations.mjs",
         "docs/v1.0/evidence/70/README.md"
       ]
     },
@@ -187,7 +190,7 @@
       "evidence": [
         "tests/platform.certificateCrypto.test.ts",
         "tests/platform.certificates.test.ts",
-        "scripts/prove-certificate-transport.ts",
+        "scripts/fiscal/prove-certificate-transport.ts",
         "docs/v1.0/evidence/77/hosted.json",
         "docs/v1.0/evidence/77/browser.json",
         "docs/v1.0/evidence/77-78/README.md"
@@ -206,8 +209,8 @@
         "tests/webhookContract.test.ts",
         "tests/webhookTransport.test.ts",
         "packages/contracts/fixtures/webhooks.json",
-        "scripts/prove-webhook-contract.mjs",
-        "scripts/prove-webhooks.mjs",
+        "scripts/contracts/prove-webhook-contract.mjs",
+        "scripts/proofs/prove-webhooks.mjs",
         "docs/v1.0/evidence/73/README.md"
       ]
     },
@@ -227,9 +230,9 @@
       "status": "delivered",
       "evidence": [
         "tests/sdk.test.ts",
-        "scripts/sdk-proof.test.ts",
-        "scripts/prove-sdk-package.mjs",
-        "scripts/prove-contract-drift.mjs",
+        "scripts/contracts/sdk-proof.test.ts",
+        "scripts/contracts/prove-sdk-package.mjs",
+        "scripts/contracts/prove-contract-drift.mjs",
         "docs/v1.0/evidence/74/README.md",
         "docs/v1.0/evidence/130/README.md"
       ]
@@ -243,11 +246,11 @@
         "tests/platform.registry.test.ts",
         "tests/platform.webhooks.test.ts",
         "apps/console/e2e/usage.mjs",
-        "scripts/prove-usage-load.mjs",
+        "scripts/proofs/prove-usage-load.mjs",
         "docs/v1.0/evidence/79/README.md",
-        "scripts/hosted-proof.test.ts",
+        "scripts/proofs/hosted-proof.test.ts",
         "tests/platform.observability.test.ts",
-        "scripts/prove-hosted-operations.mjs",
+        "scripts/proofs/prove-hosted-operations.mjs",
         "docs/v1.0/evidence/79-80/README.md"
       ]
     },
@@ -278,9 +281,9 @@
         "packages/fiscal-nfse/nacional.test.ts",
         "packages/fiscal-nfse/fixtures/adn/nfse-autorizada.xml",
         "packages/fiscal-nfse/fixtures/adn/rejeicao-e0714.json",
-        "scripts/package-boundaries.test.ts",
+        "scripts/build/package-boundaries.test.ts",
         "scripts/lib/nfse-consumer.mjs",
-        "scripts/prove-xml-package.mjs",
+        "scripts/distribution/prove-xml-package.mjs",
         "tests/platform.issuance.test.ts",
         "tests/platform.issuanceRest.test.ts",
         "docs/plataforma/ISSUANCE.md"
@@ -301,7 +304,7 @@
       "status": "delivered",
       "evidence": [
         "tests/publicSite.test.ts",
-        "scripts/prove-public-site.mjs",
+        "scripts/console/prove-public-site.mjs",
         "docs/v1.0/evidence/85/README.md"
       ]
     },

@@ -198,7 +198,7 @@ revalidação do executor e para developers em `operations.get` e
 ## Provas e integração dos módulos
 
 `tests/platform.operations.test.ts` exercita transações, tokens, permissões,
-estados e recuperação. `node scripts/prove-operations.mjs` exige este worktree
+estados e recuperação. `node scripts/proofs/prove-operations.mjs` exige este worktree
 com `bun run dev`, usa fonte HTTP loopback e inspeciona o banco real.
 `testing/operationProof` e `testing/operationTransport` são funções internas
 recusadas fora do ambiente local, com dados exclusivamente sintéticos.

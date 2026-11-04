@@ -76,7 +76,7 @@ reconciliação se distinguem de sucesso na API, no webhook e no console.
 
 **Dado real e segredo.** Nenhum XML, chave, CNPJ, CPF, valor ou nome real em
 código, fixture, teste, log, doc ou comentário: use os sintéticos de
-`tests/fixtures/` e os identificadores permitidos em `scripts/public-tree.mjs`.
+`tests/fixtures/` e os identificadores permitidos em `scripts/public-copy/public-tree.mjs`.
 Log e webhook carregam ids, nunca CNPJ, XML ou texto livre. Certificado,
 senha, CSC e chave ficam no cofre ou no ambiente.
 

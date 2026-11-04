@@ -164,7 +164,7 @@ export type ColdObjects = ReturnType<typeof coldObjects>;
 
 /**
  * Key of a version's content in the bucket, named by its hash. The prefix carries what the lock
- * rules of the bucket need (`scripts/cold-tier-locks.mjs`): Production notes go under the year
+ * rules of the bucket need (`scripts/cold-tier/cold-tier-locks.mjs`): Production notes go under the year
  * their fiscal guard ends, which a Date rule locks until 01/01 of the next year; Sandbox notes
  * have no lock, so the early purge of an organization without Production is never blocked.
  */

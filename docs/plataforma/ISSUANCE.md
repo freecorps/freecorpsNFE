@@ -79,7 +79,7 @@ e a URL do deployment ficam versionados em `deploy/issuance-production.json`;
 hoje `deployment` e `url` valem `null` e nenhum deployment é produção fiscal.
 Uma variável de ambiente sozinha nunca transforma um deployment em produção:
 só um commit revisado nomeia o alvo. Um teste de ferramentas
-(`scripts/issuance-production-plan.test.ts`) lê o plano, o do sandbox
+(`scripts/deploy/issuance-production-plan.test.ts`) lê o plano, o do sandbox
 hospedado (`deploy/platform-release.json`) e o da validação
 (`platform/validation.json`) e falha se o plano nomear um dos dois.
 

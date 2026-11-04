@@ -125,7 +125,7 @@ setup do editor em execução. Preserve processos alheios e alterações locais.
 1. **Publicar no ambiente errado.** Leia [docs/operacao/deploy-producao.md](docs/operacao/deploy-producao.md)
    antes de publicar ou alterar o CI. Push na `main` publica
    `platform/convex` e `apps/console` sem repetir o CI da PR, por
-   `scripts/deploy-platform.mjs`; bootstrap continua manual.
+   `scripts/deploy/deploy-platform.mjs`; bootstrap continua manual.
    `validation:console:deploy` atende só à validação.
    Confira o alvo antes de qualquer comando Convex que publique funções,
    altere variáveis ou execute uma escrita.
@@ -186,7 +186,7 @@ de `origin/main`.
 
 `bun run help` lista cada script com a aplicação e o ambiente que ele atinge,
 a partir de `scripts/lib/commands.mjs`; script novo entra nesse catálogo.
-`bun run dev` passa por `scripts/dev.mjs` e roda só em worktree: inicia Convex
+`bun run dev` passa por `scripts/worktree/dev.mjs` e roda só em worktree: inicia Convex
 local e console juntos. No checkout principal, ele recusa e aponta
 `bun run worktree:create`. `vp dev` chama o comando interno do
 Vite+ e pula esse roteador; use o script do projeto.
@@ -284,7 +284,7 @@ proteção: um padrão errado imprime o segredo inteiro.
   issue, comentário e mensagem de commit ficam fora do hook e do
   `Public scan`; o secret scanning do GitHub só reconhece tokens de
   provedores. Antes de publicar, grave-os em arquivo, rode
-  `node scripts/scan-public-text.mjs <arquivos>`, que aplica as mesmas
+  `node scripts/public-copy/scan-public-text.mjs <arquivos>`, que aplica as mesmas
   regras sem os nomes restritos, e releia: neles vale a mesma regra de dado
   real.
 - **Se vazar, diga.** Avise o dono do projeto no mesmo turno, com o que vazou
@@ -396,6 +396,10 @@ Mapa para navegar:
 - `packages/`: contratos REST, núcleo fiscal, NF-e e SDK.
 - `tests/` e `apps/console/e2e/`: testes de domínio, integração, pacotes e
   jornadas no navegador.
+- `scripts/<domínio>/`: scripts por domínio, com o teste ao lado; helpers
+  compartilhados em `scripts/lib/` e a raiz do repositório por
+  `scripts/lib/repo-root.mjs`
+  ([organização](docs/desenvolvimento/ci.md#organização-de-scripts)).
 - `scripts/lib/worktree/`: ciclo de vida dos ambientes locais.
 - `.github/workflows/`: validação e publicação.
 - `.agents/skills/`: skills de outro projeto do mantenedor e adaptações de Matt Pocock. Consulte

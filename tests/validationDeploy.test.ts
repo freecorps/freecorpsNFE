@@ -277,13 +277,16 @@ it("o smoke estrito só roda depois de publicar o backend e conferir o SHA", asy
     "smoke",
     "probe",
   ]);
-  const script = readFileSync(new URL("../scripts/deploy-validation.mjs", import.meta.url), "utf8");
+  const script = readFileSync(
+    new URL("../scripts/validation/deploy-validation.mjs", import.meta.url),
+    "utf8",
+  );
   const at = (text: string) => script.indexOf(text);
   // The only `/health` read is inside the backend step, after `validation.mjs deploy`, and it
   // compares the SHA; the strict smoke is called only in the smoke step.
   const read = "${context.target.siteUrl}/health";
   expect(script.split(read)).toHaveLength(2);
-  expect(at('run("scripts/validation.mjs", ["deploy"')).toBeLessThan(at(read));
+  expect(at('run("scripts/validation/validation.mjs", ["deploy"')).toBeLessThan(at(read));
   expect(at(read)).toBeLessThan(at("(await health.json()).sha !== sha"));
   expect(script.match(/smokeValidation\(/g)).toHaveLength(1);
   expect(at("smoke: async () =>")).toBeLessThan(at("await smokeValidation("));

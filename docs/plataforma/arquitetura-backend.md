@@ -34,7 +34,7 @@ escreve; validação no formulário ou no contrato REST é só feedback.
 
 ## Pacotes e grafo de dependências
 
-O grafo permitido está em `scripts/package-boundaries.json` e é conferido por
+O grafo permitido está em `scripts/build/package-boundaries.json` e é conferido por
 `bun run ci:boundaries` (dentro de `ci:local` e do CI). Cada workspace precisa
 de classificação explícita; um workspace novo sem classificação é recusado.
 

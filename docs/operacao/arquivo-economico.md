@@ -31,7 +31,7 @@ a PR 7, as rotas REST resolvem IDs anteriores
 [restauração isolada](#recuperação-isolada-e-exportação-assistida) (§7)
 serve também a organizações abertas.
 
-O executor está em `scripts/cold-archive.mjs`. Não há API REST nem mutation
+O executor está em `scripts/cold-tier/cold-archive.mjs`. Não há API REST nem mutation
 pública que aceite um recibo de prova. As funções de `coldArchive.ts` são
 internas e exigem a credencial administrativa do deployment. A autorização
 vem desse executor; uma conta do console, mesmo owner, não a concede.
@@ -262,7 +262,7 @@ contratação ou renovação; no Gratuito, o owner pede pelo suporte, porque o
 console ainda não tem o botão. Em todos os casos, quem executa é o operador:
 
 ```sh
-node scripts/cold-archive.mjs rehydrate plano.json RUN_ID /caminho/identidade-age
+node scripts/cold-tier/cold-archive.mjs rehydrate plano.json RUN_ID /caminho/identidade-age
 ```
 
 Usa só a origem e o R2, sem destino isolado. As funções ficam em
@@ -441,7 +441,7 @@ até a janela acabar, e o executor repete até `isDone`. O fim de
 demais. Depois da hora de espera, o operador repete:
 
 ```sh
-node scripts/cold-archive.mjs orphans plano.json RUN_ID
+node scripts/cold-tier/cold-archive.mjs orphans plano.json RUN_ID
 ```
 
 Repetir não apaga mais nada. A coleta de uploads de importação
@@ -709,12 +709,12 @@ logs ou arquivos versionados. O executor não imprime saída do CLI Convex.
 O diretório temporário, fora do checkout, é removido ao terminar.
 
 ```sh
-node scripts/cold-archive.mjs notice plano.json ORGANIZATION_ID chave-unica-do-aviso
+node scripts/cold-tier/cold-archive.mjs notice plano.json ORGANIZATION_ID chave-unica-do-aviso
 # Depois do prazo persistido, usando o runId devolvido pelo notice:
-node scripts/cold-archive.mjs freeze plano.json RUN_ID
-node scripts/cold-archive.mjs archive plano.json RUN_ID /caminho/identidade-age
+node scripts/cold-tier/cold-archive.mjs freeze plano.json RUN_ID
+node scripts/cold-tier/cold-archive.mjs archive plano.json RUN_ID /caminho/identidade-age
 # Retoma ou faz só a compactação do catálogo de um run em archived:
-node scripts/cold-archive.mjs compact plano.json RUN_ID /caminho/identidade-age
+node scripts/cold-tier/cold-archive.mjs compact plano.json RUN_ID /caminho/identidade-age
 ```
 
 `archive` termina com a [compactação do catálogo](#catálogo-compactado).
@@ -780,8 +780,8 @@ pacote"), o operador renova:
 
 ```sh
 # Runs com pacote cujo prazo termina nos próximos N dias:
-node scripts/cold-archive.mjs due plano.json 400
-node scripts/cold-archive.mjs renew plano.json RUN_ID
+node scripts/cold-tier/cold-archive.mjs due plano.json 400
+node scripts/cold-tier/cold-archive.mjs renew plano.json RUN_ID
 ```
 
 `renew` pede ao servidor o prazo de hoje (`coldArchive:retention`): a guarda
@@ -803,7 +803,7 @@ a proteção depende de quem guarda esse token.
 ## Recuperação isolada e exportação assistida
 
 ```sh
-node scripts/cold-archive.mjs restore plano.json RUN_ID /caminho/identidade-age
+node scripts/cold-tier/cold-archive.mjs restore plano.json RUN_ID /caminho/identidade-age
 ```
 
 A restauração isolada é a base da exportação assistida (ADR 0009, §7). Ela
@@ -885,7 +885,7 @@ para atender um pedido de titular encaminhado ao cliente
 os ambientes, como no diálogo do console; cada um vira uma exportação.
 
 ```sh
-node scripts/cold-archive.mjs export plano.json RUN_ID /caminho/identidade-age pedido.json
+node scripts/cold-tier/cold-archive.mjs export plano.json RUN_ID /caminho/identidade-age pedido.json
 ```
 
 O comando segue esta ordem:
@@ -1068,7 +1068,7 @@ para com `QUOTA_EXCEEDED` sem passar do plano. A passagem do servidor move o
 que o plano deixou quente. O teste repete a queda no meio de um lote, o
 bucket que falha uma vez ou sempre, cada passo enviado duas vezes e a
 conferência que para quando a versão fria diverge do que a passagem gravou.
-`scripts/cold-archive.test.ts` confere o plano do executor contra a regra do
+`scripts/cold-tier/cold-archive.test.ts` confere o plano do executor contra a regra do
 servidor e a ordem dos lotes.
 `tests/platform.coldArchiveIds.test.ts` importa um documento pelas rotas e
 simula no banco um ou dois ciclos como a reidratação os deixa: cobre o ID
@@ -1091,7 +1091,7 @@ exceção de titular. Cobre também a publicação com a organização arquivada
 partes com outros bytes ou outro hash recusadas e apagadas, a repetição sem
 parte dobrada, o download do Proprietário pelo ticket normal, a recusa da
 exportação feita antes do arquivo e de outro membro, o pedido já entregue e o
-recomeço depois de um destino perdido. Em `scripts/cold-archive.test.ts`, o
+recomeço depois de um destino perdido. Em `scripts/cold-tier/cold-archive.test.ts`, o
 executor recusa o pedido antes de restaurar, para numa parte que mudou entre
 o destino e a origem, não gera de novo uma exportação publicada e recomeça a
 da origem com um destino novo.
@@ -1100,7 +1100,7 @@ só com Sandbox: a elegibilidade com as recusas, o aviso idempotente e seu
 e-mail único, "manter ativa" com os papéis recusados e outra organização, o
 encerramento recusado antes do prazo, feito uma vez depois dele e seguido do
 expurgo antecipado, e o cancelamento por atividade ou por dado de Produção.
-`scripts/cold-archive.test.ts` usa age real quando instalado e uma fixture
+`scripts/cold-tier/cold-archive.test.ts` usa age real quando instalado e uma fixture
 XML, compara ZIP/JSONL/metadados/bytes e recusa corrupção, inclusive a
 restauração sem as linhas da cerca. Na compactação do catálogo, com age real
 e o R2 simulado, cobre o objeto e o manifesto publicados, a recusa de
@@ -1148,7 +1148,7 @@ Antes de substituir o destino, o runner verificou 89 entradas contra o catálogo
 da origem e conservou o ZIP completo de 91.998 bytes e sua cifra fora do Git.
 Ambas as identidades age sintéticas decifraram os mesmos bytes.
 
-O runner `scripts/prove-cold-archive-local.mjs` exige o caminho do destino e
+O runner `scripts/cold-tier/prove-cold-archive-local.mjs` exige o caminho do destino e
 portas explícitas. Não possui caminho de máquina padrão:
 
 ```sh

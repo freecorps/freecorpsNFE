@@ -59,7 +59,7 @@ import {
 
 /**
  * Rehydration of an archived open organization under new IDs (ADR 0009, §5 and §6), driven by the
- * administrative executor (`scripts/cold-archive.mjs rehydrate`), which downloads and decrypts the
+ * administrative executor (`scripts/cold-tier/cold-archive.mjs rehydrate`), which downloads and decrypts the
  * package and the catalogue and checks both against their manifests. Every function here is
  * internal and needs `FNFE_COLD_ARCHIVE=enabled`. The run stays `restoring` from `begin` until
  * `finish`; admissions stay refused (`assertOrganizationHot`) the whole time.

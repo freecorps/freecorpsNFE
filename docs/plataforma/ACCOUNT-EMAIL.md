@@ -215,7 +215,7 @@ segredo do proxy em janela controlada: a troca não é atômica entre provedores
 
 ```powershell
 bun run ci:test
-node --experimental-strip-types scripts/prove-auth-worker.mjs
+node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs
 bun run platform:browser
 ```
 

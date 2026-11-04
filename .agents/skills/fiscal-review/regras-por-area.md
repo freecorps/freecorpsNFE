@@ -20,7 +20,7 @@ Fontes: [IMPORTS.md](../../../docs/plataforma/IMPORTS.md),
   documento.
 - **Schemas:** só NF-e `versao="4.00"` modelo 55. Os pacotes ficam fixados em
   `packages/fiscal-nfe/schemas/manifest.json` e mudam só por
-  `scripts/sync-nfe-schemas.py`; validação offline, nada baixado em runtime.
+  `scripts/fiscal/sync-nfe-schemas.py`; validação offline, nada baixado em runtime.
   Entrada nova em `SCHEMA_CATALOGS` declara os campos decimais tipados.
 - **Escalas:** `FIELD_SCALES` em `fiscal-nfe/src/normalize.ts`; escala acima
   do limite é recusada, nunca arredondada.

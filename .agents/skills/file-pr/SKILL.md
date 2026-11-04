@@ -145,7 +145,7 @@ Per `AGENTS.md`:
   `git commit -F <file>`. Pass titles as a literal argument or structured tool
   field, preserving accented text without building another shell command.
 - Before filing or editing, write the title to a file too and run
-  `node scripts/scan-public-text.mjs <title-file> <body-file>`. It applies the
+  `node scripts/public-copy/scan-public-text.mjs <title-file> <body-file>`. It applies the
   `Public scan` rules to text the pre-push hook never sees and prints only
   file, line and kind. Rewrite every finding with synthetic data, then reread
   for client and person names, which the script does not catch.

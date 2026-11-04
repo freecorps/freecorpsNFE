@@ -32,7 +32,7 @@ const forceRerunTriggers = [
 // ainda não têm o que a execução anterior criou, e a tarefa nunca repetia.
 // Um padrão sem `/**` exclui só a listagem daquela pasta: o conteúdo de cada
 // arquivo lido continua entrada. A raiz não entra aqui (`!.` excluiria tudo):
-// `node scripts/ci.mjs identity` cria `.browser-results` antes do grafo.
+// `node scripts/ci/ci.mjs identity` cria `.browser-results` antes do grafo.
 // Medido em clones novos no mesmo caminho (docs/desenvolvimento/ci.md, Cache
 // do grafo).
 const generated = [
@@ -165,7 +165,7 @@ export default defineConfig({
       // dist dos pacotes fiscais, importado por SDK, Convex, console e tipos.
       // A própria saída não é entrada.
       "ci:packages": {
-        command: "node scripts/build-fiscal-packages.mjs",
+        command: "node scripts/build/build-fiscal-packages.mjs",
         cache: {
           input: [
             { auto: true },
@@ -196,13 +196,13 @@ export default defineConfig({
       // o define e ci:local/ci:prove passam o SHA resolvido de origin/main
       // (ou --base). A task isolada conserva o fallback HEAD^ do script.
       "ci:contracts": {
-        command: "bun scripts/check-contracts-ci.mjs",
+        command: "bun scripts/contracts/check-contracts-ci.mjs",
         dependsOn: ["ci:packages"],
         cache: { input: [{ auto: true }, ...generated], env: ["CONTRACT_BASE"] },
       },
       // Sem cache: o consumidor limpo instala as dependências do registro npm.
       "ci:xml-prove": {
-        command: "node scripts/prove-xml-package.mjs",
+        command: "node scripts/distribution/prove-xml-package.mjs",
         dependsOn: ["ci:packages"],
         cache: false,
       },
@@ -218,15 +218,15 @@ export default defineConfig({
         dependsOn: ["ci:packages", "ci:sdk"],
         cache: { input: [{ auto: true }, ...generated], output: [] },
       },
-      // Credenciais nos arquivos de texto versionados (scripts/check-secrets.mjs).
+      // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
       // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
       // entre as entradas registradas.
-      "ci:secrets": { command: "node scripts/check-secrets.mjs", cache: false },
+      "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
       // Arquivos e dependências sem uso (knip.jsonc). Lê manifests e node_modules,
       // que o Vite Task não rastreia como entrada.
       "ci:knip": { command: "bun run knip:check", cache: false },
       "ci:typecheck": {
-        command: "node scripts/typecheck.mjs -p tsconfig.platform.json",
+        command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
         dependsOn: ["ci:packages", "ci:sdk"],
         cache: { input: [{ auto: true }, ...generated] },
       },
@@ -241,7 +241,7 @@ export default defineConfig({
         testProjects.map(({ name }) => [
           `ci:test:${name}`,
           {
-            command: `node scripts/ci.mjs test-area ${name}`,
+            command: `node scripts/ci/ci.mjs test-area ${name}`,
             dependsOn: ["ci:packages"],
             cache: {
               input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
@@ -252,10 +252,10 @@ export default defineConfig({
         ]),
       ),
       // Junta os recibos das áreas em .ci-results/tests.json, sob a revisão de
-      // `node scripts/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
+      // `node scripts/ci/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
       // revisão do checkout: nunca usa cache.
       "ci:tests": {
-        command: "node scripts/ci.mjs collect-tests",
+        command: "node scripts/ci/ci.mjs collect-tests",
         dependsOn: testProjects.map(({ name }) => `ci:test:${name}`),
         cache: false,
       },
@@ -290,7 +290,7 @@ export default defineConfig({
       // Compõe landing, painel e documentação. A origem pública muda canonical,
       // sitemap e headers da saída.
       "ci:console": {
-        command: "node scripts/console.mjs package",
+        command: "node scripts/console/console.mjs package",
         dependsOn: ["ci:packages", "ci:sdk", "ci:docs"],
         // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
         // só carimba o SHA em dist/build.json e no bundle; o build e as provas não
@@ -312,13 +312,13 @@ export default defineConfig({
       },
       // Sem cache: o relatório carimba o commit e o estado do checkout, lidos do Git.
       "ci:auth-worker": {
-        command: "node --experimental-strip-types scripts/prove-auth-worker.mjs",
+        command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
         cache: false,
       },
       // Só workerd local, sem Git nem rede; o relatório não carimba revisão. O
       // Miniflare regrava o cache de request.cf em node_modules/.mf.
       "ci:privacy-worker": {
-        command: "node scripts/prove-privacy-mail-worker.mjs",
+        command: "node scripts/proofs/prove-privacy-mail-worker.mjs",
         cache: {
           input: [{ auto: true }, ...generated],
           output: [".browser-results/privacy-worker/report.json"],

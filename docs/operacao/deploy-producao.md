@@ -97,7 +97,7 @@ conferência posterior comprovou
 o reenvio duplicado sem novo efeito no receptor e a publicação `79f2d08`
 com `WEBHOOK_MODE=https`, recibo validado e sonda de persistência preservada.
 Na mesma data, o mantenedor autorizou o merge da PR #168 mantendo os webhooks
-ativados. O preflight de `scripts/deploy-platform.mjs` exige `https` na operação
+ativados. O preflight de `scripts/deploy/deploy-platform.mjs` exige `https` na operação
 `release` e conserva `disabled` somente no `bootstrap`. Ele verifica a configuração
 existente, sem alterar variáveis do backend. As atualizações preservam esse envio;
 fiscal desativado, sandbox e crons desligados continuam obrigatórios. Após publicar,
@@ -289,7 +289,7 @@ permanecer desabilitado enquanto a `main` ainda contiver o publicador legado.
 Só reativar depois que a configuração nova estiver integrada na `main`.
 
 Usar Node 24.22.1, a mesma versão do CI.
-`node scripts/deploy-platform.mjs --operator` exige checkout limpo, SHA atual
+`node scripts/deploy/deploy-platform.mjs --operator` exige checkout limpo, SHA atual
 da integração, `Deploy validation` aprovado para esse SHA, workflow antigo
 desabilitado, plano com recibos e credenciais dos destinos fixos. Recebe
 `RELEASE_APPROVED_SHA`, `RELEASE_PLAN_HASH` e `RELEASE_OPERATION` por ambiente,
@@ -318,9 +318,9 @@ O deployment de produção fiscal da emissão (#198,
 [ADR 0004, §8](../adr/0004-motor-de-emissao-nfse.md#8-ambientes-e-gates)) é
 um alvo separado do sandbox hospedado. Ele tem console e API em domínios
 próprios, num Worker próprio. O `Deploy production` acima continua publicando
-só o `elated-possum-295`: `deploy.yml`, `scripts/deploy-platform.mjs` e
+só o `elated-possum-295`: `deploy.yml`, `scripts/deploy/deploy-platform.mjs` e
 `scripts/lib/platform-release.mjs` não leem o plano da produção fiscal (teste
-em `scripts/issuance-release.test.ts`).
+em `scripts/deploy/issuance-release.test.ts`).
 
 **Plano.** `deploy/issuance-production.json` nomeia o deployment (`deployment`
 e `url`) e a publicação (`release`: `worker`, `accountId`, `frontend` e `api`).
@@ -337,12 +337,12 @@ Hoje os três valem `null`. `issuanceReleaseTarget`
 (`.github/workflows/deploy-issuance-production.yml`) roda só por
 `workflow_dispatch` na `main`, com `approved_sha`, nunca em push:
 
-1. o job `plan`, sem segredo, roda `scripts/deploy-issuance-production.mjs
+1. o job `plan`, sem segredo, roda `scripts/deploy/deploy-issuance-production.mjs
    plan`; com o plano de hoje, falha com `PLAN_NOT_NAMED` e o motivo, e a CI e
    a publicação nem começam;
 2. a CI (`ci.yml`) valida o SHA aprovado;
 3. o job `publish`, no environment `nfse-production-release`, roda
-   `scripts/deploy-issuance-production.mjs publish`, com os segredos
+   `scripts/deploy/deploy-issuance-production.mjs publish`, com os segredos
    `FNFE_ISSUANCE_DEPLOY_KEY` e `FNFE_ISSUANCE_CLOUDFLARE_API_TOKEN`, a
    variável `CLOUDFLARE_ACCOUNT_ID` e o `github.token`, só com
    `contents: read` e `actions: read`, para ler as aprovações do run.
@@ -408,7 +408,7 @@ Mudar qualquer um dos dois é decisão nova, com mudança no plano e no código.
 cadência, sob o prefixo do deployment da produção fiscal, no environment
 `offsite-backup-issuance`. Antes deles, o job `issuance-plan`, sem segredo,
 lê o plano. Com `deployment: null`, os dois jobs são pulados, o environment
-não é usado e nada é copiado. `scripts/backup-offsite.mjs snapshot|check
+não é usado e nada é copiado. `scripts/backup/backup-offsite.mjs snapshot|check
 --target issuance` também pula com `result: "skipped"` (`PLAN_NOT_NAMED`). O
 alerta usa o rótulo `offsite-backup-issuance-alert`.
 

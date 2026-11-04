@@ -26,7 +26,7 @@ casos, confira todos os pontos aplicáveis:
 - **Bun:** versão fixada em `package.json`, instalação, caches, workflows,
   scripts de worktree e formato de `bun.lock`.
 - **Vite+ e TypeScript:** dependências e aliases, overrides, configuração,
-  `scripts/typecheck.mjs`, builds e projetos de teste afetados.
+  `scripts/build/typecheck.mjs`, builds e projetos de teste afetados.
 - **Runtimes:** engines e documentação dos pacotes, Node nas actions,
   runtime Convex e compatibilidade do Worker Cloudflare. Um resultado num
   runtime não comprova os outros.

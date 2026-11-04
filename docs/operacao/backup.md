@@ -53,7 +53,7 @@ snapshots anteriores à ativação, até expirarem. A ativação seguiu o
 formato 2 em produção é conferido na #688.
 
 O workflow `Offsite backup` (`.github/workflows/offsite-backup.yml`) tem dois
-jobs. Os dois executam `scripts/backup-offsite.mjs` com o plano
+jobs. Os dois executam `scripts/backup/backup-offsite.mjs` com o plano
 `deploy/offsite-backup.json` e o alvo de `deploy/platform-release.json`.
 
 O job `snapshot` roda às 00:00 e às 12:00 de Brasília (03:00/15:00 UTC), no
@@ -170,7 +170,7 @@ A lista `recipients` só é usada ao cifrar um snapshot novo; `check` e `fetch`
 não a comparam com as cópias existentes. Para trocar a identidade provisória pela
 chave do mantenedor, uma PR substitui a entrada em
 `deploy/offsite-backup.json` e a lista esperada em
-`scripts/offsite-backup.test.ts`. Os snapshots seguintes cifram para os novos
+`scripts/backup/offsite-backup.test.ts`. Os snapshots seguintes cifram para os novos
 destinatários. As cópias anteriores continuam legíveis só pelas identidades
 antigas até expirarem, em 14 dias; guarde a identidade substituída até lá e
 destrua-a depois.
@@ -203,7 +203,7 @@ que executa o módulo TypeScript do cofre de certificados, e o age no `PATH`
 
 ```powershell
 $env:R2_ACCESS_KEY_ID = "<token de leitura>"; $env:R2_SECRET_ACCESS_KEY = "<segredo>"
-bun scripts/backup-offsite.mjs fetch --out C:/recuperacao/d04 --identity C:/cofre/freecorpsnfe-d04.key --custody C:/cofre/custodia.env
+bun scripts/backup/backup-offsite.mjs fetch --out C:/recuperacao/d04 --identity C:/cofre/freecorpsnfe-d04.key --custody C:/cofre/custodia.env
 ```
 
 O `fetch` escolhe o manifesto mais recente, ou o informado em
@@ -291,7 +291,7 @@ preferencialmente o substituto, em uma máquina sem acesso ao Convex de origem:
 2. Do checkout principal, com o token R2 de leitura:
 
    ```powershell
-   bun scripts/backup-offsite.mjs rehearse C:/Users/<você>/freecorpsNFE-worktrees/test-d04-ensaio --identity <identidade> --custody <cofre.env>
+   bun scripts/backup/backup-offsite.mjs rehearse C:/Users/<você>/freecorpsNFE-worktrees/test-d04-ensaio --identity <identidade> --custody <cofre.env>
    ```
 
    O ensaio faz o `fetch` completo e recusa um destino em outro SHA, com crons,
@@ -528,7 +528,7 @@ ZIP. O ZIP é importável pelo procedimento já descrito e não precisa da
 origem para ser reconstruído. A custódia de certificados e webhooks continua
 sendo conferida. Falha remove os temporários decifrados e o ZIP incompleto.
 
-`scripts/incremental-backup.test.ts` usa dados sintéticos, R2 simulado e uma
+`scripts/backup/incremental-backup.test.ts` usa dados sintéticos, R2 simulado e uma
 identidade age gerada só para o teste. Compara bytes, metadados, IDs e digests
 do ZIP reconstruído, testa reutilização por hash, CRC/cifra corrompidos,
 referência ausente e publicação do manifesto somente após todas as provas.
@@ -547,7 +547,7 @@ export; todos os demais metadados e IDs continuam na comparação.
 
 ### Arquivo econômico e catálogo frio
 
-O executor de arquivo econômico está em `scripts/cold-archive.mjs` e seu
+O executor de arquivo econômico está em `scripts/cold-tier/cold-archive.mjs` e seu
 procedimento em [arquivo-economico.md](arquivo-economico.md). Ele conserva um
 pacote por organização, com os registros fiscais e originais, cifrado com
 age. Só autoriza remoção quente após baixar, decifrar, importar em destino

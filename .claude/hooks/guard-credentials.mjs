@@ -12,7 +12,7 @@ export const credentialPatterns = [
   // inteiro, para `cat ~/.convex/*` ou `cp -r ~/.convex` não passarem.
   // `npx convex` e `convex.json` não têm o ponto e continuam livres.
   /(^|[^a-z0-9_])\.convex\b/,
-  /\.dpapi\b/, // senha ou conta protegida por DPAPI (scripts/fiscal-proof.mjs)
+  /\.dpapi\b/, // senha ou conta protegida por DPAPI (scripts/fiscal/fiscal-proof.mjs)
   /\.(pfx|p12)\b/, // certificado A1
   /(^|[/\\\s"'=])deployment\.env\b/, // deploy key da rodada fiscal
   /(^|[/\\\s"'=])\.env\.local\b/, // CONVEX_DEPLOY_KEY e afins

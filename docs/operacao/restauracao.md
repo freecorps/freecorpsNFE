@@ -35,14 +35,14 @@ recuperação de sete NFS-e ABRASF, instalação limpa e atualização compatív
 Com a origem local iniciada por `bun run dev`:
 
 ```powershell
-bun scripts/prove-restore.mjs prepare
+bun scripts/backup/prove-restore.mjs prepare
 bun run worktree:create test/81-restore --from HEAD --app platform
 ```
 
 Inicie `bun run dev` no destino, em outro terminal. Na origem:
 
 ```powershell
-bun scripts/prove-restore.mjs restore C:/caminho/absoluto/do/worktree-destino
+bun scripts/backup/prove-restore.mjs restore C:/caminho/absoluto/do/worktree-destino
 ```
 
 Use Bun 1.4.0. O runner lê os descritores locais dos worktrees e passa URL e
@@ -76,7 +76,7 @@ reaplique as retenções legais, recupere os prazos de retenção, inclusive a
 guarda das organizações já expurgadas, e reaplique os encerramentos
 registrados fora do banco, conforme
 [Retenção](../plataforma/RETENTION.md#encerramento-implementado-d01).
-`scripts/prove-closure-restore.mjs` ensaia esse fluxo em destino vazio, com
+`scripts/backup/prove-closure-restore.mjs` ensaia esse fluxo em destino vazio, com
 `prepare` e `restore <worktree-destino>` como acima. O recibo de 07/10 está
 na evidência de D05.
 

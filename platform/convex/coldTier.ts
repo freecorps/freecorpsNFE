@@ -269,7 +269,7 @@ export const step = internalMutation({
 
 /**
  * The last guard year whose lock rule the operator confirmed in the bucket
- * (`FNFE_COLD_LOCKED_THROUGH`, written after `scripts/cold-tier-locks.mjs`). A Production note
+ * (`FNFE_COLD_LOCKED_THROUGH`, written after `scripts/cold-tier/cold-tier-locks.mjs`). A Production note
  * whose guard ends later stays hot: no object goes to the bucket without its lock.
  */
 export function lockedThrough() {

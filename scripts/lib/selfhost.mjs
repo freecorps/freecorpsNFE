@@ -245,7 +245,7 @@ export async function configure(instance) {
   for (const name of parseEnv(cli(instance, ["env", "list"])).keys())
     if (!PLATFORM_BACKEND_ENV.has(name)) cli(instance, ["env", "remove", name]);
   cli(instance, ["env", "set", "--from-file", instance.env, "--force"]);
-  run(process.execPath, [join(root, "scripts/build-fiscal-packages.mjs")]);
+  run(process.execPath, [join(root, "scripts/build/build-fiscal-packages.mjs")]);
   const revision = run("git", ["status", "--porcelain"]).trim() ? null : sha();
   const buildFile = join(root, "platform/convex/buildInfo.ts");
   const original = readFileSync(buildFile);

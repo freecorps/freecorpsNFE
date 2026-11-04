@@ -97,7 +97,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
       atualizar o gate de preparação privada e repetir as provas.
 - [ ] Publicar os exatos bytes aceitos; conferir instalação pelo registry e
       registrar tag, versão, integridade e recibo. Publicar release notes somente
-      após essa conferência. Só `scripts/publish-packages.mjs`, rodado pelo mantenedor
+      após essa conferência. Só `scripts/distribution/publish-packages.mjs`, rodado pelo mantenedor
       com 2FA, publica no registry. O primeiro lote, de 01/11/2026, está em
       evidence/83/2026-11-01; o do SDK com o nome novo, em evidence/73/2026-11-03.
 - [ ] Na mudança que registra o recibo da publicação, gravar em
@@ -111,7 +111,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
 1. No SHA escolhido, num checkout limpo, rode as provas do checklist. A
    `distribution:prove` grava os tarballs e `.ci-results/83/tarballs.json`.
 2. Gere a relação de `rights` desses bytes com
-   `node scripts/rights-relation.mjs <evidência>/rights.json`. Registre em
+   `node scripts/licenses/rights-relation.mjs <evidência>/rights.json`. Registre em
    `docs/v1.0/evidence/83/<data>/` o recibo, a relação e um `accepted.json`
    com `codeSha` e, por pacote, `name`, `version` e `sha256`.
    O lote pode listar só parte dos pacotes, como o SDK com o nome novo; os
@@ -119,12 +119,12 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
 3. O mantenedor aceita na #83 cada linha: pacote, versão, hash, `rights` e
    `release-acceptance`.
 4. Com `npm login` na conta da organização `freecorps`, no mesmo checkout:
-   `node scripts/publish-packages.mjs <evidência>/accepted.json`. O script
+   `node scripts/distribution/publish-packages.mjs <evidência>/accepted.json`. O script
    confere SHA, prova e hash de cada tarball, publica na ordem das dependências
    e pede o código 2FA a cada pacote. Repetir pula o que já está publicado com
    os mesmos bytes e para se a versão existir com outros bytes. `--dry-run`
    simula sem publicar.
-5. Ainda no mesmo SHA, `bun scripts/prove-distribution.mjs --registry` confere
+5. Ainda no mesmo SHA, `bun scripts/distribution/prove-distribution.mjs --registry` confere
    que o registry tem os bytes refeitos nesta revisão e repete os consumidores
    instalando do registry; o resultado fica em `.ci-results/83/registry.json`.
 6. Registre o recibo da publicação e `packages/contracts/published.json` numa PR.

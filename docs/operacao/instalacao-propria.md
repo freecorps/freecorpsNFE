@@ -207,7 +207,7 @@ autenticação e chamadas REST que contornem o proxy.
 Antes de publicar na conta própria, rode o typecheck do Worker e o dry-run:
 
 ```powershell
-node scripts/typecheck.mjs -p deploy/selfhost/tsconfig.json
+node scripts/build/typecheck.mjs -p deploy/selfhost/tsconfig.json
 node node_modules/wrangler/bin/wrangler.js deploy --dry-run --config CAMINHO_WRANGLER_LOCAL
 ```
 
@@ -279,14 +279,14 @@ RPO/RTO com operação; os tempos locais medidos não são SLA.
 Roteiro automatizado, apenas nas instalações locais sintéticas:
 
 ```powershell
-node --experimental-strip-types scripts/prove-selfhost.mjs prepare ORIGEM
+node --experimental-strip-types scripts/deploy/prove-selfhost.mjs prepare ORIGEM
 bun run sdk:prove
-node --experimental-strip-types scripts/prove-selfhost.mjs journey ORIGEM CAMINHO_CLOUDFLARED
+node --experimental-strip-types scripts/deploy/prove-selfhost.mjs journey ORIGEM CAMINHO_CLOUDFLARED
 # Em checkout exclusivo do ensaio, trocar para a revisão compatível aprovada.
 git switch --detach REVISAO_APROVADA
 bunx bun@1.4.0 install --frozen-lockfile
-node --experimental-strip-types scripts/prove-selfhost.mjs upgrade ORIGEM
-node --experimental-strip-types scripts/prove-selfhost.mjs restore ORIGEM DESTINO_VAZIO
+node --experimental-strip-types scripts/deploy/prove-selfhost.mjs upgrade ORIGEM
+node --experimental-strip-types scripts/deploy/prove-selfhost.mjs restore ORIGEM DESTINO_VAZIO
 ```
 
 O servidor do console precisa estar ativo na origem e no destino. O receptor

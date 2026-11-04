@@ -10,7 +10,7 @@ conservam todos os registros e originais quentes, como descreve o
 ## Contexto
 
 O [arquivo econômico](../operacao/arquivo-economico.md) (`coldArchive.ts`,
-`scripts/cold-archive.mjs`, `scripts/lib/cold-archive.mjs`) move as 25 tabelas
+`scripts/cold-tier/cold-archive.mjs`, `scripts/lib/cold-archive.mjs`) move as 25 tabelas
 da classe `fiscal` e seus arquivos para um pacote cifrado com age no R2,
 depois de aviso, congelamento com quiescência e prova de importação e
 reexportação num Convex isolado. Ele só serve a organizações encerradas e
@@ -416,7 +416,7 @@ arquivamento, pela regra acima.
 
 Direitos de acesso e portabilidade não dependem de reativar. Enquanto a
 organização estiver arquivada, o atendimento autorizado restaura o pacote no
-destino isolado (`scripts/cold-archive.mjs restore`) e entrega
+destino isolado (`scripts/cold-tier/cold-archive.mjs restore`) e entrega
 a exportação a quem tem papel para recebê-la, conforme
 [RIGHTS.md](../plataforma/RIGHTS.md). Até a PR 8 esse comando recusava um
 run com `reason` diferente de `closed` (`ARCHIVE_REACTIVATION_UNPROVEN`); desde
@@ -661,7 +661,7 @@ PR 8 deixou em aberto:
   Hoje só organização encerrada chega à remoção.
 
   **Entregue na PR 4 do plano (catálogo compactado, seção 4):** depois de
-  `archived`, o executor (`scripts/cold-archive.mjs compact`, também no fim
+  `archived`, o executor (`scripts/cold-tier/cold-archive.mjs compact`, também no fim
   de `archive`) grava as entradas do run como um objeto JSONL canônico
   cifrado com age para os custodiantes do pacote, ao lado dele no R2, com
   manifesto próprio e imutável, ambos por escrita condicional. Baixa, decifra
@@ -695,7 +695,7 @@ PR 8 deixou em aberto:
   a organização aberta passa por congelamento, remoção e reidratação, sempre
   atrás de `FNFE_COLD_ARCHIVE`; `ARCHIVE_REACTIVATION_UNPROVEN` fica só na
   restauração isolada, ainda restrita a organizações encerradas. O executor
-  (`scripts/cold-archive.mjs rehydrate`, funções em
+  (`scripts/cold-tier/cold-archive.mjs rehydrate`, funções em
   `coldArchiveRehydration.ts`) baixa e decifra pacote e catálogo e os confere,
   admite (plano pago ativo, estoque no plano atual) e trabalha em duas
   passagens retomáveis, com progresso no run: primeiro os arquivos, por
@@ -763,7 +763,7 @@ PR 8 deixou em aberto:
   entregues como estavam, sem `originalId`.
 
   **Entregue na PR 8 do plano (restauração isolada de organização aberta,
-  §7):** `scripts/cold-archive.mjs restore` passa a servir a organizações
+  §7):** `scripts/cold-tier/cold-archive.mjs restore` passa a servir a organizações
   encerradas e abertas, pela mesma função (`restoreIsolated`, em
   `scripts/lib/cold-archive.mjs`). Ela lê o run, baixa e decifra o pacote
   selado e, se o run tiver, o catálogo compactado, confere os dois com seus
@@ -814,7 +814,7 @@ PR 8 deixou em aberto:
 
   **Entregue na PR 9 do plano (exportação assistida,
   [#658](https://github.com/freecorps/freecorpsNFE-arquivo/issues/658)):**
-  `scripts/cold-archive.mjs export` aplica as três decisões. Grava o pedido na
+  `scripts/cold-tier/cold-archive.mjs export` aplica as três decisões. Grava o pedido na
   origem (`assistedExport:request`, tabela `assistedExports`, classe
   `closure`) antes de ler o R2. Aceita só o Proprietário ativo, achado pela
   conta do e-mail de onde o pedido veio e com e-mail verificado, e no máximo
@@ -855,7 +855,7 @@ PR 8 deixou em aberto:
 
   **Entregue na #691 (prazo do pacote e ensaio):** cada run tem uma regra
   de lock com data no prefixo próprio do R2, criada antes do pacote existir;
-  `scripts/cold-archive.mjs renew` estende a regra e depois o `retainUntil`
+  `scripts/cold-tier/cold-archive.mjs renew` estende a regra e depois o `retainUntil`
   do run para a guarda contada de hoje, ou do encerramento, só para frente e
   só enquanto o pacote está selado e a organização arquivada; `due` lista os
   runs a renovar. Os manifestos guardam a data do selo. Escolha onde esta ADR

@@ -5,7 +5,7 @@
 // the companies with their capture, for the internal view (`list`, #422); and sends a test of the
 // alert e-mail (`alert_test`, #463). All by an authorized
 // person, without approval. Pure functions: the runner in
-// `scripts/capture-release.mjs` reads the files, the environment and the GitHub API and hands
+// `scripts/deploy/capture-release.mjs` reads the files, the environment and the GitHub API and hands
 // them here. The run checks are the NFS-e gate's (`verifiedRun`), with this file's workflows.
 import { GateRefusal, hasUnsafeText } from "./issuance-gate.mjs";
 

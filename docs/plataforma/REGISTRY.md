@@ -126,7 +126,7 @@ permanece com a empresa; não é cache descartável.
 `tests/platform.companies.test.ts` simulam o transporte. O runner
 `node --experimental-strip-types apps/console/e2e/registry.mjs` exige worktree
 platform ativo, usa dados sintéticos e exercita operação nativa com cache hit.
-Não chama provedor. `bun scripts/prove-registry-provider.mjs` é prova online
+Não chama provedor. `bun scripts/fiscal/prove-registry-provider.mjs` é prova online
 separada, só leitura, com os CNPJs públicos do Banco do Brasil numérico e alfa.
 Guarda metadados/hashes sanitizados, sem semear banco ou salvar resposta bruta.
 Não executar como teste offline ou em loop. Evidências.

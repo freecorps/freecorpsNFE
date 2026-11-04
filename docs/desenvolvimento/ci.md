@@ -30,7 +30,7 @@ Em PR, o checkout padrão é o merge sintético. `revision.json` registra
 confere o commit realmente obtido por `git rev-parse HEAD` com `GITHUB_SHA`.
 Não descrever o head como testado quando o runner executou outro commit.
 
-`Validate` começa classificando a mudança (`scripts/ci-changes.mjs`). Numa PR
+`Validate` começa classificando a mudança (`scripts/ci/ci-changes.mjs`). Numa PR
 que só muda documentação, confere formatação, credenciais e os testes que leem
 toda a documentação e termina aprovado, sem `tested_sha`
 ([Mudança só de documentação](#mudança-só-de-documentação)). Nos demais casos,
@@ -89,24 +89,24 @@ na chave `run.tasks`; o Vite Task as executa em ordem de dependência, até quat
 ao mesmo tempo, e agrupa a saída de cada uma no log, com um resumo no final que
 diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
-| Tarefa              | Comando                                                         | Depende de                         | Cache               |
-| ------------------- | --------------------------------------------------------------- | ---------------------------------- | ------------------- |
-| `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    | sim                 |
-| `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
-| `ci:contracts`      | `bun scripts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
-| `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
-| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
-| `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    | não: índice do Git  |
-| `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
-| `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:test:<área>`    | `node scripts/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
-| `ci:tests`          | `node scripts/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
-| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
-| `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
-| `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
-| `ci:auth-worker`    | `node --experimental-strip-types scripts/prove-auth-worker.mjs` |                                    | não: Git            |
-| `ci:privacy-worker` | `node scripts/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
+| Tarefa              | Comando                                                                | Depende de                         | Cache               |
+| ------------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
+| `ci:packages`       | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
+| `ci:sdk`            | `bun run sdk:prove`                                                    | `ci:packages`                      | não: registro e Git |
+| `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
+| `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
+| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
+| `ci:check`          | `vp check`                                                             | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                           |                                    | não: índice do Git  |
+| `ci:knip`           | `bun run knip:check`                                                   |                                    | não: manifests      |
+| `ci:typecheck`      | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                      | sim                 |
+| `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`              | não: revisão        |
+| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
+| `ci:docs`           | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
+| `ci:console`        | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| `ci:auth-worker`    | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
+| `ci:privacy-worker` | `node scripts/proofs/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
 
 As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
 `ci:distribution` instalam os tarballs num consumidor limpo com dependências do
@@ -155,7 +155,7 @@ execução no mesmo checkout repetisse todas. Por isso a constante `generated` d
 `vite.config.ts`, usada por toda tarefa com cache, tira das entradas as
 listagens dessas pastas e os caches das ferramentas; o conteúdo de cada arquivo
 lido nelas continua entrada. A raiz não pode sair assim (`!.` exclui a árvore
-inteira), e `node scripts/ci.mjs identity` cria `.browser-results` antes do
+inteira), e `node scripts/ci/ci.mjs identity` cria `.browser-results` antes do
 grafo.
 
 Medido em clones novos no mesmo caminho, um por execução, como no runner
@@ -173,7 +173,7 @@ os testes de fato rodaram). O recibo é a saída guardada no cache: uma repetiç
 o restaura para as mesmas entradas. Ele não lê `revision.json`, que muda a cada
 commit. `ci:tests` junta os recibos em `tests.json`, sob a revisão do checkout,
 e reprova se uma área falta, falhou ou contou outro número de arquivos que os
-dela no checkout. `node scripts/ci.mjs identity` apaga os recibos antes do
+dela no checkout. `node scripts/ci/ci.mjs identity` apaga os recibos antes do
 grafo, e o passo `approve` só emite `tested_sha` com todas as áreas aprovadas
 nesse `tests.json`. O resumo do job mostra, por área, se ela executou neste
 checkout ou repetiu o resultado de qual run.
@@ -205,9 +205,9 @@ execução limpa de uma revisão, dispare o CI manualmente.
 `scripts/lib/ci-changes.mjs` compara o merge sintético da PR com o primeiro pai
 (a base). Se todo arquivo mudado é documentação que só a formatação e a
 varredura leem, o job instala as dependências, roda `vp fmt --check`,
-`node scripts/check-secrets.mjs` e os testes que leem toda a documentação
-versionada (`scripts/public-identifiers.test.ts` e
-`scripts/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
+`node scripts/public-copy/check-secrets.mjs` e os testes que leem toda a documentação
+versionada (`scripts/public-copy/public-identifiers.test.ts` e
+`scripts/public-copy/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
 emitir `tested_sha`. O check obrigatório continua sendo o mesmo `Validate`:
 `paths-ignore` deixaria o check ausente.
 
@@ -235,7 +235,7 @@ aprova o SHA.
 `ci:docs` compila a documentação pública em `apps/docs/dist`, e `ci:console`
 só a copia para a saída do console; uma falha da documentação aparece na
 própria tarefa ([PUBLIC.md](../plataforma/PUBLIC.md#fontes-e-construção)).
-`scripts/console.mjs` executa `scripts/prove-public-site.mjs` depois do build:
+`scripts/console/console.mjs` executa `scripts/console/prove-public-site.mjs` depois do build:
 landing e páginas da documentação legíveis sem JavaScript, sem script ou estilo
 inline, referências locais existentes e ausência de protótipo no bundle.
 `tests/publicSite.test.ts` confere os links e o contrato da documentação
@@ -254,7 +254,7 @@ de `convex/` e seus testes, e o grafo tinha as tarefas `ci:legacy-*` e
 e `publicAddress.ts`) passaram a ter só a plataforma como consumidora.
 
 As checagens de tipos usam o TypeScript 7, o compilador nativo, instalado como
-`typescript-7` (`scripts/typecheck.mjs`). O pacote `typescript` continua no 6.0
+`typescript-7` (`scripts/build/typecheck.mjs`). O pacote `typescript` continua no 6.0
 para o editor, as builds que emitem código e a prova do consumidor do SDK.
 
 O `check` dos workspaces encaminha ao mesmo verificador. Em `platform/` e
@@ -291,7 +291,7 @@ código que exercitam (por exemplo, `tests/webhookContract.test.ts` em
 o restante: um arquivo novo sem projeto reprova `tests/ci.testProjects.test.ts`.
 
 `repository` reúne os testes cujas entradas são quase todo o repositório:
-`scripts/public-identifiers.test.ts` (todo Markdown), `scripts/public-tree.test.ts`
+`scripts/public-copy/public-identifiers.test.ts` (todo Markdown), `scripts/public-copy/public-tree.test.ts`
 (a lista do Git, para classificar cada arquivo da cópia pública) e
 `tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
 documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
@@ -425,13 +425,13 @@ sockets ou executáveis hostis.
   configuração ou dependências SaaS, incluindo o verificador de webhook do SDK
   (`ci:sdk`) e os pacotes fiscais (`ci:xml-prove`).
 - Origem canônica dos contratos com geração/verificação determinística de
-  OpenAPI, SDK e referência de documentação. `scripts/contract-drift.test.ts`
+  OpenAPI, SDK e referência de documentação. `scripts/contracts/contract-drift.test.ts`
   roda essa prova em toda execução do CI: altera as rotas que a geração lê
   (escopo de uma rota existente e rota nova), exige que a mesma comparação de
   `contracts:check` aponte OpenAPI, referência REST e cópia pública como
   desatualizados e aceite os artefatos regenerados numa pasta temporária.
   Também recusa cópia pública editada à mão ou ausente. Nenhum arquivo do
-  checkout é alterado; `scripts/prove-contract-drift.mjs` continua como prova
+  checkout é alterado; `scripts/contracts/prove-contract-drift.mjs` continua como prova
   manual do comando completo.
 - Corpus compartilhado com versão, hash, procedência e resultado esperado por
   etapa ([corpus versionado](../../tests/fixtures/fiscal-v1/README.md), com
@@ -441,7 +441,7 @@ sockets ou executáveis hostis.
 ### Fronteiras dos pacotes independentes
 
 `vp run ci:boundaries` descobre os workspaces do `package.json` e exige uma
-entrada para cada um em `scripts/package-boundaries.json`. Classificação
+entrada para cada um em `scripts/build/package-boundaries.json`. Classificação
 ausente, inválida ou sem workspace correspondente reprova a execução. Os
 padrões aceitos são caminhos relativos com `*` e `**`; sintaxes não suportadas
 são recusadas. O CI executa esse check depois do grafo `validate`, que compila
@@ -508,7 +508,7 @@ são verificados, inclusive em `dist`; por isso o build precede o check no CI.
 Isso verifica dependências estáticas, não constitui sandbox contra execução
 arbitrária ou carregadores próprios construídos em runtime.
 
-`scripts/package-boundaries.test.ts` cria repositórios sintéticos isolados e
+`scripts/build/package-boundaries.test.ts` cria repositórios sintéticos isolados e
 prova recusa de import direto, reexport/tipos, alias, caminho relativo,
 dependência transitiva e pacote sem classificação. Para pontos de entrada,
 prova `node:fs` importado direto, por módulo relativo e por import de tipo a
@@ -516,7 +516,7 @@ partir de um `./pure`, dependência e workspace fora da lista do ponto de
 entrada, `dist` compilado e classificação ausente dos exports ou mais larga
 que a do workspace. Remover a violação faz passar.
 
-`scripts/prove-xml-package.mjs` (`vp run xml:prove`) empacota fiscal-core,
+`scripts/distribution/prove-xml-package.mjs` (`vp run xml:prove`) empacota fiscal-core,
 fiscal-nfe e fiscal-nfse, inspeciona cada tarball e os instala num diretório
 limpo fora do monorepo. Para fiscal-nfse, `scripts/lib/nfse-consumer.mjs`
 importa `.`, `./pure` e `./danfse` do pacote instalado: monta uma DPS
@@ -539,12 +539,12 @@ Em contracts, só os quatro arquivos do escopo MIT podem ter o cabeçalho MIT, e
 catálogo `dist/schemas.json` precisa corresponder arquivo a arquivo aos hashes
 `runtimeUtf8Sha256` do `schemas/manifest.json` do próprio tarball; em fiscal-nfse,
 sob CC BY-ND, esses hashes precisam ser os dos originais.
-`scripts/distribution.test.ts` cobre arquivos proibidos, credencial incorporada,
+`scripts/distribution/distribution.test.ts` cobre arquivos proibidos, credencial incorporada,
 aviso ausente, export quebrado, catálogo sem manifesto ou fora dos hashes,
 pacote aceito fora da versão ou do acesso público e contracts sem `private`. O recibo em `.ci-results/83/tarballs.json`
 contém lista, hashes, identidade e schemas incorporados. Sucesso desse check
 valida os bytes; a publicação vale só para os hashes aceitos na #83
-([release.md](../operacao/release.md)). `scripts/platform-release.test.ts` recusa destinos, SHA,
+([release.md](../operacao/release.md)). `scripts/deploy/platform-release.test.ts` recusa destinos, SHA,
 registro de instalação incompleto ou alterado, candidato obsoleto, sonda
 alterada e smoke incompleto, com precondições próprias de bootstrap e release, e
 confere a atualização automática da `main` e o
@@ -558,10 +558,10 @@ ou a restrição de publicação, sim. Ausências, como `CLERK`, continuam
 conferidas no texto inteiro. `tests/ci.changes.test.ts` confere no `ci.yml` que
 aprovação, gate, grafo e fronteiras rodam sob a mesma condição, que o modo de
 documentação não emite SHA, a chave do cache e que o token só chega aos passos
-do push. `tests/ci.testProjects.test.ts` executa `scripts/ci.mjs test-area` de
+do push. `tests/ci.testProjects.test.ts` executa `scripts/ci/ci.mjs test-area` de
 cada área com o Vitest substituído e confere que, juntas, elas rodam cada
 projeto do Vitest uma vez, sem arquivo, `--changed` ou `--shard`, e que
-`scripts/ci.mjs test` roda a suíte toda.
+`scripts/ci/ci.mjs test` roda a suíte toda.
 
 ### Arquivos e dependências sem uso
 
@@ -588,13 +588,61 @@ Quando a tarefa reprova, remova o arquivo ou a dependência órfã. Se o uso for
 real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o motivo,
 em vez de ignorar o achado.
 
+Todo script de `scripts/` e de `scripts/<domínio>/` é entrada do knip, porque
+cada um é chamado pelo caminho. Um roteiro que nenhum comando, workflow ou
+documento cita não aparece como órfão.
+
+### Organização de `scripts/`
+
+Cada script fica na pasta do seu domínio, com o teste ao lado. Os helpers que
+mais de um domínio usa ficam em `scripts/lib/`.
+
+| Pasta           | Conteúdo                                                                        |
+| --------------- | ------------------------------------------------------------------------------- |
+| `backup/`       | Backup offsite, exportação incremental, custódia e provas de restauração        |
+| `billing/`      | Conferência da conta Stripe e estado da migração de uso                         |
+| `build/`        | Build dos pacotes fiscais, typecheck e fronteiras entre pacotes                 |
+| `ci/`           | Executores do CI (`ci`, `ci-changes`, `validate-local`, `prove-acceptance`)     |
+| `cold-tier/`    | Arquivo frio, travas no R2 e provas locais e hospedadas do tier frio            |
+| `console/`      | Build e publicação do console, prova do site público e medições de bundle       |
+| `contracts/`    | Geração e deriva dos contratos, build e prova do SDK                            |
+| `deploy/`       | Publicação hospedada e da produção NFS-e, gate de emissão, liberação da captura |
+| `distribution/` | Provas dos pacotes npm e publicação                                             |
+| `fiscal/`       | Prova fiscal, schemas NF-e e NFS-e, corpus, referências, captura e certificados |
+| `licenses/`     | Inventário de licenças, licenças próprias e avisos dos pacotes                  |
+| `proofs/`       | Provas hospedadas e locais sem domínio mais estreito                            |
+| `public-copy/`  | Varredura pública, `pre-push` e varredura de credenciais                        |
+| `repo/`         | Catálogo de `bun run help` e guardas do próprio repositório                     |
+| `validation/`   | Deployment de validação e diagnóstico do smoke                                  |
+| `worktree/`     | `bun run dev`, prova de isolamento e testes do ciclo de vida dos worktrees      |
+
+Seis arquivos ficam na raiz de `scripts/`, porque algo de fora do checkout os
+chama pelo caminho:
+
+- `worktree.mjs`: `scripts/lib/worktree/lifecycle.mjs` roda o `worktree.mjs`
+  do checkout recém-criado, que pode vir de uma ref anterior.
+- `selfhost.mjs`: a documentação pública da instalação própria manda o
+  operador rodá-lo pelo caminho.
+- `contribution-terms.mjs` e o teste dele: o workflow `pull_request_target` faz
+  checkout da base da PR e roda o script pelo caminho.
+- `sync-claude-skills.mjs` e o teste dele: o caminho está gravado nos atalhos
+  gerados de `.claude/skills/` e marca quais são dele.
+
+Um script em `scripts/<domínio>/` acha a raiz do repositório por `repoRoot` ou
+`repoUrl`, de `scripts/lib/repo-root.mjs`, e não subindo pastas a partir de si
+mesmo. Um `..` a mais ou a menos não falha: lê e grava no lugar errado.
+`scripts/repo/scripts-layout.test.ts` reprova arquivo novo solto na raiz de
+`scripts/`, cálculo de raiz pela própria pasta e caminho de `scripts/` citado
+por `package.json`, workflow, `vite.config.ts`, `knip.jsonc` ou `CODEOWNERS`
+que não existe.
+
 ### Segredos no repositório
 
 Duas barreiras evitam que uma credencial entre por acidente. O `.gitignore`
 recusa variantes privadas de configuração (`.env.*`, `.dev.vars.*`) e
 certificados ou chaves (`*.pfx`, `*.p12`, `*.key`, `*.pem`), com exceção
 explícita para as fixtures sintéticas de `tests/fixtures/nfe/4.00/`. `ci:secrets` (`bun run secrets:check`) roda
-`scripts/check-secrets.mjs` sobre todo arquivo de texto de `git ls-files` e
+`scripts/public-copy/check-secrets.mjs` sobre todo arquivo de texto de `git ls-files` e
 falha com arquivo, linha e regra, sem imprimir o valor. As regras ficam em
 `scripts/lib/credentials.mjs`, as mesmas que a checagem dos tarballs usa:
 cabeçalho de chave privada PEM, tokens de serviço com prefixo conhecido
@@ -606,7 +654,7 @@ script, por arquivo e regra, cada um com o número exato de ocorrências que
 cobre e o motivo. Uma ocorrência a mais da mesma regra naquele arquivo
 bloqueia o grupo inteiro, para que uma credencial real não passe atrás de uma
 exceção; uma a menos faz a exceção falhar como obsoleta.
-`scripts/check-secrets.test.ts` prova a detecção de um canário sintético
+`scripts/public-copy/check-secrets.test.ts` prova a detecção de um canário sintético
 montado em tempo de execução, a exceção restrita ao arquivo, à regra e à
 contagem, o bloqueio de uma ocorrência extra e o binário ignorado.
 
@@ -654,14 +702,14 @@ do evento a associação e o tipo do autor e a descrição, por `env:`.
 
 O workflow `Public scan` (`.github/workflows/public-scan.yml`) roda em todo
 PR, em todo push na `main` e por disparo manual. Ele confere o que é, ou vai
-ser, público com `scripts/public-tree.mjs`: as regras de
-`scripts/check-secrets.mjs`, o Gitleaks 8.21.2, baixado com o SHA-256 fixado,
+ser, público com `scripts/public-copy/public-tree.mjs`: as regras de
+`scripts/public-copy/check-secrets.mjs`, o Gitleaks 8.21.2, baixado com o SHA-256 fixado,
 CNPJ, CPF (com e sem máscara) e chave de acesso reais, e-mail externo, caminho
 local, deployment Convex desconhecido e os nomes restritos. O relatório
 `varredura.json` fica no artefato `public-scan`, com caminho, linha e tipo de
 cada achado, sem o valor.
 
-`scripts/public-scan.mjs` escolhe o modo pelo checkout:
+`scripts/public-copy/public-scan.mjs` escolhe o modo pelo checkout:
 
 - **No repositório arquivado**, onde a lista em custódia existe, ele monta a
   cópia pública do commit, com seleção e edições, e a varre. Um drift de
@@ -675,7 +723,7 @@ cada achado, sem o valor.
 Desde a fase 1e da #267, uma varredura bloqueada reprova o check
 (`PUBLIC_SCAN_ENFORCE: "true"`), assim como um erro de uso, como Gitleaks
 ausente. Com `"false"`, ela só avisaria. Para rodar localmente, com o Gitleaks 8.21.2 no PATH ou em
-`GITLEAKS_BIN`: `node scripts/public-scan.mjs <pasta vazia fora do repositório>`.
+`GITLEAKS_BIN`: `node scripts/public-copy/public-scan.mjs <pasta vazia fora do repositório>`.
 
 Sem a lista de nomes restritos, os nomes não são procurados e as exceções
 deles (`mantenedor`, `cliente`, `deployment-teste`, `produto-freecorps`) não
@@ -684,8 +732,8 @@ são julgadas obsoletas; com a lista, uma exceção sem a ocorrência bloqueia.
 ### Hook pre-push
 
 O `Public scan` roda depois do push, quando a branch já está pública. O hook
-`.vite-hooks/pre-push` chama `scripts/pre-push.mjs`, que varre cada commit
-enviado com `scripts/public-tree.mjs --checkout` antes de ele sair da
+`.vite-hooks/pre-push` chama `scripts/public-copy/pre-push.mjs`, que varre cada commit
+enviado com `scripts/public-copy/public-tree.mjs --checkout` antes de ele sair da
 máquina, em cerca de 2 segundos. Um achado que bloqueia recusa o push e
 mostra caminho, linha e tipo, sem o valor; o relatório fica numa pasta
 temporária, sem a cópia da árvore.
@@ -699,7 +747,7 @@ envia sem varrer. `vp hooks status` mostra o estado.
 Limites:
 
 - Sem o Gitleaks 8.21.2 no PATH ou em `GITLEAKS_BIN`, o hook passa
-  `--sem-gitleaks` e avisa; as regras de `scripts/check-secrets.mjs` e os
+  `--sem-gitleaks` e avisa; as regras de `scripts/public-copy/check-secrets.mjs` e os
   identificadores continuam. Os nomes restritos, que vêm do secret do CI,
   nunca são conferidos no hook.
 - Ele varre o commit na ponta de cada ref enviada, como o CI. Um dado
@@ -707,7 +755,7 @@ Limites:
   e fica no histórico público.
 - Título e corpo de PR, issue, comentário e mensagem de commit não são
   arquivos e ficam fora do hook e do `Public scan`. Quem escreve passa o
-  texto, gravado em arquivo, por `node scripts/scan-public-text.mjs`, que
+  texto, gravado em arquivo, por `node scripts/public-copy/scan-public-text.mjs`, que
   aplica as regras de credenciais e identificadores, sem Gitleaks nem nomes
   restritos.
 - `git push --no-verify` e `VP_GIT_HOOKS=0` pulam o hook. Agentes não usam
@@ -861,7 +909,7 @@ e escreve `receipt.json` com revisão, base de contrato (ref e SHA), runtime,
 hashes do runner e das entradas, comandos, códigos de saída e duração. A
 primeira etapa que falha interrompe a sequência e gera um recibo `failed` com
 `failedStep` e o caminho do log; a prova também falha se o checkout mudar.
-`scripts/proof-runner.test.ts` cobre o executor com git e subprocessos
+`scripts/ci/proof-runner.test.ts` cobre o executor com git e subprocessos
 simulados.
 
 A validação geral não tem lista própria de comandos: reaproveita o grafo
@@ -869,11 +917,11 @@ A validação geral não tem lista própria de comandos: reaproveita o grafo
 `tests.json`. A base de contrato vem de `--base` (padrão `origin/main`) e a
 saída de `--output`.
 
-- **Recorrente:** `scripts/prove-acceptance.mjs`, a validação geral, com
+- **Recorrente:** `scripts/ci/prove-acceptance.mjs`, a validação geral, com
   alias `bun run ci:prove` e saída padrão `.ci-results/acceptance/<tentativa>`.
   `--input <arquivo>` (repetível)
   registra o hash de um schema ou corpus da entrega.
-- **Recorrente:** `scripts/prove-capture.mjs`, validação geral, TLS real em
+- **Recorrente:** `scripts/fiscal/prove-capture.mjs`, validação geral, TLS real em
   loopback e jornada de captura no navegador, com `bun run dev` ativo. Saída
   padrão `.ci-results/78`.
 
@@ -911,7 +959,7 @@ versão atual. Os roteiros `prove-webhook-checks.mjs`, `prove-sdk-checks.mjs`,
 `prove-usage.mjs` e `prove-operational-support.mjs` foram removidos porque o
 `validate` cobre o que repetiam.
 
-As demais provas `scripts/prove-*` são roteiros próprios, fora do CI
+As demais provas `scripts/<domínio>/prove-*` são roteiros próprios, fora do CI
 obrigatório e sem esse executor. Exigem ambiente local, Convex local ou
 operador, e não usam dados fiscais reais. Entre elas: `prove-usage-load.mjs`
 (10 mil e 100 mil documentos sintéticos), `prove-operations.mjs` (Workpool
@@ -929,7 +977,7 @@ confere o próprio alvo antes de escrever:
   fora do checkout, precisa apontar para a validação persistente de
   `platform/validation.json` (`modest-seal-118`, tipo `dev`), e o helper
   recusa `CONVEX_DEPLOY_KEY`, `CONVEX_SELF_HOSTED_URL` e
-  `CONVEX_SELF_HOSTED_ADMIN_KEY` herdados. `scripts/hosted-proof.test.ts`
+  `CONVEX_SELF_HOSTED_ADMIN_KEY` herdados. `scripts/proofs/hosted-proof.test.ts`
   cobre essa recusa, inclusive de credencial do tipo `prod` e de outro host,
   antes de qualquer chamada de rede. Os outros roteiros abaixo não passam por
   esse helper nem por esse teste.
@@ -1076,7 +1124,7 @@ termina antes deles.
 Em 21/10, com cerca de 2.360 testes, o job no x64 de 2 vCPUs variava de 3,6 a
 7,3 min. A suíte levava de 184 a 395 s porque disputava os dois núcleos com
 builds, checagens de tipos e provas de pacote, que rodam ao mesmo tempo no
-grafo. O arquivo mais lento era `scripts/license-inventory.test.ts` (38 a
+grafo. O arquivo mais lento era `scripts/licenses/license-inventory.test.ts` (38 a
 87 s): cada caso `runtime-*` rodava o `licenses:check` inteiro, quadrático no
 tamanho do lock (9 s localmente). Com o lock indexado uma vez, o check cai
 para 0,3 s e o arquivo para 3 s. `Validate` passou para o x64 de 4 vCPUs,

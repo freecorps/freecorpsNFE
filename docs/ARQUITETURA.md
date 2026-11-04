@@ -25,7 +25,7 @@ REST usam API keys de projetos, com escopos e concessões de empresa e ambiente.
 O Convex valida permissões em cada entrada e mantém dados, arquivos e tarefas.
 
 Em produção, o Worker `freecorpsnfe-backoffice` é gerado por
-`scripts/deploy-platform.mjs` a partir de `deploy/selfhost/worker.ts`. Ele
+`scripts/deploy/deploy-platform.mjs` a partir de `deploy/selfhost/worker.ts`. Ele
 serve o console em `https://nfe.freecorps.com.br` e encaminha `/api/auth/*`
 pelo proxy assinado. Em `https://api.nfe.freecorps.com.br`, aceita somente
 `/v1/*` e `/health` e repassa a chamada ao backend com o IP do cliente

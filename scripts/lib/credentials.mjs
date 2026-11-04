@@ -1,5 +1,5 @@
 // Credential formats shared by the package check (scripts/lib/distribution.mjs)
-// and the repository scanner (scripts/check-secrets.mjs). Each rule matches a
+// and the repository scanner (scripts/public-copy/check-secrets.mjs). Each rule matches a
 // concrete value, not a mention: a name such as `AKIA...` or `fnfe_...` in a
 // document does not match. The project's own secrets without a fixed prefix
 // stay out by path (.gitignore) and, in packages, by the versioned-file

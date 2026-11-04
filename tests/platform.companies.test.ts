@@ -747,7 +747,7 @@ it("never deletes the sandbox demonstration", async () => {
   ).rejects.toThrow(/DEMONSTRATION_READ_ONLY/);
 });
 
-// Pre-creation registry lookup (#511). Synthetic CNPJs of `scripts/public-identifiers.test.ts`.
+// Pre-creation registry lookup (#511). Synthetic CNPJs of `scripts/public-copy/public-identifiers.test.ts`.
 const consulted = "11222333000181";
 const provider = (cnpj: string) => ({
   cnpj,

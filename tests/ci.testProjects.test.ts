@@ -119,10 +119,10 @@ it("classifies a new test file from the shared list", () => {
   expect(owners("tests/webhookContract.test.ts")).toEqual(["packages"]);
   expect(owners("tests/docsOutput.test.ts")).toEqual(["tooling"]);
   // Os testes que leem a árvore inteira ficam fora de tooling.
-  expect(owners("scripts/public-tree.test.ts")).toEqual(["repository"]);
-  expect(owners("scripts/public-identifiers.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-copy/public-tree.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-copy/public-identifiers.test.ts")).toEqual(["repository"]);
   expect(owners("tests/ci.changes.test.ts")).toEqual(["repository"]);
-  expect(owners("scripts/public-scan.test.ts")).toEqual(["tooling"]);
+  expect(owners("scripts/public-copy/public-scan.test.ts")).toEqual(["tooling"]);
   // Nenhum projeto recolhe o restante: um teste novo sem dono reprova.
   expect(() => suiteFor("tests/novo.test.ts")).toThrow("no project");
   expect(() => suiteFor("lib/novo.test.ts")).toThrow("no project");
@@ -148,11 +148,11 @@ it("gives every project a local task and runs all of them in CI", () => {
   // and ci:tests, never cached, collects every area's receipt.
   for (const { name } of testProjects)
     expect(tasks[`ci:test:${name}`]).toMatchObject({
-      command: `node scripts/ci.mjs test-area ${name}`,
+      command: `node scripts/ci/ci.mjs test-area ${name}`,
       cache: { output: [`.ci-results/tests/${name}.json`] },
     });
   expect(tasks["ci:tests"]).toMatchObject({
-    command: "node scripts/ci.mjs collect-tests",
+    command: "node scripts/ci/ci.mjs collect-tests",
     cache: false,
     dependsOn: testProjects.map(({ name }) => `ci:test:${name}`),
   });
@@ -160,7 +160,7 @@ it("gives every project a local task and runs all of them in CI", () => {
 });
 
 /**
- * Runs the real `scripts/ci.mjs <command>` with Vitest and the .ci-results
+ * Runs the real `scripts/ci/ci.mjs <command>` with Vitest and the .ci-results
  * writes replaced, and returns the Vitest commands it would start.
  */
 function vitestCalls(...command: string[]) {
@@ -190,7 +190,7 @@ syncBuiltinESMExports();
     );
     const result = spawnSync(
       process.execPath,
-      ["--import", pathToFileURL(preload).href, resolve("scripts/ci.mjs"), ...command],
+      ["--import", pathToFileURL(preload).href, resolve("scripts/ci/ci.mjs"), ...command],
       { cwd: resolve("."), env: subprocessEnvironment(process.env), encoding: "utf8" },
     );
     expect(existsSync(log), result.stderr).toBe(true);
@@ -227,7 +227,7 @@ it("runs exactly the area's projects from each CI area task, and every project i
 });
 
 it("runs the whole suite from the CI test command, without a filter", () => {
-  // Runs the real `scripts/ci.mjs test` with Vitest and the .ci-results
+  // Runs the real `scripts/ci/ci.mjs test` with Vitest and the .ci-results
   // writes replaced, and records the command it would start.
   const root = mkdtempSync(join(tmpdir(), "fnfe-ci-runner-"));
   try {
@@ -258,7 +258,7 @@ syncBuiltinESMExports();
     );
     const result = spawnSync(
       process.execPath,
-      ["--import", pathToFileURL(preload).href, resolve("scripts/ci.mjs"), "test"],
+      ["--import", pathToFileURL(preload).href, resolve("scripts/ci/ci.mjs"), "test"],
       { cwd: resolve("."), env: subprocessEnvironment(process.env), encoding: "utf8" },
     );
     expect(existsSync(log), result.stderr).toBe(true);

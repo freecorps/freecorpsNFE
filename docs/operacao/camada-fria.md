@@ -175,7 +175,7 @@ Antes de ligar o gate:
    não ganha acesso ao bucket frio. Sem esses secrets, o backup usa as
    próprias credenciais R2, que então precisam de leitura no bucket frio.
 3. Acrescente `"coldBucket": "<bucket frio>"` na configuração do executor do
-   arquivo econômico (`scripts/cold-archive.mjs`) e defina as mesmas
+   arquivo econômico (`scripts/cold-tier/cold-archive.mjs`) e defina as mesmas
    `R2_COLD_READ_*` ao rodá-lo. Sem leitura no bucket frio, o pacote de uma
    organização com nota fria não é selado.
 4. Grave as regras de lock e defina `FNFE_COLD_LOCKED_THROUGH`, como na seção
@@ -199,7 +199,7 @@ seguinte, às 00:00 de Brasília. Para gravar as regras, use um token da API do
 Cloudflare com administração do R2:
 
 ```sh
-CLOUDFLARE_API_TOKEN=<token> node scripts/cold-tier-locks.mjs --through 2033
+CLOUDFLARE_API_TOKEN=<token> node scripts/cold-tier/cold-tier-locks.mjs --through 2033
 ```
 
 O script acrescenta as regras que faltam do ano corrente até `--through`, ou

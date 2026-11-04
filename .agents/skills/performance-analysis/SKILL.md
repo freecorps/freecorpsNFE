@@ -39,13 +39,13 @@ Escolha o caminho:
   medida, salvo quando setup for o objeto do teste. Defina aquecimento,
   rodadas e métricas antes de comparar; alterne base e candidata quando
   viável para reduzir efeitos da ordem.
-- **TypeScript:** use `scripts/typecheck.mjs` e a configuração do projeto
+- **TypeScript:** use `scripts/build/typecheck.mjs` e a configuração do projeto
   afetado. Compare o mesmo consumidor, controlando caches e mantendo o
   compilador fixo quando sua versão não for o objeto da comparação.
   Mudanças em inferência ou aceitação de código exigem também prova de
   correção dos tipos; tempo de compilação não a substitui.
 - **Bundle:** faça um build novo de cada revisão e use
-  `scripts/measure-console-bundle.mjs` para o console. Compare bytes e gzip
+  `scripts/console/measure-console-bundle.mjs` para o console. Compare bytes e gzip
   dos artefatos equivalentes. O total inclui chunks lazy e não representa
   sozinho o carregamento inicial nem métricas de usuários reais.
 

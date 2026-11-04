@@ -1,9 +1,9 @@
 name: Public scan
 
 # Permanent barrier of the public repository (#267, phase 1d): every pull request and every push
-# to main scans what is, or will be, public for credentials (scripts/check-secrets.mjs rules and
+# to main scans what is, or will be, public for credentials (scripts/public-copy/check-secrets.mjs rules and
 # Gitleaks), real CNPJ, CPF and access keys, external e-mails, local paths, unknown Convex
-# deployments and the restricted names (scripts/public-tree.mjs).
+# deployments and the restricted names (scripts/public-copy/public-tree.mjs).
 # - In the private archive the custody list exists, so it assembles the public copy from the
 #   commit, with its selection and edits, and scans it: drift shows up on the PR that causes it.
 # - In the public repository it scans every versioned file (--checkout). The restricted names
@@ -61,7 +61,7 @@ jobs:
         env:
           FNFE_PUBLIC_DENYLIST: ${{ secrets.FNFE_PUBLIC_DENYLIST }}
           PUBLIC_SCAN_ENFORCE: "true"
-        run: node scripts/public-scan.mjs "$RUNNER_TEMP/public-scan"
+        run: node scripts/public-copy/public-scan.mjs "$RUNNER_TEMP/public-scan"
       - name: Keep the report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

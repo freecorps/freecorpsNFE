@@ -485,7 +485,7 @@ Isso não configura outros ambientes nem substitui a prova no destino escolhido.
 instalá-lo num consumidor temporário limpo. Não certifica um pacote anterior
 com o SHA atual. A prova executa
 os 14 vetores, duplicação, versão antiga e reabertura do SQLite. Essa prova usa
-resposta documental sintética. `scripts/prove-webhooks.mjs --sdk` acrescenta a
+resposta documental sintética. `scripts/proofs/prove-webhooks.mjs --sdk` acrescenta a
 jornada dos dois exemplos e o receptor empacotado contra Convex nativo local,
 com HTTPS real para os eventos sintéticos. O ensaio recusa recibos de pacote
 reprovados, de outro HEAD ou de checkout sujo, e confere o hash do tarball.

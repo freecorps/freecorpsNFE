@@ -40,7 +40,7 @@ preparação de PR também receberam trechos adaptados. Consulte
 Em 03/11/2026, `file-issue` entrou como skill local, irmã de `file-pr`, e
 levou o catálogo a 101. Ela decide se o relato pode ser público, busca
 duplicatas, segue os formulários de `.github/ISSUE_TEMPLATE/` e varre título
-e corpo com `scripts/scan-public-text.mjs` antes de publicar.
+e corpo com `scripts/public-copy/scan-public-text.mjs` antes de publicar.
 
 Em 04/11/2026, seis skills locais levaram o catálogo a 107. `full-stop` leva
 uma mudança até a PR pronta para merge e para; `full-send`, só por invocação

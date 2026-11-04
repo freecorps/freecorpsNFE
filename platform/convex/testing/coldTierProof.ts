@@ -11,8 +11,8 @@ import { storedRef } from "../lib/documentContentPlan";
 
 /**
  * Synthetic fixtures of the real-path proof of the cold tier (#689, ADR 0010, C and C2): a hosted
- * preview with the bucket (`scripts/prove-cold-tier-hosted.mjs`) and the local backend of a
- * worktree with the same bucket (`scripts/prove-cold-rehydration-local.mjs`). Every function
+ * preview with the bucket (`scripts/cold-tier/prove-cold-tier-hosted.mjs`) and the local backend of a
+ * worktree with the same bucket (`scripts/cold-tier/prove-cold-rehydration-local.mjs`). Every function
  * acts only on an organization whose slug starts with `cold689-`, made by
  * `operationProof:prepare`; the hosted ones run under the marker of `requireReadProof`, the
  * archive ones only locally. Sandbox data, no fiscal validity.

@@ -8,6 +8,7 @@
       "entry": [
         // Comandos de package.json, workflows e vite.config.ts (tarefas do Vite Task).
         "scripts/*.{mjs,ts}",
+        "scripts/!(lib)/*.{mjs,ts}",
         ".github/scripts/*.mjs",
         "tests/**/*.test.ts",
         "tests/setup/*.ts",

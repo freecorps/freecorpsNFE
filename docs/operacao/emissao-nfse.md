@@ -23,7 +23,7 @@ perfil hospedado é o deployment Convex `prod:elated-possum-295`
 o transporte real nele é exceção ao perfil "transporte fiscal desativado" e
 precisa de autorização do mantenedor, registrada como a ativação de
 `WEBHOOK_MODE` em [DEPLOY](deploy-producao.md). Nada aqui toca `FISCAL_ENV`: o
-preflight de `scripts/deploy-platform.mjs` exige `disabled` e as variáveis da
+preflight de `scripts/deploy/deploy-platform.mjs` exige `disabled` e as variáveis da
 NFS-e não fazem parte dele, então as publicações automáticas da `main`
 continuam durante a janela e preservam as variáveis.
 
@@ -464,8 +464,8 @@ na `main`:
 | `.github/workflows/nfse-gate-emergency.yml`   | `nfse-production-emergency` | Desliga o gate (`kind: "emergency_disable"`), sem aprovação, só por quem está em `deploy/issuance-gate.json` |
 | `.github/workflows/nfse-production-probe.yml` | `nfse-production-read`      | Probe de mTLS e adesão ou verificação de uma nota autorizada, só leitura, pelas mesmas pessoas autorizadas   |
 
-Todos rodam `scripts/issuance-gate.mjs`, com as checagens em
-`scripts/lib/issuance-gate.mjs` (testes em `scripts/issuance-gate.test.ts`),
+Todos rodam `scripts/deploy/issuance-gate.mjs`, com as checagens em
+`scripts/lib/issuance-gate.mjs` (testes em `scripts/deploy/issuance-gate.test.ts`),
 nesta ordem, cada uma fechada antes da seguinte:
 
 1. **Plano.** O executor confere o plano antes de qualquer segredo
@@ -552,7 +552,7 @@ Também já existem na `main`, todos fechados enquanto o plano não nomear o
 deployment ([deploy-producao.md](deploy-producao.md#segundo-alvo-produção-fiscal-da-nfs-e)):
 
 - **Publicação do segundo alvo.** O workflow `deploy-issuance-production.yml`
-  roda só por dispatch, com `scripts/deploy-issuance-production.mjs`. O job
+  roda só por dispatch, com `scripts/deploy/deploy-issuance-production.mjs`. O job
   `plan`, sem segredo, falha com `PLAN_NOT_NAMED` (ou `RELEASE_NOT_PLANNED`,
   com o deployment nomeado e sem `release`) antes da CI e da publicação.
   Antes de usar a chave de deploy, o job `publish` confere o run e a aprovação

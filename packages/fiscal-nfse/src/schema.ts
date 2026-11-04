@@ -1,7 +1,7 @@
 /**
  * Validação contra os XSD oficiais da NFS-e nacional, com o mesmo mecanismo de `@freecorps/fiscal-nfe`: libxml2-wasm
  * e um catálogo offline (`schemas.json`), gerado por
- * `scripts/sync-nfse-schemas.py` a partir dos originais em `schemas/`. São dois
+ * `scripts/fiscal/sync-nfse-schemas.py` a partir dos originais em `schemas/`. São dois
  * pacotes do Portal NFS-e: o de produção (v1.01-20260209) e o da produção restrita
  * de 20/10/2026, com o leiaute da NT 009; `DpsLayout` escolhe qual. Nada é
  * baixado em runtime. O catálogo distribuído traz os originais intactos (CC BY-ND

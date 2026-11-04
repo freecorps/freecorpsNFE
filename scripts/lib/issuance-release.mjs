@@ -1,7 +1,7 @@
 // Publication of the second target: the NFS-e fiscal production deployment (#198, ADR 0004 §8),
 // with its own console and API domains on its own Worker. Pure checks; the runner is
-// `scripts/deploy-issuance-production.mjs`. The hosted sandbox keeps its own pipeline
-// (`deploy.yml`, `scripts/deploy-platform.mjs`), which never reads this plan.
+// `scripts/deploy/deploy-issuance-production.mjs`. The hosted sandbox keeps its own pipeline
+// (`deploy.yml`, `scripts/deploy/deploy-platform.mjs`), which never reads this plan.
 //
 // Out of scope, recorded on purpose: a Convex custom domain for the backend (the plan binds the
 // deployment to its `https://<name>.convex.cloud` URL, and the own domains are the Worker's, as in

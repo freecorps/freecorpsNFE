@@ -19,7 +19,7 @@ export const documentationPaths = ["*.md", "docs/**/*.md", ".agents/**/*.md", ".
 
 /** Markdown que algum teste, build ou prova lê; muda-los roda o grafo. */
 export const consumedDocumentation = [
-  // scripts/commands.test.ts confere os comandos citados.
+  // scripts/repo/commands.test.ts confere os comandos citados.
   "README.md",
   "AGENTS.md",
   "CONTRIBUTING.md",
@@ -54,8 +54,8 @@ export const documentationOnly = (file) =>
  * arquivo versionado para a cópia pública.
  */
 export const documentationTests = [
-  "scripts/public-identifiers.test.ts",
-  "scripts/public-tree.test.ts",
+  "scripts/public-copy/public-identifiers.test.ts",
+  "scripts/public-copy/public-tree.test.ts",
 ];
 
 /**

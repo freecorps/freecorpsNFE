@@ -140,7 +140,7 @@ export const backfillTotals = internalMutation({
 
 /**
  * Read-only status of the #429 migration, one page at a time, for the before and after receipts
- * (`scripts/usage-migration-status.mjs`). A page returns only sums grouped by metric, environment
+ * (`scripts/billing/usage-migration-status.mjs`). A page returns only sums grouped by metric, environment
  * (`unattributed` for a row written before #429) and state: no id, organization, key or period
  * leaves the deployment. The pages are separate transactions, not a snapshot: traffic between
  * them can move a unit from a page already read to one still ahead, so a receipt read beside

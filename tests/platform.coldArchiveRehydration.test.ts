@@ -59,7 +59,7 @@ import { extractZip } from "../scripts/lib/offsite-backup-zip.mjs";
  * Rehydration of an archived open organization under new IDs (ADR 0009, §5 and §6), end to end:
  * the administrative executor of `scripts/lib/cold-archive.mjs` against the real Convex functions
  * in convex-test, with R2 in memory and age replaced by a copy (encryption has its own tests in
- * `scripts/cold-archive.test.ts`). Only `Date` is faked, so the clock can jump past the orphan
+ * `scripts/cold-tier/cold-archive.test.ts`). Only `Date` is faked, so the clock can jump past the orphan
  * grace while the executor's streams run on real timers.
  */
 const directories: string[] = [];

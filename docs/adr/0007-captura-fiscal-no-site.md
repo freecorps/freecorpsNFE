@@ -224,7 +224,7 @@ O que já existe. O `CODEOWNERS` cobre os arquivos que abrem o transporte do
 site (`lib/siteCapture.ts`, `lib/fiscalCaptureRelease.ts`,
 `lib/environmentAccess.ts`, `captureProcessing.ts`, `captureWorker.ts`,
 `captures.ts`, `captureRelease.ts`, `certificateUse.ts`, os workflows e
-`deploy/issuance-gate.json`). `scripts/capture-release.test.ts` falha se um
+`deploy/issuance-gate.json`). `scripts/deploy/capture-release.test.ts` falha se um
 deles sair da lista ou se um caminho da lista deixar de existir. Isso mantém
 a lista correta, mas não obriga ninguém a revisar.
 
@@ -362,7 +362,7 @@ de governança da nota de 23/10/2026.
 2. **Passo 8 do ensaio, dispensado.** O repositório tem só duas contas, as
    duas em `authorizedActors`. Não há ator real fora da lista para disparar
    os workflows. A recusa `ACTOR_NOT_AUTHORIZED` fica provada pelo teste de
-   `scripts/capture-release.test.ts` e pelo
+   `scripts/deploy/capture-release.test.ts` e pelo
    ensaio local de 25/10. O
    passo volta quando uma terceira pessoa tiver escrita no repositório.
 

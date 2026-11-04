@@ -173,7 +173,7 @@ Na #83, ao preparar o lote de publicação, o mantenedor decidiu:
 - **`rights`:** a condição de saída fica como está escrita. A relação por
   arquivo e revisão dos bytes exatos de cada tarball aceito, com fontes,
   commits, autores, origem e concessão, é gerada por
-  `scripts/rights-relation.mjs` e registrada com o aceite. Autor ou coautor sem
+  `scripts/licenses/rights-relation.mjs` e registrada com o aceite. Autor ou coautor sem
   classificação faz o gerador falhar.
 - **XSDs NFS-e (CC BY-ND 3.0):** o tarball de fiscal-nfse leva os originais
   intactos, conferidos pela inspeção contra os hashes do manifesto. O BOM e as

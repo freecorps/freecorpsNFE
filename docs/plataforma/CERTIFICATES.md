@@ -117,12 +117,12 @@ referência de módulo ao objeto `env` gerado pode preservar valores anteriores
 
 ```powershell
 bun x vp test run tests/platform.certificateCrypto.test.ts tests/platform.certificates.test.ts
-bun build scripts/prove-certificate-transport.ts --target node --outfile .ci-results/77/local-tls.mjs
+bun build scripts/fiscal/prove-certificate-transport.ts --target node --outfile .ci-results/77/local-tls.mjs
 node .ci-results/77/local-tls.mjs
 node --experimental-strip-types apps/console/e2e/certificates.mjs
 ```
 
-`scripts/prove-certificates-hosted.ts`, compilado para Node, usa um dev
+`scripts/fiscal/prove-certificates-hosted.ts`, compilado para Node, usa um dev
 isolado com expiração e endpoint sintético via [túnel TCP Pinggy por SSH](https://pinggy.io/docs/usages/),
 sem terminar TLS no relay. Usa o OpenSSH instalado, sem credenciais pessoais.
 Recusa produção/validação compartilhada, exige árvore
