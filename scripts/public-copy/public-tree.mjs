@@ -701,7 +701,11 @@ export const findingAllowlist = [
     ["deploy/offsite-backup.json", 2, "Custodiantes do backup externo D04, duas pessoas distintas"],
     // Só a asserção sobre os custodiantes de deploy/offsite-backup.json; o
     // plano sintético usa nomes fictícios.
-    ["scripts/backup/offsite-backup.test.ts", 2, "Teste do plano de backup com os custodiantes reais"],
+    [
+      "scripts/backup/offsite-backup.test.ts",
+      2,
+      "Teste do plano de backup com os custodiantes reais",
+    ],
     [".github/workflows/offsite-backup.yml", 2, "Pessoa a quem o alerta do backup é atribuído"],
     // A LGPD (art. 41, §1º) exige divulgar a identidade do encarregado.
     [

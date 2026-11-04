@@ -46,7 +46,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const root = repoRoot;
   const [out] = process.argv.slice(2);
   if (!out) {
-    console.error("uso: node scripts/public-copy/public-scan.mjs <pasta de saída vazia fora do repositório>");
+    console.error(
+      "uso: node scripts/public-copy/public-scan.mjs <pasta de saída vazia fora do repositório>",
+    );
     process.exit(2);
   }
   const custody = existsSync(join(root, DEFAULT_DENYLIST));
@@ -62,11 +64,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const enforce = process.env.PUBLIC_SCAN_ENFORCE === "true";
   const plan = scanPlan({ out, custody, denylistFile, enforce });
   console.log(`public-scan: modo ${plan.mode}${enforce ? ", bloqueante" : ", só aviso"}`);
-  const run = spawnSync(process.execPath, [join(root, "scripts/public-copy/public-tree.mjs"), ...plan.args], {
-    cwd: root,
-    stdio: "inherit",
-    windowsHide: true,
-  });
+  const run = spawnSync(
+    process.execPath,
+    [join(root, "scripts/public-copy/public-tree.mjs"), ...plan.args],
+    {
+      cwd: root,
+      stdio: "inherit",
+      windowsHide: true,
+    },
+  );
   if (scratch) rmSync(scratch, { recursive: true, force: true });
   const code = stepExit(run.status, enforce);
   if (run.status === 1 && code === 0)

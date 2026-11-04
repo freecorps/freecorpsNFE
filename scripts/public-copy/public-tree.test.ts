@@ -918,7 +918,9 @@ describe("exceções", () => {
 
 describe("linha de comando", () => {
   const run = (...args: string[]) =>
-    spawnSync(process.execPath, ["scripts/public-copy/public-tree.mjs", ...args], { encoding: "utf8" });
+    spawnSync(process.execPath, ["scripts/public-copy/public-tree.mjs", ...args], {
+      encoding: "utf8",
+    });
 
   it("diz na ajuda que só roda no repositório privado", () => {
     const result = run();
@@ -1062,7 +1064,13 @@ describe("linha de comando", () => {
   it("recusa saída dentro do repositório", () => {
     const result = spawnSync(
       process.execPath,
-      ["scripts/public-copy/public-tree.mjs", "--sha", "HEAD", "--out", join("node_modules", ".public-tree")],
+      [
+        "scripts/public-copy/public-tree.mjs",
+        "--sha",
+        "HEAD",
+        "--out",
+        join("node_modules", ".public-tree"),
+      ],
       { encoding: "utf8" },
     );
     expect(result.status).toBe(2);

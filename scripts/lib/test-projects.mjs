@@ -21,7 +21,10 @@ const benchmarks = ["tests/**/*.benchmark.test.ts"];
 // `tooling` só repete a execução quando muda o que ela lê, não a cada arquivo
 // do repositório. Os dois primeiros são também os testes do modo de
 // documentação do CI (`documentationTests` em scripts/lib/ci-changes.mjs).
-const repository = ["scripts/public-copy/{public-identifiers,public-tree}.test.ts", "tests/ci.changes.test.ts"];
+const repository = [
+  "scripts/public-copy/{public-identifiers,public-tree}.test.ts",
+  "tests/ci.changes.test.ts",
+];
 const platform = [
   "tests/{platform,sdk}.*test.ts",
   "tests/{apiKeyCrypto,publicSite,referenceCorpus,webhookTransport}.test.ts",

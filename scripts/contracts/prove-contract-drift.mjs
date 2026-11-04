@@ -6,7 +6,9 @@ if (!process.versions.bun) throw new Error("Execute com Bun fixado");
 const path = "docs/v1.0/openapi.json";
 const original = readFileSync(path);
 const check = () =>
-  spawnSync(process.execPath, ["scripts/contracts/generate-contracts.mjs", "--check"], { encoding: "utf8" });
+  spawnSync(process.execPath, ["scripts/contracts/generate-contracts.mjs", "--check"], {
+    encoding: "utf8",
+  });
 assert.equal(check().status, 0, "Start with current artifacts");
 let rejected;
 try {

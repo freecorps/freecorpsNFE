@@ -460,7 +460,10 @@ describe("workflows", () => {
         .map((step) => step.run!.trim());
       const expected =
         action === "probe"
-          ? ["node scripts/deploy/issuance-gate.mjs probe", "node scripts/deploy/issuance-gate.mjs verify-issued"]
+          ? [
+              "node scripts/deploy/issuance-gate.mjs probe",
+              "node scripts/deploy/issuance-gate.mjs verify-issued",
+            ]
           : [`node scripts/deploy/issuance-gate.mjs ${action}`];
       expect(runs).toEqual(expected);
       for (const step of job.steps.filter((s) => s.run?.startsWith("node scripts/")))

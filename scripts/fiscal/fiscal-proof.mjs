@@ -54,13 +54,18 @@ const protect = (input, decrypt = false) => {
 async function validateLocal(privateDir, plan) {
   // The validator imports workspace TypeScript sources, which only Bun resolves.
   check(process.versions.bun, "VALIDATE_LOCAL_REQUIRES_BUN");
-  const build = spawnSync(process.execPath, [join(root, "scripts/build/build-fiscal-packages.mjs")], {
-    cwd: root,
-    stdio: "ignore",
-    windowsHide: true,
-  });
+  const build = spawnSync(
+    process.execPath,
+    [join(root, "scripts/build/build-fiscal-packages.mjs")],
+    {
+      cwd: root,
+      stdio: "ignore",
+      windowsHide: true,
+    },
+  );
   check(build.status === 0, "FISCAL_PACKAGES_BUILD_FAILED");
-  const { validateCertificate } = await import("../../platform/convex/lib/certificateValidation.ts");
+  const { validateCertificate } =
+    await import("../../platform/convex/lib/certificateValidation.ts");
   const pfx = Buffer.from(readPrivate(join(privateDir, plan.pfxFile), "PFX_MISSING", null));
   const password = Buffer.from(
     protect(readPrivate(join(privateDir, "password.dpapi"), "PASSWORD_MISSING"), true),

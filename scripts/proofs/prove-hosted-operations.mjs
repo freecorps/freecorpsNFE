@@ -1,5 +1,11 @@
 import { hostedProof, assertSyntheticScope } from "../lib/hosted-proof.mjs";
-import { prepareScope, importSource, seedMetadata, hash, headers } from "../lib/hosted-fixtures.mjs";
+import {
+  prepareScope,
+  importSource,
+  seedMetadata,
+  hash,
+  headers,
+} from "../lib/hosted-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
 import { readPrivateState, writePrivateState } from "../lib/private-run-state.mjs";

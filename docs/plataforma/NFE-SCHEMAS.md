@@ -6,10 +6,10 @@ novo. O pacote `@freecorps/fiscal-nfe` valida offline contra o catálogo em
 memória gerado deste manifesto; nada é baixado em tempo de execução
 ([README do pacote](../../packages/fiscal-nfe/README.md#corpus-xsds-e-provas)).
 
-| Arquivo                                                | O que guarda                                                                   |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| `packages/fiscal-nfe/schemas/manifest.json`            | URL, SHA-256 do ZIP, caminho no ZIP, SHA-256 e encoding de cada XSD fixado     |
-| `packages/fiscal-nfe/schemas/portal-survey.json`       | A lista oficial do portal no último levantamento, com a decisão de cada pacote |
+| Arquivo                                                       | O que guarda                                                                   |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `packages/fiscal-nfe/schemas/manifest.json`                   | URL, SHA-256 do ZIP, caminho no ZIP, SHA-256 e encoding de cada XSD fixado     |
+| `packages/fiscal-nfe/schemas/portal-survey.json`              | A lista oficial do portal no último levantamento, com a decisão de cada pacote |
 | `scripts/fiscal/sync-nfe-schemas.py`                          | Única entrada de XSD: baixa os pacotes revisados e recusa hash diferente       |
 | `scripts/fiscal/check-nfe-schemas.mjs` (`bun run xml:portal`) | Compara o portal com o levantamento e, com `--hashes`, os ZIPs fixados         |
 

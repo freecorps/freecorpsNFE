@@ -277,7 +277,10 @@ it("o smoke estrito só roda depois de publicar o backend e conferir o SHA", asy
     "smoke",
     "probe",
   ]);
-  const script = readFileSync(new URL("../scripts/validation/deploy-validation.mjs", import.meta.url), "utf8");
+  const script = readFileSync(
+    new URL("../scripts/validation/deploy-validation.mjs", import.meta.url),
+    "utf8",
+  );
   const at = (text: string) => script.indexOf(text);
   // The only `/health` read is inside the backend step, after `validation.mjs deploy`, and it
   // compares the SHA; the strict smoke is called only in the smoke step.
