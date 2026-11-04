@@ -165,7 +165,7 @@ export default defineConfig({
       // dist dos pacotes fiscais, importado por SDK, Convex, console e tipos.
       // A própria saída não é entrada.
       "ci:packages": {
-        command: "node scripts/build-fiscal-packages.mjs",
+        command: "node scripts/build/build-fiscal-packages.mjs",
         cache: {
           input: [
             { auto: true },
@@ -226,7 +226,7 @@ export default defineConfig({
       // que o Vite Task não rastreia como entrada.
       "ci:knip": { command: "bun run knip:check", cache: false },
       "ci:typecheck": {
-        command: "node scripts/typecheck.mjs -p tsconfig.platform.json",
+        command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
         dependsOn: ["ci:packages", "ci:sdk"],
         cache: { input: [{ auto: true }, ...generated] },
       },

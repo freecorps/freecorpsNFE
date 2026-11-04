@@ -17,5 +17,5 @@ Justifique cada entrada adicionada ou movida:
   consumidor é opcional e só é exigida quando selecionada.
 
 Preserve as fronteiras de `packages/*` verificadas por
-`scripts/check-package-boundaries.mjs`. A instalação na raiz não prova que
+`scripts/build/check-package-boundaries.mjs`. A instalação na raiz não prova que
 um pacote funciona num consumidor independente.

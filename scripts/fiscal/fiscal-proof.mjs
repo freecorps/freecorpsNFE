@@ -54,7 +54,7 @@ const protect = (input, decrypt = false) => {
 async function validateLocal(privateDir, plan) {
   // The validator imports workspace TypeScript sources, which only Bun resolves.
   check(process.versions.bun, "VALIDATE_LOCAL_REQUIRES_BUN");
-  const build = spawnSync(process.execPath, [join(root, "scripts/build-fiscal-packages.mjs")], {
+  const build = spawnSync(process.execPath, [join(root, "scripts/build/build-fiscal-packages.mjs")], {
     cwd: root,
     stdio: "ignore",
     windowsHide: true,
@@ -195,7 +195,7 @@ async function main() {
       });
       check(result.status === 0, "PUBLISH_FAILED");
     };
-    node([join(root, "scripts/build-fiscal-packages.mjs")]);
+    node([join(root, "scripts/build/build-fiscal-packages.mjs")]);
     phase = "publish-deploy";
     const buildFile = join(root, "platform/convex/buildInfo.ts");
     const originalBuild = readFileSync(buildFile);

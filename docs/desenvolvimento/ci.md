@@ -91,7 +91,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
 | Tarefa              | Comando                                                         | Depende de                         | Cache               |
 | ------------------- | --------------------------------------------------------------- | ---------------------------------- | ------------------- |
-| `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    | sim                 |
+| `ci:packages`       | `node scripts/build/build-fiscal-packages.mjs`                        |                                    | sim                 |
 | `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
 | `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
 | `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
@@ -99,7 +99,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                                |                                    | não: índice do Git  |
 | `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
-| `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:typecheck`      | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
 | `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
 | `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
@@ -254,7 +254,7 @@ de `convex/` e seus testes, e o grafo tinha as tarefas `ci:legacy-*` e
 e `publicAddress.ts`) passaram a ter só a plataforma como consumidora.
 
 As checagens de tipos usam o TypeScript 7, o compilador nativo, instalado como
-`typescript-7` (`scripts/typecheck.mjs`). O pacote `typescript` continua no 6.0
+`typescript-7` (`scripts/build/typecheck.mjs`). O pacote `typescript` continua no 6.0
 para o editor, as builds que emitem código e a prova do consumidor do SDK.
 
 O `check` dos workspaces encaminha ao mesmo verificador. Em `platform/` e
@@ -441,7 +441,7 @@ sockets ou executáveis hostis.
 ### Fronteiras dos pacotes independentes
 
 `vp run ci:boundaries` descobre os workspaces do `package.json` e exige uma
-entrada para cada um em `scripts/package-boundaries.json`. Classificação
+entrada para cada um em `scripts/build/package-boundaries.json`. Classificação
 ausente, inválida ou sem workspace correspondente reprova a execução. Os
 padrões aceitos são caminhos relativos com `*` e `**`; sintaxes não suportadas
 são recusadas. O CI executa esse check depois do grafo `validate`, que compila
@@ -508,7 +508,7 @@ são verificados, inclusive em `dist`; por isso o build precede o check no CI.
 Isso verifica dependências estáticas, não constitui sandbox contra execução
 arbitrária ou carregadores próprios construídos em runtime.
 
-`scripts/package-boundaries.test.ts` cria repositórios sintéticos isolados e
+`scripts/build/package-boundaries.test.ts` cria repositórios sintéticos isolados e
 prova recusa de import direto, reexport/tipos, alias, caminho relativo,
 dependência transitiva e pacote sem classificação. Para pontos de entrada,
 prova `node:fs` importado direto, por módulo relativo e por import de tipo a

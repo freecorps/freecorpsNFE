@@ -13,7 +13,7 @@
     "./registry": "./src/registry.ts"
   },
   "scripts": {
-    "check": "node ../../scripts/build-fiscal-packages.mjs && node ../../scripts/typecheck.mjs -p ../../tsconfig.platform.json",
+    "check": "node ../../scripts/build/build-fiscal-packages.mjs && node ../../scripts/build/typecheck.mjs -p ../../tsconfig.platform.json",
     "test": "vp test run --root ../.. packages/contracts"
   },
   "dependencies": {

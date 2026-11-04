@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vp run -w ci:docs && vp build",
-    "check": "node ../../scripts/build-fiscal-packages.mjs && node ../../scripts/typecheck.mjs -p tsconfig.json",
+    "check": "node ../../scripts/build/build-fiscal-packages.mjs && node ../../scripts/build/typecheck.mjs -p tsconfig.json",
     "test": "vp test run --root ../.. apps/console/src"
   },
   "dependencies": {

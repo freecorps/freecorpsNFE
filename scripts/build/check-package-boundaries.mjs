@@ -1,5 +1,5 @@
-import { checkPackageBoundaries } from "./lib/package-boundaries.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { checkPackageBoundaries } from "../lib/package-boundaries.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 try {
   const result = checkPackageBoundaries(repoRoot);

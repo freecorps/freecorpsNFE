@@ -39,7 +39,7 @@ Escolha o caminho:
   medida, salvo quando setup for o objeto do teste. Defina aquecimento,
   rodadas e métricas antes de comparar; alterne base e candidata quando
   viável para reduzir efeitos da ordem.
-- **TypeScript:** use `scripts/typecheck.mjs` e a configuração do projeto
+- **TypeScript:** use `scripts/build/typecheck.mjs` e a configuração do projeto
   afetado. Compare o mesmo consumidor, controlando caches e mantendo o
   compilador fixo quando sua versão não for o objeto da comparação.
   Mudanças em inferência ou aceitação de código exigem também prova de

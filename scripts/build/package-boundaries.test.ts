@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
-import { checkPackageBoundaries } from "./lib/package-boundaries.mjs";
+import { checkPackageBoundaries } from "../lib/package-boundaries.mjs";
 
 const roots: string[] = [];
 function put(root: string, path: string, value: unknown) {
@@ -28,7 +28,7 @@ function fixture() {
     "packages/helper": { kind: "pure", workspaces: [], external: [] },
     platform: { kind: "platform" },
   };
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/fiscal/package.json", { name: "@test/fiscal" });
   put(root, "packages/helper/package.json", { name: "@test/helper" });
   put(root, "platform/package.json", { name: "@test/platform" });
@@ -71,7 +71,7 @@ it.each([
 ])("keeps Node packages independent from ambient configuration: %s", (source) => {
   const { root, rules } = fixture();
   rules["packages/fiscal"]!.kind = "node";
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/fiscal/src/index.ts", source);
   expect(() => checkPackageBoundaries(root)).toThrow(/ambient runtime|alternate runtime/);
 });
@@ -159,7 +159,7 @@ it("follows transitive workspace manifests and tolerates cycles within allowed b
   });
   expect(() => checkPackageBoundaries(root)).toThrow(/fiscal.*helper.*convex/);
   rules["packages/helper"].workspaces = ["@test/fiscal"];
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/helper/package.json", {
     name: "@test/helper",
     dependencies: { "@test/fiscal": "workspace:*" },
@@ -305,7 +305,7 @@ it.each([
 ])("rejects unsupported CommonJS loader factories: %s", (source) => {
   const { root, rules } = fixture();
   rules["packages/fiscal"].kind = "node";
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/fiscal/src/index.ts", source);
   expect(() => checkPackageBoundaries(root)).toThrow(/carregadores.*module/);
 });
@@ -314,7 +314,7 @@ it("assigns nested files to the deepest workspace without treating containment a
   const { root, rules } = fixture();
   put(root, "package.json", { workspaces: ["packages/**", "platform"] });
   rules["packages/helper/nested"] = { kind: "node", workspaces: [], external: [] };
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/helper/nested/package.json", { name: "@test/nested" });
   put(root, "packages/helper/nested/src/index.ts", 'import { readFile } from "node:fs";');
   expect(checkPackageBoundaries(root)).toEqual({ workspaces: 4, independent: 3, entryPoints: 0 });
@@ -326,7 +326,7 @@ it("discovers new workspaces and rejects absent or stale classifications", () =>
   const { root, rules } = fixture();
   put(root, "packages/new/package.json", { name: "@test/new" });
   expect(() => checkPackageBoundaries(root)).toThrow(/packages\/new.*classificação/);
-  put(root, "scripts/package-boundaries.json", {
+  put(root, "scripts/build/package-boundaries.json", {
     schemaVersion: 1,
     workspaces: { ...rules, "packages/new": { kind: "node", external: [], workspaces: [] } },
   });
@@ -340,7 +340,7 @@ it("distinguishes Node connectors from pure packages and rejects a pure-to-Node 
   put(root, "packages/helper/src/index.ts", 'import { readFile } from "node:fs";');
   expect(() => checkPackageBoundaries(root)).toThrow(/Node proibido/);
   rules["packages/helper"].kind = "node";
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   expect(checkPackageBoundaries(root).independent).toBe(2);
   put(root, "packages/fiscal/src/index.ts", 'export * from "@helper/index";');
   expect(() => checkPackageBoundaries(root)).toThrow(/pure -> node/);
@@ -365,7 +365,7 @@ function pureEntryFixture() {
     external: ["parser"],
     entryPoints: { "./pure": { kind: "pure", workspaces: [], external: [] } },
   };
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/fiscal/package.json", {
     name: "@test/fiscal",
     exports: {
@@ -480,7 +480,7 @@ it("rejects an entry point absent from exports, without implementation or wider 
   rules["packages/fiscal"]!.entryPoints = {
     "./pure": { kind: "pure", workspaces: [], external: ["zod"] },
   };
-  put(root, "scripts/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
+  put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   expect(() => checkPackageBoundaries(root)).toThrow(
     /packages\/fiscal -> \.\/pure: ponto de entrada sem classificação/,
   );

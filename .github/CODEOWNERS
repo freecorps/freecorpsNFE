@@ -36,7 +36,7 @@
 /scripts/lib/validation-deploy.mjs @wolf-stievano
 /scripts/lib/validation.mjs @wolf-stievano
 /lib/worktree-local.ts @wolf-stievano
-/scripts/build-fiscal-packages.mjs @wolf-stievano
+/scripts/build/build-fiscal-packages.mjs @wolf-stievano
 /scripts/lib/platform-build.mjs @wolf-stievano
 /scripts/lib/selfhost-environment.mjs @wolf-stievano
 /scripts/lib/selfhost.mjs @wolf-stievano

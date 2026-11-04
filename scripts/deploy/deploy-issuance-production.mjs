@@ -124,7 +124,7 @@ async function publish(target) {
     }),
   );
   await phase("build", async () => {
-    run("scripts/build-fiscal-packages.mjs", []);
+    run("scripts/build/build-fiscal-packages.mjs", []);
     // The console of the fiscal production: VITE_PRODUCT_ENV=production (selfhost build).
     run("scripts/selfhost.mjs", ["build-hosted-production", hostedConfig]);
     run("node_modules/wrangler/bin/wrangler.js", ["deploy", "--config", workerConfig, "--dry-run"]);

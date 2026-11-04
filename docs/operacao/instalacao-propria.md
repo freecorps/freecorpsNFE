@@ -207,7 +207,7 @@ autenticação e chamadas REST que contornem o proxy.
 Antes de publicar na conta própria, rode o typecheck do Worker e o dry-run:
 
 ```powershell
-node scripts/typecheck.mjs -p deploy/selfhost/tsconfig.json
+node scripts/build/typecheck.mjs -p deploy/selfhost/tsconfig.json
 node node_modules/wrangler/bin/wrangler.js deploy --dry-run --config CAMINHO_WRANGLER_LOCAL
 ```
 

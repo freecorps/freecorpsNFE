@@ -136,7 +136,7 @@ const published = await (operation === "bootstrap" ? bootstrapRevision : publish
           }
         : undefined,
     build: async () => {
-      run("scripts/build-fiscal-packages.mjs", []);
+      run("scripts/build/build-fiscal-packages.mjs", []);
       run("scripts/selfhost.mjs", ["build-hosted", hostedConfig]);
       run("node_modules/wrangler/bin/wrangler.js", [
         "deploy",

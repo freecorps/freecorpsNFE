@@ -4,7 +4,7 @@
     {
       "id": "VAL04-independent-package-boundaries",
       "status": "delivered",
-      "evidence": ["scripts/package-boundaries.test.ts", "scripts/check-package-boundaries.mjs"]
+      "evidence": ["scripts/build/package-boundaries.test.ts", "scripts/build/check-package-boundaries.mjs"]
     },
     {
       "id": "VAL04-canonical-contract-generation-and-shared-corpus",
@@ -143,7 +143,7 @@
         "packages/fiscal-nfe/pipeline.test.ts",
         "tests/platform.xml.test.ts",
         "packages/contracts/index.test.ts",
-        "scripts/package-boundaries.test.ts",
+        "scripts/build/package-boundaries.test.ts",
         "scripts/fiscal/prove-nfe-runtime.mjs",
         "scripts/fiscal/prove-excluded-events.mjs",
         "tests/platform.documents.test.ts",
@@ -278,7 +278,7 @@
         "packages/fiscal-nfse/nacional.test.ts",
         "packages/fiscal-nfse/fixtures/adn/nfse-autorizada.xml",
         "packages/fiscal-nfse/fixtures/adn/rejeicao-e0714.json",
-        "scripts/package-boundaries.test.ts",
+        "scripts/build/package-boundaries.test.ts",
         "scripts/lib/nfse-consumer.mjs",
         "scripts/distribution/prove-xml-package.mjs",
         "tests/platform.issuance.test.ts",

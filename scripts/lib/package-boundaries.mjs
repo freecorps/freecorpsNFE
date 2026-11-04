@@ -153,7 +153,7 @@ export function checkPackageBoundaries(directory) {
     throw new Error(`${chain.join(" -> ")}: ${reason}`);
   };
   const manifest = json(join(root, "package.json"));
-  const policy = json(join(root, "scripts/package-boundaries.json"));
+  const policy = json(join(root, "scripts/build/package-boundaries.json"));
   if (policy.schemaVersion !== 1 || !policy.workspaces || !Array.isArray(manifest.workspaces))
     throw new Error("Configuração de workspaces/grafo inválida");
   // Unsupported glob forms must not silently omit a new workspace.
