@@ -589,6 +589,14 @@ it.each(["read", "store", "commit"] as const)(
   },
 );
 
+it("refuses an expired key with the mutation's clock; the worker's query never reads it", async () => {
+  const f = await fixture();
+  const job = await f.create();
+  const args = { exportId: job.id, sequence: 0 };
+  await f.t.run((ctx) => ctx.db.patch("apiKeys", f.scope.keyId, { expiresAt: Date.now() - 1 }));
+  expect(await f.t.query(internal.exportSource.start, { ...args, now: Date.now() })).not.toBeNull();
+  await expect(f.t.mutation(internal.exports.reservePart, args)).rejects.toThrow("INVALID_API_KEY");
+});
 it.each(["key", "grant", "member", "revoke", "expire"] as const)(
   "refuses the next batch after %s changes",
   async (change) => {
@@ -602,7 +610,7 @@ it.each(["key", "grant", "member", "revoke", "expire"] as const)(
             key: "batch-revocation",
           })
         : await f.create();
-    const args = { exportId: job.id, sequence: 0 };
+    const args = { exportId: job.id, sequence: 0, now: Date.now() };
     const start = (await f.t.query(internal.exportSource.start, args))!;
     const first = await f.t.query(internal.exportSource.read, {
       ...args,
@@ -628,7 +636,12 @@ it.each(["key", "grant", "member", "revoke", "expire"] as const)(
         }
       });
     await expect(
-      f.t.query(internal.exportSource.read, { ...args, checkpoint: first.checkpoint }),
+      // The worker passes its clock on every call, as `runExport` does.
+      f.t.query(internal.exportSource.read, {
+        ...args,
+        now: Date.now(),
+        checkpoint: first.checkpoint,
+      }),
     ).rejects.toThrow();
   },
 );
@@ -636,7 +649,7 @@ it.each(["key", "grant", "member", "revoke", "expire"] as const)(
 it("replays the exact batch and excludes versions and originals published after the request", async () => {
   const f = await fixture(),
     job = await f.create();
-  const args = { exportId: job.id, sequence: 0 };
+  const args = { exportId: job.id, sequence: 0, now: Date.now() };
   const start = (await f.t.query(internal.exportSource.start, args))!;
   const first = await f.t.query(internal.exportSource.read, {
     ...args,
@@ -689,7 +702,7 @@ it("stops on database bytes even when the public projection is small", async () 
       await ctx.db.insert("documentItems", { versionId: version._id, position, data: item.data });
     await ctx.db.patch("documentVersions", version._id, { itemCount: 500, writtenItems: 500 });
   });
-  const args = { exportId: job.id, sequence: 0 };
+  const args = { exportId: job.id, sequence: 0, now: Date.now() };
   const start = (await f.t.query(internal.exportSource.start, args))!;
   const measured = await f.t.query(async (ctx) => {
     const page = await readBatch(ctx, { ...args, checkpoint: start.checkpoint });
@@ -722,7 +735,7 @@ it("bounds empty transitions and the requested output/step budgets", async () =>
     selection: { kind: "organization" },
     key: "empty-transitions",
   });
-  const args = { exportId: job.id, sequence: 0 };
+  const args = { exportId: job.id, sequence: 0, now: Date.now() };
   const start = (await f.t.query(internal.exportSource.start, args))!;
   const tiny = await f.t.query(internal.exportSource.read, {
     ...args,
@@ -905,7 +918,7 @@ it.each(["company", "organization"] as const)(
         publishedVersionId: undefined,
       });
     });
-    const args = { exportId: job.id, sequence: 0 };
+    const args = { exportId: job.id, sequence: 0, now: Date.now() };
     const start = (await f.t.query(internal.exportSource.start, args))!;
     const page = await f.t.query(internal.exportSource.read, {
       ...args,

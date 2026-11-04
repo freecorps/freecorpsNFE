@@ -43,6 +43,7 @@ it("measures the complete export worker with published versions, items and origi
   const measuredRead = internalQuery({
     args: {
       ...stepArgs,
+      now: v.number(),
       checkpoint: v.string(),
       maxSteps: v.optional(v.number()),
       maxBytes: v.optional(v.number()),

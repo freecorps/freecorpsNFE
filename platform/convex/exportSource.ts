@@ -31,6 +31,8 @@ type Cursor = {
 export const read = internalQuery({
   args: {
     ...stepArgs,
+    // The worker's clock: a query never reads it (#45).
+    now: v.number(),
     checkpoint: v.string(),
     maxSteps: v.optional(v.number()),
     maxBytes: v.optional(v.number()),
@@ -53,6 +55,7 @@ export async function readBatch(
   args: {
     exportId: Id<"documentExports">;
     sequence: number;
+    now: number;
     checkpoint: string;
     maxSteps?: number;
     maxBytes?: number;
@@ -63,10 +66,10 @@ export async function readBatch(
     !job ||
     job.state !== "running" ||
     job.sequence !== args.sequence ||
-    job.expiresAt <= Date.now()
+    job.expiresAt <= args.now
   )
     return deny("NOT_FOUND");
-  await exportAllowed(ctx, job);
+  await exportAllowed(ctx, job, args.now);
   let state = JSON.parse(args.checkpoint) as Cursor;
   const maxSteps = args.maxSteps ?? 8;
   const maxBytes = args.maxBytes ?? 512 * 1024;
@@ -82,7 +85,7 @@ export async function readBatch(
   const needs: ContentNeed[] = [];
   let bytes = 0;
   for (let steps = 1; ; steps++) {
-    const page = await readPage(ctx, job, state);
+    const page = await readPage(ctx, job, state, args.now);
     if (page.records) {
       records.push(page.records);
       bytes += new TextEncoder().encode(page.records).byteLength + 1;
@@ -156,7 +159,12 @@ function assistedCompanies(job: Doc<"documentExports">, cursor: string | null) {
 
 // Native cursors remain readable for jobs accepted before batching was deployed.
 // Keyset pagination supports multiple dependent pages in the same transaction.
-async function readPage(ctx: QueryCtx, job: Doc<"documentExports">, state: Cursor) {
+async function readPage(
+  ctx: QueryCtx,
+  job: Doc<"documentExports">,
+  state: Cursor,
+  observedAt: number,
+) {
   const pages = state.pagination === "keyset-v1" ? stream(ctx.db, schema) : ctx.db;
   const finish = (
     records: unknown[],
@@ -296,7 +304,7 @@ async function readPage(ctx: QueryCtx, job: Doc<"documentExports">, state: Curso
       [
         {
           type: "document",
-          observedAt: Date.now(),
+          observedAt,
           id: doc._id,
           company: { id: company._id, cnpj: company.cnpj, name: company.name },
           model: doc.model,
@@ -457,7 +465,7 @@ function exportedOriginal(artifact: Doc<"documentArtifacts"> | undefined) {
   return { artifactId: artifact._id, source };
 }
 export const start = internalQuery({
-  args: stepArgs,
+  args: { ...stepArgs, now: v.number() },
   returns: v.union(v.null(), v.object({ checkpoint: v.string(), header: v.string() })),
   handler: async (ctx, args) => {
     const job = await ctx.db.get("documentExports", args.exportId);
@@ -465,10 +473,10 @@ export const start = internalQuery({
       !job ||
       job.sequence !== args.sequence ||
       job.state !== "running" ||
-      job.expiresAt <= Date.now()
+      job.expiresAt <= args.now
     )
       return null;
-    await exportAllowed(ctx, job);
+    await exportAllowed(ctx, job, args.now);
     return {
       checkpoint: job.checkpoint,
       header: JSON.stringify({

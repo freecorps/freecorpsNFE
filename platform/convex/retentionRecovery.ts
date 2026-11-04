@@ -25,6 +25,12 @@ async function alive(ctx: QueryCtx, id: Id<"_scheduled_functions"> | undefined) 
   return job?.state.kind === "pending" || job?.state.kind === "inProgress";
 }
 
+/**
+ * A deadline already past runs now. Only the `fix` branches call it, so `inspect`, a query,
+ * never reads the clock (#45).
+ */
+const notBefore = (at: number) => Math.max(Date.now(), at);
+
 type Page = { checked: number; missing: number; isDone: boolean; continueCursor: string };
 async function scan(
   ctx: MutationCtx | QueryCtx,
@@ -32,7 +38,6 @@ async function scan(
   cursor: string | null,
   fix: MutationCtx | null,
 ): Promise<Page> {
-  const now = Date.now();
   const page = { cursor, numItems: PAGE };
   let missing = 0;
   if (phase === "closures") {
@@ -67,7 +72,7 @@ async function scan(
       if (!fix) continue;
       const generation = job.generation + 1;
       const scheduledId = await fix.scheduler.runAt(
-        Math.max(now, job.nextAt),
+        notBefore(job.nextAt),
         internal.telemetryRetention.sweep,
         { organizationId: job.organizationId, generation },
       );
@@ -82,7 +87,7 @@ async function scan(
     if (lost) missing++;
     if (fix && lost) {
       if (job) await fix.db.delete("accessRetention", job._id);
-      if (next) await armAccess(fix, Math.max(now, next.expiresAt));
+      if (next) await armAccess(fix, notBefore(next.expiresAt));
     }
     return { checked: Number(Boolean(job)), missing, isDone: true, continueCursor: "" };
   }
@@ -96,7 +101,7 @@ async function scan(
       if (!fix) continue;
       if (retention) {
         const retentionJobId = await fix.scheduler.runAt(
-          Math.max(now, cache.retainUntil),
+          notBefore(cache.retainUntil),
           internal.registryStore.expire,
           { cacheId: cache._id },
         );
@@ -104,7 +109,7 @@ async function scan(
       }
       if (expiry) {
         const expiryJobId = await fix.scheduler.runAt(
-          Math.max(now, cache.expiresAt),
+          notBefore(cache.expiresAt),
           internal.registryStore.expire,
           { cacheId: cache._id },
         );
@@ -119,7 +124,7 @@ async function scan(
     missing++;
     if (!fix) continue;
     const expireJobId = await fix.scheduler.runAt(
-      Math.max(now, job.expiresAt),
+      notBefore(job.expiresAt),
       internal.exports.expire,
       { exportId: job._id },
     );

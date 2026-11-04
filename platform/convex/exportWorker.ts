@@ -57,7 +57,7 @@ export async function runExport(
   ctx: ActionCtx,
   args: { exportId: Id<"documentExports">; sequence: number },
 ): Promise<null> {
-  const start = await ctx.runQuery(internal.exportSource.start, args);
+  const start = await ctx.runQuery(internal.exportSource.start, { ...args, now: Date.now() });
   if (!start) return null;
   if (!(await ctx.runMutation(internal.exports.reservePart, args))) return null;
   let checkpoint = start.checkpoint,
@@ -67,6 +67,7 @@ export async function runExport(
   for (let n = 0; n < 40 && bytes < 4 * 1024 * 1024 && !done;) {
     const page = await ctx.runQuery(internal.exportSource.read, {
       ...args,
+      now: Date.now(),
       checkpoint,
       maxSteps: 40 - n,
       maxBytes: 4 * 1024 * 1024 - bytes,

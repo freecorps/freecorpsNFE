@@ -103,7 +103,7 @@ async function partsOf(f: F, exportId: Id<"documentExports">) {
 /** Drives the destination job like the operator's command, step by step. */
 async function generate(f: F, jobId: Id<"documentExports">) {
   for (let n = 0; n < 50; n++) {
-    const progress = await f.t.query(internal.assistedExport.progress, { jobId });
+    const progress = await f.t.query(internal.assistedExport.progress, { jobId, now: Date.now() });
     if (progress.state !== "running") return progress;
     await f.t.action(internal.exportWorker.run, { exportId: jobId, sequence: progress.sequence });
   }

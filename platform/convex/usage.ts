@@ -89,21 +89,26 @@ export const restAdmissionScope = internalQuery({
   },
 });
 
-/** Tickets share the REST budget of their issuing key/member, never a budget per token. */
+/**
+ * Tickets share the REST budget of their issuing key/member, never a budget per token. `now` is
+ * the admitting action's clock: a query never reads it (#45).
+ */
 export const downloadAdmissionScope = internalQuery({
   args: {
     tokenHash: v.string(),
     kind: v.union(v.literal("documentDownload"), v.literal("exportDownload")),
+    now: v.number(),
   },
   returns: v.union(v.null(), restBudget),
   handler: async (ctx, args) => {
     requirePlatformEnvironment();
+    const { now } = args;
     if (args.kind === "documentDownload") {
       const ticket = await ctx.db
         .query("documentDownloads")
         .withIndex("by_tokenHash", (q) => q.eq("tokenHash", args.tokenHash))
         .unique();
-      if (!ticket || ticket.expiresAt <= Date.now()) return null;
+      if (!ticket || ticket.expiresAt <= now) return null;
       const member = await ctx.db.get("memberships", ticket.membershipId);
       if (!member || member.state !== "active" || member.organizationId !== ticket.organizationId)
         return null;
@@ -113,12 +118,12 @@ export const downloadAdmissionScope = internalQuery({
       .query("exportTickets")
       .withIndex("by_tokenHash", (q) => q.eq("tokenHash", args.tokenHash))
       .unique();
-    if (!ticket || ticket.expiresAt <= Date.now()) return null;
+    if (!ticket || ticket.expiresAt <= now) return null;
     const job = await ctx.db.get("documentExports", ticket.exportId);
-    if (!job || job.expiresAt <= Date.now() || job.state !== "succeeded") return null;
+    if (!job || job.expiresAt <= now || job.state !== "succeeded") return null;
     if (job.keyId) {
       const key = await ctx.db.get("apiKeys", job.keyId);
-      if (!key || key.revokedAt !== null || key.expiresAt <= Date.now()) return null;
+      if (!key || key.revokedAt !== null || key.expiresAt <= now) return null;
     } else if (job.membershipId) {
       const member = await ctx.db.get("memberships", job.membershipId);
       if (!member || member.state !== "active") return null;
