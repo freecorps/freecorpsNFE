@@ -202,12 +202,11 @@ export function releaseAuthorization(env, sha, target, planHash) {
     (env.GITHUB_EVENT_NAME === "push" && env.RELEASE_OPERATION !== "release") ||
     !/^[a-f0-9]{40}$/.test(sha) ||
     env.GITHUB_SHA !== sha ||
-    env.CI_TESTED_SHA !== sha ||
     env.RELEASE_APPROVED_SHA !== sha ||
     env.RELEASE_PLAN_HASH !== planHash
   )
     throw new Error(
-      "Release requires the exact tested main SHA and plan; bootstrap is manual only",
+      "Release requires the exact approved main SHA and plan; bootstrap is manual only",
     );
   if (
     !env.CONVEX_DEPLOY_KEY?.startsWith(`prod:${target.deployment}|`) ||

@@ -18,8 +18,10 @@ com workflow, script e Worker próprios, e o Worker das caixas de e-mail,
 publicado à mão com `bun run deploy:mail` ([ativação](privacidade-email.md#ativação)).
 `bun run build` compila a plataforma e o console.
 
-O workflow `Deploy production` publica uma atualização a cada push na `main`,
-após validar o mesmo commit no CI. Backend e frontend recebem o mesmo SHA.
+O workflow `Deploy production` publica uma atualização a cada push na `main`.
+A validação é o `Validate` da PR; o push não roda o CI de novo
+([CI](../desenvolvimento/ci.md#produção-sem-nova-validação)). Backend e
+frontend recebem o mesmo SHA.
 A limpeza inicial não faz parte do deploy e nunca se repete em um retry.
 
 Um push que não muda nada do que é publicado termina depois do preflight,
@@ -65,11 +67,11 @@ de uma destas aprovações:
   Com um dono só, que também é o autor dos commits, este caminho não passa;
   fica para quando houver outro dono.
 
-O job `Owner review and validation reuse` do `deploy.yml` antecipa esse gate
-(`scripts/owner-review-check.mjs`, #51). Ele roda antes do `validate`, sem
-environment nem secrets, só com o `GITHUB_TOKEN` de leitura, e o `validate`
-e o `Publish production` dependem dele: um commit sem aprovação reprova a
-publicação em segundos e não gasta validação. O
+O job `Owner review` do `deploy.yml` antecipa esse gate
+(`scripts/owner-review-check.mjs`, #51). Ele roda sem environment nem
+secrets, só com o `GITHUB_TOKEN` de leitura, e o `Publish production`
+depende dele: um commit sem aprovação reprova a publicação em segundos,
+antes do environment de produção. O
 preflight do publicador continua chamando o mesmo gate
 (`scripts/lib/owner-review-gate.mjs`), contra a revisão servida no momento da
 publicação; o job antecipado não substitui essa conferência.
@@ -200,12 +202,9 @@ marcador ([ISSUANCE.md](../plataforma/ISSUANCE.md#deployment-de-produção-fisca
 
 ## Atualizações automáticas
 
-O merge de uma PR na `main` dispara o workflow. O job `validate` executa o CI
-sem credenciais de produção; somente após sua aprovação o job `publish`
-publica o checkout exato. Quando a PR entrou atualizada e o `Validate` dela já
-aprovou a mesma árvore contra a mesma `main` anterior, o `validate` não roda
-de novo e o `publish` usa essa aprovação
-([Validação reaproveitada](../desenvolvimento/ci.md#validação-reaproveitada)). O plano é `deploy/platform-release.json` daquele
+O merge de uma PR na `main` dispara o workflow. Depois da revisão do dono, o
+job `publish` publica o checkout exato do push, sem rodar o CI de novo: a
+validação foi o `Validate` da PR. O plano é `deploy/platform-release.json` daquele
 commit, com SHA-256 calculado no runner e recibos conferidos pelo publicador.
 Cada publicação inclui todos os merges que pertencem ao commit publicado.
 Não é preciso publicar PRs antigas uma por uma.
@@ -230,7 +229,7 @@ repositório arquivado, e o gate da pausa do app consumidor passou a se chamar
 Push aceita somente a operação `release` (`releasePreconditions`): exige a
 instalação concluída, com os três recibos íntegros, e a sonda persistente;
 preserva dados e não cria contas. A cada atualização valem destino,
-credenciais, SHA testado e aprovado, hash do plano, ambiente do backend,
+credenciais, SHA aprovado, hash do plano, ambiente do backend,
 concorrência, sonda antes e depois e smoke. `bootstrap`
 (`bootstrapPreconditions`) exige os dois recibos do corte, recusa a
 instalação concluída, com `authBootstrap`, e continua exclusivamente manual

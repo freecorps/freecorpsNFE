@@ -124,7 +124,7 @@ it("publica a API REST no mesmo Worker, em host próprio e com o IP assinado", (
   expect(worker.secrets.required).toEqual(["AUTH_PROXY_SECRET"]);
 });
 it.each(["push", "workflow_dispatch"])(
-  "exige SHA testado, plano e credencial do alvo aprovado em %s",
+  "exige SHA aprovado, plano e credencial do alvo aprovado em %s",
   (event) => {
     const target = releaseTarget(plan),
       sha = "a".repeat(40),
@@ -136,7 +136,6 @@ it.each(["push", "workflow_dispatch"])(
       GITHUB_EVENT_NAME: event,
       RELEASE_OPERATION: "release",
       GITHUB_SHA: sha,
-      CI_TESTED_SHA: sha,
       RELEASE_APPROVED_SHA: sha,
       RELEASE_PLAN_HASH: hash,
       CONVEX_DEPLOY_KEY: `prod:${target.deployment}|synthetic`,
@@ -150,7 +149,7 @@ it.each(["push", "workflow_dispatch"])(
       { GITHUB_REPOSITORY: "other/freecorpsNFE" },
       { GITHUB_REF: "refs/heads/feature" },
       { GITHUB_SHA: "c".repeat(40) },
-      { CI_TESTED_SHA: "c".repeat(40) },
+      { RELEASE_APPROVED_SHA: "c".repeat(40) },
       { RELEASE_OPERATION: "" },
       { RELEASE_APPROVED_SHA: "" },
       { RELEASE_PLAN_HASH: "" },
@@ -394,47 +393,30 @@ const expression = (value: unknown) =>
   String(value)
     .replace(/^\$\{\{([\s\S]*)\}\}$/, "$1")
     .replace(/\s+/g, "");
-it("o workflow publica atualizações da main após CI e conserva bootstrap manual", () => {
+it("o workflow publica as atualizações da main sem repetir a CI e conserva bootstrap manual", () => {
   const text = readFileSync(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
   const workflow = parse(text) as { on: Record<string, unknown>; jobs: Record<string, Job> };
   expect(Object.keys(workflow.on).sort()).toEqual(["push", "workflow_dispatch"]);
   expect(workflow.on.push).toEqual({ branches: ["main"] });
-  expect(workflow.jobs.validate!.uses).toBe("./.github/workflows/ci.yml");
+  // A CI da PR é a validação: o deploy não chama o ci.yml nem lê um SHA testado.
+  expect(Object.keys(workflow.jobs)).toEqual(["owner_review", "publish"]);
+  expect(text).not.toContain("ci.yml");
+  expect(text).not.toContain("tested_sha");
   const publishers = Object.values(workflow.jobs).filter((job) =>
     job.steps?.some((step) => step.run?.includes("deploy-platform.mjs")),
   );
   expect(publishers).toHaveLength(1);
   const publish = publishers[0]!;
-  expect([publish.needs].flat()).toEqual(["preflight", "validate"]);
-  // A revisão antecipada do dono (#51) roda antes da validação, sem segredo de produção, e só no
-  // push procura a validação da PR com a mesma árvore; achada, o `validate` não roda.
-  const preflight = workflow.jobs.preflight!;
-  const validate = workflow.jobs.validate!;
-  const runs = (preflight.steps ?? []).map((step) => step.run?.trim()).filter(Boolean);
-  expect(runs).toEqual([
-    "node scripts/owner-review-check.mjs",
-    "node scripts/validation-reuse.mjs",
-  ]);
-  const reuse = preflight.steps!.at(-1)! as Step & { id?: string; if?: string };
-  expect(reuse.id).toBe("reuse");
-  expect(expression(reuse.if)).toBe("github.event_name=='push'");
-  expect(preflight.outputs).toEqual({ tested_sha: "${{ steps.reuse.outputs.tested_sha }}" });
-  expect(preflight.permissions).toEqual({
-    contents: "read",
-    "pull-requests": "read",
-    actions: "read",
-  });
-  expect(preflight.environment).toBeUndefined();
-  expect(JSON.stringify(preflight)).not.toContain("secrets.");
-  expect([validate.needs].flat()).toEqual(["preflight"]);
-  expect(expression(validate.if)).toBe(
-    `${expression(preflight.if)}&&needs.preflight.outputs.tested_sha==''`,
+  expect([publish.needs].flat()).toEqual(["owner_review"]);
+  // A revisão antecipada do dono (#51) roda antes do environment de produção, sem segredo.
+  const review = workflow.jobs.owner_review!;
+  expect(expression(review.if)).toBe(
+    "github.ref=='refs/heads/main'&&(github.event_name=='push'||inputs.approved_sha==github.sha)",
   );
-  // Com o `validate` pulado não há success() implícito: a condição nomeia o que aceita.
-  const tested = "(needs.preflight.outputs.tested_sha||needs.validate.outputs.tested_sha)";
-  expect(expression(publish.if)).toBe(
-    `!cancelled()&&needs.preflight.result=='success'&&${tested}==github.sha`,
-  );
+  expect(review.environment).toBeUndefined();
+  expect(review.steps!.at(-1)!.run?.trim()).toBe("node scripts/owner-review-check.mjs");
+  expect(JSON.stringify(review)).not.toContain("secrets.");
+  expect(publish.if).toBeUndefined();
   expect(publish.concurrency).toEqual({ group: "production", "cancel-in-progress": false });
   const steps = publish.steps!;
   const checkout = steps.findIndex((step) => step.uses?.startsWith("actions/checkout@"));
@@ -443,12 +425,11 @@ it("o workflow publica atualizações da main após CI e conserva bootstrap manu
   );
   expect(checkout).toBeGreaterThanOrEqual(0);
   expect(checkout).toBeLessThan(release);
-  expect(expression(steps[checkout]!.with?.ref)).toBe(tested.slice(1, -1));
+  expect(expression(steps[checkout]!.with?.ref)).toBe("github.sha");
   const env = Object.fromEntries(
     Object.entries(steps[release]!.env ?? {}).map(([key, value]) => [key, expression(value)]),
   );
   expect(env).toMatchObject({
-    CI_TESTED_SHA: tested.slice(1, -1),
     RELEASE_OPERATION: "github.event_name=='push'&&'release'||inputs.operation",
     RELEASE_APPROVED_SHA: "github.event_name=='push'&&github.sha||inputs.approved_sha",
     RELEASE_PLAN_HASH:
@@ -490,7 +471,7 @@ it("o publicador recusa o bootstrap da instalação concluída antes de ler cred
   const release = publish("release");
   expect(release.status).not.toBe(0);
   expect(release.stderr).not.toContain("Bootstrap requires");
-  expect(release.stderr).toContain("Release requires the exact tested main SHA and plan");
+  expect(release.stderr).toContain("Release requires the exact approved main SHA and plan");
 });
 // Composição das bibliotecas, não do publicador: o gate como preflight do bootstrap para antes do
 // build. Que o publicador chame o gate no bootstrap é o teste de ownerReviewRequired abaixo.

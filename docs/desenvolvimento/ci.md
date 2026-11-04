@@ -11,10 +11,9 @@ histórico das entregas no CI.
 ## Workflows e gatilhos
 
 `.github/workflows/ci.yml` executa em PRs, incluindo Draft, por
-`workflow_dispatch` e como workflow reutilizável. `deploy.yml` o chama em
-pushes para a `main`, salvo quando reaproveita a validação da PR
-([Validação reaproveitada](#validação-reaproveitada)), e
-`deploy-validation.yml`, quando disparado manualmente na `main`. Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
+`workflow_dispatch` e como workflow reutilizável. `deploy-validation.yml` e
+`deploy-issuance-production.yml` o chamam, quando disparados manualmente na
+`main`; `deploy.yml` não o chama ([Produção sem nova validação](#produção-sem-nova-validação)). Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
 herdados. O token do job tem apenas `contents: read`; checkout não persiste
 credenciais. Em PR, um push novo cancela a execução anterior do mesmo PR.
 
@@ -30,11 +29,10 @@ the same commit` recusa SHA diferente e produz `publication_sha` apenas para
 `workflow_dispatch` de `deploy-validation.yml` na `main` do repositório
 esperado. Até a #51 esse passo era o job `Validation publication gate`; como
 só compara variáveis do ambiente, virou o último check de `Validate` e poupa
-a cada execução o início de outro runner, o checkout e o setup. PR, fork, outra branch e o push da `main` chamado por `deploy.yml`
+a cada execução o início de outro runner, o checkout e o setup. PR, fork, outra branch e os outros chamadores
 não recebem esse output de validação. Em `workflow_call`, evento, ref e
 `GITHUB_WORKFLOW_REF` são os do workflow chamador. Falha em qualquer step
-impede o gate; não há `continue-on-error`. A publicação de produção em
-`deploy.yml` usa `tested_sha` e exige igualdade com `github.sha`. Output não é
+impede o gate; não há `continue-on-error`. Output não é
 credencial nem autoriza publicação sozinho: o chamador deve depender do
 sucesso do workflow e publicar esse SHA.
 
@@ -46,41 +44,22 @@ segue [deploy-producao.md](../operacao/deploy-producao.md). `ci.yml` não tem
 trigger de push. Reexecuções manuais passam pelos mesmos checks e pela
 conferência de elegibilidade.
 
-### Validação reaproveitada
+### Produção sem nova validação
+
+O `Validate` da PR é a validação da plataforma. O merge na `main` publica pelo
+`deploy.yml` sem rodar o CI de novo, como os outros projetos da Freecorps:
+`Owner review` e, em seguida, `Publish production`, que compila o commit e
+roda o smoke. Até 03/11/2026 o `deploy.yml` repetia o `Validate` no commit da
+`main` e o publicador exigia `CI_TESTED_SHA` igual a ele; em outubro de 2026
+essa repetição foi cerca de um terço do gasto de CI do projeto, e das oito vezes
+em que reprovou, sete foram testes instáveis.
 
 O ruleset da `main` não exige PR atualizada e aceita merge, squash e rebase.
 O `Validate` da PR testa o merge sintético com a `main` do momento em que
-rodou; se outra PR entrou depois, a combinação publicada nunca foi testada.
-Por isso o push da `main` valida o commit de novo, mas só quando é preciso:
-quando a PR entrou atualizada, o commit da `main` tem a árvore que a PR já
-validou, e repetir a validação não testa nada novo. Em outubro de 2026 essa
-repetição foi cerca de um terço do gasto de CI do projeto.
-
-O job `Owner review and validation reuse` do `deploy.yml`, depois da revisão
-do dono, roda `scripts/validation-reuse.mjs`
-(`scripts/lib/validation-reuse.mjs`). Ele só devolve `tested_sha` quando tudo
-bate:
-
-- o evento é push na `main` do repositório do projeto, com `before` conhecido;
-- o commit é o `merge_commit_sha` de uma PR mesclada na `main`;
-- um run de `ci.yml` por `pull_request`, no head final da PR, terminou com
-  sucesso;
-- o `revision.json` do artefato `ci-<run>-<tentativa>` desse run registra o
-  merge sintético da PR com `baseSha` igual ao `before` do push;
-- esse merge, buscado por SHA, tem pais `[before, head]` e a mesma árvore do
-  commit da `main`.
-
-Como a árvore é a mesma, o `ci.yml`, os scripts e os testes que o run da PR
-executou são os do commit publicado; o `CONTRACT_BASE` também, porque a base
-é o `before`. Nesse caso o `validate` do `deploy.yml` é pulado e
-`Publish production` recebe o SHA da `main` como `CI_TESTED_SHA`. Em qualquer
-outro, inclusive erro da API, artefato expirado (14 dias) ou merge sintético
-que não pode mais ser buscado, o passo não grava nada e o `validate` roda como
-antes. O passo nunca reprova o deploy. O dispatch manual do `deploy.yml`
-sempre valida.
-
-O log do passo diz qual run foi reaproveitado ou por que não houve
-reaproveitamento.
+rodou: se outra PR entrou depois, a combinação publicada não passou pelo CI
+inteiro. A compilação e o smoke do publicador continuam valendo para ela. A
+publicação de validação e a da produção fiscal da emissão, ambas manuais,
+continuam validando o SHA que publicam.
 
 ## O grafo `validate`
 
@@ -812,17 +791,17 @@ O contrato da plataforma está em [API-REFERENCE.md](../v1.0/API-REFERENCE.md) e
 
 ### Onde cada job roda
 
-| Workflow            | Job                                 | Runner                             |
-| ------------------- | ----------------------------------- | ---------------------------------- |
-| `CI`                | `Validate`                          | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Deploy validation` | `Publish validation`                | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Deploy production` | `Owner review and validation reuse` | `blacksmith-2vcpu-ubuntu-2404-arm` |
-| `Deploy production` | `Publish production`                | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Encrypted snapshot`                | `blacksmith-2vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Check latest copy`                 | `blacksmith-2vcpu-ubuntu-2404`     |
+| Workflow            | Job                  | Runner                             |
+| ------------------- | -------------------- | ---------------------------------- |
+| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Deploy production` | `Owner review`       | `blacksmith-2vcpu-ubuntu-2404-arm` |
+| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404`     |
+| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404`     |
+| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404`     |
 
-`Deploy validation` e `Deploy production` chamam o `CI` como workflow
-reutilizável; os dois jobs de validação rodam na Blacksmith também nesses
+`Deploy validation` chama o `CI` como workflow
+reutilizável; o job de validação roda na Blacksmith também nesses
 casos. `Validate` não recebe segredos. Por decisão do mantenedor em 21/10/2026,
 produção e snapshot também usam Blacksmith, mantendo os environments
 `production` e `offsite-backup`, os secrets e as regras de concorrência.
@@ -856,9 +835,8 @@ O x64 de 4 vCPUs termina em menos de um minuto, mas com 6 a 12 s de folga:
 passando de 60 s, a execução custa 4. O de 2 vCPUs custa 2 com cerca de 40 s
 de folga. O ARM é mais lento e mais caro para este job. O gate, que só compara
 SHAs, durava cerca de 20 s e custava 0,625 no ARM como job próprio; desde a
-#51 é um passo de `Validate`. `Owner review and validation reuse` só lê o Git
-e a API do GitHub e custa 0,625 no ARM a cada publicação de produção; quando
-reaproveita a validação da PR, poupa os 2 do `Validate` do push.
+#51 é um passo de `Validate`. `Owner review` só lê o Git e a API do GitHub
+e custa 0,625 no ARM a cada push na `main`.
 
 Estimativa histórica, anterior à migração de produção e snapshot, com 150
 execuções de `CI` em PRs, 25 publicações de validação e 5 de produção:
