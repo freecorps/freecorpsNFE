@@ -43,7 +43,7 @@ lista cada script com a aplicação e o ambiente que ele atinge.
 
 A visão geral está em [ARQUITETURA.md](ARQUITETURA.md); responsabilidades e
 fronteiras do backend, em [arquitetura-backend.md](plataforma/arquitetura-backend.md);
-o mapa de pastas, em [AGENTS.md](../AGENTS.md#como-funciona).
+o mapa de pastas, em [ARQUITETURA.md](ARQUITETURA.md#mapa-do-repositório).
 
 | Domínio                     | Contrato                                                                                                         | Código principal                                                          |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |

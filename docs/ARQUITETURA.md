@@ -87,6 +87,30 @@ de qualquer reenvio. As mutations importam só o subcaminho
 no SDK. Os [contratos e limites do SDK](v1.0/SDK.md) descrevem o versionamento
 externo.
 
+## Mapa do repositório
+
+- `apps/console/src/`: console, rotas em `routes.tsx`, inicialização em
+  `main.tsx` e landing em `site/`; `apps/console/worker.ts`, `auth-proxy.ts` e
+  `api-proxy.ts` são o Worker e os proxies.
+- `apps/docs/`: documentação pública em `/docs` (Fumadocs, MDX em
+  `content/docs/`), copiada para o build do console; regras em
+  [PUBLIC.md](plataforma/PUBLIC.md).
+- `platform/convex/schema.ts` e `platform/convex/*.ts`: dados, funções, REST
+  (`*Rest.ts`) e workers; `platform/convex/lib/`: validação, autorização,
+  estados e políticas compartilhadas.
+- `packages/`: contratos REST, núcleo fiscal, NF-e e SDK.
+- `*.test.ts` ao lado de cada módulo; `tests/` guarda só os transversais (CI,
+  worktree, validação, corpus), os helpers e as fixtures, e
+  `apps/console/e2e/` as jornadas no navegador.
+- `scripts/<domínio>/`: scripts por domínio, com o teste ao lado; helpers
+  compartilhados em `scripts/lib/`, a raiz do repositório por
+  `scripts/lib/repo-root.mjs`
+  ([organização](desenvolvimento/ci.md#organização-de-scripts)) e o ciclo de
+  vida dos worktrees em `scripts/lib/worktree/`.
+- `.github/workflows/`: validação e publicação.
+- `.agents/skills/`: skills de outro projeto do mantenedor e adaptações de Matt
+  Pocock, com o catálogo em [.agents/README.md](../.agents/README.md).
+
 ## Decisões em aberto e expansões
 
 Estas regras valem até uma decisão explícita mudá-las. Uma expansão começa
