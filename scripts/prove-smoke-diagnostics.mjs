@@ -15,6 +15,7 @@ import { join, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { smokeValidation } from "./lib/validation-smoke.mjs";
 import { publishRevision } from "./lib/validation-deploy.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 const sha = "a".repeat(40);
 const otherSha = "b".repeat(40);
@@ -387,6 +388,7 @@ export function proveSmokeSummary(receipt) {
     "scripts/lib/repository.mjs",
     "scripts/lib/subprocess-environment.mjs",
     "scripts/lib/terms-notice.mjs",
+    "scripts/lib/repo-root.mjs",
     "platform/account-policy.mjs",
     "platform/validation.json",
   ];
@@ -399,7 +401,7 @@ export function proveSmokeSummary(receipt) {
   try {
     for (const file of files) {
       mkdirSync(dirname(join(directory, file)), { recursive: true });
-      copyFileSync(new URL("../" + file, import.meta.url), join(directory, file));
+      copyFileSync(new URL(file, repoUrl), join(directory, file));
     }
     mkdirSync(dirname(journal));
     writeFileSync(journal, JSON.stringify(receipt));

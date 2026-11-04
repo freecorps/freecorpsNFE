@@ -15,13 +15,14 @@ import {
   siteTarget,
 } from "./lib/capture-release.mjs";
 import { deployKeyFor, gateConfig, verifiedRun } from "./lib/issuance-gate.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 /**
  * Freecorps workflows over the fiscal capture of a company on the hosted site (ADR 0007, amendment
  * of 22/10/2026): emergency withdraw and unblock, by an authorized person, without approval. The
  * company releases it in the console. Everything here is synthetic.
  */
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const read = (path: string) => readFileSync(new URL(`${path}`, repoUrl), "utf8");
 const config = { version: 1, authorizedActors: ["ana-freecorps", "bruno"] };
 const code = (run: () => unknown) => {
   try {
@@ -473,7 +474,7 @@ describe("workflow", () => {
     expect(() => read(".github/workflows/capture-release.yml")).toThrow();
   });
   it("nenhum outro workflow recebe a chave do site para a liberação nem chama captureRelease", () => {
-    const directory = new URL("../.github/workflows/", import.meta.url);
+    const directory = new URL(".github/workflows/", repoUrl);
     const own = CAPTURE_WORKFLOW.split("/").at(-1);
     for (const name of readdirSync(directory).filter((n) => /\.ya?ml$/.test(n))) {
       if (name === own) continue;

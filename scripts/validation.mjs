@@ -13,14 +13,15 @@ import {
   validationChildEnv,
   verifyRemoteEnvironment,
 } from "./lib/validation.mjs";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 function runConvex(context, args) {
   const temporary = mkdtempSync(join(tmpdir(), "fnfe-validation-"));
   const envFile = join(temporary, "deployment.env");
   try {
     writeFileSync(envFile, `CONVEX_DEPLOY_KEY=${context.key}\n`, { mode: 0o600 });
-    const cli = fileURLToPath(new URL("../node_modules/convex/bin/main.js", import.meta.url));
-    const cwd = fileURLToPath(new URL("../platform", import.meta.url));
+    const cli = fileURLToPath(new URL("node_modules/convex/bin/main.js", repoUrl));
+    const cwd = fileURLToPath(new URL("platform", repoUrl));
     const result = spawnSync(process.execPath, [cli, ...args, "--env-file", envFile], {
       cwd,
       env: validationChildEnv(process.env, context.key),
@@ -58,10 +59,7 @@ async function main() {
   const context = validateTarget(process.env);
   const backupDirectory =
     command === "backup"
-      ? validateBackupDirectory(
-          process.env.VALIDATION_BACKUP_DIR,
-          fileURLToPath(new URL("..", import.meta.url)),
-        )
+      ? validateBackupDirectory(process.env.VALIDATION_BACKUP_DIR, repoRoot)
       : undefined;
   const writes = ["deploy", "probe-create", "verify-persistence"].includes(command);
   if (writes) requireIntegrationWriter(process.env, flags.includes("--bootstrap"));

@@ -2,8 +2,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { signWebhook } from "../packages/contracts/src/webhooks.ts";
 import { createWebhookReceiver } from "../examples/webhook-receiver.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 const vectors = JSON.parse(
-  readFileSync(new URL("../packages/contracts/fixtures/webhooks.json", import.meta.url), "utf8"),
+  readFileSync(new URL("packages/contracts/fixtures/webhooks.json", repoUrl), "utf8"),
 );
 mkdirSync(".ci-results/73", { recursive: true });
 const database = `.ci-results/73/contract-${crypto.randomUUID()}.sqlite`;

@@ -13,6 +13,7 @@ import {
   SEALED_RECEIPT,
   writeSealedReceipt,
 } from "./lib/sealed-receipt.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 const directories: string[] = [];
 const scratch = () => {
@@ -179,7 +180,7 @@ type Step = {
 };
 type Workflow = { env?: Record<string, string>; jobs: Record<string, { steps: Step[] }> };
 const workflow = (file: string) =>
-  parse(readFileSync(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8")) as Workflow;
+  parse(readFileSync(new URL(`.github/workflows/${file}`, repoUrl), "utf8")) as Workflow;
 
 describe("workflows de operação no repositório público", () => {
   const backup = workflow("offsite-backup.yml").env!;

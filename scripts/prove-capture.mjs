@@ -3,11 +3,11 @@
 // tudo local e sintético. O recibo histórico está em docs/v1.0/evidence/78.
 //
 //   bun scripts/prove-capture.mjs [--base <ref>] [--output <dir>]
-import { fileURLToPath } from "node:url";
 import { acceptanceSteps, proofArguments, runProof } from "./lib/proof-runner.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (!process.versions.bun) throw new Error("Use Bun para a prova");
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const options = proofArguments(process.argv.slice(2), { output: ".ci-results/78" });
 const bundle = `${options.output}/local-tls.mjs`;
 const receipt = runProof({

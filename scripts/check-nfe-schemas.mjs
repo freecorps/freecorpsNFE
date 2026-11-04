@@ -11,8 +11,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { compareSurvey, describeFinding, parseOfficialList } from "./lib/nfe-portal.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
-const root = new URL("../packages/fiscal-nfe/schemas/", import.meta.url);
+const root = new URL("packages/fiscal-nfe/schemas/", repoUrl);
 const survey = JSON.parse(readFileSync(new URL("portal-survey.json", root), "utf8"));
 const manifest = JSON.parse(readFileSync(new URL("manifest.json", root), "utf8"));
 const args = process.argv.slice(2);

@@ -6,8 +6,6 @@
 //   node scripts/usage-migration-status.mjs --deployment <nome> [--out antes.json]
 //   node scripts/usage-migration-status.mjs --deployment <nome> --compare antes.json
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
 import {
   collectStatus,
   compareReceipts,
@@ -17,6 +15,7 @@ import {
   readReceipt,
   receipt,
 } from "./lib/usage-migration-status.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 /** O conteúdo do recibo anterior; nem um erro de leitura repete o que o arquivo tem. */
 function readCompare(path) {
@@ -27,7 +26,7 @@ function readCompare(path) {
   }
 }
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = repoRoot;
 
 try {
   const options = parseArgs(process.argv.slice(2));

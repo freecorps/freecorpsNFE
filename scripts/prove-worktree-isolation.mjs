@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { currentLocalSiteUrl, readEnvFile } from "./lib/worktree/env-file.mjs";
 import { assertLinkedWorktree } from "./lib/worktree/state.mjs";
 import { assertPrivateDirectories } from "./lib/worktree/operation.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 if (!process.argv[2] || process.argv[3] !== "--stop-second")
   throw new Error(
     "Usage: node --experimental-strip-types scripts/prove-worktree-isolation.mjs <second-worktree> --stop-second",

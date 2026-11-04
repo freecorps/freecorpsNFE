@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { readFile, writeFile, access } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { loadReadFixtures, readProof } from "./lib/document-read-proof.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(
@@ -17,7 +17,7 @@ const node = process.argv[3] === "--read-node";
 const reading = process.argv[3] === "--read" || node;
 assert.ok(process.argv.length === 3 || (reading && process.argv.length === 5), "Use --help");
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 // The existing worktree tool consumes the private descriptor; never print its contents.
 const config = readLocalConfig(worktreePaths(root));
 assert.ok(config, "Execute worktree:setup e dev antes do smoke");

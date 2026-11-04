@@ -13,7 +13,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { webcrypto } from "node:crypto";
 import { convexToJson, jsonToConvex } from "convex/values";
 import { releaseTarget } from "./lib/platform-release.mjs";
@@ -67,8 +66,9 @@ import {
   coldDocumentsManifest,
   verifyColdDocuments,
 } from "./lib/incremental-backup.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, ".ci-results/offsite-backup");
 const [mode, ...rest] = process.argv.slice(2);
 const options = {},

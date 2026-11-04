@@ -4,6 +4,7 @@ import { isPageRequest, serveAsset } from "../apps/console/asset-fallback.ts";
 import { checkConsoleWorker } from "./lib/console.mjs";
 import { issuanceReleaseWorker } from "./lib/issuance-release.mjs";
 import { releaseWorker } from "./lib/platform-release.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 // The asset layer with `not_found_handling: "none"`: a listed file or 404 with
 // no body. Each answer carries the header of the address asked, as `_headers`.
@@ -123,10 +124,10 @@ describe("configuração dos assets publicados", () => {
   };
   it("deixa o fallback ao Worker em todos os Workers do console", () => {
     const validation = JSON.parse(
-      readFileSync(new URL("../apps/console/wrangler.json", import.meta.url), "utf8"),
+      readFileSync(new URL("apps/console/wrangler.json", repoUrl), "utf8"),
     );
     const example = JSON.parse(
-      readFileSync(new URL("../deploy/selfhost/wrangler.example.json", import.meta.url), "utf8"),
+      readFileSync(new URL("deploy/selfhost/wrangler.example.json", repoUrl), "utf8"),
     );
     for (const config of [
       releaseWorker(target, root),
@@ -146,7 +147,7 @@ describe("configuração dos assets publicados", () => {
   });
 
   it("guarda por um ano só os nomes com hash do console e da documentação", () => {
-    const rules = readFileSync(new URL("../apps/console/public/_headers", import.meta.url), "utf8")
+    const rules = readFileSync(new URL("apps/console/public/_headers", repoUrl), "utf8")
       .split(/\n(?=\S)/)
       .filter((block) => !block.startsWith("#"));
     const cache = (path: string) =>

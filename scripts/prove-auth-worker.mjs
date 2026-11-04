@@ -4,15 +4,15 @@ import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { verifyAuthRequest } from "../platform/auth-transport.ts";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 // Use the actual workerd and bundler pinned by Wrangler, with no network services.
 const require = createRequire(import.meta.url);
 const wranglerRequire = createRequire(require.resolve("wrangler/package.json"));
 const { Miniflare, Response, convertV4MiniflareOptions } = wranglerRequire("miniflare");
 const { build } = wranglerRequire("esbuild");
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const temporary = mkdtempSync(join(tmpdir(), "fnfe-auth-worker-"));
 const secret = "a".repeat(64);
 const origin = "https://freecorpsnfe-validation.freecorps.workers.dev";

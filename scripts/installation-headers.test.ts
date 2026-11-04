@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
 import { installationHeaders, verifyInstallationPolicy } from "./lib/installation-headers.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
-const source = readFileSync(new URL("../apps/console/public/_headers", import.meta.url), "utf8");
+const source = readFileSync(new URL("apps/console/public/_headers", repoUrl), "utf8");
 const target = {
   cloud: "https://elated-possum-295.convex.cloud",
   site: "https://elated-possum-295.convex.site",

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import { scanPlan, stepExit } from "./public-scan.mjs";
 import { GITLEAKS_VERSION } from "./public-tree.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 describe("varredura pública no CI", () => {
   it("monta a cópia no arquivo privado e varre o checkout no público", () => {
@@ -41,7 +42,7 @@ describe("varredura pública no CI", () => {
       with?: Record<string, string>;
     };
     const workflow = parse(
-      readFileSync(new URL("../.github/workflows/public-scan.yml", import.meta.url), "utf8"),
+      readFileSync(new URL(".github/workflows/public-scan.yml", repoUrl), "utf8"),
     ) as {
       on: Record<string, unknown>;
       permissions: Record<string, string>;

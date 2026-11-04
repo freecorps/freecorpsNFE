@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 /**
  * The versioned plan of the NFS-e fiscal production deployment (ADR 0004 §8, #198). It can name
@@ -7,10 +8,7 @@ import { expect, it } from "vite-plus/test";
  * validation target: their data and their customers are not fiscal production.
  */
 const read = (path: string) =>
-  JSON.parse(readFileSync(new URL(`../${path}`, import.meta.url), "utf8")) as Record<
-    string,
-    unknown
-  >;
+  JSON.parse(readFileSync(new URL(`${path}`, repoUrl), "utf8")) as Record<string, unknown>;
 const plan = read("deploy/issuance-production.json") as {
   version: unknown;
   deployment: string | null;

@@ -7,7 +7,6 @@ import {
   existsSync,
   rmSync,
 } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import { validateTarget, verifyRemoteEnvironment, backendRequest } from "./lib/validation.mjs";
 import { checkConsoleWorker, consoleEnvironment } from "./lib/console.mjs";
@@ -24,8 +23,9 @@ import { buildPlatformPackages } from "./lib/platform-build.mjs";
 import { projectRepository } from "./lib/repository.mjs";
 import { publicationEnvironment } from "./lib/subprocess-environment.mjs";
 import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, ".validation-results");
 const journal = join(output, "deployment.json");
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();

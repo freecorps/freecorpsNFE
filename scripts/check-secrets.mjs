@@ -9,6 +9,7 @@ import { lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { repositoryCredentialRules } from "./lib/credentials.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 /**
  * Known non-secret matches, one entry per file and rule, each with the exact
@@ -118,7 +119,7 @@ export function regularFileReader(root) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const root = fileURLToPath(new URL("..", import.meta.url));
+  const root = repoRoot;
   const files = trackedFiles(root);
   const { scanned, blocked, stale } = scan(files, regularFileReader(root));
   for (const { path, line, rule } of blocked)

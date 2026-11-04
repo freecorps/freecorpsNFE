@@ -11,7 +11,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   approvedTests,
   areaReceipt,
@@ -23,8 +22,9 @@ import {
 } from "./lib/ci.mjs";
 import { areaFiles, areaProjects, testProjects } from "./lib/test-projects.mjs";
 import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "./lib/validation-lock.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, ".ci-results");
 // Um recibo por área de testes, gravado por `test-area` e guardado no cache
 // do Vite Task como saída da tarefa ci:test:<área>.

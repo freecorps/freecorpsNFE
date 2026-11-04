@@ -11,7 +11,6 @@ import { randomUUID } from "node:crypto";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { localUrls, readLocalConfig } from "./lib/worktree/deployment.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
@@ -44,13 +43,14 @@ import {
   removeHot,
   verifyArchive,
 } from "./lib/cold-archive.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(coldLocalUsage);
   process.exit(0);
 }
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 const receiptPath = join(root, "docs/v1.0/evidence/689/receipts/local.json");
 const secrets = [];
 const report = {

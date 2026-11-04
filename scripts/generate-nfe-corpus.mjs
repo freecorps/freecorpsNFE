@@ -1,11 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import forge from "node-forge";
 import { SignedXml } from "xml-crypto";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, "tests/fixtures/nfe/4.00");
 mkdirSync(output, { recursive: true });
 const keyPath = join(output, "synthetic-signing-key.pem"),

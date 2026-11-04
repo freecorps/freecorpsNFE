@@ -23,6 +23,7 @@ import {
 } from "./lib/proof-runner.mjs";
 import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "./lib/validation-lock.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 // Só o teste de substituição recusada troca a implementação real.
 vi.mock("node:fs", async (importOriginal) => {
@@ -551,19 +552,20 @@ describe("local and candidate attempts", () => {
 // um processo que produz um relatório sintético, sem disparar a suíte inteira.
 function prepareCi() {
   for (const file of [
-    "ci.mjs",
-    "lib/ci.mjs",
-    "lib/repository.mjs",
-    "lib/test-projects.mjs",
-    "lib/subprocess-environment.mjs",
-    "lib/validation-lock.mjs",
-    "lib/worktree/process-identity.mjs",
-    "lib/worktree/exec.mjs",
-    "lib/worktree/paths.mjs",
+    "scripts/ci.mjs",
+    "scripts/lib/ci.mjs",
+    "scripts/lib/repo-root.mjs",
+    "scripts/lib/repository.mjs",
+    "scripts/lib/test-projects.mjs",
+    "scripts/lib/subprocess-environment.mjs",
+    "scripts/lib/validation-lock.mjs",
+    "scripts/lib/worktree/process-identity.mjs",
+    "scripts/lib/worktree/exec.mjs",
+    "scripts/lib/worktree/paths.mjs",
   ]) {
-    const target = join(root, "scripts", file);
+    const target = join(root, file);
     mkdirSync(join(target, ".."), { recursive: true });
-    copyFileSync(new URL(file, import.meta.url), target);
+    copyFileSync(new URL(file, repoUrl), target);
   }
   mkdirSync(join(root, "node_modules/vite-plus/bin"), { recursive: true });
   writeFileSync(

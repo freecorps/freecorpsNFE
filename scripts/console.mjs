@@ -8,15 +8,17 @@ import {
   checkPreparedConsole,
 } from "./lib/console.mjs";
 import { requireIntegrationWriter } from "./lib/validation.mjs";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
-const cwd = fileURLToPath(new URL("../apps/console", import.meta.url));
+const root = repoRoot;
+const cwd = fileURLToPath(new URL("apps/console", repoUrl));
+// Caminhos relativos à raiz do repositório.
 function run(relative, args, env) {
-  const result = spawnSync(
-    process.execPath,
-    [fileURLToPath(new URL(relative, import.meta.url)), ...args],
-    { cwd, env, stdio: "inherit" },
-  );
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL(relative, repoUrl)), ...args], {
+    cwd,
+    env,
+    stdio: "inherit",
+  });
   if (result.error || result.status !== 0) throw new Error("Console command failed");
 }
 
@@ -42,9 +44,9 @@ try {
   console.log(`target: validation console (freecorpsnfe-validation), commit ${sha}`);
   if (command !== "publish") {
     // Build and package without publication credentials, including direct deploy.
-    run("./typecheck.mjs", ["--project", "tsconfig.json"], env);
-    run("./typecheck.mjs", ["--project", "tsconfig.worker.json"], env);
-    run("./typecheck.mjs", ["--project", "../docs/tsconfig.json"], env);
+    run("scripts/typecheck.mjs", ["--project", "tsconfig.json"], env);
+    run("scripts/typecheck.mjs", ["--project", "tsconfig.worker.json"], env);
+    run("scripts/typecheck.mjs", ["--project", "../docs/tsconfig.json"], env);
     run("../node_modules/vite-plus/bin/vp", ["build"], env);
     writeFileSync(
       `${cwd}/dist/build.json`,
@@ -52,10 +54,10 @@ try {
     );
   }
   checkPreparedConsole(JSON.parse(readFileSync(`${cwd}/dist/build.json`, "utf8")), sha);
-  run("./prove-public-site.mjs", [`${cwd}/dist`], env);
+  run("scripts/prove-public-site.mjs", [`${cwd}/dist`], env);
   if (command !== "build")
     run(
-      "../node_modules/wrangler/bin/wrangler.js",
+      "node_modules/wrangler/bin/wrangler.js",
       ["deploy", "--config", "wrangler.json", ...(command === "package" ? ["--dry-run"] : [])],
       publishEnv ?? env,
     );

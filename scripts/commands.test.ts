@@ -6,8 +6,9 @@ import { join } from "node:path";
 
 import { commands, helpText, renamed, renamedMessage, resolveDev } from "./lib/commands.mjs";
 import { isLinkedWorktree } from "./lib/worktree/registry.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = join(import.meta.dirname, "..");
+const root = repoRoot;
 const read = (file: string) => readFileSync(join(root, file), "utf8");
 const scripts: Record<string, string> = JSON.parse(read("package.json")).scripts;
 const mailDocs = ["privacidade", "seguranca", "suporte", "operacao"].map(

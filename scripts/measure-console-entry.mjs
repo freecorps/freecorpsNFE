@@ -3,8 +3,9 @@ import { gzipSync } from "node:zlib";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { repoUrl } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("../apps/console", import.meta.url));
+const root = fileURLToPath(new URL("apps/console", repoUrl));
 const output = process.argv[2];
 if (!output) throw new Error("Usage: node scripts/measure-console-entry.mjs <report.json>");
 if (Object.keys(process.env).some((key) => key.startsWith("VITE_")))

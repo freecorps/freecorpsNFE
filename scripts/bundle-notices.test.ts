@@ -4,9 +4,10 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { bundleNotices } from "./lib/bundle-notices.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
-const docs = createRequire(new URL("../apps/docs/package.json", import.meta.url));
-const consoleApp = createRequire(new URL("../apps/console/package.json", import.meta.url));
+const docs = createRequire(new URL("apps/docs/package.json", repoUrl));
+const consoleApp = createRequire(new URL("apps/console/package.json", repoUrl));
 const react = consoleApp.resolve("react");
 const reactVersion: string = consoleApp("react/package.json").version;
 

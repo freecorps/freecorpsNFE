@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { referenceLocal } from "./lib/reference-local.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const local = referenceLocal(fileURLToPath(new URL("..", import.meta.url)));
+const local = referenceLocal(repoRoot);
 const [command, value, generation, reason] = process.argv.slice(2);
 if (command === "stage") {
   console.log(await local.stage(readFileSync(value, "utf8")));

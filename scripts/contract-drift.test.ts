@@ -1,17 +1,17 @@
 import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { afterEach, expect, it } from "vite-plus/test";
 import { routes } from "../packages/contracts/src/external";
 import { renderContractArtifacts, staleContractArtifacts } from "./lib/contract-artifacts.mjs";
 import { openApi } from "./lib/external-contract.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 // Prova no CI que `contracts:check` recusa uma mudança de contrato sem os
 // artefatos derivados regenerados e que a regeneração restaura a concordância.
 // A mudança é feita no objeto de rotas que a geração lê, nunca nos arquivos do
 // checkout; a regeneração grava numa pasta temporária.
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const temporary: string[] = [];
 const derivedFromRoutes = [
   "docs/v1.0/openapi.json",

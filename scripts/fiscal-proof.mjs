@@ -2,7 +2,6 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes, createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 import { validateBackupDirectory } from "./lib/validation-backup.mjs";
@@ -18,9 +17,10 @@ import {
   publicReceipt,
   validatePlan,
 } from "./lib/fiscal-proof-plan.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 // Local operator job only. No workflow receives the fiscal certificate.
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const check = (condition, code) => {
   if (!condition) throw new Error(code);
 };

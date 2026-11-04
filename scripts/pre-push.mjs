@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { findingKinds, GITLEAKS_VERSION } from "./public-tree.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 const ZERO = /^0+$/;
 
@@ -54,7 +55,7 @@ function gitleaksPinned() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const root = fileURLToPath(new URL("..", import.meta.url));
+  const root = repoRoot;
   const shas = pushedCommits(readFileSync(0, "utf8"));
   const withGitleaks = gitleaksPinned();
   let failed = false;

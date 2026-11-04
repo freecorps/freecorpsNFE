@@ -26,6 +26,7 @@ import {
   validCnpj,
   validCpf,
 } from "./public-tree.mjs";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 // As árvores sintéticas daqui não têm os arquivos que as edições reais da
 // cópia pública esperam; sem `editList`, a montagem as daria por pendentes.
@@ -543,7 +544,7 @@ describe("montagem", () => {
   });
 
   it("sai, com o oxfmt e o bloco fmt do checkout, aprovada no fmt --check", async () => {
-    const root = fileURLToPath(new URL("..", import.meta.url));
+    const root = repoRoot;
     const config = await loadFmtConfig(root);
     const format = oxfmtFormatter(root, config);
     const table = (cell: string) =>
@@ -584,7 +585,7 @@ describe("montagem", () => {
   }, 60_000);
 
   it("formata igual com um .editorconfig numa pasta acima da temporária", async () => {
-    const root = fileURLToPath(new URL("..", import.meta.url));
+    const root = repoRoot;
     const config = await loadFmtConfig(root);
     const format = oxfmtFormatter(root, config);
     const { entries, read } = tree({
@@ -631,7 +632,7 @@ describe("montagem", () => {
   }, 60_000);
 
   it("lê a versão do oxfmt fixada no bun.lock", () => {
-    const lock = readFileSync(fileURLToPath(new URL("../bun.lock", import.meta.url)), "utf8");
+    const lock = readFileSync(fileURLToPath(new URL("bun.lock", repoUrl)), "utf8");
     const version = lockedOxfmtVersion(lock);
     expect(version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(lock).toContain(`"oxfmt": "=${version}"`);
@@ -1023,13 +1024,13 @@ describe("linha de comando", () => {
     }
   };
   const checkout = (path: string) =>
-    readFileSync(fileURLToPath(new URL(`../${path}`, import.meta.url)), "utf8");
+    readFileSync(fileURLToPath(new URL(`${path}`, repoUrl)), "utf8");
   // As recusas abaixo vêm depois das conferências dos arquivos em custódia,
   // que a cópia pública não tem; lá, a montagem para antes, e estes testes
   // não têm o que provar. Com a custódia e sem o commit da auditoria (clone
   // raso), eles falham dizendo que o commit falta, em vez de serem pulados.
   const privateRepo = [DEFAULT_DENYLIST, DEFAULT_RESTRICTED_EDITS].every((path) =>
-    existsSync(fileURLToPath(new URL(`../${path}`, import.meta.url))),
+    existsSync(fileURLToPath(new URL(`${path}`, repoUrl))),
   );
 
   it.skipIf(!privateRepo)(

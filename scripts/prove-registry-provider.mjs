@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { lookupOpenCnpj } from "../platform/convex/lib/registryProvider.ts";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 // Explicit standalone online proof. Does not seed a database or store source payloads.
 const report = {
@@ -10,7 +11,7 @@ const report = {
   codeSha: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   dirty: Boolean(execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim()),
   adapterSha256: createHash("sha256")
-    .update(readFileSync(new URL("../platform/convex/lib/registryProvider.ts", import.meta.url)))
+    .update(readFileSync(new URL("platform/convex/lib/registryProvider.ts", repoUrl)))
     .digest("hex"),
   provider: "opencnpj",
   environment: "public-provider-read-only",

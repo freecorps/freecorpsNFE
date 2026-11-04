@@ -2,7 +2,6 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
 import { validateBackupDirectory } from "./lib/validation-backup.mjs";
 import {
   backendRequest,
@@ -10,13 +9,14 @@ import {
   validateTarget,
   verifyRemoteEnvironment,
 } from "./lib/validation.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 try {
   if (process.argv.slice(2).join(" ") !== "--bootstrap")
     throw new Error("Usage: validation-accounts.mjs --bootstrap");
   requireIntegrationWriter(process.env, true);
   const context = validateTarget(process.env);
-  const root = fileURLToPath(new URL("..", import.meta.url));
+  const root = repoRoot;
   const directory = validateBackupDirectory(
     process.env.VALIDATION_ACCESS_DIR ?? join(homedir(), ".freecorpsnfe", "validation-access"),
     root,

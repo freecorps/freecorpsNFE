@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_DENYLIST } from "./public-tree.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 /**
  * The public-tree arguments and how to read its exit.
@@ -42,7 +43,7 @@ export function stepExit(status, enforce) {
 // The same guard as scripts/public-tree.mjs: argv[1] resolved, so a relative or
 // differently spelled invocation still runs the scan instead of exiting 0 in silence.
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const root = fileURLToPath(new URL("..", import.meta.url));
+  const root = repoRoot;
   const [out] = process.argv.slice(2);
   if (!out) {
     console.error("uso: node scripts/public-scan.mjs <pasta de saída vazia fora do repositório>");

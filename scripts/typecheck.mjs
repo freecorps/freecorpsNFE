@@ -7,8 +7,9 @@
 // Two checkers fit the 4-vCPU CI runner beside the three test workers.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { repoUrl } from "./lib/repo-root.mjs";
 
-const tsc = fileURLToPath(new URL("../node_modules/typescript-7/bin/tsc", import.meta.url));
+const tsc = fileURLToPath(new URL("node_modules/typescript-7/bin/tsc", repoUrl));
 const result = spawnSync(
   process.execPath,
   [tsc, "--noEmit", "--checkers", "2", ...process.argv.slice(2)],

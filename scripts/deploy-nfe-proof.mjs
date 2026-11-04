@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const target = JSON.parse(readFileSync(join(root, ".ci-results/nfe/hosted-target.json"), "utf8"));
 assert.equal(target.type, "dev");
 assert.equal(target.reference, "dev/issue-69-xml-proof");

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import {
   releaseTarget,
@@ -23,8 +22,9 @@ import { smokePlatform } from "./lib/platform-smoke.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
 import { unchangedPublication } from "./lib/platform-unchanged.mjs";
 import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const planBytes = readFileSync(join(root, "deploy/platform-release.json"));
 const plan = JSON.parse(planBytes),
   target = releaseTarget(plan);

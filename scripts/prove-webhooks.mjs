@@ -4,7 +4,6 @@ import { spawn, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import { createRequire } from "node:module";
 import AxeBuilder from "@axe-core/playwright";
@@ -16,11 +15,10 @@ import { assertLinkedWorktree } from "./lib/worktree/state.mjs";
 import { localAuthPacer } from "../apps/console/e2e/local-auth-pacing.mjs";
 import { createWebhookReceiver } from "../examples/webhook-receiver.mjs";
 import { independentReceiver, proveQuickstarts } from "./lib/sdk-proof.mjs";
-const { chromium } = createRequire(new URL("../apps/console/package.json", import.meta.url))(
-  "playwright",
-);
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+const { chromium } = createRequire(new URL("apps/console/package.json", repoUrl))("playwright");
 
-const root = fileURLToPath(new URL("..", import.meta.url)),
+const root = repoRoot,
   paths = worktreePaths(root);
 assertLinkedWorktree(paths);
 assert.equal(paths.app, "platform");

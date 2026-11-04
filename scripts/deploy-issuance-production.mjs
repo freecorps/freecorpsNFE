@@ -8,7 +8,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { GateRefusal, deployKeyFor, githubRun, verifiedRun } from "./lib/issuance-gate.mjs";
 import {
   RELEASE_WORKFLOWS,
@@ -18,8 +17,9 @@ import {
   issuanceReleaseTarget,
   issuanceReleaseWorker,
 } from "./lib/issuance-release.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const action = process.argv[2];
 const output = join(root, ".ci-results/issuance-release");
 const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));

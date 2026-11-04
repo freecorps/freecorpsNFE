@@ -18,6 +18,7 @@ import {
   bootstrapRevision,
   legacyEnvironmentNames,
 } from "./lib/platform-release.mjs";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 it("exige retirar credenciais legadas e de wipe sem remover chaves da plataforma", () => {
   expect(
@@ -392,7 +393,7 @@ const expression = (value: unknown) =>
     .replace(/^\$\{\{([\s\S]*)\}\}$/, "$1")
     .replace(/\s+/g, "");
 it("o workflow publica as atualizações da main sem repetir a CI e conserva bootstrap manual", () => {
-  const text = readFileSync(new URL("../.github/workflows/deploy.yml", import.meta.url), "utf8");
+  const text = readFileSync(new URL(".github/workflows/deploy.yml", repoUrl), "utf8");
   const workflow = parse(text) as { on: Record<string, unknown>; jobs: Record<string, Job> };
   expect(Object.keys(workflow.on).sort()).toEqual(["push", "workflow_dispatch"]);
   expect(workflow.on.push).toEqual({ branches: ["main"] });
@@ -434,7 +435,7 @@ it("o workflow publica as atualizações da main sem repetir a CI e conserva boo
 });
 
 const publisher = fileURLToPath(new URL("deploy-platform.mjs", import.meta.url));
-const repository = fileURLToPath(new URL("..", import.meta.url));
+const repository = repoRoot;
 /** O publicador sem credenciais nem variáveis do GitHub: só as precondições locais rodam. */
 const publish = (operation: string) =>
   spawnSync(process.execPath, [publisher], {

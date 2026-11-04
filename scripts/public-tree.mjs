@@ -49,6 +49,7 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, posix, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { allowlist as secretAllowlist, scan as scanSecrets } from "./check-secrets.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 export const AUDIT_SHA = "bfb2a9407ae6079d5d13348fc065022ce3c218ed";
 export const DEFAULT_DENYLIST = "docs/v1.0/evidence/267/nomes-restritos.json";
@@ -1494,7 +1495,7 @@ export const checkoutClass = () => ({
 });
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const root = fileURLToPath(new URL("..", import.meta.url));
+  const root = repoRoot;
   const args = parseArgs(process.argv.slice(2));
   if (!args) {
     console.error(usage);

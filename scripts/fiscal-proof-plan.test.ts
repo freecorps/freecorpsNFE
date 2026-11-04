@@ -16,6 +16,7 @@ import {
   publicReceipt,
   validatePlan,
 } from "./lib/fiscal-proof-plan.mjs";
+import { repoUrl } from "./lib/repo-root.mjs";
 
 // Synthetic plan only: no real company, certificate or deployment.
 const startsAt = 1_800_000_000_000;
@@ -355,7 +356,7 @@ it.each([
 });
 
 it("no workflow can run the fiscal proof, receive its policy or enable real transport", () => {
-  const directory = new URL("../.github/workflows/", import.meta.url);
+  const directory = new URL(".github/workflows/", repoUrl);
   const files = readdirSync(directory).filter((name) => /\.ya?ml$/.test(name));
   expect(files.length).toBeGreaterThan(0);
   for (const name of files) {

@@ -7,13 +7,13 @@
 // bucket of `coldTier.bucket` (deploy/offsite-backup.json). Never shortens nor removes a rule.
 // Prints the year to set in `FNFE_COLD_LOCKED_THROUGH` once the rules are read back in force.
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { backupPlan } from "./lib/offsite-backup.mjs";
 import { releaseTarget } from "./lib/platform-release.mjs";
 import { cloudflareLocks, yearRules } from "./lib/cold-tier-locks.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const readJson = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));
 const args = process.argv.slice(2);
 const through = Number(args[args.indexOf("--through") + 1]);

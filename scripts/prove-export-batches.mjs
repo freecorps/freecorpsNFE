@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { convexToJson, jsonToConvex } from "convex/values";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const paths = worktreePaths(root),
   config = readLocalConfig(paths);
 assert.equal(paths.app, "platform");
@@ -38,9 +38,7 @@ const scope = await call("mutation", "testing/operationProof:prepare", {
   keyHash: hash(secret),
   suffix: `export125-${randomUUID()}`,
 });
-const xml = readFileSync(
-  new URL("../tests/fixtures/nfe/4.00/invoice-authorized.xml", import.meta.url),
-);
+const xml = readFileSync(new URL("tests/fixtures/nfe/4.00/invoice-authorized.xml", repoUrl));
 const invoice = processNfe(xml).normalized.document;
 await call("mutation", "testing/exportProof:configure", {
   keyId: scope.keyId,
@@ -184,9 +182,9 @@ const baseline = await measure(false),
   batched = await measure(true);
 assert.equal(batched.contentSha256, baseline.contentSha256);
 assert.ok(batched.calls < baseline.calls / 2);
-mkdirSync(new URL("../.ci-results/125/", import.meta.url), { recursive: true });
+mkdirSync(new URL(".ci-results/125/", repoUrl), { recursive: true });
 writeFileSync(
-  new URL("../.ci-results/125/native.json", import.meta.url),
+  new URL(".ci-results/125/native.json", repoUrl),
   JSON.stringify(
     {
       recordedAt: new Date().toISOString(),

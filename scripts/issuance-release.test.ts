@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import { verifiedRun } from "./lib/issuance-gate.mjs";
@@ -18,13 +18,14 @@ import {
 } from "./lib/issuance-release.mjs";
 import { consoleBuildEnvironment } from "./lib/selfhost.mjs";
 import { issuanceProductionForbiddenVariables } from "../platform/convex/lib/issuanceProduction";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 /**
  * Publication and offsite backup of the second target, the NFS-e fiscal production deployment
  * (#198, PR 6b). Synthetic plans only: no Convex, Cloudflare, R2 or GitHub call.
  */
-const root = fileURLToPath(new URL("..", import.meta.url));
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const root = repoRoot;
+const read = (path: string) => readFileSync(new URL(`${path}`, repoUrl), "utf8");
 const json = (path: string) => JSON.parse(read(path));
 const sandbox = json("deploy/platform-release.json").target;
 const validation = json("platform/validation.json");

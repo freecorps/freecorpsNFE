@@ -9,7 +9,6 @@ import { randomUUID } from "node:crypto";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import {
   HOSTED_COLD_ENVIRONMENT,
@@ -45,13 +44,14 @@ import {
 import { coldReadCredentials, r2Client } from "./lib/offsite-backup.mjs";
 import { extractZip } from "./lib/offsite-backup-zip.mjs";
 import { coldDocumentReferences, verifyColdDocuments } from "./lib/incremental-backup.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(coldHostedUsage);
   process.exit(0);
 }
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 const receiptPath = join(root, "docs/v1.0/evidence/689/receipts/hosted.json");
 const secrets = [];
 const report = {

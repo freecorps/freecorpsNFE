@@ -5,7 +5,6 @@ import { writeFileSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
@@ -21,8 +20,9 @@ import {
 import { extractZip, fileDigest, writeZip } from "./lib/offsite-backup-zip.mjs";
 import { objectKeys, sha256, snapshotId } from "./lib/offsite-backup.mjs";
 import { assertRestoreDestination } from "./cold-archive.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 assert.ok(
   process.argv[2] && !process.argv[2].startsWith("--"),
   "Informe o worktree descartável de destino",

@@ -24,8 +24,9 @@ import {
 } from "../platform/convex/lib/certificateCrypto.ts";
 import { validateCertificate } from "../platform/convex/lib/certificateValidation.ts";
 import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, ".ci-results/81");
 mkdirSync(output, { recursive: true });
 const sha = (value) => createHash("sha256").update(value).digest("hex");

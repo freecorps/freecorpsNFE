@@ -8,8 +8,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { performance } from "node:perf_hooks";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const files = [
   "scripts/lib/validation-lock.mjs",
   ...["operation", "process-identity", "exec", "paths"].map(

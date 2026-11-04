@@ -1,8 +1,8 @@
-import { fileURLToPath } from "node:url";
 import { checkPackageBoundaries } from "./lib/package-boundaries.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 try {
-  const result = checkPackageBoundaries(fileURLToPath(new URL("..", import.meta.url)));
+  const result = checkPackageBoundaries(repoRoot);
   console.log(
     `Grafo aprovado: ${result.workspaces} workspaces, ${result.independent} independentes, ${result.entryPoints} pontos de entrada classificados.`,
   );

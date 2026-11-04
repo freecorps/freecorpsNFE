@@ -10,7 +10,6 @@
 // answer goes only into the receipt sealed for the custodians (`scripts/lib/sealed-receipt.mjs`).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { GateRefusal, deployKeyFor, gateConfig, verifiedRun } from "./lib/issuance-gate.mjs";
 import {
   CAPTURE_WORKFLOWS,
@@ -24,8 +23,9 @@ import {
   siteTarget,
 } from "./lib/capture-release.mjs";
 import { writeSealedReceipt } from "./lib/sealed-receipt.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const action = process.argv[2];
 const output = join(root, ".ci-results/capture-release");
 const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));

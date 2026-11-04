@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-const root = fileURLToPath(new URL("..", import.meta.url));
+import { repoRoot } from "./lib/repo-root.mjs";
+const root = repoRoot;
 const mode = process.argv[2];
 assert.ok(["local", "hosted"].includes(mode), "Specify local or hosted");
 let url,

@@ -19,6 +19,7 @@ import { classifyPruneCandidate, parseBranchTracking } from "./lib/worktree/merg
 import { pruneEntries } from "./lib/worktree/registry.mjs";
 import { expandHome } from "./lib/worktree/location.mjs";
 import { slugifyWorktreeName, worktreePaths } from "./lib/worktree/paths.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 import {
   LEGACY_SEED_PROFILE,
   assertLegacySeedProfile,
@@ -102,9 +103,8 @@ describe("compatibilidade do seed vazio", () => {
   });
 
   it("mantém worktree:seed como alias de sync", () => {
-    const scripts = JSON.parse(
-      readFileSync(resolve(import.meta.dirname, "../package.json"), "utf8"),
-    ).scripts as Record<string, string>;
+    const scripts = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
+      .scripts as Record<string, string>;
     expect(scripts["worktree:sync"]).toBe("bun scripts/worktree.mjs sync");
     expect(scripts["worktree:seed"]).toBe("bun scripts/worktree.mjs seed");
   });

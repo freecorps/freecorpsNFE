@@ -5,7 +5,6 @@ import { createReadStream } from "node:fs";
 import { mkdtemp, mkdir, open, writeFile, readFile, copyFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { convexToJson, jsonToConvex } from "convex/values";
@@ -22,8 +21,9 @@ import {
   GLOBAL_LIMIT,
 } from "./lib/incremental-backup.mjs";
 import { sha256, snapshotId, objectKeys } from "./lib/offsite-backup.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 assert.ok(
   process.argv[2] && process.argv[3] && process.argv[4],
   "Informe destino, porta de origem e porta de destino",

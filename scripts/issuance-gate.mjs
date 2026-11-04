@@ -7,7 +7,6 @@
 // the receipt sealed for the custodians (`scripts/lib/sealed-receipt.mjs`).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   GATE_WORKFLOWS,
   GateRefusal,
@@ -22,8 +21,9 @@ import {
   verifiedRun,
 } from "./lib/issuance-gate.mjs";
 import { writeSealedReceipt } from "./lib/sealed-receipt.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const action = process.argv[2];
 const output = join(root, ".ci-results/issuance-gate");
 const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));

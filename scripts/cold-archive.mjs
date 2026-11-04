@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { backendRequest } from "./lib/validation.mjs";
@@ -25,8 +25,9 @@ import {
   verifyArchive,
 } from "./lib/cold-archive.mjs";
 import { r2LockClient, runLockRule } from "./lib/r2-lock.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 function tool(bin, args) {
   const result = spawnSync(bin, args, {
     cwd: join(root, "platform"),

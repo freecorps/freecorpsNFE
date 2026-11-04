@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import { access, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { loadReadFixtures, readProof } from "./lib/document-read-proof.mjs";
 import { headroomCode, headroomProof } from "./lib/document-headroom-proof.mjs";
 import {
@@ -19,13 +18,14 @@ import {
   resolvePreviewTarget,
   verifyPreviewEnvironment,
 } from "./lib/hosted-read-proof.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(hostedUsage);
   process.exit(0);
 }
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const root = repoRoot;
 const secrets = [];
 const report = {
   version: 1,

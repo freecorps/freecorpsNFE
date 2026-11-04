@@ -10,9 +10,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { inspectTarball, stagePackage } from "./lib/distribution.mjs";
-const root = fileURLToPath(new URL("..", import.meta.url));
+import { repoRoot } from "./lib/repo-root.mjs";
+const root = repoRoot;
 const coreVersion = JSON.parse(
   readFileSync(join(root, "packages/fiscal-core/package.json"), "utf8"),
 ).version;

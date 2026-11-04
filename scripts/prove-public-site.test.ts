@@ -2,14 +2,14 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 // The proof of the public build (scripts/prove-public-site.mjs) reads a dist without
 // JavaScript: a console screen is a link it accepts, but only without a query, except the
 // task entry (`taskEntryHref`, #510). This builds the smallest dist the script reads and
 // runs it against a landing or a docs page with the link under test.
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const script = join(root, "scripts/prove-public-site.mjs");
 const dirs: string[] = [];
 afterEach(() => {

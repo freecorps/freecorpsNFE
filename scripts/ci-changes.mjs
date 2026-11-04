@@ -7,15 +7,15 @@
 //   node scripts/ci-changes.mjs --tests  # os testes do modo docs, um por linha
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { cacheAllowed, changeMode, documentationTests } from "./lib/ci-changes.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (process.argv[2] === "--tests") {
   console.log(documentationTests.join("\n"));
   process.exit(0);
 }
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const git = (...args) =>
   execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 

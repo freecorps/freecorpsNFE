@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import {
@@ -16,14 +15,15 @@ import {
   verifiedRun,
 } from "./lib/issuance-gate.mjs";
 import { hasUnsafeText as convexUnsafeText } from "../platform/convex/lib/issuanceGate";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 /**
  * Workflows of the NFS-e fiscal production (#198): enable with another person's approval,
  * emergency disable by an authorized person, read-only probe and verification. Everything here is
  * synthetic: no GitHub API, no Convex, no tax authority.
  */
-const root = fileURLToPath(new URL("..", import.meta.url));
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const root = repoRoot;
+const read = (path: string) => readFileSync(new URL(`${path}`, repoUrl), "utf8");
 const NAMED = {
   version: 1,
   deployment: "brave-otter-123",
@@ -503,7 +503,7 @@ describe("workflows", () => {
   });
 
   it("só a publicação e o backup do segundo alvo recebem a chave, e nenhum outro chama o gate", () => {
-    const directory = new URL("../.github/workflows/", import.meta.url);
+    const directory = new URL(".github/workflows/", repoUrl);
     // Publication and offsite backup of the fiscal production (#198, PR 6b): the key only in
     // their own environments; the backup uses the runner only to read the plan.
     const keyed = ["deploy-issuance-production.yml", "offsite-backup.yml"];

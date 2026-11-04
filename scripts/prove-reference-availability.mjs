@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { referenceLocal } from "./lib/reference-local.mjs";
 import { canonicalEntries, sha256 } from "../lib/reference-dataset.ts";
 import { normalizeCnpj } from "../packages/fiscal-core/src/cnpj.ts";
+import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
 
 // Local-only assay. Official reference payloads stay in ignored storage; CNPJ is synthetic.
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const local = referenceLocal(root);
-const output = new URL("../.ci-results/reference-availability/", import.meta.url);
+const output = new URL(".ci-results/reference-availability/", repoUrl);
 mkdirSync(output, { recursive: true });
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 const hash = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
@@ -20,7 +20,7 @@ const report = {
   codeSha: git("rev-parse", "HEAD"),
   dirty: Boolean(git("status", "--porcelain")),
   runnerSha256: hash(new URL(import.meta.url)),
-  schemaSha256: hash(new URL("../platform/convex/schema.ts", import.meta.url)),
+  schemaSha256: hash(new URL("platform/convex/schema.ts", repoUrl)),
   environment: "anonymous-local",
   urls: local.urls,
   console: local.site,
@@ -130,7 +130,7 @@ try {
   }
   for (const dataset of ["municipalities", "ncm"]) {
     const payload = JSON.parse(
-      readFileSync(new URL(`../.reference-data/${dataset}.json`, import.meta.url), "utf8"),
+      readFileSync(new URL(`.reference-data/${dataset}.json`, repoUrl), "utf8"),
     );
     const before = await local.rpc("query", "referenceImport:current", { dataset });
     const initial = await rest(`references/${dataset}`);

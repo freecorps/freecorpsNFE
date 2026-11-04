@@ -4,11 +4,11 @@
 // recibos deles continuam em docs/v1.0/evidence (docs/desenvolvimento/ci.md).
 //
 //   bun scripts/prove-acceptance.mjs [--base <ref>] [--output <dir>] [--input <arquivo>]...
-import { fileURLToPath } from "node:url";
 import { acceptanceSteps, proofArguments, runProof } from "./lib/proof-runner.mjs";
+import { repoRoot } from "./lib/repo-root.mjs";
 
 if (!process.versions.bun) throw new Error("Use Bun para a prova");
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const options = proofArguments(process.argv.slice(2), { output: ".ci-results/acceptance" });
 const receipt = runProof({
   root,

@@ -19,8 +19,9 @@ import { convexToJson, jsonToConvex } from "convex/values";
 import { worktreePaths } from "./lib/worktree/paths.mjs";
 import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
 import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
+import { repoRoot } from "./lib/repo-root.mjs";
 
-const root = fileURLToPath(new URL("..", import.meta.url));
+const root = repoRoot;
 const output = join(root, ".ci-results/d05");
 mkdirSync(output, { recursive: true });
 const DAY = 86_400_000;
