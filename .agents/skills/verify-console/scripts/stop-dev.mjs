@@ -29,10 +29,15 @@ if (args.includes("--help")) {
 }
 const timeoutIndex = args.indexOf("--timeout-ms");
 const timeoutMs = timeoutIndex >= 0 ? Number(args[timeoutIndex + 1]) : 60_000;
+// Um prazo inválido pularia a espera pela parada limpa e iria direto à forçada.
+if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+  console.error("--timeout-ms exige um número positivo de milissegundos");
+  process.exit(2);
+}
 const recordFile = join(root, outputDirectory, "dev.json");
 const record = existsSync(recordFile) ? JSON.parse(readFileSync(recordFile, "utf8")) : null;
 const identity = record?.pid ? readProcessIdentity(record.pid) : null;
-const decision = stopDecision(record, identity);
+const decision = stopDecision(record, identity, Boolean(record?.pid) && processIsRunning(record.pid));
 console.log(`stop-dev: ${decision.reason}`);
 
 let forced = false;
@@ -52,7 +57,7 @@ if (decision.stop) {
   }
   rmSync(join(root, outputDirectory, stopRequestName), { force: true });
 }
-if (record?.startedBySkill) rmSync(recordFile, { force: true });
+if (record?.startedBySkill && !decision.keep) rmSync(recordFile, { force: true });
 
 // A trava só fica para trás se o dev não parou por conta própria.
 const operation = readOperation(worktreePaths(root));

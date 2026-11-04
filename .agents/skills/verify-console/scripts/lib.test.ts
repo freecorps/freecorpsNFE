@@ -74,10 +74,25 @@ describe("parada do dev", () => {
   const record = { startedBySkill: true, pid: 42, identity: "abc" };
 
   it("encerra só o dev que a skill iniciou, com a mesma identidade", () => {
-    expect(stopDecision(record, "abc").stop).toBe(true);
-    expect(stopDecision(null, null).stop).toBe(false);
-    expect(stopDecision({ startedBySkill: false }, null).stop).toBe(false);
-    expect(stopDecision(record, null)).toMatchObject({ stop: false, reason: /terminou/ });
-    expect(stopDecision(record, "outro")).toMatchObject({ stop: false, reason: /outro processo/ });
+    expect(stopDecision(record, "abc", true)).toMatchObject({ stop: true, keep: false });
+    expect(stopDecision(null, null, false).stop).toBe(false);
+    expect(stopDecision({ startedBySkill: false }, null, false).stop).toBe(false);
+    expect(stopDecision(record, null, false)).toMatchObject({
+      stop: false,
+      keep: false,
+      reason: /terminou/,
+    });
+    expect(stopDecision(record, "outro", true)).toMatchObject({
+      stop: false,
+      reason: /outro processo/,
+    });
+  });
+
+  it("identidade ilegível com o PID vivo não encerra nem apaga o registro", () => {
+    expect(stopDecision(record, null, true)).toMatchObject({
+      stop: false,
+      keep: true,
+      reason: /identidade/,
+    });
   });
 });

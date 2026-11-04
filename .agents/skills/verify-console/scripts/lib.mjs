@@ -134,14 +134,26 @@ export function judgeCapture(state, observed) {
 /**
  * Encerrar o dev só quando esta skill o iniciou e o processo ainda é o mesmo.
  * `record` é o dev.json de start-dev.mjs; `identity`, a identidade atual do PID
- * (hash de criação e comando) ou null quando o processo não existe.
+ * (hash de criação e comando) ou null quando não foi possível lê-la; `running`,
+ * se o PID ainda existe. `keep` preserva o registro para uma nova tentativa:
+ * identidade ilegível não prova que o processo terminou.
  */
-export function stopDecision(record, identity) {
-  if (!record) return { stop: false, reason: "nenhum dev iniciado por esta skill" };
+export function stopDecision(record, identity, running) {
+  if (!record) return { stop: false, keep: false, reason: "nenhum dev iniciado por esta skill" };
   if (!record.startedBySkill)
-    return { stop: false, reason: "o dev já estava rodando; ele não é desta skill" };
-  if (identity === null) return { stop: false, reason: "o processo já terminou" };
+    return { stop: false, keep: false, reason: "o dev já estava rodando; ele não é desta skill" };
+  if (identity === null && running)
+    return {
+      stop: false,
+      keep: true,
+      reason: `não consegui ler a identidade do PID ${record.pid}; nada foi encerrado e o registro fica para outra tentativa`,
+    };
+  if (identity === null) return { stop: false, keep: false, reason: "o processo já terminou" };
   if (identity !== record.identity)
-    return { stop: false, reason: "o PID agora pertence a outro processo; nada foi encerrado" };
-  return { stop: true, reason: `encerrando o PID ${record.pid}` };
+    return {
+      stop: false,
+      keep: false,
+      reason: "o PID agora pertence a outro processo; nada foi encerrado",
+    };
+  return { stop: true, keep: false, reason: `encerrando o PID ${record.pid}` };
 }
