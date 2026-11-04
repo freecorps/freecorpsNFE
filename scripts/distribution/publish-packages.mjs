@@ -1,6 +1,6 @@
 // Publishes the tarballs accepted on #83, exactly as `distribution:prove` produced them.
 // The batch lists all packages or only some of them; each is checked against the proof.
-// Usage: node scripts/publish-packages.mjs <accepted.json> [--dry-run]
+// Usage: node scripts/distribution/publish-packages.mjs <accepted.json> [--dry-run]
 // Requires `npm login` with the account of the `freecorps` organization; npm asks the
 // 2FA code for each publication. Repeating it skips what is already published with the
 // same bytes and stops on a published version with different bytes.
@@ -71,5 +71,5 @@ for (const name of order.filter((name) => names.includes(name))) {
 console.log(
   dryRun
     ? "Simulação concluída."
-    : "Publicado. Prove: bun scripts/prove-distribution.mjs --registry",
+    : "Publicado. Prove: bun scripts/distribution/prove-distribution.mjs --registry",
 );

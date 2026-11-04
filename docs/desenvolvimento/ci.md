@@ -94,7 +94,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    | sim                 |
 | `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
 | `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
-| `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
+| `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
 | `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
 | `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                                |                                    | não: índice do Git  |
@@ -516,7 +516,7 @@ partir de um `./pure`, dependência e workspace fora da lista do ponto de
 entrada, `dist` compilado e classificação ausente dos exports ou mais larga
 que a do workspace. Remover a violação faz passar.
 
-`scripts/prove-xml-package.mjs` (`vp run xml:prove`) empacota fiscal-core,
+`scripts/distribution/prove-xml-package.mjs` (`vp run xml:prove`) empacota fiscal-core,
 fiscal-nfe e fiscal-nfse, inspeciona cada tarball e os instala num diretório
 limpo fora do monorepo. Para fiscal-nfse, `scripts/lib/nfse-consumer.mjs`
 importa `.`, `./pure` e `./danfse` do pacote instalado: monta uma DPS
@@ -539,7 +539,7 @@ Em contracts, só os quatro arquivos do escopo MIT podem ter o cabeçalho MIT, e
 catálogo `dist/schemas.json` precisa corresponder arquivo a arquivo aos hashes
 `runtimeUtf8Sha256` do `schemas/manifest.json` do próprio tarball; em fiscal-nfse,
 sob CC BY-ND, esses hashes precisam ser os dos originais.
-`scripts/distribution.test.ts` cobre arquivos proibidos, credencial incorporada,
+`scripts/distribution/distribution.test.ts` cobre arquivos proibidos, credencial incorporada,
 aviso ausente, export quebrado, catálogo sem manifesto ou fora dos hashes,
 pacote aceito fora da versão ou do acesso público e contracts sem `private`. O recibo em `.ci-results/83/tarballs.json`
 contém lista, hashes, identidade e schemas incorporados. Sucesso desse check

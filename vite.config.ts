@@ -202,7 +202,7 @@ export default defineConfig({
       },
       // Sem cache: o consumidor limpo instala as dependências do registro npm.
       "ci:xml-prove": {
-        command: "node scripts/prove-xml-package.mjs",
+        command: "node scripts/distribution/prove-xml-package.mjs",
         dependsOn: ["ci:packages"],
         cache: false,
       },

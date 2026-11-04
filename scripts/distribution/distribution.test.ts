@@ -5,8 +5,8 @@ import {
   internalCorpus,
   readTarball,
   stagePackage,
-} from "./lib/distribution.mjs";
-import { npmRunner } from "./lib/npm-cli.mjs";
+} from "../lib/distribution.mjs";
+import { npmRunner } from "../lib/npm-cli.mjs";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";

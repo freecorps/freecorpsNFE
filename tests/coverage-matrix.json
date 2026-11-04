@@ -280,7 +280,7 @@
         "packages/fiscal-nfse/fixtures/adn/rejeicao-e0714.json",
         "scripts/package-boundaries.test.ts",
         "scripts/lib/nfse-consumer.mjs",
-        "scripts/prove-xml-package.mjs",
+        "scripts/distribution/prove-xml-package.mjs",
         "tests/platform.issuance.test.ts",
         "tests/platform.issuanceRest.test.ts",
         "docs/plataforma/ISSUANCE.md"

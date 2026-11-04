@@ -2,10 +2,10 @@ import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { inspectTarball, sha256, stagePackage } from "./lib/distribution.mjs";
+import { inspectTarball, sha256, stagePackage } from "../lib/distribution.mjs";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
-import { npmRunner } from "./lib/npm-cli.mjs";
+import { npmRunner } from "../lib/npm-cli.mjs";
 
 if (!process.versions.bun) throw new Error("Execute com Bun fixado no package.json");
 const git = (...args) => execFileSync("git", args, { encoding: "utf8", windowsHide: true }).trim();
@@ -201,7 +201,7 @@ const report = {
   dirty,
   runtime: sdk.runtime,
   bun: process.versions.bun,
-  runnerSha256: sha256(readFileSync("scripts/prove-distribution.mjs")),
+  runnerSha256: sha256(readFileSync("scripts/distribution/prove-distribution.mjs")),
   distributionPolicySha256: sha256(readFileSync("docs/licenses/DISTRIBUTION.md")),
   distributionInspectorSha256: sha256(readFileSync("scripts/lib/distribution.mjs")),
   result: "passed",

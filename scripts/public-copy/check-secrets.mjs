@@ -27,7 +27,7 @@ export const allowlist = [
   },
   ...[
     "packages/fiscal-nfse/signer.test.ts",
-    "scripts/distribution.test.ts",
+    "scripts/distribution/distribution.test.ts",
     "scripts/fiscal/fiscal-proof-plan.test.ts",
   ].map((path) => ({
     path,
