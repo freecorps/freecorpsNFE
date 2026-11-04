@@ -59,7 +59,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
           R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
-        run: node scripts/backup-offsite.mjs snapshot
+        run: node scripts/backup/backup-offsite.mjs snapshot
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -97,7 +97,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
           R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
           R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
-        run: node scripts/backup-offsite.mjs check
+        run: node scripts/backup/backup-offsite.mjs check
       # One open issue carries the alert; recovery closes it.
       - name: Open or update the alert
         if: failure()
@@ -194,7 +194,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
           R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
-        run: node scripts/backup-offsite.mjs snapshot --target issuance
+        run: node scripts/backup/backup-offsite.mjs snapshot --target issuance
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -231,7 +231,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
           R2_COLD_READ_ACCESS_KEY_ID: ${{ secrets.R2_COLD_READ_ACCESS_KEY_ID }}
           R2_COLD_READ_SECRET_ACCESS_KEY: ${{ secrets.R2_COLD_READ_SECRET_ACCESS_KEY }}
-        run: node scripts/backup-offsite.mjs check --target issuance
+        run: node scripts/backup/backup-offsite.mjs check --target issuance
       - name: Open or update the alert
         if: failure()
         env:

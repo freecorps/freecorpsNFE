@@ -20,15 +20,15 @@ import {
   snapshotTime,
   verifyCustody,
   webhookSecrets,
-} from "./lib/offsite-backup.mjs";
-import { incrementalPlan } from "./lib/incremental-backup.mjs";
-import { releaseTarget } from "./lib/platform-release.mjs";
-import { productionTarget } from "./lib/issuance-gate.mjs";
-import { backendRequest } from "./lib/validation.mjs";
+} from "../lib/offsite-backup.mjs";
+import { incrementalPlan } from "../lib/incremental-backup.mjs";
+import { releaseTarget } from "../lib/platform-release.mjs";
+import { productionTarget } from "../lib/issuance-gate.mjs";
+import { backendRequest } from "../lib/validation.mjs";
 import {
   decryptCertificate,
   encryptCertificate,
-} from "../platform/convex/lib/certificateCrypto.ts";
+} from "../../platform/convex/lib/certificateCrypto.ts";
 
 const release = releaseTarget(JSON.parse(readFileSync("deploy/platform-release.json", "utf8")));
 const recipient = (seed: string) => `age1${seed.repeat(58).slice(0, 58)}`;
@@ -112,7 +112,7 @@ it("preserves origin HTTP status and rejection without the backend payload", asy
 it("preserves every explicit backup diagnostic from its source without assertion values", () => {
   const privateMarker = "synthetic-private-marker";
   const files: [string, string?][] = [
-    ["scripts/backup-offsite.mjs"],
+    ["scripts/backup/backup-offsite.mjs"],
     ["scripts/lib/offsite-backup.mjs"],
     ["scripts/lib/incremental-backup.mjs"],
     ["scripts/lib/backup-table-stream.mjs"],

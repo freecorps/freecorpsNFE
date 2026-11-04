@@ -14,17 +14,17 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { convexToJson, jsonToConvex } from "convex/values";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { readEnvFile, formatEnvFile } from "./lib/worktree/env-file.mjs";
-import { syntheticCertificate } from "../tests/helpers/certificates.ts";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { readEnvFile, formatEnvFile } from "../lib/worktree/env-file.mjs";
+import { syntheticCertificate } from "../../tests/helpers/certificates.ts";
 import {
   encryptCertificate,
   certificateKeyring,
-} from "../platform/convex/lib/certificateCrypto.ts";
-import { validateCertificate } from "../platform/convex/lib/certificateValidation.ts";
-import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../../platform/convex/lib/certificateCrypto.ts";
+import { validateCertificate } from "../../platform/convex/lib/certificateValidation.ts";
+import { processNfe } from "../../packages/fiscal-nfe/dist/index.js";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, ".ci-results/81");

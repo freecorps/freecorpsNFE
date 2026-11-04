@@ -624,7 +624,7 @@ mantém a agenda; um dono ilegível desfaz o lote antecipado e, no prazo,
 mantém o arquivo sem parar a guarda; e um arquivo também guardado por outra organização fica,
 enquanto o guardado por mais de 20 linhas da própria organização sai. O
 estouro dos limites da subtransação não tem teste. O ensaio D05
-(`scripts/prove-closure-restore.mjs`) semeia uma cópia de Produção na
+(`scripts/backup/prove-closure-restore.mjs`) semeia uma cópia de Produção na
 organização encerrada; ela fica fora da remoção antecipada, e o ensaio
 continua conferindo a conservação. O ensaio não foi repetido depois da
 mudança, e nada foi executado fora do `convex-test`.

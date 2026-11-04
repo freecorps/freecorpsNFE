@@ -20,7 +20,7 @@ import { repoRoot } from "./lib/repo-root.mjs";
  */
 export const allowlist = [
   {
-    path: "scripts/offsite-backup.test.ts",
+    path: "scripts/backup/offsite-backup.test.ts",
     rule: "service-token",
     count: 1,
     reason: "AWS's documented example access key id, used to prove the backup redacts it",

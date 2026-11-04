@@ -1,6 +1,6 @@
 // D05: purge after restoring into an empty deployment. Synthetic data and local worktrees only.
-// Usage: `bun scripts/prove-closure-restore.mjs prepare`, then
-// `bun scripts/prove-closure-restore.mjs restore <absolute path of the fresh platform worktree>`.
+// Usage: `bun scripts/backup/prove-closure-restore.mjs prepare`, then
+// `bun scripts/backup/prove-closure-restore.mjs restore <absolute path of the fresh platform worktree>`.
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -16,10 +16,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { convexToJson, jsonToConvex } from "convex/values";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { processNfe } from "../../packages/fiscal-nfe/dist/index.js";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, ".ci-results/d05");

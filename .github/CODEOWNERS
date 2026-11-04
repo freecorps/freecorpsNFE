@@ -60,7 +60,7 @@
 /packages/fiscal-nfe/package.json @wolf-stievano
 /packages/fiscal-nfse/package.json @wolf-stievano
 /packages/sdk/package.json @wolf-stievano
-/scripts/backup-offsite.mjs @wolf-stievano
+/scripts/backup/backup-offsite.mjs @wolf-stievano
 /scripts/deploy-issuance-production.mjs @wolf-stievano
 /scripts/lib/issuance-release.mjs @wolf-stievano
 

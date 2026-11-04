@@ -2,9 +2,9 @@ import { afterEach, expect, it } from "vite-plus/test";
 import { mkdtempSync, writeFileSync, unlinkSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileHash, saveCustody, readCustody, restoreCustody } from "./lib/recovery-custody.mjs";
-import { localEnvironment } from "./lib/selfhost-environment.mjs";
-import { readEnvFile, formatEnvFile } from "./lib/worktree/env-file.mjs";
+import { fileHash, saveCustody, readCustody, restoreCustody } from "../lib/recovery-custody.mjs";
+import { localEnvironment } from "../lib/selfhost-environment.mjs";
+import { readEnvFile, formatEnvFile } from "../lib/worktree/env-file.mjs";
 
 const directories: string[] = [];
 afterEach(() => {

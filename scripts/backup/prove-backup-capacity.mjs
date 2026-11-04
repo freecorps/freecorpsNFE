@@ -5,10 +5,10 @@ import { createReadStream } from "node:fs";
 import { mkdtemp, mkdir, open, writeFile, readFile, copyFile, stat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
 import { convexToJson, jsonToConvex } from "convex/values";
-import { extractZip, writeZip, fileDigest } from "./lib/offsite-backup-zip.mjs";
+import { extractZip, writeZip, fileDigest } from "../lib/offsite-backup-zip.mjs";
 import {
   attachStorage,
   copyBlob,
@@ -19,9 +19,9 @@ import {
   preflight,
   readSystemInventory,
   GLOBAL_LIMIT,
-} from "./lib/incremental-backup.mjs";
-import { sha256, snapshotId, objectKeys } from "./lib/offsite-backup.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/incremental-backup.mjs";
+import { sha256, snapshotId, objectKeys } from "../lib/offsite-backup.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 assert.ok(

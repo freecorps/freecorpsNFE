@@ -196,5 +196,5 @@ os hashes das partes. O relógio é congelado somente no teste em memória.
 repete a medição no Convex nativo local com dados sintéticos. O ensaio grava
 chamadas, bytes, leituras, partes, hashes e duração em `.ci-results/125/native.json`.
 Resultados e limitações estão em evidence/125/README.md.
-`scripts/prove-restore.mjs` exercita importação, exportação e download HTTP no
+`scripts/backup/prove-restore.mjs` exercita importação, exportação e download HTTP no
 Convex nativo local antes de produzir o snapshot do ensaio.

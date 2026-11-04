@@ -5,9 +5,9 @@ import {
   sourceReferences,
   retainedLockRules,
   bucketLocks,
-} from "./lib/backup-collection.mjs";
-import { BACKUP_LEASE_KEY, withBackupLease } from "./lib/backup-lease.mjs";
-import { r2Client, sha256, snapshotId, backupFailure } from "./lib/offsite-backup.mjs";
+} from "../lib/backup-collection.mjs";
+import { BACKUP_LEASE_KEY, withBackupLease } from "../lib/backup-lease.mjs";
+import { r2Client, sha256, snapshotId, backupFailure } from "../lib/offsite-backup.mjs";
 
 const now = Date.parse("2026-10-31T12:00:00Z");
 const plan = {

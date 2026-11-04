@@ -5,15 +5,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import schema from "../platform/convex/schema";
+import schema from "../../platform/convex/schema";
 import {
   backupMetrics,
   measureBackupPhase,
   r2Client,
   readZip,
   sha256,
-} from "./lib/offsite-backup.mjs";
-import { extractZip, fileDigest, writeZip } from "./lib/offsite-backup-zip.mjs";
+} from "../lib/offsite-backup.mjs";
+import { extractZip, fileDigest, writeZip } from "../lib/offsite-backup-zip.mjs";
 import {
   attachStorage,
   blobKeys,
@@ -29,7 +29,7 @@ import {
   restoredObjectProof,
   restoreIncremental,
   STORAGE_FIELDS,
-} from "./lib/incremental-backup.mjs";
+} from "../lib/incremental-backup.mjs";
 
 const directories: string[] = [];
 const hasAge =

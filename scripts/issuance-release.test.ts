@@ -236,7 +236,7 @@ describe("backup offsite do segundo alvo", () => {
     (mode) => {
       const result = spawnSync(
         process.execPath,
-        ["scripts/backup-offsite.mjs", mode, "--target", "issuance"],
+        ["scripts/backup/backup-offsite.mjs", mode, "--target", "issuance"],
         {
           cwd: root,
           env: { PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "" },

@@ -15,12 +15,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { webcrypto } from "node:crypto";
 import { convexToJson, jsonToConvex } from "convex/values";
-import { releaseTarget } from "./lib/platform-release.mjs";
-import { GateRefusal } from "./lib/issuance-gate.mjs";
-import { issuanceBackupTarget } from "./lib/issuance-release.mjs";
-import { backendRequest } from "./lib/validation.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { validateBackupDirectory } from "./lib/validation-backup.mjs";
+import { releaseTarget } from "../lib/platform-release.mjs";
+import { GateRefusal } from "../lib/issuance-gate.mjs";
+import { issuanceBackupTarget } from "../lib/issuance-release.mjs";
+import { backendRequest } from "../lib/validation.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { validateBackupDirectory } from "../lib/validation-backup.mjs";
 import {
   backupPlan,
   backupFailure,
@@ -39,16 +39,16 @@ import {
   snapshotSummary,
   verifyCustody,
   webhookSecrets,
-} from "./lib/offsite-backup.mjs";
-import { extractZip, fileDigest, writeZip } from "./lib/offsite-backup-zip.mjs";
-import { tableRows } from "./lib/backup-table-stream.mjs";
-import { withBackupLease } from "./lib/backup-lease.mjs";
+} from "../lib/offsite-backup.mjs";
+import { extractZip, fileDigest, writeZip } from "../lib/offsite-backup-zip.mjs";
+import { tableRows } from "../lib/backup-table-stream.mjs";
+import { withBackupLease } from "../lib/backup-lease.mjs";
 import {
   sourceReferences,
   collectionPlan,
   applyCollection,
   bucketLocks,
-} from "./lib/backup-collection.mjs";
+} from "../lib/backup-collection.mjs";
 import {
   attachStorage,
   copyBlob,
@@ -65,8 +65,8 @@ import {
   coldDocumentReferences,
   coldDocumentsManifest,
   verifyColdDocuments,
-} from "./lib/incremental-backup.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/incremental-backup.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, ".ci-results/offsite-backup");
@@ -605,10 +605,10 @@ async function check(receipt) {
 
 // Recovery helpers reach TypeScript modules; Bun runs them, the CI jobs never load them.
 const recoveryHelpers = async () => ({
-  ...(await import("./lib/worktree/paths.mjs")),
-  ...(await import("./lib/worktree/deployment.mjs")),
-  ...(await import("./lib/worktree/env-file.mjs")),
-  ...(await import("./lib/recovery-custody.mjs")),
+  ...(await import("../lib/worktree/paths.mjs")),
+  ...(await import("../lib/worktree/deployment.mjs")),
+  ...(await import("../lib/worktree/env-file.mjs")),
+  ...(await import("../lib/recovery-custody.mjs")),
 });
 function outsideCheckout(path) {
   const directory = validateBackupDirectory(resolve(path), root);
@@ -621,7 +621,7 @@ async function openCustody(manifest, entries, custodyPath) {
   const values = readEnvFile(resolve(custodyPath));
   verifyCustody(manifest, values);
   const { certificateKeyring, decryptCertificate } =
-    await import("../platform/convex/lib/certificateCrypto.ts");
+    await import("../../platform/convex/lib/certificateCrypto.ts");
   const ring = certificateKeyring(values.get("FNFE_PLATFORM_CERT_KEYS"));
   let certificates = 0;
   for (const { context, envelope } of certificateEnvelopes(entries)) {

@@ -408,7 +408,7 @@ Mudar qualquer um dos dois é decisão nova, com mudança no plano e no código.
 cadência, sob o prefixo do deployment da produção fiscal, no environment
 `offsite-backup-issuance`. Antes deles, o job `issuance-plan`, sem segredo,
 lê o plano. Com `deployment: null`, os dois jobs são pulados, o environment
-não é usado e nada é copiado. `scripts/backup-offsite.mjs snapshot|check
+não é usado e nada é copiado. `scripts/backup/backup-offsite.mjs snapshot|check
 --target issuance` também pula com `result: "skipped"` (`PLAN_NOT_NAMED`). O
 alerta usa o rótulo `offsite-backup-issuance-alert`.
 

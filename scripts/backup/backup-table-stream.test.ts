@@ -3,14 +3,14 @@ import { mkdtemp, writeFile, open, rm, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { tableRows, sortedTableDigest, ROW_LIMIT } from "./lib/backup-table-stream.mjs";
+import { tableRows, sortedTableDigest, ROW_LIMIT } from "../lib/backup-table-stream.mjs";
 import {
   diskSummary,
   preflight,
   prepareDatabase,
   GLOBAL_LIMIT,
   readSystemInventory,
-} from "./lib/incremental-backup.mjs";
+} from "../lib/incremental-backup.mjs";
 
 const directories: string[] = [];
 async function directory() {

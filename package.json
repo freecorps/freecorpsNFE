@@ -12,8 +12,8 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config --no-agent",
-    "backup:collect": "node scripts/backup-offsite.mjs collect",
-    "backup:prove-capacity": "node scripts/prove-backup-capacity.mjs",
+    "backup:collect": "node scripts/backup/backup-offsite.mjs collect",
+    "backup:prove-capacity": "node scripts/backup/prove-backup-capacity.mjs",
     "help": "node scripts/commands.mjs help",
     "ci:boundaries": "node scripts/check-package-boundaries.mjs",
     "validation:browser": "node apps/console/e2e/m0.mjs",
