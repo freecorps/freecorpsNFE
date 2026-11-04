@@ -10,8 +10,7 @@ import { assertPlanChangeable, endArchiveNotice, inCustody } from "./coldArchive
 import { internal } from "../_generated/api";
 import {
   insertTerm,
-  monthStart,
-  termCovering,
+  monthlyBlockedByTerm,
   termRescission,
   termsInForce,
   termTierAt,
@@ -162,11 +161,11 @@ export async function allocateOffer(
 }
 
 /**
- * Without `termId`, a monthly activation: refused when an annual term covers the month of
- * `startsAt`, which it would shorten. With it, the plan row records the term it grants, and the
- * grant must match the term (`INVALID_REQUEST` otherwise): same organization, `scheduled` or
- * `active`, the tier in force in the month of `startsAt`, `startsAt` within the term and `endsAt`
- * equal to the term's.
+ * Without `termId`, a monthly activation: refused when an annual term overlaps it from `startsAt`
+ * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. With it, the plan row records the
+ * term it grants, and the grant must match the term (`INVALID_REQUEST` otherwise): same
+ * organization, `scheduled` or `active`, the tier in force at `startsAt`, `startsAt` within the
+ * term and `endsAt` equal to the term's.
  */
 export async function activateCatalogPlan(
   ctx: MutationCtx,
@@ -180,7 +179,8 @@ export async function activateCatalogPlan(
   termId?: Id<"platformPlanTerms">,
 ) {
   if (termId === undefined) {
-    if (await termCovering(ctx, organizationId, monthStart(startsAt))) deny("ANNUAL_TERM_ACTIVE");
+    if (await monthlyBlockedByTerm(ctx, organizationId, startsAt, endsAt))
+      deny("ANNUAL_TERM_ACTIVE");
   } else {
     const term = await ctx.db.get("platformPlanTerms", termId);
     if (
@@ -234,9 +234,10 @@ export async function activateCatalogPlan(
 
 /**
  * Records a paid annual term and starts it, for Pix and card alike (ADR 0010, decision 9). A
- * term whose first month has arrived grants the plan now over `expectedVersion`; one for a later
- * month reserves the stock now and is activated on its 1st (`plans:activateScheduledTerm`),
- * while the current plan runs until then. The caller has already checked the admission.
+ * term whose `firstPeriod`, its start instant, has arrived grants the plan now over
+ * `expectedVersion`; one starting later reserves the stock now and is activated at its
+ * `firstPeriod` (`plans:activateScheduledTerm`), while the current plan runs until then. The
+ * caller has already checked the admission.
  */
 export async function startTerm(
   ctx: MutationCtx,
@@ -283,11 +284,12 @@ export async function grantTerm(
 }
 
 /**
- * Raises an `active` term to `upgrade.tier` from the 1st `upgrade.fromPeriod` until its end (ADR
- * 0010, decision 9), for Pix and card alike, and grants the plan now over `expectedVersion`. The
- * end and the renewal date stay; the upgrade becomes a segment, or the term's `tier` in its first
- * month, which it covers whole. The charge is added to `references`, `paidCents` and `upgrades`;
- * `purchasedAt` stays the annual charge's. The grant goes through `activateCatalogPlan`, whose
+ * Raises an `active` term to `upgrade.tier` from `upgrade.fromPeriod`, the start of one of its
+ * term months, until its end (ADR 0010, decision 9), for Pix and card alike, and grants the plan
+ * now over `expectedVersion`. The end and the renewal date stay; the upgrade becomes a segment, or
+ * the term's `tier` in its first term month, which it covers whole. The charge is added to
+ * `references`, `paidCents` and `upgrades`; `purchasedAt` stays the annual charge's. The grant
+ * goes through `activateCatalogPlan`, whose
  * `allocatePlan` reserves the larger tier's stock and custody fund (the R$ 172 "aporte" between
  * Intermediário and Grande) in this same transaction, before the plan is raised: any refusal
  * throws and rolls the term back too. The caller has checked the term and the price.

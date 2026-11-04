@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  addMonths,
   assertTermShape,
+  isTermMonthStart,
   refundCents,
   remainingMonths,
   rescissionCents,
   termEndsAt,
+  termMonthAt,
+  termMonthIndex,
+  termMonthStart,
   upgradeCents,
   usedMonths,
   withinWithdrawal,
 } from "../platform/convex/lib/annualTerms";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
-import { termRescission } from "../platform/convex/lib/planTerms";
+import { termRescission, termUpgradeCents } from "../platform/convex/lib/planTerms";
 
 const { intermediate, large } = PLATFORM_PLANS;
 const term = (year: number, month: number) => {
@@ -39,11 +44,6 @@ describe("annual term in civil UTC months", () => {
     expect(termEndsAt(Date.UTC(2027, 1, 1))).toBe(Date.UTC(2028, 1, 1));
   });
 
-  it("refuses a start that is not the 1st at 00:00 UTC", () => {
-    expect(() => termEndsAt(Date.UTC(2026, 11, 2))).toThrow(RangeError);
-    expect(() => termEndsAt(Date.UTC(2026, 11, 1, 3))).toThrow(RangeError);
-  });
-
   it("counts the current month as used and as remaining, across December", () => {
     const december = term(2026, 11);
     expect(usedMonths(december, Date.UTC(2026, 11, 1))).toBe(1);
@@ -64,6 +64,130 @@ describe("annual term in civil UTC months", () => {
     expect(usedMonths(march, Date.UTC(2028, 1, 29, 12))).toBe(12);
     expect(remainingMonths(march, Date.UTC(2028, 1, 29, 12))).toBe(1);
     expect(remainingMonths(march, Date.UTC(2028, 2, 1))).toBe(0);
+  });
+});
+
+describe("annual term from any instant to its anniversary", () => {
+  const months = (start: number) =>
+    Array.from({ length: 13 }, (_, index) => termMonthStart(start, index));
+
+  it("keeps the 31st through short months, without drifting, and ends on January 31", () => {
+    const start = Date.UTC(2027, 0, 31, 10);
+    expect(months(start).slice(0, 4)).toEqual([
+      start,
+      Date.UTC(2027, 1, 28, 10),
+      Date.UTC(2027, 2, 31, 10),
+      Date.UTC(2027, 3, 30, 10),
+    ]);
+    expect(termEndsAt(start)).toBe(Date.UTC(2028, 0, 31, 10));
+    // In a leap year February keeps its 29th.
+    expect(addMonths(Date.UTC(2028, 0, 31, 10), 1)).toBe(Date.UTC(2028, 1, 29, 10));
+  });
+
+  it("starts on February 29 and ends on February 28 the next year, at the same time", () => {
+    const start = Date.UTC(2028, 1, 29, 9, 15);
+    expect(termMonthStart(start, 1)).toBe(Date.UTC(2028, 2, 29, 9, 15));
+    expect(termEndsAt(start)).toBe(Date.UTC(2029, 1, 28, 9, 15));
+  });
+
+  it("goes from March 31 to April 30 and back to May 31", () => {
+    const start = Date.UTC(2027, 2, 31, 8);
+    expect(termMonthStart(start, 1)).toBe(Date.UTC(2027, 3, 30, 8));
+    expect(termMonthStart(start, 2)).toBe(Date.UTC(2027, 4, 31, 8));
+  });
+
+  it("crosses the year from the last millisecond of December 31", () => {
+    const start = Date.UTC(2026, 11, 31, 23, 59, 59, 999);
+    expect(termMonthStart(start, 1)).toBe(Date.UTC(2027, 0, 31, 23, 59, 59, 999));
+    expect(termMonthStart(start, 2)).toBe(Date.UTC(2027, 1, 28, 23, 59, 59, 999));
+    expect(termEndsAt(start)).toBe(Date.UTC(2027, 11, 31, 23, 59, 59, 999));
+  });
+
+  it("turns each term month exactly at its start, not a millisecond before", () => {
+    const start = Date.UTC(2026, 9, 15, 14, 30);
+    const end = termEndsAt(start);
+    expect(termMonthIndex(start, start - 1)).toBe(-1);
+    expect(termMonthIndex(start, start)).toBe(0);
+    const february = Date.UTC(2027, 1, 15, 14, 30);
+    expect(termMonthIndex(start, february - 1)).toBe(3);
+    expect(termMonthIndex(start, february)).toBe(4);
+    expect(termMonthAt(start, february - 1)).toEqual({
+      index: 3,
+      startsAt: Date.UTC(2027, 0, 15, 14, 30),
+      endsAt: february,
+    });
+    expect(termMonthAt(start, february)).toEqual({
+      index: 4,
+      startsAt: february,
+      endsAt: Date.UTC(2027, 2, 15, 14, 30),
+    });
+    expect(termMonthIndex(start, end - 1)).toBe(11);
+    expect(termMonthIndex(start, end)).toBe(12);
+    expect(() => termMonthAt(start, start - 1)).toThrow(RangeError);
+  });
+
+  it("counts the term month under way as used and as remaining", () => {
+    const startsAt = Date.UTC(2026, 9, 15, 14, 30);
+    const term = { startsAt, endsAt: termEndsAt(startsAt) };
+    expect(usedMonths(term, term.startsAt - 1)).toBe(0);
+    expect(usedMonths(term, term.startsAt)).toBe(1);
+    expect(usedMonths(term, term.endsAt - 1)).toBe(12);
+    expect(usedMonths(term, term.endsAt)).toBe(12);
+    expect(remainingMonths(term, term.startsAt - 1)).toBe(12);
+    expect(remainingMonths(term, term.startsAt)).toBe(12);
+    expect(remainingMonths(term, term.endsAt - 1)).toBe(1);
+    expect(remainingMonths(term, term.endsAt)).toBe(0);
+  });
+
+  it("knows the starts of the term months, the end included", () => {
+    const start = Date.UTC(2027, 0, 31, 10);
+    expect(months(start).every((at) => isTermMonthStart(start, at))).toBe(true);
+    expect(isTermMonthStart(start, Date.UTC(2027, 1, 1))).toBe(false);
+    expect(isTermMonthStart(start, Date.UTC(2027, 1, 28, 10) + 1)).toBe(false);
+    expect(isTermMonthStart(start, start - 1)).toBe(false);
+    expect(isTermMonthStart(start, addMonths(start, 13))).toBe(false);
+  });
+
+  it("refuses an invalid instant or month count", () => {
+    expect(() => addMonths(-1, 1)).toThrow(RangeError);
+    expect(() => addMonths(Date.UTC(2027, 0, 1) + 0.5, 1)).toThrow(RangeError);
+    expect(() => addMonths(Date.UTC(2027, 0, 1), -1)).toThrow(RangeError);
+    expect(() => addMonths(Date.UTC(2027, 0, 1), 1.5)).toThrow(RangeError);
+    expect(() => termMonthStart(Date.UTC(2027, 0, 1), 13)).toThrow(RangeError);
+    expect(() => termEndsAt(Number.NaN)).toThrow(RangeError);
+  });
+
+  it("matches the civil UTC months for a start on a 1st at 00:00 UTC", () => {
+    // The arithmetic before the anniversary terms, for starts on a 1st.
+    const civil = (at: number) => {
+      const date = new Date(at);
+      return date.getUTCFullYear() * 12 + date.getUTCMonth();
+    };
+    const first = (at: number, add = 0) => {
+      const date = new Date(at);
+      return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + add, 1);
+    };
+    for (let month = 0; month < 48; month++) {
+      const startsAt = Date.UTC(2026, month, 1);
+      const term = { startsAt, endsAt: termEndsAt(startsAt) };
+      expect(term.endsAt).toBe(first(startsAt, 12));
+      for (let index = 0; index <= 12; index++)
+        expect(termMonthStart(startsAt, index)).toBe(first(startsAt, index));
+      for (let at = startsAt - 86_400_000; at < term.endsAt + 86_400_000; at += 86_400_000 * 7) {
+        for (const now of [at, first(at), first(at, 1) - 1]) {
+          const used =
+            now < startsAt ? 0 : now >= term.endsAt ? 12 : civil(now) - civil(startsAt) + 1;
+          const remaining =
+            now >= term.endsAt ? 0 : civil(term.endsAt) - Math.max(civil(now), civil(startsAt));
+          expect(usedMonths(term, now)).toBe(used);
+          expect(remainingMonths(term, now)).toBe(remaining);
+          if (now >= startsAt) {
+            expect(termMonthAt(startsAt, now).startsAt).toBe(first(now));
+            expect(termMonthAt(startsAt, now).endsAt).toBe(first(now, 1));
+          }
+        }
+      }
+    }
   });
 });
 
@@ -127,6 +251,24 @@ describe("annual upgrade", () => {
       }),
     ).toThrow(RangeError);
   });
+
+  it("prices a term from 15/10 14:30 by term months, turning at 15/02 14:30", () => {
+    const start = Date.UTC(2026, 9, 15, 14, 30);
+    const term = {
+      tier: "intermediate" as const,
+      segments: [],
+      firstPeriod: start,
+      endsAt: termEndsAt(start),
+    };
+    const fifth = Date.UTC(2027, 1, 15, 14, 30);
+    const priceAt = (now: number) =>
+      termUpgradeCents(term, "large", termMonthAt(start, now).startsAt);
+    // A millisecond before, the 4th term month is under way: 9 months left, 3.500 × 9 / 12.
+    expect(priceAt(fifth - 1)).toBe(262500);
+    // At 15/02 14:30 the 5th begins: 8 months left, 3.500 × 8 / 12 floored.
+    expect(priceAt(fifth)).toBe(233333);
+    expect(termUpgradeCents(term, "intermediate", start)).toBeNull();
+  });
 });
 
 describe("term shape", () => {
@@ -149,10 +291,25 @@ describe("term shape", () => {
     expect(() => assertTermShape({ ...shape, segments: [] })).not.toThrow();
   });
 
-  it("refuses a mid-month start, a wrong end, and cents that are fractional or zero", () => {
+  it("accepts a start at any instant that ends on its anniversary", () => {
+    const midMonth = Date.UTC(2026, 9, 15, 14, 30);
+    expect(() =>
+      assertTermShape({
+        ...shape,
+        firstPeriod: midMonth,
+        endsAt: Date.UTC(2027, 9, 15, 14, 30),
+        segments: [],
+      }),
+    ).not.toThrow();
+  });
+
+  it("refuses an invalid start, a wrong end, and cents that are fractional or zero", () => {
     refuses({ firstPeriod: Date.UTC(2027, 0, 15) });
     refuses({ firstPeriod: start + 1 });
+    refuses({ firstPeriod: -1, segments: [] });
+    refuses({ firstPeriod: start + 0.5, segments: [] });
     refuses({ endsAt: Date.UTC(2027, 11, 1) });
+    refuses({ endsAt: shape.endsAt + 1 });
     refuses({ paidCents: 1490.5 });
     refuses({ paidCents: 0 });
   });
@@ -174,6 +331,19 @@ describe("term shape", () => {
         { tier: "large", fromPeriod: MAY },
       ],
     });
+  });
+
+  it("starts segments at the start of a term month, not on a civil 1st", () => {
+    const midMonth = Date.UTC(2026, 9, 15, 14, 30);
+    const term = { ...shape, firstPeriod: midMonth, endsAt: termEndsAt(midMonth) };
+    const fifth = Date.UTC(2027, 1, 15, 14, 30);
+    expect(() =>
+      assertTermShape({ ...term, segments: [{ tier: "large", fromPeriod: fifth }] }),
+    ).not.toThrow();
+    for (const fromPeriod of [Date.UTC(2027, 1, 1), Date.UTC(2027, 1, 15), fifth + 1])
+      expect(() => assertTermShape({ ...term, segments: [{ tier: "large", fromPeriod }] })).toThrow(
+        RangeError,
+      );
   });
 });
 
@@ -232,6 +402,32 @@ describe("upgrade charges on the term", () => {
       assertTermShape({ ...shape, upgrades: [charge, { ...charge, paidCents: 1 }] }),
     ).toThrow(RangeError);
   });
+
+  it("takes a charge at the start of a term month of a term from the 15th", () => {
+    const midMonth = Date.UTC(2026, 9, 15, 14, 30);
+    const fifth = Date.UTC(2027, 1, 15, 14, 30);
+    const term = {
+      ...shape,
+      firstPeriod: midMonth,
+      endsAt: termEndsAt(midMonth),
+      segments: [{ tier: "large" as const, fromPeriod: fifth }],
+    };
+    const at = (fromPeriod: number) => () =>
+      assertTermShape({ ...term, upgrades: [{ ...charge, fromPeriod }] });
+    expect(at(fifth)).not.toThrow();
+    expect(at(Date.UTC(2027, 1, 1))).toThrow(RangeError);
+    expect(at(fifth - 1)).toThrow(RangeError);
+    // In the first term month the upgrade changes the tier, from the term's start.
+    expect(() =>
+      assertTermShape({
+        ...term,
+        tier: "large",
+        segments: [],
+        upgrades: [{ ...charge, fromPeriod: midMonth, paidCents: 350000 }],
+        paidCents: intermediate.annualCents + 350000,
+      }),
+    ).not.toThrow();
+  });
 });
 
 describe("rescission of a term (termRescission)", () => {
@@ -282,6 +478,44 @@ describe("rescission of a term (termRescission)", () => {
       usedMonths: 12,
       refundCents: 0,
       accessEndsAt: base.endsAt,
+    });
+  });
+
+  it("counts term months for a term from 15/10 14:30: R$ 894 and access until 15/02 14:30", () => {
+    const start = Date.UTC(2026, 9, 15, 14, 30);
+    const term = {
+      ...base,
+      firstPeriod: start,
+      endsAt: termEndsAt(start),
+      purchasedAt: start,
+    };
+    // 20/01 falls in the 4th term month, from 15/01 14:30 to 15/02 14:30.
+    expect(termRescission(term, Date.UTC(2027, 0, 20))).toEqual({
+      withdrawal: false,
+      usedMonths: 4,
+      usedCents: 4 * 14900,
+      refundCents: 89400,
+      accessEndsAt: Date.UTC(2027, 1, 15, 14, 30),
+    });
+    // A millisecond before 15/02 14:30 is still the 4th; at it, the 5th begins.
+    const fifth = Date.UTC(2027, 1, 15, 14, 30);
+    expect(termRescission(term, fifth - 1)).toMatchObject({ usedMonths: 4, accessEndsAt: fifth });
+    expect(termRescission(term, fifth)).toMatchObject({
+      usedMonths: 5,
+      refundCents: 149000 - 5 * 14900,
+      accessEndsAt: Date.UTC(2027, 2, 15, 14, 30),
+    });
+    // Upgraded from the 5th term month, rescinded in the 8th: each month at the tier it had.
+    const raised = {
+      ...term,
+      paidCents: 149000 + 233333,
+      segments: [{ tier: "large" as const, fromPeriod: fifth }],
+    };
+    expect(termRescission(raised, Date.UTC(2027, 4, 20))).toMatchObject({
+      usedMonths: 8,
+      usedCents: 4 * 14900 + 4 * 49900,
+      refundCents: 123133,
+      accessEndsAt: Date.UTC(2027, 5, 15, 14, 30),
     });
   });
 

@@ -6,14 +6,13 @@ import { activateCatalogPlan, allocateOffer, startTerm, upgradeTerm } from "./pl
 import { denialCode } from "./organizationAccess";
 import {
   annualTermBlocks,
-  monthStart,
+  monthlyBlockedByTerm,
   rescindedSubscription,
-  termCovering,
   termTierAt,
   termUpgradeCents,
   upgradableTerm,
 } from "./planTerms";
-import { isTermReference, termEndsAt } from "./annualTerms";
+import { isTermReference, termEndsAt, termMonthStart } from "./annualTerms";
 import { planFor } from "./usageCore";
 import { nextUsagePeriodStart, planEnded } from "./usageValues";
 import {
@@ -198,16 +197,13 @@ export async function applyInvoice(
       record,
       annualSubscriptions,
     );
-  // A monthly invoice. For a month an annual term covers it was paid but cannot
-  // be granted without shortening the term: a person looks at it, never `SUPERSEDED`. A month
-  // before a term scheduled for later is still granted. The activation below starts now, so a
-  // covered current month blocks too, instead of `activateCatalogPlan` failing the sync.
-  if (
-    (await termCovering(ctx, organizationId, periodStart(decision.period))) ||
-    (await termCovering(ctx, organizationId, monthStart(now)))
-  )
-    return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
+  // A monthly invoice. The activation below runs from now to the end of the month paid for; an
+  // annual term overlapping it would be shortened, so the money was paid but cannot be granted: a
+  // person looks at it, never `SUPERSEDED`, instead of `activateCatalogPlan` failing the sync. A
+  // month that ends before a term scheduled for later is still granted.
   const end = nextUsagePeriodStart(periodStart(decision.period));
+  if (await monthlyBlockedByTerm(ctx, organizationId, now, end))
+    return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
   // Paid after the month it bought: no quota is sold for the past.
   if (end <= now) return void (await record("blocked", "LATE_PAYMENT"));
   const closure = await ctx.db
@@ -282,8 +278,8 @@ async function applyAnnualInvoice(
   const firstPeriod = periodStart(period);
   const endsAt = termEndsAt(firstPeriod);
   const paidAt = invoice.paidAt ?? now;
-  // The Pix `payBy`: the whole term only if paid within its first month.
-  if (paidAt >= nextUsagePeriodStart(firstPeriod) || now >= endsAt)
+  // The Pix `payBy`: the whole term only if paid within its first term month.
+  if (paidAt >= termMonthStart(firstPeriod, 1) || now >= endsAt)
     return void (await record("blocked", "LATE_PAYMENT"));
   // As the Pix request, a term starts this month or the next; the term keeps the invoice id.
   if (firstPeriod > nextUsagePeriodStart(now) || !isTermReference(invoice.id))

@@ -204,10 +204,11 @@ organização na ativação seguinte: o mês pago seguinte, por cartão ou Pix, 
 um upgrade. O mês já ativado mantém o que foi vendido. Por exemplo, um
 Intermediário ativado com 3 empresas passa a 5 no mês seguinte. O Gratuito não
 vence e não é reativado, então mantém a cópia até outra ativação. A ativação
-que vem de um termo anual também grava `termId`. Quando um termo anual cobre o
-mês corrente, a ativação mensal é recusada com `ANNUAL_TERM_ACTIVE`: Pix
-(`plans:requestPaid`, `plans:confirmPayment`), `usage:assignPlan` e
-`plans:claimFree`. O cartão mensal é recusado enquanto houver qualquer termo
+que vem de um termo anual também grava `termId`. Quando um termo anual se
+sobrepõe ao período do plano mensal, a ativação mensal é recusada com
+`ANNUAL_TERM_ACTIVE`: Pix (`plans:requestPaid`, `plans:confirmPayment`) e
+`plans:claimFree`; `usage:assignPlan` é recusado quando um termo cobre o
+instante atual. O cartão mensal é recusado enquanto houver qualquer termo
 em vigor, mesmo agendado para depois ([BILLING.md](BILLING.md#plano-anual)).
 
 ### Estoque e tráfego
