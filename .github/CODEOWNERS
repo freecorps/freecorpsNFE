@@ -14,12 +14,12 @@
 /deploy/issuance-gate.json @wolf-stievano
 
 # What the workflows run with production credentials.
-/scripts/issuance-gate.mjs @wolf-stievano
+/scripts/deploy/issuance-gate.mjs @wolf-stievano
 /scripts/lib/issuance-gate.mjs @wolf-stievano
-/scripts/capture-release.mjs @wolf-stievano
+/scripts/deploy/capture-release.mjs @wolf-stievano
 /scripts/lib/capture-release.mjs @wolf-stievano
 /scripts/lib/sealed-receipt.mjs @wolf-stievano
-/scripts/deploy-platform.mjs @wolf-stievano
+/scripts/deploy/deploy-platform.mjs @wolf-stievano
 /scripts/lib/platform-release.mjs @wolf-stievano
 /scripts/lib/platform-unchanged.mjs @wolf-stievano
 # Everything deploy-platform.mjs imports runs in the process that holds the production keys, and
@@ -61,7 +61,7 @@
 /packages/fiscal-nfse/package.json @wolf-stievano
 /packages/sdk/package.json @wolf-stievano
 /scripts/backup/backup-offsite.mjs @wolf-stievano
-/scripts/deploy-issuance-production.mjs @wolf-stievano
+/scripts/deploy/deploy-issuance-production.mjs @wolf-stievano
 /scripts/lib/issuance-release.mjs @wolf-stievano
 
 # The gate, the fiscal production profile and the vault policy of the issuance.

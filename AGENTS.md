@@ -125,7 +125,7 @@ setup do editor em execução. Preserve processos alheios e alterações locais.
 1. **Publicar no ambiente errado.** Leia [docs/operacao/deploy-producao.md](docs/operacao/deploy-producao.md)
    antes de publicar ou alterar o CI. Push na `main` publica
    `platform/convex` e `apps/console` sem repetir o CI da PR, por
-   `scripts/deploy-platform.mjs`; bootstrap continua manual.
+   `scripts/deploy/deploy-platform.mjs`; bootstrap continua manual.
    `validation:console:deploy` atende só à validação.
    Confira o alvo antes de qualquer comando Convex que publique funções,
    altere variáveis ou execute uma escrita.

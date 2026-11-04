@@ -19,9 +19,9 @@ import {
   productionTarget,
   summary,
   verifiedRun,
-} from "./lib/issuance-gate.mjs";
-import { writeSealedReceipt } from "./lib/sealed-receipt.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/issuance-gate.mjs";
+import { writeSealedReceipt } from "../lib/sealed-receipt.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const action = process.argv[2];

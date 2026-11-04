@@ -3,7 +3,7 @@ import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { serve } from "./lib/selfhost-server.mjs";
+import { serve } from "../lib/selfhost-server.mjs";
 
 const freePort = () =>
   new Promise<number>((resolve) => {

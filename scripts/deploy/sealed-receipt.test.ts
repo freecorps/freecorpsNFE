@@ -5,15 +5,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
-import plan from "../deploy/offsite-backup.json";
+import plan from "../../deploy/offsite-backup.json";
 import {
   ageEncrypt,
   custodyRecipients,
   PUBLIC_RECEIPT,
   SEALED_RECEIPT,
   writeSealedReceipt,
-} from "./lib/sealed-receipt.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/sealed-receipt.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 const directories: string[] = [];
 const scratch = () => {

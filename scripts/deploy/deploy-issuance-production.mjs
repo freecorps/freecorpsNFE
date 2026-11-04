@@ -4,11 +4,11 @@
 // names one without `release`, both refuse before reading a secret, and nothing is published.
 // `publish` then needs the run approved by another person in deploy/issuance-gate.json, read from
 // the GitHub API (`verifiedRun`), before the deploy key is used.
-// The hosted sandbox keeps its own pipeline (`deploy.yml`, `scripts/deploy-platform.mjs`).
+// The hosted sandbox keeps its own pipeline (`deploy.yml`, `scripts/deploy/deploy-platform.mjs`).
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { GateRefusal, deployKeyFor, githubRun, verifiedRun } from "./lib/issuance-gate.mjs";
+import { GateRefusal, deployKeyFor, githubRun, verifiedRun } from "../lib/issuance-gate.mjs";
 import {
   RELEASE_WORKFLOWS,
   approvedRevision,
@@ -16,8 +16,8 @@ import {
   issuanceReleaseEnvironment,
   issuanceReleaseTarget,
   issuanceReleaseWorker,
-} from "./lib/issuance-release.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/issuance-release.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const action = process.argv[2];
@@ -46,10 +46,10 @@ async function publish(target) {
   });
   Object.assign(receipt, verified);
   // Only what the publication needs; the plan check above runs without any dependency.
-  const { backendRequest } = await import("./lib/validation.mjs");
-  const { accountPolicy } = await import("../platform/account-policy.mjs");
-  const { legacyEnvironmentNames } = await import("./lib/platform-release.mjs");
-  const { subprocessEnvironment } = await import("./lib/subprocess-environment.mjs");
+  const { backendRequest } = await import("../lib/validation.mjs");
+  const { accountPolicy } = await import("../../platform/account-policy.mjs");
+  const { legacyEnvironmentNames } = await import("../lib/platform-release.mjs");
+  const { subprocessEnvironment } = await import("../lib/subprocess-environment.mjs");
   // The checkout is the SHA the API confirmed for the approved run (`head_sha`, `GITHUB_SHA`).
   const sha = git("rev-parse", "HEAD");
   if (
@@ -169,7 +169,7 @@ async function publish(target) {
   });
   // The e-mail notice of a new version of the terms of use (#594), once the revision serves. A
   // failed call is recorded as `failed`, never a refused publication; the next one starts it again.
-  const { startTermsOfUseNotice } = await import("./lib/terms-notice.mjs");
+  const { startTermsOfUseNotice } = await import("../lib/terms-notice.mjs");
   receipt.termsOfUseNotice = await startTermsOfUseNotice(
     async (path) =>
       (await backendRequest(context, "/api/mutation", { path, args: {}, format: "json" })).value,

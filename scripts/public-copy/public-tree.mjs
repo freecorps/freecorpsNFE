@@ -314,7 +314,7 @@ export const edits = [
     reason: evidenceOut,
   },
   {
-    path: "scripts/platform-release.test.ts",
+    path: "scripts/deploy/platform-release.test.ts",
     find: literal(
       'import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";',
     ),
@@ -324,7 +324,7 @@ export const edits = [
     reason: evidenceOut,
   },
   {
-    path: "scripts/platform-release.test.ts",
+    path: "scripts/deploy/platform-release.test.ts",
     find: literal(
       '  const live = JSON.parse(readFileSync(join(repository, "deploy/platform-release.json"), "utf8"));\n',
     ),
@@ -687,14 +687,14 @@ export const findingAllowlist = [
       2,
       "Quem pode disparar os workflows de emergência do gate fiscal",
     ],
-    ["scripts/issuance-gate.test.ts", 2, "Teste que confere o dono no CODEOWNERS real"],
+    ["scripts/deploy/issuance-gate.test.ts", 2, "Teste que confere o dono no CODEOWNERS real"],
     [
-      "scripts/issuance-release.test.ts",
+      "scripts/deploy/issuance-release.test.ts",
       19,
       "Teste do gate fiscal com a lista real de autorizados",
     ],
     [
-      "scripts/capture-release.test.ts",
+      "scripts/deploy/capture-release.test.ts",
       2,
       "Teste do corte da captura com a lista real de autorizados",
     ],

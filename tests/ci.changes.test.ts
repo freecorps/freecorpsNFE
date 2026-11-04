@@ -323,8 +323,8 @@ const mentions: Record<string, string> = {
   // A link in an operator-facing message.
   "platform/convex/captures.ts -> docs/operacao/captura-fiscal.md": "mention",
   // Synthetic paths in classifiers' unit tests.
-  "scripts/platform-unchanged.test.ts -> docs/README.md": "synthetic",
-  "scripts/platform-unchanged.test.ts -> docs/desenvolvimento/ci.md": "synthetic",
+  "scripts/deploy/platform-unchanged.test.ts -> docs/README.md": "synthetic",
+  "scripts/deploy/platform-unchanged.test.ts -> docs/desenvolvimento/ci.md": "synthetic",
   "scripts/public-copy/public-tree.test.ts -> docs/operacao/backup.md": "synthetic",
   // tests/fixtureCorpus.test.ts checks that evidence exists; deleting a document
   // runs the graph.

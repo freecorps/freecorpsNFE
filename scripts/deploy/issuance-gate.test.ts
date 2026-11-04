@@ -13,9 +13,9 @@ import {
   productionTarget,
   summary,
   verifiedRun,
-} from "./lib/issuance-gate.mjs";
-import { hasUnsafeText as convexUnsafeText } from "../platform/convex/lib/issuanceGate";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/issuance-gate.mjs";
+import { hasUnsafeText as convexUnsafeText } from "../../platform/convex/lib/issuanceGate";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 /**
  * Workflows of the NFS-e fiscal production (#198): enable with another person's approval,
@@ -387,7 +387,7 @@ describe("executor", () => {
   it.each(["enable", "emergency_disable", "probe", "verify-issued"])(
     "%s recusa com o plano atual antes de ler qualquer segredo ou chamar a rede",
     (action) => {
-      const result = spawnSync(process.execPath, ["scripts/issuance-gate.mjs", action], {
+      const result = spawnSync(process.execPath, ["scripts/deploy/issuance-gate.mjs", action], {
         cwd: root,
         // Without GH_TOKEN or a deploy key: reaching the network would fail differently.
         env: { PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "" },
@@ -460,8 +460,8 @@ describe("workflows", () => {
         .map((step) => step.run!.trim());
       const expected =
         action === "probe"
-          ? ["node scripts/issuance-gate.mjs probe", "node scripts/issuance-gate.mjs verify-issued"]
-          : [`node scripts/issuance-gate.mjs ${action}`];
+          ? ["node scripts/deploy/issuance-gate.mjs probe", "node scripts/deploy/issuance-gate.mjs verify-issued"]
+          : [`node scripts/deploy/issuance-gate.mjs ${action}`];
       expect(runs).toEqual(expected);
       for (const step of job.steps.filter((s) => s.run?.startsWith("node scripts/")))
         expect(expression(step.env?.CONVEX_DEPLOY_KEY)).toBe("secrets.FNFE_ISSUANCE_DEPLOY_KEY");
@@ -470,7 +470,7 @@ describe("workflows", () => {
       expect(jobs.map(([name]) => name)).toEqual(["plan", credentialed[0]![0]]);
       const [, plan] = jobs[0]!;
       expect(plan.environment).toBeUndefined();
-      expect(plan.steps.at(-1)!.run).toBe("node scripts/issuance-gate.mjs plan");
+      expect(plan.steps.at(-1)!.run).toBe("node scripts/deploy/issuance-gate.mjs plan");
       expect([job.needs].flat()).toEqual(["plan"]);
       for (const [, each] of jobs)
         expect(
@@ -535,9 +535,9 @@ describe("CODEOWNERS", () => {
       "/.github/workflows/",
       "/.github/CODEOWNERS",
       "/deploy/",
-      "/scripts/issuance-gate.mjs",
+      "/scripts/deploy/issuance-gate.mjs",
       "/scripts/lib/issuance-gate.mjs",
-      "/scripts/deploy-issuance-production.mjs",
+      "/scripts/deploy/deploy-issuance-production.mjs",
       "/scripts/lib/issuance-release.mjs",
       "/platform/convex/issuance.ts",
       "/platform/convex/lib/issuanceGate.ts",

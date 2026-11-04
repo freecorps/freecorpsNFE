@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
-import { verifiedRun } from "./lib/issuance-gate.mjs";
+import { verifiedRun } from "../lib/issuance-gate.mjs";
 import {
   ISSUANCE_FORBIDDEN_VARIABLES,
   RELEASE_WORKFLOWS,
@@ -15,10 +15,10 @@ import {
   issuanceReleaseEnvironment,
   issuanceReleaseTarget,
   issuanceReleaseWorker,
-} from "./lib/issuance-release.mjs";
-import { consoleBuildEnvironment } from "./lib/selfhost.mjs";
-import { issuanceProductionForbiddenVariables } from "../platform/convex/lib/issuanceProduction";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/issuance-release.mjs";
+import { consoleBuildEnvironment } from "../lib/selfhost.mjs";
+import { issuanceProductionForbiddenVariables } from "../../platform/convex/lib/issuanceProduction";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 /**
  * Publication and offsite backup of the second target, the NFS-e fiscal production deployment
@@ -263,7 +263,7 @@ describe("executor da publicação", () => {
     (action) => {
       const result = spawnSync(
         process.execPath,
-        ["scripts/deploy-issuance-production.mjs", action],
+        ["scripts/deploy/deploy-issuance-production.mjs", action],
         {
           cwd: root,
           env: { PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "" },
@@ -438,7 +438,7 @@ globalThis.fetch = async (url, init = {}) => {
       [
         "--import",
         pathToFileURL(preload).href,
-        "scripts/deploy-issuance-production.mjs",
+        "scripts/deploy/deploy-issuance-production.mjs",
         "publish",
       ],
       {
@@ -543,7 +543,7 @@ describe("workflows", () => {
     expect(Object.keys(workflow.jobs)).toEqual(["plan", "validate", "publish"]);
     expect(plan!.environment).toBeUndefined();
     const check = plan!.steps!.at(-1)!;
-    expect(check.run!.trim()).toBe("node scripts/deploy-issuance-production.mjs plan");
+    expect(check.run!.trim()).toBe("node scripts/deploy/deploy-issuance-production.mjs plan");
     // The approved SHA reaches the plan check by env, never interpolated in the shell.
     expect(expression(check.env!.APPROVED_SHA)).toBe("inputs.approved_sha");
     expect(validate!.uses).toBe("./.github/workflows/ci.yml");
@@ -569,7 +569,7 @@ describe("workflows", () => {
     const run = publish!.steps!.find((step) =>
       step.run?.includes("deploy-issuance-production.mjs"),
     )!;
-    expect(run.run!.trim()).toBe("node scripts/deploy-issuance-production.mjs publish");
+    expect(run.run!.trim()).toBe("node scripts/deploy/deploy-issuance-production.mjs publish");
     expect(expression(run.env!.GH_TOKEN)).toBe("github.token");
     // The token reaches no other step, in particular not the dependency install.
     for (const step of publish!.steps!)
@@ -588,7 +588,7 @@ describe("workflows", () => {
   it("o deploy do sandbox na main não lê o plano, a chave nem o executor da produção fiscal", () => {
     for (const path of [
       ".github/workflows/deploy.yml",
-      "scripts/deploy-platform.mjs",
+      "scripts/deploy/deploy-platform.mjs",
       "scripts/lib/platform-release.mjs",
     ]) {
       const text = read(path);
@@ -602,7 +602,7 @@ describe("workflows", () => {
         expect(text, `${path} cita ${forbidden}`).not.toContain(forbidden);
     }
     // It still builds the sandbox console with the same command.
-    expect(read("scripts/deploy-platform.mjs")).toContain(
+    expect(read("scripts/deploy/deploy-platform.mjs")).toContain(
       'run("scripts/selfhost.mjs", ["build-hosted", hostedConfig]);',
     );
   });

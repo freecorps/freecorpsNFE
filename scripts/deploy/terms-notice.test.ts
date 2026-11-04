@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
+import { startTermsOfUseNotice } from "../lib/terms-notice.mjs";
 
 /** A silent log that keeps what the publisher would print. */
 function log() {

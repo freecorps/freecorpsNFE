@@ -53,7 +53,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24.22.1"
-      - run: node scripts/issuance-gate.mjs plan
+      - run: node scripts/deploy/issuance-gate.mjs plan
 
   read:
     name: Read-only check
@@ -94,7 +94,7 @@ jobs:
           GATE_REASON: ${{ inputs.reason }}
           CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/issuance-gate.mjs probe
+        run: node scripts/deploy/issuance-gate.mjs probe
       - name: Verify an authorized note
         if: inputs.check == 'verify-issued'
         env:
@@ -104,7 +104,7 @@ jobs:
           GATE_REASON: ${{ inputs.reason }}
           CONVEX_DEPLOY_KEY: ${{ secrets.FNFE_ISSUANCE_DEPLOY_KEY }}
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/issuance-gate.mjs verify-issued
+        run: node scripts/deploy/issuance-gate.mjs verify-issued
       - name: Record the answer or the refusal
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

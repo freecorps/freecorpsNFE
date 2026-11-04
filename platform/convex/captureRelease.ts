@@ -631,7 +631,7 @@ const runFields = {
 };
 
 /**
- * Freecorps operator switch, only from the workflows (`scripts/capture-release.mjs`), without
+ * Freecorps operator switch, only from the workflows (`scripts/deploy/capture-release.mjs`), without
  * approval, by a person in `authorizedActors`: `emergency_withdraw` withdraws the capture and
  * blocks the company from releasing it again; `unblock` lifts the block without releasing or
  * withdrawing anything, and is refused for a company that is not blocked

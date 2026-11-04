@@ -153,7 +153,7 @@ jobs:
       - name: Read the versioned plan
         id: plan
         run: |
-          if node scripts/issuance-gate.mjs plan; then
+          if node scripts/deploy/issuance-gate.mjs plan; then
             echo "named=true" >> "$GITHUB_OUTPUT"
           elif grep -q '"code": "PLAN_NOT_NAMED"' .ci-results/issuance-gate/receipt.json; then
             echo "::notice::Sem deployment de produção fiscal no plano; nada a copiar."

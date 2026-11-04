@@ -88,7 +88,7 @@ describe("classificação da auditoria de 25/10", () => {
       "scripts/summarize-hosted-round.test.ts",
     ])
       expect(classify(path)?.class).toBe("sai");
-    expect(classify("scripts/platform-release.test.ts")?.class).toBe("entra");
+    expect(classify("scripts/deploy/platform-release.test.ts")?.class).toBe("entra");
   });
 
   it("não classifica caminho que a auditoria não previu", () => {

@@ -232,7 +232,7 @@ const RECENT_LIMIT = 1000;
 
 /**
  * Internal view of the site's fiscal capture for Freecorps (#422), read by
- * `scripts/capture-release.mjs list`: each company that has a release record (released, withdrawn
+ * `scripts/deploy/capture-release.mjs list`: each company that has a release record (released, withdrawn
  * or blocked) with its stream, last query, code, certificate, interval and recent alerts, plus the
  * deployment switches. It is a mutation for one reason: a released company without a scheduled
  * check (released before the supervisor existed, for instance) gets it armed here. It never
@@ -568,7 +568,7 @@ export function testAlertMail(
 }
 
 /**
- * The test of the alert e-mail (#463), called only by `scripts/capture-release.mjs alert_test`:
+ * The test of the alert e-mail (#463), called only by `scripts/deploy/capture-release.mjs alert_test`:
  * one e-mail to `FNFE_CAPTURE_ALERT_EMAIL` through the same provider call as an alert, so its
  * arrival proves the destination without an alert of a real company. It reads and writes no
  * record, queries no source and changes no capture; the hourly ceiling of the alerts does not

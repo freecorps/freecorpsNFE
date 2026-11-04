@@ -298,8 +298,8 @@ têm até 04/12/2026, meia-noite de Brasília, para aceitar.
   e-mail aos proprietários e administradores, com 30 dias de antecedência.
   Cada publicação de um perfil com organizações chama a mutation interna
   `termsOfUseNotice.start` depois que a revisão serve: o sandbox hospedado
-  (`scripts/deploy-platform.mjs`, release, revisão sem mudança e bootstrap),
-  a produção fiscal da emissão (`scripts/deploy-issuance-production.mjs`), a
+  (`scripts/deploy/deploy-platform.mjs`, release, revisão sem mudança e bootstrap),
+  a produção fiscal da emissão (`scripts/deploy/deploy-issuance-production.mjs`), a
   validação (`scripts/deploy-validation.mjs`) e a instalação própria local
   (`scripts/selfhost.mjs up`). No worktree e na instalação hospedada
   independente, que usa o mesmo perfil `APP_ENV=installation` do sandbox

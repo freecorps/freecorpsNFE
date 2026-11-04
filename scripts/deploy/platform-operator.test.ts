@@ -3,7 +3,7 @@ import {
   checkOperatorRevision,
   operatorAuthorization,
   operatorBranch,
-} from "./lib/platform-operator.mjs";
+} from "../lib/platform-operator.mjs";
 
 const sha = "a".repeat(40);
 const ref = { object: { sha } };

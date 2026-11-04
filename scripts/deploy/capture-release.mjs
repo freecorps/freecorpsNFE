@@ -10,7 +10,7 @@
 // answer goes only into the receipt sealed for the custodians (`scripts/lib/sealed-receipt.mjs`).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { GateRefusal, deployKeyFor, gateConfig, verifiedRun } from "./lib/issuance-gate.mjs";
+import { GateRefusal, deployKeyFor, gateConfig, verifiedRun } from "../lib/issuance-gate.mjs";
 import {
   CAPTURE_WORKFLOWS,
   CONVEX_REFUSALS,
@@ -21,9 +21,9 @@ import {
   healthGate,
   listLines,
   siteTarget,
-} from "./lib/capture-release.mjs";
-import { writeSealedReceipt } from "./lib/sealed-receipt.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/capture-release.mjs";
+import { writeSealedReceipt } from "../lib/sealed-receipt.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const action = process.argv[2];

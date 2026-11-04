@@ -794,7 +794,7 @@ Uma consulta já enviada termina e grava a resposta sem o transporte; sem
 `FNFE_CAPTURE_FISCAL`, a resposta é descartada como incerta e a retomada
 reconcilia primeiro.
 
-O runner (`scripts/capture-release.mjs`) lê do GitHub quem disparou, confere
+O runner (`scripts/deploy/capture-release.mjs`) lê do GitHub quem disparou, confere
 o `/health` do site e chama `captureRelease:set` ou `captureRelease:setHalt`;
 na lista (operação `list`), `captureSupervisor:survey`
 ([visão interna](#supervisão-e-alertas-422)).
@@ -1046,7 +1046,7 @@ O e-mail traz tipo, código, estado e ids, e aponta a lista e o
 [runbook](../operacao/captura-fiscal.md#alertas-da-captura).
 
 **Teste do destino (#463).** `captureSupervisor.sendTestAlert`, pelo workflow
-`capture-fiscal.yml`, operação `alert_test` (`scripts/capture-release.mjs alert_test`), manda um
+`capture-fiscal.yml`, operação `alert_test` (`scripts/deploy/capture-release.mjs alert_test`), manda um
 e-mail de teste aos mesmos endereços pela mesma chamada ao provedor. Assim a
 chegada prova o destino sem esperar nem provocar o alerta de uma empresa. O
 teste não lê nem grava registro, não conta no teto por hora e não é
@@ -1061,7 +1061,7 @@ GitHub pediria um token do GitHub no deployment ou um workflow agendado com a
 deploy key do site.
 
 **Visão interna.** `captureSupervisor.survey`, pelo workflow
-`capture-fiscal.yml`, operação `list` (`scripts/capture-release.mjs list`), lista cada
+`capture-fiscal.yml`, operação `list` (`scripts/deploy/capture-release.mjs list`), lista cada
 empresa com registro de liberação (liberada, retirada ou bloqueada), com a
 situação do stream, o código, a última consulta respondida, a operação, o
 certificado (próprio ou não, vencimento), o intervalo mínimo, a supervisão e

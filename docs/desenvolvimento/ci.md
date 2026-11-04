@@ -544,7 +544,7 @@ aviso ausente, export quebrado, catálogo sem manifesto ou fora dos hashes,
 pacote aceito fora da versão ou do acesso público e contracts sem `private`. O recibo em `.ci-results/83/tarballs.json`
 contém lista, hashes, identidade e schemas incorporados. Sucesso desse check
 valida os bytes; a publicação vale só para os hashes aceitos na #83
-([release.md](../operacao/release.md)). `scripts/platform-release.test.ts` recusa destinos, SHA,
+([release.md](../operacao/release.md)). `scripts/deploy/platform-release.test.ts` recusa destinos, SHA,
 registro de instalação incompleto ou alterado, candidato obsoleto, sonda
 alterada e smoke incompleto, com precondições próprias de bootstrap e release, e
 confere a atualização automática da `main` e o

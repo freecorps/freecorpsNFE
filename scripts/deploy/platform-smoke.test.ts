@@ -1,8 +1,8 @@
 import { expect, it, vi } from "vite-plus/test";
-import { smokePlatform } from "./lib/platform-smoke.mjs";
-import { publishRevision } from "./lib/validation-deploy.mjs";
-import { bootstrapRevision } from "./lib/platform-release.mjs";
-import { smokeFailure, smokeFailureDetails } from "./lib/smoke-diagnostic.mjs";
+import { smokePlatform } from "../lib/platform-smoke.mjs";
+import { publishRevision } from "../lib/validation-deploy.mjs";
+import { bootstrapRevision } from "../lib/platform-release.mjs";
+import { smokeFailure, smokeFailureDetails } from "../lib/smoke-diagnostic.mjs";
 
 const sha = "a".repeat(40);
 const previous = "b".repeat(40);

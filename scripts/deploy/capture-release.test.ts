@@ -13,9 +13,9 @@ import {
   listLines,
   siteHealth,
   siteTarget,
-} from "./lib/capture-release.mjs";
-import { deployKeyFor, gateConfig, verifiedRun } from "./lib/issuance-gate.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/capture-release.mjs";
+import { deployKeyFor, gateConfig, verifiedRun } from "../lib/issuance-gate.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 /**
  * Freecorps workflows over the fiscal capture of a company on the hosted site (ADR 0007, amendment
@@ -429,7 +429,7 @@ describe("workflow", () => {
     }
     expect(job.steps.filter((step) => step.run?.startsWith("node scripts/"))).toHaveLength(1);
     // The operation reaches the runner through the environment, never through the shell text.
-    expect(runner.run!.trim()).toBe('node scripts/capture-release.mjs "$CAPTURE_OPERATION"');
+    expect(runner.run!.trim()).toBe('node scripts/deploy/capture-release.mjs "$CAPTURE_OPERATION"');
     expect(expression(runner.env!.CAPTURE_OPERATION)).toBe("inputs.operation");
     expect(expression(runner.env!.CONVEX_DEPLOY_KEY)).toBe("secrets.FNFE_SITE_DEPLOY_KEY");
   });
@@ -490,7 +490,7 @@ describe("workflow", () => {
       .filter((line) => line.trim() && !line.startsWith("#"))
       .map((line) => line.trim().split(/\s+/)[0]);
     for (const path of [
-      "/scripts/capture-release.mjs",
+      "/scripts/deploy/capture-release.mjs",
       "/scripts/lib/capture-release.mjs",
       "/platform/convex/captureRelease.ts",
       "/platform/convex/lib/fiscalCaptureRelease.ts",

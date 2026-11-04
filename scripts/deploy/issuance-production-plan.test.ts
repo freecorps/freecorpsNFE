@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 /**
  * The versioned plan of the NFS-e fiscal production deployment (ADR 0004 §8, #198). It can name

@@ -4,15 +4,15 @@ import { readFileSync, writeFileSync, mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { load, call, cli, configure, build, root, sha, run, compose } from "./lib/selfhost.mjs";
+import { load, call, cli, configure, build, root, sha, run, compose } from "../lib/selfhost.mjs";
 import {
   saveCustody,
   readCustody,
   restoreCustody,
   fileHash,
   recoveryKeys,
-} from "./lib/recovery-custody.mjs";
-import { proveQuickstarts, independentReceiver } from "./lib/sdk-proof.mjs";
+} from "../lib/recovery-custody.mjs";
+import { proveQuickstarts, independentReceiver } from "../lib/sdk-proof.mjs";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { Resolver } from "node:dns/promises";

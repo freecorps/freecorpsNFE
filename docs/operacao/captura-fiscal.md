@@ -561,7 +561,7 @@ liberar de novo e retomar pelo console, e o desbloqueio indevido de uma
 empresa liberada (evidência).
 As chamadas passam pelas mesmas funções do runner dos workflows, mas o run
 do GitHub é sintético; esse ensaio não substitui o do site. Repita o
-ensaio depois de mudar os workflows, `scripts/capture-release.mjs` ou
+ensaio depois de mudar os workflows, `scripts/deploy/capture-release.mjs` ou
 `scripts/lib/sealed-receipt.mjs`. Os
 workflows rodam da `main` e as funções precisam estar no site. Quem dispara
 precisa estar em `deploy/issuance-gate.json`.
@@ -587,7 +587,7 @@ no painel da captura), avise o responsável e religue logo depois. Uma
 consulta que cair durante a parada é adiada em uma hora, e a retomada pode
 levar esse tempo. A emergência com `/health` ruim não é
 ensaiada, porque exigiria quebrar o site; ela está coberta por
-`scripts/capture-release.test.ts`.
+`scripts/deploy/capture-release.test.ts`.
 
 **Onde registrar.** Em `docs/v1.0/evidence/424/AAAA-MM-DD/README.md`, por
 passo: URL do run, tentativa, SHA, quem disparou, horário, código ou

@@ -12,17 +12,17 @@ import {
   releaseWorker,
   bootstrapRevision,
   legacyEnvironmentNames,
-} from "./lib/platform-release.mjs";
-import { publishRevision } from "./lib/validation-deploy.mjs";
-import { backendRequest } from "./lib/validation.mjs";
-import { accountPolicy } from "../platform/account-policy.mjs";
-import { operatorAuthorization, verifyOperatorRevision } from "./lib/platform-operator.mjs";
-import { projectRepository } from "./lib/repository.mjs";
-import { smokePlatform } from "./lib/platform-smoke.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { unchangedPublication } from "./lib/platform-unchanged.mjs";
-import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/platform-release.mjs";
+import { publishRevision } from "../lib/validation-deploy.mjs";
+import { backendRequest } from "../lib/validation.mjs";
+import { accountPolicy } from "../../platform/account-policy.mjs";
+import { operatorAuthorization, verifyOperatorRevision } from "../lib/platform-operator.mjs";
+import { projectRepository } from "../lib/repository.mjs";
+import { smokePlatform } from "../lib/platform-smoke.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { unchangedPublication } from "../lib/platform-unchanged.mjs";
+import { startTermsOfUseNotice } from "../lib/terms-notice.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const planBytes = readFileSync(join(root, "deploy/platform-release.json"));

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
-import { installationHeaders, verifyInstallationPolicy } from "./lib/installation-headers.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { installationHeaders, verifyInstallationPolicy } from "../lib/installation-headers.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 const source = readFileSync(new URL("apps/console/public/_headers", repoUrl), "utf8");
 const target = {

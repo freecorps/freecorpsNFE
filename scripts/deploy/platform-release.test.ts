@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { expect, it } from "vite-plus/test";
 import { parse } from "yaml";
-import { publishRevision } from "./lib/validation-deploy.mjs";
+import { publishRevision } from "../lib/validation-deploy.mjs";
 import {
   releaseTarget,
   releaseEnvironment,
@@ -17,8 +17,8 @@ import {
   releaseWorker,
   bootstrapRevision,
   legacyEnvironmentNames,
-} from "./lib/platform-release.mjs";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/platform-release.mjs";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 it("exige retirar credenciais legadas e de wipe sem remover chaves da plataforma", () => {
   expect(
@@ -415,7 +415,7 @@ it("o workflow publica as atualizações da main sem repetir a CI e conserva boo
   const steps = publish.steps!;
   const checkout = steps.findIndex((step) => step.uses?.startsWith("actions/checkout@"));
   const release = steps.findIndex(
-    (step) => step.run?.trim() === "node scripts/deploy-platform.mjs",
+    (step) => step.run?.trim() === "node scripts/deploy/deploy-platform.mjs",
   );
   expect(checkout).toBeGreaterThanOrEqual(0);
   expect(checkout).toBeLessThan(release);

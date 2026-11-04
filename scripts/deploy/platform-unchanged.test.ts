@@ -10,8 +10,8 @@ import {
   publishedRevision,
   unchangedPublication,
   undeployed,
-} from "./lib/platform-unchanged.mjs";
-import { publishRevision } from "./lib/validation-deploy.mjs";
+} from "../lib/platform-unchanged.mjs";
+import { publishRevision } from "../lib/validation-deploy.mjs";
 
 const target = {
   site: "https://site.example",
@@ -29,7 +29,7 @@ it("publishes everything a build reads and skips only tests, CI, agents and inte
   for (const file of [
     "tests/platform.keys.test.ts",
     "apps/console/src/navigation.test.tsx",
-    "scripts/platform-unchanged.test.ts",
+    "scripts/deploy/platform-unchanged.test.ts",
     "apps/console/e2e/m0.mjs",
     ".github/workflows/ci.yml",
     ".agents/skills/x/SKILL.md",

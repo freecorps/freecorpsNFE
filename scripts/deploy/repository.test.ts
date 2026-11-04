@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { publicationSha } from "./lib/ci.mjs";
-import { GATE_WORKFLOWS, verifiedRun } from "./lib/issuance-gate.mjs";
+import { publicationSha } from "../lib/ci.mjs";
+import { GATE_WORKFLOWS, verifiedRun } from "../lib/issuance-gate.mjs";
 import {
   isProjectRepository,
   LOCAL_REPOSITORY,
   PROJECT_REPOSITORIES,
   projectRepository,
-} from "./lib/repository.mjs";
-import { requireIntegrationWriter } from "./lib/validation.mjs";
-import { checkPublication, requireRehearsalWindow } from "./lib/validation-deploy.mjs";
+} from "../lib/repository.mjs";
+import { requireIntegrationWriter } from "../lib/validation.mjs";
+import { checkPublication, requireRehearsalWindow } from "../lib/validation-deploy.mjs";
 
 // Desde a virada de 03/11/2026 (decisão 6 de docs/v1.0/ACCEPTANCE.md), só o
 // repositório público é origem aceita; o arquivado é recusado como qualquer outro.
