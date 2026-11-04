@@ -147,6 +147,11 @@ export const commands = {
     "nenhum",
     "Procura credenciais nos arquivos de texto versionados, sem mostrar o valor",
   ],
+  "knip:check": [
+    "repositório",
+    "nenhum",
+    "Procura arquivos e dependências sem uso nos workspaces (knip.jsonc); não confere exports",
+  ],
   "public:tree": [
     "repositório",
     "local",

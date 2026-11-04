@@ -1,0 +1,73 @@
+// Arquivos e dependências sem uso (`bun run knip:check`, tarefa `ci:knip` do grafo
+// `validate`). A checagem de `exports` fica de fora por enquanto. Cada exceção diz por
+// que o knip não enxerga o uso; docs/desenvolvimento/ci.md descreve a tarefa.
+{
+  "$schema": "https://unpkg.com/knip@6.42.1/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        // Comandos de package.json, workflows e vite.config.ts (tarefas do Vite Task).
+        "scripts/*.{mjs,ts}",
+        ".github/scripts/*.mjs",
+        "tests/**/*.test.ts",
+        "tests/setup/*.ts",
+        "lib/**/*.test.ts",
+        "tooling/**/*.test.ts",
+        "deploy/**/*.{ts,mjs}",
+        "examples/**/*.{ts,mjs}",
+        // Copiados por prove-xml-package.mjs e prove-distribution.mjs para um consumidor
+        // limpo e executados lá, nunca importados.
+        "scripts/lib/*-consumer.mjs",
+        // Fixtures que ci.fileIsolation.test.ts executa num Vitest próprio e que
+        // ci.testProjects.test.ts lê pelo caminho.
+        "tests/fixtures/file-isolation/**",
+        "tests/fixtures/mock-scan/**",
+      ],
+      "project": [
+        "scripts/**/*.{mjs,ts}",
+        "tests/**/*.{ts,tsx,mjs}",
+        "lib/**/*.{ts,mjs}",
+        "tooling/**/*.{mjs,ts}",
+        ".github/scripts/**/*.mjs",
+        "deploy/**/*.{ts,mjs}",
+        "examples/**/*.{ts,mjs}",
+      ],
+      // Fixadas na versão exata que o Vite+ exige (docs/desenvolvimento/ci.md,
+      // Instalação reproduzível); o Vite+ as carrega, nenhum arquivo as importa.
+      "ignoreDependencies": ["oxfmt", "oxlint", "oxlint-tsgolint"],
+    },
+    "platform": {
+      // O plugin Convex do knip toma convex/** como entrada, porque o Convex publica todo
+      // módulo da pasta; os testes também carregam a pasta inteira por import.meta.glob.
+      // Por isso um helper órfão de convex/lib/ não aparece aqui.
+      "entry": ["test-setup.ts", "installation.ts", "account-policy.mjs"],
+      "project": ["**/*.{ts,mjs}"],
+    },
+    "apps/console": {
+      "entry": [
+        "src/main.tsx",
+        "privacy-mail-worker.ts",
+        "e2e/**/*.{mjs,ts}",
+        "src/**/*.test.{ts,tsx}",
+        // Exemplos públicos servidos como arquivo estático em /developer/ e citados pela
+        // documentação pública (apps/docs/content) e pelo console.
+        "public/developer/*.{ts,mjs}",
+      ],
+      "project": ["**/*.{ts,tsx,mjs}"],
+    },
+    "apps/docs": {
+      "entry": ["app/**/*.{ts,tsx}", "content/**/*.mdx", "scripts/*.mjs"],
+      "project": ["**/*.{ts,tsx,mjs,mdx,css}"],
+    },
+    "packages/*": {
+      "entry": ["**/*.test.ts"],
+      "project": ["**/*.{ts,mjs}"],
+    },
+    "packages/sdk": {
+      "project": ["**/*.{ts,mjs}"],
+      // O SDK importa ../../contracts/src por caminho relativo e empacota o zod junto
+      // (THIRD_PARTY_NOTICES.txt); as entradas declaram o que o pacote leva.
+      "ignoreDependencies": ["@freecorps/contracts", "zod"],
+    },
+  },
+}

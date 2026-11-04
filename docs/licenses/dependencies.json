@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "1b11ffa168bfa4c2f896b422c10c5b3cd0b27477620a18a2d335d2535697561d",
+  "lockSha256": "fb412c14aa65371098410c51035e09585e3f891bf7d42c4b01f44ccbc3aad1ab",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -495,6 +495,14 @@
       "direct": []
     },
     {
+      "id": "@emnapi/core@1.11.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40emnapi%2Fcore/1.11.2",
+      "integrity": "sha512-TC8MkTuZUtcTSiFeuC0ksCh9QIJ5+F21MvZ4Wn4ORfYaFJ/0dsiudv5tVkejgwZlwQ39jL9WWDe2lz8x0WglOA==",
+      "repository": "git+https://github.com/toyobayashi/emnapi.git",
+      "direct": []
+    },
+    {
       "id": "@emnapi/core@1.11.3",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/%40emnapi%2Fcore/1.11.3",
@@ -503,10 +511,26 @@
       "direct": []
     },
     {
+      "id": "@emnapi/runtime@1.11.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40emnapi%2Fruntime/1.11.2",
+      "integrity": "sha512-kyOl3X0DuTiT1h2ft8r2fYO8JYtU9a9Xis/zBSiGArNaagCOWx90N1k2wxp18czFDH+OgcWGb5ZP/XMt3dcyPA==",
+      "repository": "git+https://github.com/toyobayashi/emnapi.git",
+      "direct": []
+    },
+    {
       "id": "@emnapi/runtime@1.11.3",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/%40emnapi%2Fruntime/1.11.3",
       "integrity": "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==",
+      "repository": "git+https://github.com/toyobayashi/emnapi.git",
+      "direct": []
+    },
+    {
+      "id": "@emnapi/wasi-threads@1.2.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40emnapi%2Fwasi-threads/1.2.2",
+      "integrity": "sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==",
       "repository": "git+https://github.com/toyobayashi/emnapi.git",
       "direct": []
     },
@@ -1465,6 +1489,158 @@
       "direct": []
     },
     {
+      "id": "@oxc-parser/binding-android-arm-eabi@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-android-arm-eabi/0.154.0",
+      "integrity": "sha512-sDdEtDl7vKdCvf54j72RJbowE3jCmyRz/+oOB6IAwQxAHZ0eI+Dcj4hvVnm0b9Dy31plUkdmfds9C+/Zt895Tg==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-android-arm64@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-android-arm64/0.154.0",
+      "integrity": "sha512-UHrDPELzvWZoVkIDdSycj4bzcTMCJG3IbN++mSUgVBaUtNtWHjQ98U6Vz5bpF/1Ic3FYJyYhMr74huO5tVvpZw==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-darwin-arm64@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-darwin-arm64/0.154.0",
+      "integrity": "sha512-mokYzajOSXxtSRDWCdHARGdntrKH+rZZ24Jzo8AtafyNzz0NARmpMm26Tc5B6qiGrr6UliWibHCOif1qRN2vaA==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-darwin-x64@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-darwin-x64/0.154.0",
+      "integrity": "sha512-WbtUBrclOVItWfLRSvs+Z/WLtXxJ2Ctv50PyuX894HzDN5/e0qzxVpTNPIVMzOerBhgKtFsSMcfxlYIAbvdVgg==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-freebsd-x64@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-freebsd-x64/0.154.0",
+      "integrity": "sha512-YooHZSLawOe2fqm+lDdG8oAaQh2NYV/RMYTYzWRLy72stm2BgE9O/8Al6kFENjkmzyyBccDLLBirGxVtpzQfrw==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-arm-gnueabihf@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-arm-gnueabihf/0.154.0",
+      "integrity": "sha512-hKOwhZbrXdTwc4bGVfbLCXl9f2swl6zWdISocLQSNX9MgPmwHE3qGzOUkCrkuGpwdCVHPnkfOwsqTuYsrP5uNg==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-arm-musleabihf@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-arm-musleabihf/0.154.0",
+      "integrity": "sha512-tnjiooXEU013349O/yxKbF5Cusp1CfHWQ8kYR8tGeRzR/P4sOpQGQo21fsS71M0fMD6ESLq+lbvXFWi43PuKeQ==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-arm64-gnu@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-arm64-gnu/0.154.0",
+      "integrity": "sha512-Cao2kj+8d7BT6XJU1gV9eVQjV+Cr+e8vQm3tddDRZiM2hHrMDxwy3j6t+ofaSl0idyuPPCZ4AlpmQoj8yOT1QA==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-arm64-musl@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-arm64-musl/0.154.0",
+      "integrity": "sha512-uiwA0V3q8llWA7/8r+a9BBjk4j5YMDmi6wfOsyQfGOJMQSLHEiZ3HI8ulea766ykUa9wJFWk9XWEl4uJrZLQqw==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-ppc64-gnu@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-ppc64-gnu/0.154.0",
+      "integrity": "sha512-LICfN0Xs4Zdko+bJy6eOAEQojDuIR26suF2JtOsMaXjgbCrpRSH7/NCvJhY13YvYBx12V6hnwrL8n0lk0rbNJQ==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-riscv64-gnu@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-riscv64-gnu/0.154.0",
+      "integrity": "sha512-gbbSYxLF8ssRbQ2qQPy+2EhGNwNH1bAoRdkk6cnWaKHqmCikpSIPtpXjFbCCtjTi0uojqOM3ghFQwQPbDQsU0Q==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-riscv64-musl@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-riscv64-musl/0.154.0",
+      "integrity": "sha512-nSnRYYDLCcRVjSQzF3g6rKqCNYwo5o+aQgnn8BBXfe+ofCgMGlGqkfRyvXm6ptZvoxNkkWtLlqM8W7Xc3j6ZnQ==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-s390x-gnu@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-s390x-gnu/0.154.0",
+      "integrity": "sha512-BxBQoJKtzRQgZEKQIt6CDUm8RGKC5T8Qo4576yDa5/xgc10X3fBDItMbRabzLtbUBfTqKLl+8AVr/H6CF7W22g==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-x64-gnu@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-x64-gnu/0.154.0",
+      "integrity": "sha512-/whkust2vYy+GjRUVL5cWaJmEu6jkdFfo5mkxgckyeOX61eMwo4iBoiwzeJZeMWAdzb/XOtQyLApHhFht3sOWA==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-linux-x64-musl@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-linux-x64-musl/0.154.0",
+      "integrity": "sha512-EXURTyW9riw4B/kZnnE+58emAtw6+3VEszQfXUZkRqGaKIcmWDYkZtKB+xY/blHvuZ+Qy/fDclc31nmUCgtkSA==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-openharmony-arm64@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-openharmony-arm64/0.154.0",
+      "integrity": "sha512-ZRFooyH3qsR6vuR4jFGlG3XM36490SvvXtNaUahBK4zHpooMdTHNaOMtGGJI0EW38m5hi4rOco9kw7ZwCIp28w==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-win32-arm64-msvc@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-win32-arm64-msvc/0.154.0",
+      "integrity": "sha512-U0Vp+4lvwUa/PnOCJTZOjydj1rX2+VLHz4Y2vSFqlN8/7LTiURgD7z4uQ9yNv9O/NlU3mELBnPDlu7aaSYG1zQ==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-win32-ia32-msvc@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-win32-ia32-msvc/0.154.0",
+      "integrity": "sha512-Hc8QgsFY5eUUP25we8TISUruibG2cDt0H4IcPG9RKdabb6odkCzIqjV6Gk9beGWGuOwMVCr81H/Su1q363LCCg==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-parser/binding-win32-x64-msvc@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-parser%2Fbinding-win32-x64-msvc/0.154.0",
+      "integrity": "sha512-hD7judkUMA/hZPoamvKADs6+an1smp8UTK0aMYRijkvi00K/1vl7vEtmyn2JyQ9S+vibtnfcNzxqTLGyJUZCRQ==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
       "id": "@oxc-project/runtime@0.155.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/%40oxc-project%2Fruntime/0.155.0",
@@ -1473,11 +1649,171 @@
       "direct": []
     },
     {
+      "id": "@oxc-project/types@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-project%2Ftypes/0.154.0",
+      "integrity": "sha512-KYOUGQFlLWR+s4QMV2Q9ko38TZm7EdO87Qm7rvZLqk/webse/cDjtyxKhg/47l0byCbs/k46LT8qc4PKjAikzA==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
       "id": "@oxc-project/types@0.155.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/%40oxc-project%2Ftypes/0.155.0",
       "integrity": "sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==",
       "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-android-arm-eabi@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-android-arm-eabi/11.24.2",
+      "integrity": "sha512-y09e0L0SRI2OA2tUIrjBgoV3eH5hvUKXNkJqXmNo5V2WxIjyC7I7aJfRLMEVpA8yi95f90gFDvO0VMgrDw+vwA==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-android-arm64@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-android-arm64/11.24.2",
+      "integrity": "sha512-cl4icWaZFnLdg8m6qtnh5rBMuGbxc/ptStFHLeCNwr+2cZjkjNwQu/jYRS0CHlnPecOJMpuS5M6/BH+0J/YkEg==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-darwin-arm64@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-darwin-arm64/11.24.2",
+      "integrity": "sha512-At29QEMF6HajbQvgY8K6OXnHD1x9rad74xBEfmCB6ZqCGsdq75aK7tOYcTbOanMy8qdIBrfL3SMr3p/lfSlb9w==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-darwin-x64@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-darwin-x64/11.24.2",
+      "integrity": "sha512-A5Kqr1EUj4oIL5CF4WRssq/o5P0Y11cwoFouMRmQ7YnC/A8V93nv1nb7aSU8HwcgmXropjLNkVTl4MN87cu28Q==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-freebsd-x64@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-freebsd-x64/11.24.2",
+      "integrity": "sha512-R5xkRBRRz7ceH/P5Jrc6G7FmdUdgpLYyESFAUDVTNQ9K0sGPxcp4ljiwEwEqsvNcQ4sYbMRrWcHHBCu7ksAJVw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-arm-gnueabihf@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-arm-gnueabihf/11.24.2",
+      "integrity": "sha512-k/RuYL4L/R58IBn3wT5ma3Wh4k62bp1eYCFRWCmMsasUOqL+H6sW0VGFadEzKWXFFlz+2uIMoeMk9ySSZJHgbg==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-arm-musleabihf@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-arm-musleabihf/11.24.2",
+      "integrity": "sha512-bnHAak3ujYfH5pKk4NieFNbvYvernfoQDgwLddbZ3OtMYrem87/qjlA+u+aKG0oZcqSLGCful/6/CEA+aeAgaA==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-arm64-gnu@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-arm64-gnu/11.24.2",
+      "integrity": "sha512-vDT3KHgzYp47gmtNOqL2VNhCyl5Zv643eyxm//A68J8DeUGXrvD1pZFiaT4jSfe+RInfnn1R2yVHye4enx6RnA==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-arm64-musl@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-arm64-musl/11.24.2",
+      "integrity": "sha512-+kMlQvbzfyEYtu5FcjE4p+ttBLpKW4d/AsAsuE69BxV6V4twZJeIQZFfD8gh/wqglY0MkPSezWXQH0jBV13MUw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-ppc64-gnu@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-ppc64-gnu/11.24.2",
+      "integrity": "sha512-shjfMhmZ3gq9fv/w7bi3PnZlgOPG+2QAOFf0BJF0EgBSIGZ6PMLN2zbGEblTUYB/NKVDRyYhE2ff3dJ1QqNPkA==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-riscv64-gnu@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-riscv64-gnu/11.24.2",
+      "integrity": "sha512-zGelwFR5oRo+b69k8Lrzun86DyUHzfKN6cnjbR9l7Z7NIRznOE/2ZvPa1IUKqAL2PzAXOdwkfVqNvO1H2RlpAw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-riscv64-musl@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-riscv64-musl/11.24.2",
+      "integrity": "sha512-qxZ1SWCXJY0eyhAlP6Lmo9F2Nrtx7EkYj9oCgL8apDPCwXwCEDA2U697bbT81JIc2IrVjxO4KX6WU2N+oN9Z4w==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-s390x-gnu@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-s390x-gnu/11.24.2",
+      "integrity": "sha512-sGCecF3cx2DFlH4t/z7ApnOnXqN48p5p5mlHDEnHTAukQa2P+qMVE4CwyWE9W+q/m3QJ7kKfGrIjax31f44oFQ==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-x64-gnu@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-x64-gnu/11.24.2",
+      "integrity": "sha512-k/VlMMcSzMlahb3/fENM4rTlsJ0s3fFROA0KXPBmKggqmTSaE383sl8F3KCOXPLmVsYfW6hCitMhXCEtNeZxxg==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-linux-x64-musl@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-linux-x64-musl/11.24.2",
+      "integrity": "sha512-8hbnZyNi97b/8wapYaIF9+t9GmZKBW2vunaOc3h9HGJptH7b7XpvZqOTBSm/MpTjr7H497BlgOaSfLUdhmy2bw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-openharmony-arm64@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-openharmony-arm64/11.24.2",
+      "integrity": "sha512-MvyGik3a6pVgZ0t/kWlbmFxFLmXQJwgLsY2eYFHLpy0wGwRbfzeIGgDwQ3kXqE30z+kSXennRkCrT7TUvkptNg==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-wasm32-wasi@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-wasm32-wasi/11.24.2",
+      "integrity": "sha512-vHcssMPwO08RTvj/c0iOBz90attxyG3wQJ0dTcyEQK43LRpcdLWZlV5feBhv6Isn6ahbQIzHbCgfa81+RiML0Q==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-win32-arm64-msvc@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-win32-arm64-msvc/11.24.2",
+      "integrity": "sha512-uokJqro2iBqkFvJdKQLP7d8/BUmFwESQFVmIJUQKj1Xn1a/LysJoe1vmeECLF5b3jsV8CAL5sEMJXX6SdK9Nhg==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
+      "id": "@oxc-resolver/binding-win32-x64-msvc@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40oxc-resolver%2Fbinding-win32-x64-msvc/11.24.2",
+      "integrity": "sha512-UqGPmo56KDfLlfXFAFIrNflHT8tFxWGEivWg3Zeyp4Uy2NlKN1FGPr6/BxcLGG3+kZ6Wp14g5Uj+n71boqZfiw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
       "direct": []
     },
     {
@@ -2474,11 +2810,6 @@
       "repository": "git+https://github.com/TanStack/router.git",
       "direct": [
         {
-          "workspace": ".",
-          "kind": "dependencies",
-          "dependency": "@tanstack/react-router"
-        },
-        {
           "workspace": "apps/console",
           "kind": "dependencies",
           "dependency": "@tanstack/react-router"
@@ -3104,11 +3435,6 @@
       "integrity": "sha512-/5NV/vDALVFDXgLmfsy9TRCBlKwO2LNBFzpzvb9iIj+jR+eSc6DLYYvVOdivT/jm7MtU6TebYuRmzEOI7w40UA==",
       "repository": "git://github.com/xmldom/xmldom.git",
       "direct": [
-        {
-          "workspace": ".",
-          "kind": "dependencies",
-          "dependency": "@xmldom/xmldom"
-        },
         {
           "workspace": "packages/fiscal-nfe",
           "kind": "dependencies",
@@ -3977,6 +4303,14 @@
       ]
     },
     {
+      "id": "fd-package-json@2.0.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/fd-package-json/2.0.0",
+      "integrity": "sha512-jKmm9YtsNXN789RS/0mSzOC1NUq9mkVd65vbSSVsKdjGvYXBuE4oWe2QOEoFeRmJg+lPuZxpmrfFclNhoRMneQ==",
+      "repository": "git+https://github.com/es-tooling/fd-package-json.git",
+      "direct": []
+    },
+    {
       "id": "fdir@6.5.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/fdir/6.5.0",
@@ -4012,6 +4346,14 @@
       "source": "https://registry.npmjs.org/flatted/3.4.4",
       "integrity": "sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==",
       "repository": "git+https://github.com/WebReflection/flatted.git",
+      "direct": []
+    },
+    {
+      "id": "formatly@0.11.4",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/formatly/0.11.4",
+      "integrity": "sha512-TeCC10lP8KCgoX+Fe5lryILIT0/Dy+nP0OSVnsuB5CwXoLuOdqxCYlPFF1inR8S/zTy1ec7TjhS2TeRKWzzImA==",
+      "repository": "git+https://github.com/JoshuaKGoldberg/formatly.git",
       "direct": []
     },
     {
@@ -4108,6 +4450,14 @@
       "source": "https://registry.npmjs.org/get-nonce/1.0.1",
       "integrity": "sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==",
       "repository": "git+ssh://git@github.com/theKashey/get-nonce.git",
+      "direct": []
+    },
+    {
+      "id": "get-tsconfig@4.14.3",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/get-tsconfig/4.14.3",
+      "integrity": "sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==",
+      "repository": "git+https://github.com/privatenumber/get-tsconfig.git",
       "direct": []
     },
     {
@@ -4355,6 +4705,20 @@
       "direct": []
     },
     {
+      "id": "knip@6.42.1",
+      "declaredLicense": "ISC",
+      "source": "https://registry.npmjs.org/knip/6.42.1",
+      "integrity": "sha512-gKJVsiT4LJQ0lfc8uSHOCzkOY8adAXNFGarIeODZbJOkBnQRVsG3e0UZFnO4LMwjA82A5tBWX/VgoeTYcjdKiQ==",
+      "repository": "git+https://github.com/webpro-nl/knip.git",
+      "direct": [
+        {
+          "workspace": ".",
+          "kind": "devDependencies",
+          "dependency": "knip"
+        }
+      ]
+    },
+    {
       "id": "kysely@0.29.7",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/kysely/0.29.7",
@@ -4369,11 +4733,6 @@
       "integrity": "sha512-Ek8Fdb8fIl6mBCvrMGImkOP02aDpANwus0PV827v4gobV9jnoYEHNoPTwWokt71egUBl+sng53fjZ5y2PexLqQ==",
       "repository": "git+ssh://git@github.com/jameslan/libxml2-wasm.git",
       "direct": [
-        {
-          "workspace": ".",
-          "kind": "dependencies",
-          "dependency": "libxml2-wasm"
-        },
         {
           "workspace": "packages/fiscal-nfe",
           "kind": "dependencies",
@@ -5217,6 +5576,22 @@
       "direct": []
     },
     {
+      "id": "oxc-parser@0.154.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/oxc-parser/0.154.0",
+      "integrity": "sha512-Gr/6fkjZwi937c4Tsz8y0iO4U0FLPkZI6JSVucLAIvQyqh379px7RS8ORIc0HOORbFjXZ6zyqWLl53qxhSeofw==",
+      "repository": "git+https://github.com/oxc-project/oxc.git",
+      "direct": []
+    },
+    {
+      "id": "oxc-resolver@11.24.2",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/oxc-resolver/11.24.2",
+      "integrity": "sha512-FY91FiDBj7ls5MsFS9jN3tjz2o0/zsdSsymlakySaBwVJZorHhkWyICLZMKxlu1R9vYo+sd3z1jwb4J8x7bNDw==",
+      "repository": "git+https://github.com/oxc-project/oxc-resolver.git",
+      "direct": []
+    },
+    {
       "id": "oxfmt@0.74.0",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/oxfmt/0.74.0",
@@ -5291,6 +5666,14 @@
       "direct": []
     },
     {
+      "id": "package-manager-detector@1.9.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/package-manager-detector/1.9.0",
+      "integrity": "sha512-zAMfbta9nPA8AKkA4WdmNAT8R8s6Dk0/xwPsqNnRidMFcLo1YkLuPDTgs2f64XdzS8vbLNnoJ+uUIkgbz7oRHA==",
+      "repository": "git+https://github.com/antfu-collective/package-manager-detector.git",
+      "direct": []
+    },
+    {
       "id": "pako@1.0.11",
       "declaredLicense": "(MIT AND Zlib)",
       "source": "https://registry.npmjs.org/pako/1.0.11",
@@ -5353,11 +5736,6 @@
       "integrity": "sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==",
       "repository": "git+https://github.com/Hopding/pdf-lib.git",
       "direct": [
-        {
-          "workspace": ".",
-          "kind": "dependencies",
-          "dependency": "pdf-lib"
-        },
         {
           "workspace": "packages/fiscal-nfe",
           "kind": "dependencies",
@@ -5507,11 +5885,6 @@
       "integrity": "sha512-1ca71Zgiu6ORjHqFBDpnSMTR2ReToX4l1Au1VFLyVeBTFavzQnv5JxMFr3ukHVKpSrSA2MCk0lNJSykjUfz7Zg==",
       "repository": "git://github.com/soldair/node-qrcode.git",
       "direct": [
-        {
-          "workspace": ".",
-          "kind": "dependencies",
-          "dependency": "qrcode"
-        },
         {
           "workspace": "packages/fiscal-nfse",
           "kind": "dependencies",
@@ -5782,6 +6155,14 @@
       "direct": []
     },
     {
+      "id": "resolve-pkg-maps@1.0.0",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/resolve-pkg-maps/1.0.0",
+      "integrity": "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==",
+      "repository": "git+https://github.com/privatenumber/resolve-pkg-maps.git",
+      "direct": []
+    },
+    {
       "id": "rou3@0.9.2",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/rou3/0.9.2",
@@ -5906,6 +6287,14 @@
       "direct": []
     },
     {
+      "id": "smol-toml@1.9.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "https://registry.npmjs.org/smol-toml/1.9.1",
+      "integrity": "sha512-j7WyPdf0CJoutMzMoPLF/bVXHtKZIT9Rb4eGeEbWw8X2t5oirjPgpL+OpaENZrILYaXqYwnVH+qgUwVbl+pUJQ==",
+      "repository": "github:squirrelchat/smol-toml",
+      "direct": []
+    },
+    {
       "id": "source-map-js@1.2.2",
       "declaredLicense": "BSD-3-Clause",
       "source": "https://registry.npmjs.org/source-map-js/1.2.2",
@@ -5959,6 +6348,14 @@
       "source": "https://registry.npmjs.org/strip-ansi/6.0.1",
       "integrity": "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==",
       "repository": "git+https://github.com/chalk/strip-ansi.git",
+      "direct": []
+    },
+    {
+      "id": "strip-json-comments@5.0.3",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/strip-json-comments/5.0.3",
+      "integrity": "sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==",
+      "repository": "git+https://github.com/sindresorhus/strip-json-comments.git",
       "direct": []
     },
     {
@@ -6204,6 +6601,14 @@
       ]
     },
     {
+      "id": "unbash@6.0.3",
+      "declaredLicense": "ISC",
+      "source": "https://registry.npmjs.org/unbash/6.0.3",
+      "integrity": "sha512-hRzSpMeM8uYMQkrnIVaVy3f44oLlokglVeEyP5hIQj88z60bKPO9VVbEpGfxChGBh9lBkzuWKOTOzPdfD6KNEA==",
+      "repository": "git+https://github.com/webpro-nl/unbash.git",
+      "direct": []
+    },
+    {
       "id": "undici-types@7.24.6",
       "declaredLicense": "MIT",
       "source": "https://registry.npmjs.org/undici-types/7.24.6",
@@ -6391,6 +6796,14 @@
       "source": "https://registry.npmjs.org/w3c-xmlserializer/6.0.0",
       "integrity": "sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==",
       "repository": "git+https://github.com/jsdom/w3c-xmlserializer.git",
+      "direct": []
+    },
+    {
+      "id": "walk-up-path@4.0.0",
+      "declaredLicense": "ISC",
+      "source": "https://registry.npmjs.org/walk-up-path/4.0.0",
+      "integrity": "sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==",
+      "repository": "git+https://github.com/isaacs/walk-up-path.git",
       "direct": []
     },
     {

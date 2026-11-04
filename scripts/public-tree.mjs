@@ -159,6 +159,7 @@ export const rules = [
     ".gitattributes",
     ".gitignore",
     "bun.lock",
+    "knip.jsonc",
     "package.json",
     "tsconfig.json",
     "tsconfig.platform.json",
