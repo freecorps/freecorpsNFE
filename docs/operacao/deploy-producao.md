@@ -43,95 +43,21 @@ pula; o SHA servido é o de `publishedSha`. O pipeline continua sequencial
 rodar o build ao lado do push do Convex trocaria uma falha sem efeito por um
 estado parcial para ganhar poucos segundos.
 
-## Revisão do dono
+## Sem gate humano
 
-Antes do build, o preflight do `release` e do `bootstrap` confere os
-commits entre a revisão que a produção serve e o novo SHA
-(`scripts/lib/owner-review.mjs`, ADR 0007, decisões de 26/10/2026). Desde
-a decisão do dono do projeto de 26/10/2026, o `.github/CODEOWNERS` tem um
-dono só, o dono do projeto, até ele decidir outra coisa. Cada commit que
-toque um caminho do `CODEOWNERS`, na versão publicada ou na nova, precisa
-de uma destas aprovações:
+Desde 03/11/2026, por decisão do dono do projeto, a publicação não tem gate
+humano: o merge na `main` publica sozinho, como nos outros projetos da
+Freecorps. Até então, o preflight do `release` e do `bootstrap` exigia,
+para cada commit que tocasse um caminho do `.github/CODEOWNERS`, a
+aprovação de outro dono por PR ou o `workflow_dispatch` do dono
+(`scripts/lib/owner-review.mjs`), a compensação escolhida na #424 (ADR 0007,
+decisões de 26/10/2026). Com um dono só, autor dos commits, nenhum push
+passava, e toda publicação dependia do dispatch manual. A nota de 03/11/2026
+da ADR 0007 registra a retirada e o que ela deixa de cobrir.
 
-- **Dispatch do dono.** O `workflow_dispatch` do `Deploy production`,
-  disparado por um dono, aprova o SHA inteiro, inclusive os commits de que
-  ele é autor: o dispatch é o passo humano de aprovação. Quem repete
-  (_re-run_) o dispatch de outra pessoa não herda a aprovação: o gate exige
-  `GITHUB_TRIGGERING_ACTOR` igual a `GITHUB_ACTOR` e, sem um dos dois, não
-  conta o dispatch. O gate só sabe que o dispatch saiu da conta do dono: os
-  agentes usam o `gh` com a conta do dono, e por isso nenhum
-  agente dispara o `Deploy production`.
-- **PR aprovada.** O commit é de uma PR mesclada na `main` com revisão
-  `APPROVED` de um dono do caminho, no último commit da PR, por alguém que
-  não é o autor da PR nem do commit. Um push depois da aprovação a invalida.
-  Com um dono só, que também é o autor dos commits, este caminho não passa;
-  fica para quando houver outro dono.
-
-O job `Owner review` do `deploy.yml` antecipa esse gate
-(`scripts/owner-review-check.mjs`, #51). Ele roda sem environment nem
-secrets, só com o `GITHUB_TOKEN` de leitura, e o `Publish production`
-depende dele: um commit sem aprovação reprova a publicação em segundos,
-antes do environment de produção. O
-preflight do publicador continua chamando o mesmo gate
-(`scripts/lib/owner-review-gate.mjs`), contra a revisão servida no momento da
-publicação; o job antecipado não substitui essa conferência.
-
-Se a produção serve uma revisão que não existe neste histórico, como a do
-repositório arquivado antes da virada de 03/11/2026, o gate não tem a faixa
-para conferir. A revisão publicada conta então como desconhecida: só o
-dispatch de um dono publica, e o log diz `production serves <sha>, outside
-this history`. Depois da primeira publicação feita daqui, a faixa volta a ser
-conferida normalmente.
-
-Um push na `main` não aprova nada. Um merge que traga um commit protegido
-falha em `failed-before-publication`, nada é publicado e o log nomeia o
-commit, os caminhos e o autor. Os pushes seguintes também falham, porque a
-faixa parte da revisão publicada. Para publicar, o dono revisa os
-commits nomeados e dispara o `Deploy production` com `operation: release`, o
-SHA da `main` e o hash do plano. Até lá, a mudança está na `main`, mas não
-em produção.
-
-Nos dois caminhos, só aprova quem é dono do caminho em cada versão do
-`CODEOWNERS` que o protege. Um caminho protegido em qualquer das duas
-continua protegido, mas quem se põe como dono no próprio commit não se
-aprova, e quem a faixa tira do arquivo, como o outro sócio na troca de
-26/10/2026, deixa de aprovar na publicação que traz essa troca, por PR ou
-por dispatch: a aprovação é conferida contra o `CODEOWNERS` do SHA
-publicado e o do SHA novo.
-
-Isso tem um efeito: trocar o dono de um caminho numa publicação só bloqueia
-todo commit da faixa que toque esse caminho, porque ninguém é dono dele nas
-duas versões. A troca se faz em duas publicações: primeiro somar o novo dono
-ao antigo e publicar, depois tirar o antigo.
-
-O gate também recusa quando a revisão publicada não é ancestral do novo SHA,
-quando o `CODEOWNERS` dela não pode ser lido (mesmo com o dispatch do dono;
-o publicador não troca o arquivo publicado pelo novo), e quando ela é
-desconhecida (serviços com SHAs diferentes ou `/health` sem resposta). Com
-a revisão publicada desconhecida, o dispatch de um dono publica mesmo assim,
-e este é um limite conhecido: sem revisão anterior, o gate lê só o
-`CODEOWNERS` do SHA novo e não confere commit a commit, então quem esse
-arquivo lista como dono publica tudo o que veio desde a última revisão
-conhecida. Desde a
-[#525](https://github.com/freecorps/freecorpsNFE-arquivo/issues/525), o `bootstrap`
-pelo workflow passa pelo gate como o `release`; depois de um reset a
-revisão publicada costuma ser desconhecida, e então só o dispatch de um dono
-publica. O `--operator`, rodado localmente com as credenciais de produção,
-não passa pelo gate: é outro limite conhecido. O log do run
-registra a PR ou o dispatch e o aprovador de cada commit protegido.
-
-O limite é conhecido: o gate roda na versão do workflow que chegou à `main`.
-Um commit sem revisão que altere o gate o desliga na publicação seguinte, e
-um workflow alterado vale desde o merge, sem publicação.
-
-O `CODEOWNERS` cobre o publicador, os scripts de build que ele executa e os
-módulos que os três importam: rodam no mesmo runner e com o mesmo usuário do
-processo que guarda as chaves, e o filtro de ambiente dos subprocessos não é
-sandbox. `scripts/owner-review.test.ts` falha se um módulo desse grafo ficar
-sem dono. As dependências também rodam no build, e as CLIs do Convex e do
-wrangler recebem as chaves: `bun.lock` e o `package.json` da raiz e de cada
-workspace também têm dono, e uma atualização de dependência precisa da
-aprovação do dono como qualquer caminho protegido.
+O `CODEOWNERS` continua pedindo a revisão do dono nas PRs, sem impedir o
+merge nem a publicação. O ruleset da `main` exige PR, os checks `Validate` e
+`Public scan` e conversas resolvidas, com 0 aprovações.
 
 ## Configuração
 
@@ -202,8 +128,8 @@ marcador ([ISSUANCE.md](../plataforma/ISSUANCE.md#deployment-de-produção-fisca
 
 ## Atualizações automáticas
 
-O merge de uma PR na `main` dispara o workflow. Depois da revisão do dono, o
-job `publish` publica o checkout exato do push, sem rodar o CI de novo: a
+O merge de uma PR na `main` dispara o workflow, e o job `publish` publica o
+checkout exato do push, sem rodar o CI de novo nem esperar aprovação: a
 validação foi o `Validate` da PR. O plano é `deploy/platform-release.json` daquele
 commit, com SHA-256 calculado no runner e recibos conferidos pelo publicador.
 Cada publicação inclui todos os merges que pertencem ao commit publicado.
@@ -216,8 +142,7 @@ O plano separa o destino, conferido em toda publicação, do bloco
 história; uma atualização não o altera nem acrescenta aceites a ele. A única
 exceção é um novo reset (#525): o commit que o registra tira o recibo
 `authBootstrap` e troca `legacyReset` e `consumerTransition` pelos recibos
-versionados do novo corte. Só então o `bootstrap` volta a valer, e esse
-commit toca `deploy/`, que passa pela [revisão do dono](#revisão-do-dono).
+versionados do novo corte. Só então o `bootstrap` volta a valer.
 
 Em 03/11/2026 o bloco passou a apontar cópias sanitizadas dos três recibos,
 em `docs/v1.0/evidence/84/publico/`, as únicas da pasta de recibos que vão
@@ -233,8 +158,7 @@ credenciais, SHA aprovado, hash do plano, ambiente do backend,
 concorrência, sonda antes e depois e smoke. `bootstrap`
 (`bootstrapPreconditions`) exige os dois recibos do corte, recusa a
 instalação concluída, com `authBootstrap`, e continua exclusivamente manual
-(#525). Antes do build, passa pela [revisão do dono](#revisão-do-dono) como
-o `release`. As credenciais e o environment `production` são os
+(#525). As credenciais e o environment `production` são os
 mesmos do fluxo manual; uma proteção de aprovação configurada no GitHub ainda
 pode exigir liberação do mantenedor.
 
@@ -333,11 +257,11 @@ em [Backup externo](backup.md).
    exigindo os três recibos e a sonda prévia. Com `authBootstrap` registrado,
    o `bootstrap` é recusado antes do build; um novo reset exige antes um novo
    registro de instalação, sem `authBootstrap` e com os recibos do novo
-   corte, que toca `deploy/` e passa pela revisão do dono.
+   corte.
 3. Abrir `Deploy production` no GitHub Actions, escolher `main` e informar
    a operação, seu SHA completo e o SHA-256 do plano versionado. O workflow usa o
    environment `production`, que pode receber as proteções do mantenedor.
-4. O CI valida o SHA. O script confere destino, credenciais, ambiente,
+4. O script confere destino, credenciais, ambiente,
    evidências e elegibilidade; compila pacotes e console e faz dry-run do Worker.
 5. Publica backend e console em sequência, no grupo `production`, sem
    cancelar uma publicação em andamento. Confere `/health`, `/build.json`,

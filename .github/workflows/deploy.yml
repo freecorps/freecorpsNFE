@@ -22,43 +22,15 @@ on:
 
 permissions:
   contents: read
-  # The owner review gate reads the pull requests and reviews of each protected commit (#424).
-  pull-requests: read
 
 jobs:
-  # The pull request's CI is the validation: the merge publishes without
-  # running it again, as the other Freecorps projects do
-  # (docs/desenvolvimento/ci.md, Workflows e gatilhos). The publisher still
-  # builds the checkout and runs the smoke.
-  #
-  # The owner review gate (#424) without production credentials: a commit
-  # missing an owner's approval fails here in seconds, before the production
-  # environment. The publisher repeats the gate in its preflight against the
-  # revision then published; this job only anticipates it.
-  owner_review:
-    name: Owner review
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha)
-    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          # History for the range since the published revision.
-          fetch-depth: 0
-      - uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
-        with:
-          version-file: package.json
-          node-version: "24.22.1"
-          run-install: false
-          cache: false
-      - name: Require the owner's approval of every protected commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/owner-review-check.mjs
+  # The pull request's CI is the validation, and the merge publishes on its
+  # own, with no human gate, as the other Freecorps projects do
+  # (docs/operacao/deploy-producao.md, Atualizações automáticas). The
+  # publisher still builds the checkout and runs the smoke.
   publish:
     name: Publish production
-    needs: owner_review
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha)
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     environment: production

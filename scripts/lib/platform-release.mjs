@@ -86,8 +86,7 @@ const installationGates = [...cutoverGates, "authBootstrap"];
 // they only require it to be complete and its receipts to keep the same bytes.
 // The one exception is a new reset (#525): its commit drops the authBootstrap
 // receipt and replaces legacyReset and consumerTransition with the new cutover
-// evidence, which lets bootstrap run again; the commit touches deploy/, a
-// CODEOWNERS path, so it needs the owner review.
+// evidence, which lets bootstrap run again.
 export function installationRecord(plan, root) {
   const record = plan.installation;
   if (
@@ -120,13 +119,6 @@ export function installationRecord(plan, root) {
 export function bootstrapPreconditions(plan, root) {
   if (installationRecord(plan, root).complete)
     throw new Error("Bootstrap requires an installation awaiting its login proof; use release");
-}
-// Every publication of the workflow passes the owner review before the build, bootstrap included
-// (#525); only the local --operator, run with the production credentials, stays outside (known
-// limit, docs/operacao/deploy-producao.md).
-export function ownerReviewRequired({ operation, operator }) {
-  if (!["bootstrap", "release"].includes(operation)) throw new Error("Unknown release operation");
-  return !operator;
 }
 // Release updates a completed installation; it never resets data or creates accounts.
 export function releasePreconditions(plan, root) {

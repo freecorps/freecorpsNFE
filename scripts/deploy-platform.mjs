@@ -9,7 +9,6 @@ import {
   releaseEnvironment,
   bootstrapPreconditions,
   releasePreconditions,
-  ownerReviewRequired,
   releaseAuthorization,
   releaseWorker,
   bootstrapRevision,
@@ -23,7 +22,6 @@ import { projectRepository } from "./lib/repository.mjs";
 import { smokePlatform } from "./lib/platform-smoke.mjs";
 import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
 import { unchangedPublication } from "./lib/platform-unchanged.mjs";
-import { reviewGate } from "./lib/owner-review-gate.mjs";
 import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -119,10 +117,6 @@ const published = await (operation === "bootstrap" ? bootstrapRevision : publish
       );
       assert.ok(actual.BETTER_AUTH_SECRET?.length >= 32);
       assert.deepEqual(await query("_system/frontend/listCronJobs"), []);
-      // Every commit since the published revision that touches a CODEOWNERS path needs an
-      // owner's approval before anything is built or written (scripts/lib/owner-review.mjs, #424).
-      if (ownerReviewRequired({ operation, operator }))
-        await reviewGate({ root, sha, target, env: process.env });
     },
     // Only the automatic release of a push to main skips a revision that changes nothing
     // published; an operator, a dispatch and the bootstrap always publish.

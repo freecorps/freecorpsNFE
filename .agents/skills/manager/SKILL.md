@@ -101,18 +101,14 @@ each task, because it can change between PRs.
    - your own final read of the full diff passes, including the UI bar for anything visual;
    - the PR still matches its title and is still one concern.
 
-   Remember that a push to `main` publishes `platform/convex` and `apps/console` after CI
+   Remember that a push to `main` publishes `platform/convex` and `apps/console` with no further CI or approval
    ([deploy-producao.md](../../../docs/operacao/deploy-producao.md)): merging is deploying. Afterwards, check the
    deploy run, run `bun run worktree:finish` in the finished worktree, and start the next task on a fresh branch
    from `origin/main`.
 
-   The exception is a PR that touches a path of `.github/CODEOWNERS`. Once merged it does **not** publish: the
-   owner review gate (`scripts/lib/owner-review.mjs`) fails the push deploy, and the change, plus every later
-   merge, only reaches production after the project owner, the only one in `.github/CODEOWNERS`, reviews it and dispatches
-   `Deploy production` with `operation: release`. Tell the dev that this dispatch is pending, naming the SHA, and
-   do not count the change as deployed. Never dispatch it yourself, and never approve (`gh pr review --approve`)
-   a PR that touches a CODEOWNERS path: `gh` runs as his account, so your dispatch or approval would count as his
-   without him seeing the change.
+   A PR that touches a path of `.github/CODEOWNERS` publishes on merge too: since 03/11/2026 no gate holds it
+   (ADR 0007, note of 03/11/2026). Say in the merge note that it touched one. Never dispatch `Deploy production`
+   yourself, and never approve (`gh pr review --approve`) a PR: `gh` runs as the owner's account.
 
 Keep at most two of your PRs open at once. Never stack unrelated work on an open branch.
 
@@ -189,7 +185,7 @@ After each merge, a short note to the dev, in pt-BR:
 - PR link and title;
 - what changed for the product, in one or two sentences;
 - what was verified and what remained unproven;
-- whether it is in production, or waits for the owner's `Deploy production` dispatch (CODEOWNERS path);
+- whether it is in production (the deploy run of the merge), and whether it touched a CODEOWNERS path;
 - anything dismissed or deferred and why;
 - the next task, or "objetivo concluído".
 
