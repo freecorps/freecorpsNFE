@@ -5,7 +5,7 @@ privado por aceite explícito do mantenedor na #83. Em 01/11/2026 foram
 selecionados sdk, fiscal-core, fiscal-nfe e fiscal-nfse, versão 0.1.0;
 contracts continua privado ([decisões](../licenses/DISTRIBUTION.md#decisões-do-mantenedor-em-01112026)). O workflow de PR apenas valida e
 guarda artefatos internos. A aplicação segue [deploy-producao.md](deploy-producao.md): push na
-`main` publica atualizações após CI; bootstrap continua manual. Esse fluxo
+`main` publica atualizações validadas pelo CI da PR; bootstrap continua manual. Esse fluxo
 não publica pacotes npm nem abre o repositório. Distribuição de fontes,
 tarballs e imagens exige os aceites específicos abaixo.
 

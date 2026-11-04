@@ -26,25 +26,20 @@ permissions:
   pull-requests: read
 
 jobs:
-  # The owner review gate (#424) without production credentials, before the
-  # validation: a commit missing an owner's approval fails here in seconds and
-  # spends no validation. The publisher repeats the gate in its preflight
-  # against the revision then published; this job only anticipates it. On a
-  # push it then looks for the PR validation of the same tree against the same
-  # previous main (scripts/lib/validation-reuse.mjs); when there is one, the
-  # validation does not run again.
-  preflight:
-    name: Owner review and validation reuse
+  # The pull request's CI is the validation: the merge publishes without
+  # running it again, as the other Freecorps projects do
+  # (docs/desenvolvimento/ci.md, Workflows e gatilhos). The publisher still
+  # builds the checkout and runs the smoke.
+  #
+  # The owner review gate (#424) without production credentials: a commit
+  # missing an owner's approval fails here in seconds, before the production
+  # environment. The publisher repeats the gate in its preflight against the
+  # revision then published; this job only anticipates it.
+  owner_review:
+    name: Owner review
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha)
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
     timeout-minutes: 5
-    # Reads the PR's CI runs and their `ci-*` artifact, besides the reviews.
-    permissions:
-      contents: read
-      pull-requests: read
-      actions: read
-    outputs:
-      tested_sha: ${{ steps.reuse.outputs.tested_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -61,26 +56,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/owner-review-check.mjs
-      # Never fails the run: without a reused validation the output stays empty
-      # and `validate` runs as before.
-      - name: Reuse the PR validation of the same tree
-        id: reuse
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/validation-reuse.mjs
-  validate:
-    needs: preflight
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha) && needs.preflight.outputs.tested_sha == ''
-    uses: ./.github/workflows/ci.yml
   publish:
     name: Publish production
-    needs: [preflight, validate]
-    # `validate` is skipped when the PR validation was reused, so the condition
-    # names every outcome it accepts instead of the implicit success().
-    if: >-
-      !cancelled() && needs.preflight.result == 'success' &&
-      (needs.preflight.outputs.tested_sha || needs.validate.outputs.tested_sha) == github.sha
+    needs: owner_review
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     environment: production
@@ -90,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.preflight.outputs.tested_sha || needs.validate.outputs.tested_sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           # History for the published-revision comparison (scripts/lib/platform-unchanged.mjs).
           fetch-depth: 0
@@ -108,7 +86,6 @@ jobs:
           node --input-type=module -e 'import { readFileSync, appendFileSync } from "node:fs"; import { createHash } from "node:crypto"; const hash = createHash("sha256").update(readFileSync("deploy/platform-release.json")).digest("hex"); appendFileSync(process.env.GITHUB_OUTPUT, "sha256=" + hash + "\n");'
       - name: Publish the approved replacement platform
         env:
-          CI_TESTED_SHA: ${{ needs.preflight.outputs.tested_sha || needs.validate.outputs.tested_sha }}
           RELEASE_APPROVED_SHA: ${{ github.event_name == 'push' && github.sha || inputs.approved_sha }}
           RELEASE_PLAN_HASH: ${{ github.event_name == 'push' && steps.plan.outputs.sha256 || inputs.release_plan_hash }}
           RELEASE_OPERATION: ${{ github.event_name == 'push' && 'release' || inputs.operation }}
