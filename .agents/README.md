@@ -211,6 +211,7 @@ sequência obrigatória de trabalho.
 - [triage](skills/triage/SKILL.md)
 - [typescript-best-practices](skills/typescript-best-practices/SKILL.md)
 - [unslop](skills/unslop/SKILL.md)
+- [verify-console](skills/verify-console/SKILL.md)
 - [wait-what](skills/wait-what/SKILL.md)
 - [why](skills/why/SKILL.md)
 - [wizard](skills/wizard/SKILL.md)
