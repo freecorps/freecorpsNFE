@@ -73,6 +73,8 @@ each task, because it can change between PRs.
    - security: credentials, auth/role gaps, API key scope or grant gaps, unverified webhooks, unvalidated input,
      proxy headers or IP taken from the caller;
    - real data: CNPJ, customer names, full access keys, invoice values or XML in code, fixtures, docs or comments;
+   - fiscal rules: the reviewer also loads [fiscal-review](../fiscal-review/SKILL.md) when the diff touches fiscal
+     code;
    - for UI: the UI bar below, with a separate UI reviewer when the change is visual.
 
 4. **Adjudicate.** Read the code behind every finding yourself.
@@ -82,8 +84,9 @@ each task, because it can change between PRs.
    Repeat 2–4 until a **fresh** reviewer comes back clean. If it does not converge after three rounds, stop and
    ask the dev.
 
-5. **Verify it yourself.** Run `vp check`, `bun run platform:check`, the full suite without cache (`vp test run`
-   or `bun run ci:local`) and `bun run build`. For visible changes, run the app (`bun run dev` in a prepared
+5. **Verify it yourself** with [test-and-verify](../test-and-verify/SKILL.md). Run `vp check`,
+   `bun run platform:check`, the full suite without cache (`vp test run` or `bun run ci:local`) and
+   `bun run build`. For visible changes, run the app (`bun run dev` in a prepared
    worktree) and look at it. A subagent's "done" is a claim, not evidence. A test with simulated transport proves
    local behavior only; say what remained unproven.
 
@@ -115,42 +118,9 @@ Keep at most two of your PRs open at once. Never stack unrelated work on an open
 ## The UI bar: be hard to please
 
 The console tells people what happened to a fiscal document and what they can do next. UI that merely works is
-rejected. [DESIGN.md](../../../DESIGN.md) and `docs/desenvolvimento/frontend.md` are the reference.
-
-Skills:
-
-| Work | Load |
-| --- | --- |
-| Any web UI | `design-taste-frontend` and `emil-design-eng` |
-| Before every UI PR | `break-ui` |
-| Any motion | `review-animations` |
-| Adding a dependency | `pick-ui-library` |
-| Toasts | `ask-sonner` |
-
-Brief implementers and reviewers to load them too.
-
-Before a visual change ships, check it yourself and send it back if any item fails:
-
-- **Themes:** Claro **and** Escuro both look designed, and Sistema follows the OS. Dark is first-class.
-- **Language:** every string the user sees is pt-BR, with correct accents, and does not truncate, wrap badly or
-  overflow.
-- **Every state is designed:** loading, empty, error, partial data, huge counts, very long names and company names.
-- **Honest status:** the UI never suggests success while the operation or the fiscal authority has not answered.
-  Rejection, timeout and reconciliation read differently from success.
-- **Environment reads at a glance:** sandbox, homologation and production are unmistakable. Color is never the
-  only signal; pair it with text or an icon.
-- **Formats:** dates and money go through `apps/console/src/format.ts`; fiscal dates do not move with the
-  browser's time zone.
-- **Phone width:** works at 375px with no horizontal scroll; touch targets ≥ 44px.
-- **Accessibility:** keyboard navigation and visible focus work everywhere. Text and status colors meet WCAG AA
-  in both themes.
-- **Tokens:** spacing, type, radii and colors come from `apps/console/src/ui/tokens.css`, and components from
-  `apps/console/src/ui/`. No one-off values.
-- **Motion** has a purpose, respects `prefers-reduced-motion`, and never delays an action.
-- **Direct access:** navigation, filters and opening the route directly still work.
-- **You have looked at the evidence:** before/after, light and dark, desktop and 375px.
-
-"Looks fine" is not a review. Name what is wrong and how to fix it, with exact values.
+rejected. The bar, the skills to load and the evidence it requires live in [ui-review](../ui-review/SKILL.md).
+Brief implementers and reviewers of any visible change to load it, and run it yourself before a visual change
+ships. "Looks fine" is not a review.
 
 ## Guardrails
 

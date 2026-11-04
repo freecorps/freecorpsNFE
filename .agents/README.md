@@ -42,6 +42,16 @@ levou o catálogo a 101. Ela decide se o relato pode ser público, busca
 duplicatas, segue os formulários de `.github/ISSUE_TEMPLATE/` e varre título
 e corpo com `scripts/scan-public-text.mjs` antes de publicar.
 
+Em 04/11/2026, seis skills locais levaram o catálogo a 107. `full-stop` leva
+uma mudança até a PR pronta para merge e para; `full-send`, só por invocação
+do dev, vai até o merge e confere o deploy. Os nomes vêm de skills citadas no
+T3 Code que não estão no repositório público, e o conteúdo foi escrito aqui.
+`fiscal-review`, `test-and-verify`, `ui-review` e `council` cobrem as regras
+fiscais do projeto, o bloco de verificação, a revisão da interface rodando e
+as decisões arquiteturais caras de reverter. O padrão de interface de
+`manager` passou a viver em `ui-review`. Consulte
+[essa criação](skills/EXTERNAS.md#skills-locais-de-04112026).
+
 Os diretórios vindos do projeto de origem preservam seu conteúdo e arquivos de apoio,
 salvo as adaptações documentadas; as importações seguintes seguem o fluxo local.
 Consulte [origem e adaptações](skills/EXTERNAS.md) antes de aplicar as convenções
@@ -138,7 +148,7 @@ sequência obrigatória de trabalho.
 - [stitch-design-taste](skills/stitch-design-taste/SKILL.md)
 - [vercel-react-best-practices](skills/vercel-react-best-practices/SKILL.md)
 
-## Adições de interface, movimento e clientes — 16 skills
+## Adições de interface, movimento e clientes — 17 skills
 
 - [animate](skills/animate/SKILL.md)
 - [animate-expo](skills/animate-expo/SKILL.md)
@@ -155,9 +165,10 @@ sequência obrigatória de trabalho.
 - [pick-ui-library](skills/pick-ui-library/SKILL.md)
 - [prototype](skills/prototype/SKILL.md)
 - [review-animations](skills/review-animations/SKILL.md)
+- [ui-review](skills/ui-review/SKILL.md)
 - [write-swift](skills/write-swift/SKILL.md)
 
-## Diagnóstico, planejamento, escrita e PRs — 40 skills
+## Diagnóstico, planejamento, escrita e PRs — 45 skills
 
 - [arena](skills/arena/SKILL.md)
 - [babysit-pr](skills/babysit-pr/SKILL.md)
@@ -166,6 +177,7 @@ sequência obrigatória de trabalho.
 - [cli-for-agents](skills/cli-for-agents/SKILL.md)
 - [code-review](skills/code-review/SKILL.md)
 - [codebase-design](skills/codebase-design/SKILL.md)
+- [council](skills/council/SKILL.md)
 - [create-formal-verification-skill](skills/create-formal-verification-skill/SKILL.md)
 - [create-verification-skill](skills/create-verification-skill/SKILL.md)
 - [dependency-maintenance](skills/dependency-maintenance/SKILL.md)
@@ -173,7 +185,10 @@ sequência obrigatória de trabalho.
 - [domain-modeling](skills/domain-modeling/SKILL.md)
 - [file-issue](skills/file-issue/SKILL.md)
 - [file-pr](skills/file-pr/SKILL.md)
+- [fiscal-review](skills/fiscal-review/SKILL.md)
+- [full-send](skills/full-send/SKILL.md)
 - [full-output-enforcement](skills/full-output-enforcement/SKILL.md)
+- [full-stop](skills/full-stop/SKILL.md)
 - [grilling](skills/grilling/SKILL.md)
 - [grill-me](skills/grill-me/SKILL.md)
 - [how](skills/how/SKILL.md)
@@ -190,6 +205,7 @@ sequência obrigatória de trabalho.
 - [show-me-your-work](skills/show-me-your-work/SKILL.md)
 - [statechart](skills/statechart/SKILL.md)
 - [technical-writing](skills/technical-writing/SKILL.md)
+- [test-and-verify](skills/test-and-verify/SKILL.md)
 - [to-spec](skills/to-spec/SKILL.md)
 - [to-tickets](skills/to-tickets/SKILL.md)
 - [triage](skills/triage/SKILL.md)

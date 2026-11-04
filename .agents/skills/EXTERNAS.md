@@ -240,6 +240,28 @@ invariante inválida terminou com exit code 12 e trace de 0 a 2. Isso valida
 o roteiro e a detecção de falha sintética, sem executar jornadas do produto
 ou criar uma verificação formal do protocolo de operações.
 
+### Skills locais de 04/11/2026
+
+Seis skills escritas neste repositório, sem cópia de texto de outra origem:
+
+| Skill | Invocação | O que faz |
+| --- | --- | --- |
+| `full-stop` | Agente e dev | Leva uma mudança até a PR verificada e pronta para merge, acompanha revisão e CI e para antes do merge. Subagente delegado devolve URL, head e estado, sem watch. |
+| `full-send` | Só o dev | Executa o `full-stop`, aplica o gate de merge do `manager`, mergeia e confere o run de `Deploy production` e o SHA servido. |
+| `fiscal-review` | Agente e dev | Lista de regras fiscais do projeto para revisar diffs de XML, valores, identificadores, emissão, captura e guarda. |
+| `test-and-verify` | Agente e dev | Escolhe os checks pela camada tocada e registra o bloco de verificação com vereditos de `principle-prove-it-works`. |
+| `ui-review` | Agente e dev | Revisa a interface rodando, em temas, larguras e estados, com o padrão visual que antes ficava em `manager`. |
+| `council` | Só o dev | Convoca conselheiros independentes por lente do projeto para uma decisão arquitetural cara de reverter. |
+
+`full-send` e `full-stop` têm os nomes de skills que o
+[T3 Code](https://github.com/pingdotgg/t3code) cita: o caso
+`child-babysit-calls-watch` de `evals/mcp-tool-use/cases/pull-requests.ndjson`,
+no commit `8b44f42b14c8e273156474a924ccf29680dd7857`, registra um brief que
+pedia "Use the full-stop skill" para levar a PR até ficar pronta sem mergear.
+As skills em si não estão no repositório público nem no seu histórico, e o
+conteúdo daqui foi escrito do zero a partir dessa descrição, de `manager`,
+`babysit-pr` e `file-pr`. Não há licença de terceiros a preservar.
+
 ## Adaptações ao freecorpsNFE
 
 - **Arquitetura e domínio:** use `docs/ARQUITETURA.md`, `docs/plataforma/`,
