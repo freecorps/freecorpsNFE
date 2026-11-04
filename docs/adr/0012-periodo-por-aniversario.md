@@ -1,10 +1,11 @@
 # Período por aniversário nas assinaturas e nas cotas pagas
 
 Data: 03/11/2026 · Status: **Aceita** pelo dono do projeto em 03/11/2026.
-**Implementada no código nas fatias 0 a 2b** de
-[Implementação](#implementação), descritas em
-[BILLING.md](../plataforma/BILLING.md) e [USAGE.md](../plataforma/USAGE.md).
-Ligar o catálogo ou o anual ainda espera a versão nova dos termos de uso e a
+**Implementada** nas fatias 0 a 2b de [Implementação](#implementação),
+descritas em [BILLING.md](../plataforma/BILLING.md) e
+[USAGE.md](../plataforma/USAGE.md), e nos
+[termos de uso 1.2](../termos/arquivo/termos-de-uso-2026-11-04.md), de
+04/11/2026. Ligar o catálogo ou o anual ainda espera a
 [prova hospedada](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35).
 Esta ADR substitui pontos da
 [decisão 9 da ADR 0010](0010-guarda-em-camadas-e-custo-dos-planos.md#9-anual-reembolso-e-ciclo)
@@ -258,7 +259,8 @@ Invariantes:
   diz que a contratação recusada antes do início é cancelada sem cobrança;
   com a cobrança na contratação, uma recusa da admissão depois do pagamento
   vira reembolso manual. Ligar o catálogo ou o anual passa a esperar a
-  implementação desta ADR e uma versão nova dos termos no console.
+  implementação desta ADR e uma versão nova dos termos no console: a 1.2,
+  de 04/11/2026.
 - Só a prova mensal da
   [#668](https://github.com/freecorps/freecorpsNFE-arquivo/issues/668),
   contratada em 10/10/2026 com renovação ancorada no dia 1, e a matriz de
@@ -273,7 +275,8 @@ Invariantes:
 ## Implementação
 
 As fatias 0 a 2b estão implementadas no código. Ligar o catálogo ou o anual
-espera a fatia 8, os termos de uso 1.2, e a prova hospedada. A ordem das
+espera a prova hospedada; a fatia 8, os termos de uso 1.2, entrou no console
+em 04/11/2026. A ordem das
 fatias:
 
 1. Fatia 0: esta ADR, só documentação.

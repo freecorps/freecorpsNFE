@@ -127,8 +127,8 @@ Gratuito continua no mês civil UTC. A decisão está na
 [ADR 0012](../adr/0012-periodo-por-aniversario.md) e está implementada no
 código: o mensal e o anual, pelo Pix e pelo cartão, correm de aniversário a
 aniversário, e o anual no cartão é cobrado e começa na contratação. Ligar o
-catálogo ou o anual ainda espera uma versão nova dos termos de uso e a prova
-hospedada
+catálogo ou o anual ainda espera a prova hospedada; os termos de uso 1.2, com
+esse modelo, entraram no console em 04/11/2026
 ([BILLING.md](BILLING.md#período-por-aniversário-decidido-em-03112026)).
 
 A #639 já permite renovar reutilizando a alocação depois de `admissionsUntil`.

@@ -575,8 +575,9 @@ com o interruptor ligado.
   arrependimento de 7 dias e reembolso depois deles. O mantenedor aprovou a
   redação sem revisão jurídica (#428, [decisões de 01/11](../v1.0/TERMS-DRAFT.md#decisões-de-01112026)).
   Desde a fatia 2b da ADR 0012, o código cobra e começa o anual no cartão na
-  contratação e conta os meses da assinatura; a versão nova dos termos que
-  diz isso ainda não existe, e o anual não é ligado antes dela.
+  contratação e conta os meses da assinatura, como diz a seção 5A dos
+  [termos de uso 1.2](../termos/arquivo/termos-de-uso-2026-11-04.md), de
+  04/11/2026.
 
 ### Venda por Pix
 
