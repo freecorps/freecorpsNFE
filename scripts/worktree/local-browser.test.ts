@@ -5,9 +5,9 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { acquireLocalBrowserLock, probeLocalBrowser } from "./lib/local-browser.mjs";
-import { localBrowserIdentity } from "./lib/local-browser-identity.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
+import { acquireLocalBrowserLock, probeLocalBrowser } from "../lib/local-browser.mjs";
+import { localBrowserIdentity } from "../lib/local-browser-identity.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
 
 const temporary: string[] = [];
 function directory() {

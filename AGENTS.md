@@ -186,7 +186,7 @@ de `origin/main`.
 
 `bun run help` lista cada script com a aplicação e o ambiente que ele atinge,
 a partir de `scripts/lib/commands.mjs`; script novo entra nesse catálogo.
-`bun run dev` passa por `scripts/dev.mjs` e roda só em worktree: inicia Convex
+`bun run dev` passa por `scripts/worktree/dev.mjs` e roda só em worktree: inicia Convex
 local e console juntos. No checkout principal, ele recusa e aponta
 `bun run worktree:create`. `vp dev` chama o comando interno do
 Vite+ e pula esse roteador; use o script do projeto.

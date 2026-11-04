@@ -33,7 +33,7 @@
     "validation:deploy": "node scripts/validation.mjs deploy",
     "validation:probe:create": "node scripts/validation.mjs probe-create",
     "validation:probe:read": "node scripts/validation.mjs probe-read",
-    "dev": "bun scripts/dev.mjs",
+    "dev": "bun scripts/worktree/dev.mjs",
     "build": "node scripts/build-fiscal-packages.mjs && node scripts/typecheck.mjs -p tsconfig.platform.json && vp run ci:docs && node scripts/console.mjs build",
     "worktree": "bun scripts/worktree.mjs",
     "worktree:create": "bun scripts/worktree.mjs create",

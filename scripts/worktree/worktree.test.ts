@@ -13,18 +13,18 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { optionalPort, optionalString, parseArgs, usage } from "./lib/worktree/cli.mjs";
-import { formatEnvFile, parseEnv } from "./lib/worktree/env-file.mjs";
-import { classifyPruneCandidate, parseBranchTracking } from "./lib/worktree/merged.mjs";
-import { pruneEntries } from "./lib/worktree/registry.mjs";
-import { expandHome } from "./lib/worktree/location.mjs";
-import { slugifyWorktreeName, worktreePaths } from "./lib/worktree/paths.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { optionalPort, optionalString, parseArgs, usage } from "../lib/worktree/cli.mjs";
+import { formatEnvFile, parseEnv } from "../lib/worktree/env-file.mjs";
+import { classifyPruneCandidate, parseBranchTracking } from "../lib/worktree/merged.mjs";
+import { pruneEntries } from "../lib/worktree/registry.mjs";
+import { expandHome } from "../lib/worktree/location.mjs";
+import { slugifyWorktreeName, worktreePaths } from "../lib/worktree/paths.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 import {
   LEGACY_SEED_PROFILE,
   assertLegacySeedProfile,
   syncWorktree,
-} from "./lib/worktree/sync.mjs";
+} from "../lib/worktree/sync.mjs";
 
 describe("parseArgs", () => {
   it("separa posicional de flag", () => {

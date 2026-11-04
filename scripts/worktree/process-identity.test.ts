@@ -24,7 +24,7 @@ afterEach(() => Object.defineProperty(process, "platform", platform));
 
 it("reutiliza somente a identidade própria válida e respeita prazo esgotado", async () => {
   vi.mocked(spawnSync).mockReturnValue(response("own-process"));
-  const { readProcessIdentity } = await import("./lib/worktree/process-identity.mjs");
+  const { readProcessIdentity } = await import("../lib/worktree/process-identity.mjs");
   const identity = readProcessIdentity(process.pid);
   expect(identity).toMatch(/^[a-f0-9]{64}$/);
   expect(readProcessIdentity(process.pid)).toBe(identity);
@@ -38,7 +38,7 @@ it("uma sonda própria sem resultado não impede recuperação posterior", async
   vi.mocked(spawnSync)
     .mockReturnValueOnce(response(""))
     .mockReturnValueOnce(response("own-process"));
-  const { readProcessIdentity } = await import("./lib/worktree/process-identity.mjs");
+  const { readProcessIdentity } = await import("../lib/worktree/process-identity.mjs");
   expect(readProcessIdentity(process.pid)).toBeNull();
   expect(readProcessIdentity(process.pid)).toMatch(/^[a-f0-9]{64}$/);
   expect(spawnSync).toHaveBeenCalledTimes(2);
@@ -49,7 +49,7 @@ it("consulta novamente PID externo e observa identidade substituída ou indispon
     .mockReturnValueOnce(response("external-original"))
     .mockReturnValueOnce(response("external-reused"))
     .mockReturnValueOnce(response(""));
-  const { readProcessIdentity } = await import("./lib/worktree/process-identity.mjs");
+  const { readProcessIdentity } = await import("../lib/worktree/process-identity.mjs");
   const pid = process.pid + 1;
   const original = readProcessIdentity(pid);
   expect(original).toMatch(/^[a-f0-9]{64}$/);
@@ -65,7 +65,7 @@ it("preserva consultas próprias sem cache fora do Windows", async () => {
   vi.mocked(spawnSync)
     .mockReturnValueOnce(response("first-title"))
     .mockReturnValueOnce(response("changed-title"));
-  const { readProcessIdentity } = await import("./lib/worktree/process-identity.mjs");
+  const { readProcessIdentity } = await import("../lib/worktree/process-identity.mjs");
   const original = readProcessIdentity(process.pid);
   expect(readProcessIdentity(process.pid)).not.toBe(original);
   expect(spawnSync).toHaveBeenCalledTimes(2);
@@ -73,7 +73,7 @@ it("preserva consultas próprias sem cache fora do Windows", async () => {
 
 it("sonda POSIX distingue grupo ativo, zumbi e grupo diferente sem sinalizar", async () => {
   Object.defineProperty(process, "platform", { value: "darwin" });
-  const { recordedGroupIsRunning } = await import("./lib/worktree/process-identity.mjs");
+  const { recordedGroupIsRunning } = await import("../lib/worktree/process-identity.mjs");
   vi.mocked(spawnSync).mockReturnValue(response("123 Z\n456 S"));
   expect(recordedGroupIsRunning(123)).toBe(false);
   vi.mocked(spawnSync).mockReturnValue(response("123 S\n123 Z"));

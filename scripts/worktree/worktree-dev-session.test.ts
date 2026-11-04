@@ -5,59 +5,59 @@ import { randomUUID } from "node:crypto";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cleanup, dev } from "./lib/worktree/session.mjs";
-import { ownsOperation, readOperation } from "./lib/worktree/operation.mjs";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readProcessRecord, writeProcessRecord } from "./lib/worktree/state.mjs";
-import { stopRecordedProcesses } from "./lib/worktree/process-identity.mjs";
-import { spawnConvexDev, waitForBackend } from "./lib/worktree/convex-local.mjs";
-import { syncWorktree } from "./lib/worktree/sync.mjs";
-import { processIsRunning } from "./lib/worktree/exec.mjs";
+import { cleanup, dev } from "../lib/worktree/session.mjs";
+import { ownsOperation, readOperation } from "../lib/worktree/operation.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readProcessRecord, writeProcessRecord } from "../lib/worktree/state.mjs";
+import { stopRecordedProcesses } from "../lib/worktree/process-identity.mjs";
+import { spawnConvexDev, waitForBackend } from "../lib/worktree/convex-local.mjs";
+import { syncWorktree } from "../lib/worktree/sync.mjs";
+import { processIsRunning } from "../lib/worktree/exec.mjs";
 
 vi.mock("node:child_process", async (original) => {
   const actual = await original<typeof import("node:child_process")>();
   return { ...actual, spawn: vi.fn(actual.spawn) };
 });
-vi.mock("./lib/worktree/state.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/state.mjs")>()),
+vi.mock("../lib/worktree/state.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/state.mjs")>()),
   assertLinkedWorktree: vi.fn(),
 }));
-vi.mock("./lib/worktree/readiness.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/readiness.mjs")>()),
+vi.mock("../lib/worktree/readiness.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/readiness.mjs")>()),
   waitForObservedSetup: vi.fn(async () => {}),
 }));
-vi.mock("./lib/worktree/deployment.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/deployment.mjs")>()),
+vi.mock("../lib/worktree/deployment.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/deployment.mjs")>()),
   readLocalConfig: vi.fn(() => ({
     deploymentName: "local-synthetic",
     ports: { cloud: 3210, site: 3211 },
     adminKey: "synthetic",
   })),
 }));
-vi.mock("./lib/worktree/registry.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/registry.mjs")>()),
+vi.mock("../lib/worktree/registry.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/registry.mjs")>()),
   resolveConvexPort: vi.fn(async () => 3210),
   resolveFrontendPort: vi.fn(async () => 5205),
 }));
-vi.mock("./lib/worktree/env-file.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/env-file.mjs")>()),
+vi.mock("../lib/worktree/env-file.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/env-file.mjs")>()),
   ensureBackendEnvFile: vi.fn(),
   writeRuntimeEnv: vi.fn(),
   readEnvFile: vi.fn(() => new Map()),
 }));
-vi.mock("./lib/worktree/sync.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/sync.mjs")>()),
+vi.mock("../lib/worktree/sync.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/sync.mjs")>()),
   syncWorktree: vi.fn(async () => {}),
 }));
-vi.mock("./lib/worktree/convex-local.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/convex-local.mjs")>()),
+vi.mock("../lib/worktree/convex-local.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/convex-local.mjs")>()),
   stopWorktreeBackends: vi.fn(async () => []),
   syncBackendEnvironment: vi.fn(),
   spawnConvexDev: vi.fn(),
   waitForBackend: vi.fn(),
 }));
-vi.mock("./lib/worktree/process-identity.mjs", async (original) => {
-  const actual = await original<typeof import("./lib/worktree/process-identity.mjs")>();
+vi.mock("../lib/worktree/process-identity.mjs", async (original) => {
+  const actual = await original<typeof import("../lib/worktree/process-identity.mjs")>();
   return { ...actual, stopRecordedProcesses: vi.fn(actual.stopRecordedProcesses) };
 });
 const children: ChildProcess[] = [];
@@ -118,8 +118,8 @@ it.each(["before", "during", "none"])(
       queueMicrotask(() => frontend.stdin!.write("ready"));
       return frontend;
     });
-    const actual = await vi.importActual<typeof import("./lib/worktree/process-identity.mjs")>(
-      "./lib/worktree/process-identity.mjs",
+    const actual = await vi.importActual<typeof import("../lib/worktree/process-identity.mjs")>(
+      "../lib/worktree/process-identity.mjs",
     );
     let replacementRecord: ReturnType<typeof readProcessRecord>;
     let replacementLock: string | undefined;
@@ -258,8 +258,8 @@ it("mantém o frontend cuja parada no startup falhou até uma limpeza posterior"
     queueMicrotask(() => frontend.emit("error", new Error("SYNTHETIC_STARTUP_FAILURE")));
     return frontend;
   });
-  const actual = await vi.importActual<typeof import("./lib/worktree/process-identity.mjs")>(
-    "./lib/worktree/process-identity.mjs",
+  const actual = await vi.importActual<typeof import("../lib/worktree/process-identity.mjs")>(
+    "../lib/worktree/process-identity.mjs",
   );
   vi.mocked(stopRecordedProcesses).mockImplementation(async (record) => {
     const pids = record.pids ?? [record.pid];

@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
 
 const temporary: string[] = [];
 afterEach(() => {

@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
-import { resolveDev } from "./lib/commands.mjs";
-import { bunExecutable, currentRoot, worktreePaths } from "./lib/worktree/paths.mjs";
-import { isLinkedWorktree } from "./lib/worktree/registry.mjs";
+import { resolveDev } from "../lib/commands.mjs";
+import { bunExecutable, currentRoot, worktreePaths } from "../lib/worktree/paths.mjs";
+import { isLinkedWorktree } from "../lib/worktree/registry.mjs";
 
 const linked = isLinkedWorktree(currentRoot);
 let resolved;

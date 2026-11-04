@@ -2,17 +2,17 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { currentLocalSiteUrl, readEnvFile } from "./lib/worktree/env-file.mjs";
-import { assertLinkedWorktree } from "./lib/worktree/state.mjs";
-import { assertPrivateDirectories } from "./lib/worktree/operation.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { currentLocalSiteUrl, readEnvFile } from "../lib/worktree/env-file.mjs";
+import { assertLinkedWorktree } from "../lib/worktree/state.mjs";
+import { assertPrivateDirectories } from "../lib/worktree/operation.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 if (!process.argv[2] || process.argv[3] !== "--stop-second")
   throw new Error(
-    "Usage: node --experimental-strip-types scripts/prove-worktree-isolation.mjs <second-worktree> --stop-second",
+    "Usage: node --experimental-strip-types scripts/worktree/prove-worktree-isolation.mjs <second-worktree> --stop-second",
   );
 const a = worktreePaths(root),
   b = worktreePaths(process.argv[2]);

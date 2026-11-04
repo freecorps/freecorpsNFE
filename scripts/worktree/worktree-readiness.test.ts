@@ -15,24 +15,24 @@ import { performance } from "node:perf_hooks";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { operationIsRunning, readOperation, withOperation } from "./lib/worktree/operation.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { operationIsRunning, readOperation, withOperation } from "../lib/worktree/operation.mjs";
 import {
   readWorktreeStatus,
   waitForObservedSetup,
   waitForSetup,
-} from "./lib/worktree/readiness.mjs";
-import { cleanup, dev } from "./lib/worktree/session.mjs";
-import { stopWorktreeBackends, waitForBackend } from "./lib/worktree/convex-local.mjs";
-import { processIsRunning, stopWorktreeNodeExecutors } from "./lib/worktree/exec.mjs";
+} from "../lib/worktree/readiness.mjs";
+import { cleanup, dev } from "../lib/worktree/session.mjs";
+import { stopWorktreeBackends, waitForBackend } from "../lib/worktree/convex-local.mjs";
+import { processIsRunning, stopWorktreeNodeExecutors } from "../lib/worktree/exec.mjs";
 import {
   devIsRunning,
   readProcessRecord,
   removeProcessRecordFor,
   writeProcessRecord,
-} from "./lib/worktree/state.mjs";
-import { readLocalConfig } from "./lib/worktree/deployment.mjs";
-import { readProcessIdentity, stopRecordedProcesses } from "./lib/worktree/process-identity.mjs";
+} from "../lib/worktree/state.mjs";
+import { readLocalConfig } from "../lib/worktree/deployment.mjs";
+import { readProcessIdentity, stopRecordedProcesses } from "../lib/worktree/process-identity.mjs";
 
 vi.mock("node:child_process", async (original) => {
   const actual = await original<typeof import("node:child_process")>();
@@ -42,17 +42,17 @@ vi.mock("node:fs", async (original) => {
   const actual = await original<typeof import("node:fs")>();
   return { ...actual, rmSync: vi.fn(actual.rmSync) };
 });
-vi.mock("./lib/worktree/deployment.mjs", async (original) => {
-  const actual = await original<typeof import("./lib/worktree/deployment.mjs")>();
+vi.mock("../lib/worktree/deployment.mjs", async (original) => {
+  const actual = await original<typeof import("../lib/worktree/deployment.mjs")>();
   return { ...actual, readLocalConfig: vi.fn(actual.readLocalConfig) };
 });
-vi.mock("./lib/worktree/process-identity.mjs", async (original) => {
-  const actual = await original<typeof import("./lib/worktree/process-identity.mjs")>();
+vi.mock("../lib/worktree/process-identity.mjs", async (original) => {
+  const actual = await original<typeof import("../lib/worktree/process-identity.mjs")>();
   return { ...actual, stopRecordedProcesses: vi.fn(actual.stopRecordedProcesses) };
 });
 
-vi.mock("./lib/worktree/state.mjs", async (original) => {
-  const actual = await original<typeof import("./lib/worktree/state.mjs")>();
+vi.mock("../lib/worktree/state.mjs", async (original) => {
+  const actual = await original<typeof import("../lib/worktree/state.mjs")>();
   return {
     ...actual,
     assertLinkedWorktree: vi.fn(),
@@ -60,12 +60,12 @@ vi.mock("./lib/worktree/state.mjs", async (original) => {
     readProcessRecord: vi.fn(actual.readProcessRecord),
   };
 });
-vi.mock("./lib/worktree/convex-local.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/convex-local.mjs")>()),
+vi.mock("../lib/worktree/convex-local.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/convex-local.mjs")>()),
   stopWorktreeBackends: vi.fn(async () => []),
 }));
-vi.mock("./lib/worktree/exec.mjs", async (original) => ({
-  ...(await original<typeof import("./lib/worktree/exec.mjs")>()),
+vi.mock("../lib/worktree/exec.mjs", async (original) => ({
+  ...(await original<typeof import("../lib/worktree/exec.mjs")>()),
   stopWorktreeNodeExecutors: vi.fn(),
 }));
 
