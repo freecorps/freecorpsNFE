@@ -85,12 +85,16 @@ export async function openCheckout(
  * Pix and card never bill the same organization at once: a Pix request waits while a card
  * subscription will renew or a Checkout is open, in either Stripe mode.
  */
-export async function cardBlocksPix(ctx: QueryCtx, organizationId: Id<"organizations">) {
+export async function cardBlocksPix(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+) {
   const accounts = await ctx.db
     .query("billingAccounts")
     .withIndex("by_organizationId_and_livemode", (q) => q.eq("organizationId", organizationId))
     .take(2);
-  return accounts.some(renews) || !!(await openCheckout(ctx, organizationId, Date.now()));
+  return accounts.some(renews) || !!(await openCheckout(ctx, organizationId, now));
 }
 
 /**

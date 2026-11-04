@@ -62,6 +62,35 @@ export function useNow(deadline: number | null) {
   return now;
 }
 
+const MINUTE = 60_000;
+const minuteOf = (now: number) => now - (now % MINUTE);
+/**
+ * The console's clock for a query that never reads its own (#45), rounded to the minute so the
+ * subscription changes when the minute turns, not on every render.
+ */
+export function useMinute() {
+  const [minute, setMinute] = useState(() => minuteOf(Date.now()));
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setMinute(minuteOf(Date.now())),
+      Math.max(minute + MINUTE - Date.now(), 0) + 50,
+    );
+    return () => clearTimeout(timer);
+  }, [minute]);
+  return minute;
+}
+/**
+ * The last answer of a query while a new `asOf` loads, for the same `key` (the organization):
+ * the page keeps showing it instead of loading again every minute.
+ */
+export function useSettled<T>(value: T | undefined, key: string): T | undefined {
+  const [last, setLast] = useState<{ key: string; value: T } | null>(null);
+  useEffect(() => {
+    if (value !== undefined) setLast({ key, value });
+  }, [key, value]);
+  return value ?? (last?.key === key ? last.value : undefined);
+}
+
 /**
  * Why an action failed, next to its buttons. Each new `failure` (a new value per refusal) takes
  * the focus: the button that started the action was disabled while waiting and lost it. Moving

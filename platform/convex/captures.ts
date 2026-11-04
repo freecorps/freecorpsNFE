@@ -22,6 +22,7 @@ import {
   captureAudit,
   captureView,
   scopedStream,
+  streamSituation,
   rejectedProbeReachedEnd,
 } from "./lib/captureCore";
 import { certificateHead, certificateUsable } from "./lib/certificateAccess";
@@ -382,6 +383,12 @@ export const get = query({
        * it (`notesQuotaStop`). Absent for any other code or quota.
        */
       notesQuota: v.optional(v.boolean()),
+      /**
+       * An active production stream whose company has not accepted the current terms: from this
+       * deadline on it waits for them (`CAPTURE_TERMS_PENDING`). A query never reads the clock,
+       * so the console compares it with its own (#45).
+       */
+      termsDeadline: v.union(v.number(), v.null()),
     }),
     v.null(),
   ),
@@ -389,9 +396,11 @@ export const get = query({
     await captureAccess(ctx, scope, false);
     const stream = await scopedStream(ctx, scope);
     if (!stream) return null;
-    const view = await captureView(ctx, stream);
+    const situation = await streamSituation(ctx, stream);
+    const view = await captureView(ctx, stream, situation);
     return {
       ...view,
+      termsDeadline: situation.termsDeadline,
       origin: await originOf(ctx, stream),
       gap: await gapView(ctx, stream),
       freecorpsCut: view.code === stream.code && stoppedByCut(stream),

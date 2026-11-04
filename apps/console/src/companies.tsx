@@ -30,6 +30,7 @@ import {
 } from "./ui";
 import { COMPANIES_PAGE_SIZE, companiesListArgs, companyArgs } from "./page-queries";
 import { captureSituation } from "./capture-messages";
+import { useNow } from "./product-components";
 import { Feedback, Loading, More, errorText } from "./company-feedback";
 import {
   CREATE_ANCHOR,
@@ -55,7 +56,19 @@ const kindLabel = (kind: Company["kind"]) =>
  * The fiscal capture (Produção) of the company in one badge (#433), with the panel's words and
  * tone (`captureSituation`); nothing when it was never released or was turned off.
  */
-function FiscalCaptureBadge({ value }: { value: Company["fiscalCapture"] }) {
+function FiscalCaptureBadge({
+  company,
+}: {
+  company: Pick<Company, "fiscalCapture" | "fiscalCaptureTermsDeadline">;
+}) {
+  // An `active` badge reads `terms` from the deadline on: the server's query never reads the
+  // clock (#45), so the console compares it with its own.
+  const deadline = company.fiscalCaptureTermsDeadline;
+  const now = useNow(deadline);
+  const value =
+    company.fiscalCapture === "active" && deadline !== null && now >= deadline
+      ? "terms"
+      : company.fiscalCapture;
   if (!value) return null;
   const badge = captureSituation(value);
   return <StatusBadge tone={badge.tone}>{badge.fiscal}</StatusBadge>;
@@ -168,7 +181,7 @@ function CompanyList({ org, contextKey }: ScopeProps) {
                       header: "Captura fiscal",
                       cell: (company: (typeof results)[number]) =>
                         company.fiscalCapture ? (
-                          <FiscalCaptureBadge value={company.fiscalCapture} />
+                          <FiscalCaptureBadge company={company} />
                         ) : (
                           <span className="fiscal-note">Não ativada</span>
                         ),
@@ -678,7 +691,7 @@ function CompanyDetail({ org, company, contextKey }: ScopeProps & { company: Com
               {company.kind === "demonstration" ? (
                 <StatusBadge tone="info">Demonstração sandbox</StatusBadge>
               ) : null}
-              <FiscalCaptureBadge value={company.fiscalCapture} />
+              <FiscalCaptureBadge company={company} />
             </span>
           }
         />

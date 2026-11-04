@@ -9,6 +9,7 @@ import { environmentServed, type EnvironmentPurpose } from "./environmentAccess"
 import { isCaptureProcessing } from "./captureValues";
 import { isRefusalReprocess } from "./importValues";
 import { closureOf } from "./organizationClosure";
+import { clockOf } from "./clock";
 import { assertOrganizationHot } from "./coldArchiveCore";
 import { CANCEL_SCOPE, ISSUE_SCOPE, cancelTask, issueTask } from "./issuanceValues";
 
@@ -99,16 +100,13 @@ export async function projectAccess(
     return deny("NOT_FOUND");
   return { project, grant };
 }
-/** A mutation's context, told apart from a query's by the scheduler only mutations carry. */
-const writes = (ctx: QueryCtx) => "scheduler" in ctx;
 /**
  * The single key rule. `archived: "allowed"` only for what a key keeps in cold custody (ADR 0009,
  * §2): admission, the non-fiscal reads and switching off or rotating a webhook endpoint. Fiscal
  * routes keep the refusal here and again in `companyScopeAccess`, before any idempotency record.
  *
- * The expiry is compared with the clock only in a mutation. A query never reads it (#45): its
- * result is cached and not rerun as time passes. Every REST query runs after admission
- * (`observedAction`), which already compared `expiresAt` with the action's clock (#79).
+ * The expiry is compared with the clock only in a mutation (`clockOf`): every REST query runs
+ * after admission (`observedAction`), which already compared `expiresAt` with the action's clock.
  */
 export async function authenticateKey(ctx: QueryCtx, keyHash: string, options: CustodyOption = {}) {
   requirePlatformEnvironment();
@@ -116,7 +114,8 @@ export async function authenticateKey(ctx: QueryCtx, keyHash: string, options: C
     .query("apiKeys")
     .withIndex("by_keyHash", (q) => q.eq("keyHash", keyHash))
     .unique();
-  if (!key || key.revokedAt !== null || (writes(ctx) && key.expiresAt <= Date.now()))
+  const now = clockOf(ctx);
+  if (!key || key.revokedAt !== null || (now !== null && key.expiresAt <= now))
     deny("INVALID_API_KEY");
   const project = await ctx.db.get("projects", key.projectId);
   if (

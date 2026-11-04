@@ -375,7 +375,7 @@ it("isolates query arguments, dialogs and late mutation results when the organiz
   expect(screen.queryByText(/Plano gratuito ativado/)).toBeNull();
   expect(state.queries.at(-1)).toEqual({
     name: "plans:overview",
-    args: { organizationId: "org-two", contextKey: "entry-two" },
+    args: { organizationId: "org-two", contextKey: "entry-two", asOf: expect.any(Number) },
   });
 });
 

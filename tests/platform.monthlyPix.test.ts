@@ -86,7 +86,11 @@ async function fixture({ annual = false } = {}) {
       actor: "operator",
     });
   const view = async () =>
-    (await owner()).query(api.plans.overview, { organizationId, contextKey: "monthly" });
+    (await owner()).query(api.plans.overview, {
+      asOf: Date.now(),
+      organizationId,
+      contextKey: "monthly",
+    });
   return { t, organizationId, plan, stored, owner, request, requestAnnual, confirm, view };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
