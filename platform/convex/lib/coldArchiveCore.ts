@@ -70,7 +70,7 @@ export function isArchiveFence(table: string): boolean {
 /**
  * The stored-file fields (`v.id("_storage")`) of each archived table, as a list per table: the
  * tiered guard (ADR 0010, phase B) adds more than one to a table. The scan packs every file named
- * by any of them; `scripts/cold-archive.test.ts` checks this against the schema.
+ * by any of them; `scripts/cold-tier/cold-archive.test.ts` checks this against the schema.
  */
 export const ARCHIVE_STORAGE_FIELDS: Partial<Record<TableNames, readonly string[]>> = {
   importFiles: ["storageId"],

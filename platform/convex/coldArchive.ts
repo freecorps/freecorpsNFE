@@ -643,7 +643,7 @@ export const retention = internalQuery({
   },
 });
 /**
- * Records a renewal the executor already locked in R2 (`scripts/cold-archive.mjs renew`): the
+ * Records a renewal the executor already locked in R2 (`scripts/cold-tier/cold-archive.mjs renew`): the
  * run's `retainUntil` moves to `retainUntil`, never back and never past today's target. A legal
  * hold does not stop it; a renewal only keeps the package longer. Idempotent.
  */

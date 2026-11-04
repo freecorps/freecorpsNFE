@@ -11,10 +11,10 @@ import { randomUUID } from "node:crypto";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { localUrls, readLocalConfig } from "./lib/worktree/deployment.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { failureCode, redact } from "./lib/hosted-read-proof.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { localUrls, readLocalConfig } from "../lib/worktree/deployment.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { failureCode, redact } from "../lib/hosted-read-proof.mjs";
 import {
   COLD_ACCOUNT,
   COLD_BUCKET,
@@ -32,8 +32,8 @@ import {
   PROOF_XML,
   parsedFixture,
   proofFiscalKey,
-} from "./lib/cold-tier-proof.mjs";
-import { r2Client } from "./lib/offsite-backup.mjs";
+} from "../lib/cold-tier-proof.mjs";
+import { r2Client } from "../lib/offsite-backup.mjs";
 import {
   canonical,
   compactCatalog,
@@ -42,8 +42,8 @@ import {
   rehydrate,
   removeHot,
   verifyArchive,
-} from "./lib/cold-archive.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/cold-archive.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(coldLocalUsage);
@@ -481,7 +481,7 @@ if (receipt) {
   report.codeHashes = Object.fromEntries(
     await Promise.all(
       [
-        "scripts/prove-cold-rehydration-local.mjs",
+        "scripts/cold-tier/prove-cold-rehydration-local.mjs",
         "scripts/lib/cold-tier-proof.mjs",
         "scripts/lib/cold-archive.mjs",
         "platform/convex/testing/coldTierProof.ts",

@@ -24,7 +24,7 @@ import { requestCleanup } from "./importUpload";
 
 /**
  * The assisted export of an archived organization (ADR 0009, §7, decisions of 30/10/2026). The
- * owner asks the support; the operator's command (`scripts/cold-archive.mjs export`) records the
+ * owner asks the support; the operator's command (`scripts/cold-tier/cold-archive.mjs export`) records the
  * request here, restores the package in the isolated destination, generates there the same export
  * as EXPORTS.md with the normal generator, and publishes its parts in the origin, as an export of
  * the owner, downloaded by the same signed ticket with the same 24 hours.

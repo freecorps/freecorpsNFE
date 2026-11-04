@@ -4,8 +4,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { copyFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { backupPlan } from "./lib/offsite-backup.mjs";
-import { publishArchive } from "./lib/cold-archive.mjs";
+import { backupPlan } from "../lib/offsite-backup.mjs";
+import { publishArchive } from "../lib/cold-archive.mjs";
 import {
   coldDocumentList,
   coldDocumentListKey,
@@ -16,7 +16,7 @@ import {
   restoreIncremental,
   verifyColdArchives,
   verifyColdDocuments,
-} from "./lib/incremental-backup.mjs";
+} from "../lib/incremental-backup.mjs";
 
 const directories: string[] = [];
 afterEach(() => {
@@ -353,7 +353,7 @@ describe("cold documents in the ADR 0009 package (ADR 0010, decision 6)", () => 
 
 describe("coldReadCredentials", () => {
   it("prefers the cold tier's read-only token and refuses half of it", async () => {
-    const { coldReadCredentials } = await import("./lib/offsite-backup.mjs");
+    const { coldReadCredentials } = await import("../lib/offsite-backup.mjs");
     const backup = { R2_ACCESS_KEY_ID: "backup-id", R2_SECRET_ACCESS_KEY: "backup-secret" };
     expect(coldReadCredentials(backup)).toEqual({
       accessKeyId: "backup-id",

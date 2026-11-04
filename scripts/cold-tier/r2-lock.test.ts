@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { lockDate, r2LockClient, runLockRule } from "./lib/r2-lock.mjs";
+import { lockDate, r2LockClient, runLockRule } from "../lib/r2-lock.mjs";
 
 const DAY = 86_400_000;
 const account = "a".repeat(32);

@@ -23,7 +23,7 @@ import {
   redact,
   resolvePreviewTarget,
   verifyPreviewEnvironment,
-} from "./lib/hosted-read-proof.mjs";
+} from "../lib/hosted-read-proof.mjs";
 import {
   COLD_ACCOUNT,
   COLD_BUCKET,
@@ -40,11 +40,11 @@ import {
   PROOF_XML,
   parsedFixture,
   proofFiscalKey,
-} from "./lib/cold-tier-proof.mjs";
-import { coldReadCredentials, r2Client } from "./lib/offsite-backup.mjs";
-import { extractZip } from "./lib/offsite-backup-zip.mjs";
-import { coldDocumentReferences, verifyColdDocuments } from "./lib/incremental-backup.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/cold-tier-proof.mjs";
+import { coldReadCredentials, r2Client } from "../lib/offsite-backup.mjs";
+import { extractZip } from "../lib/offsite-backup-zip.mjs";
+import { coldDocumentReferences, verifyColdDocuments } from "../lib/incremental-backup.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(coldHostedUsage);
@@ -485,7 +485,7 @@ if (receipt) {
   report.codeHashes = Object.fromEntries(
     await Promise.all(
       [
-        "scripts/prove-cold-tier-hosted.mjs",
+        "scripts/cold-tier/prove-cold-tier-hosted.mjs",
         "scripts/lib/cold-tier-proof.mjs",
         "scripts/lib/hosted-read-proof.mjs",
         "platform/convex/testing/coldTierProof.ts",

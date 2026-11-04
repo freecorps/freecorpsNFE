@@ -547,7 +547,7 @@ export; todos os demais metadados e IDs continuam na comparação.
 
 ### Arquivo econômico e catálogo frio
 
-O executor de arquivo econômico está em `scripts/cold-archive.mjs` e seu
+O executor de arquivo econômico está em `scripts/cold-tier/cold-archive.mjs` e seu
 procedimento em [arquivo-economico.md](arquivo-economico.md). Ele conserva um
 pacote por organização, com os registros fiscais e originais, cifrado com
 age. Só autoriza remoção quente após baixar, decifrar, importar em destino

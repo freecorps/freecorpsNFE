@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { backendRequest } from "./lib/validation.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { byCodeUnit, coldReadCredentials, r2Client, sha256 } from "./lib/offsite-backup.mjs";
-import { cloudflareLocks } from "./lib/cold-tier-locks.mjs";
+import { backendRequest } from "../lib/validation.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { byCodeUnit, coldReadCredentials, r2Client, sha256 } from "../lib/offsite-backup.mjs";
+import { cloudflareLocks } from "../lib/cold-tier-locks.mjs";
 import {
   assertIsolatedRestore,
   assistedExport,
@@ -23,9 +23,9 @@ import {
   validateAssistedRequest,
   validateManifest,
   verifyArchive,
-} from "./lib/cold-archive.mjs";
-import { r2LockClient, runLockRule } from "./lib/r2-lock.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/cold-archive.mjs";
+import { r2LockClient, runLockRule } from "../lib/r2-lock.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 function tool(bin, args) {

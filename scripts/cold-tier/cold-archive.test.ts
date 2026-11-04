@@ -34,24 +34,24 @@ import {
   validateCatalogManifest,
   validateManifest,
   verifyArchive,
-} from "./lib/cold-archive.mjs";
-import { extractZip, fileDigest, writeZip } from "./lib/offsite-backup-zip.mjs";
+} from "../lib/cold-archive.mjs";
+import { extractZip, fileDigest, writeZip } from "../lib/offsite-backup-zip.mjs";
 import {
   coldArchiveReferences,
   diskSummary,
   verifyColdArchives,
-} from "./lib/incremental-backup.mjs";
-import { sha256 } from "./lib/offsite-backup.mjs";
+} from "../lib/incremental-backup.mjs";
+import { sha256 } from "../lib/offsite-backup.mjs";
 import { assertRestoreDestination, refusalOf, validateTargets } from "./cold-archive.mjs";
-import schema from "../platform/convex/schema";
+import schema from "../../platform/convex/schema";
 import {
   ARCHIVE_SCHEMA_VERSION as CORE_SCHEMA_VERSION,
   ARCHIVE_STORAGE_FIELDS,
   ARCHIVE_TABLES,
-} from "../platform/convex/lib/coldArchiveCore";
-import { archiveReferences } from "../platform/convex/lib/coldArchiveReferences";
-import { fiscalGuardUntil, retentionClass } from "../platform/convex/lib/retentionClasses";
-import { COLD_BATCH_NOTES as SERVER_COLD_BATCH_NOTES } from "../platform/convex/lib/coldArchiveRehydration";
+} from "../../platform/convex/lib/coldArchiveCore";
+import { archiveReferences } from "../../platform/convex/lib/coldArchiveReferences";
+import { fiscalGuardUntil, retentionClass } from "../../platform/convex/lib/retentionClasses";
+import { COLD_BATCH_NOTES as SERVER_COLD_BATCH_NOTES } from "../../platform/convex/lib/coldArchiveRehydration";
 
 const directories: string[] = [];
 const scratch = () => {

@@ -5,10 +5,10 @@ import { writeFileSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { canonical } from "./lib/cold-archive.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { canonical } from "../lib/cold-archive.mjs";
 import {
   attachStorage,
   copyBlob,
@@ -16,11 +16,11 @@ import {
   prepareDatabase,
   publishIncremental,
   restoreIncremental,
-} from "./lib/incremental-backup.mjs";
-import { extractZip, fileDigest, writeZip } from "./lib/offsite-backup-zip.mjs";
-import { objectKeys, sha256, snapshotId } from "./lib/offsite-backup.mjs";
+} from "../lib/incremental-backup.mjs";
+import { extractZip, fileDigest, writeZip } from "../lib/offsite-backup-zip.mjs";
+import { objectKeys, sha256, snapshotId } from "../lib/offsite-backup.mjs";
 import { assertRestoreDestination } from "./cold-archive.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 assert.ok(
@@ -453,7 +453,7 @@ async function main() {
         "platform/convex/coldArchive.ts",
         "scripts/lib/cold-archive.mjs",
         "scripts/lib/incremental-backup.mjs",
-        "scripts/prove-cold-archive-local.mjs",
+        "scripts/cold-tier/prove-cold-archive-local.mjs",
       ].map(async (path) => [path, sha256(await readFile(join(root, path)))]),
     ),
   );

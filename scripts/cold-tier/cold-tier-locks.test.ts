@@ -5,7 +5,7 @@ import {
   mergeRules,
   packageRules,
   yearRules,
-} from "./lib/cold-tier-locks.mjs";
+} from "../lib/cold-tier-locks.mjs";
 
 describe("lock rules of the cold tier (ADR 0010, decision 6)", () => {
   it("locks each guard year until 01/01 of the next, 00:00 in Brasília", () => {
