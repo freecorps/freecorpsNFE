@@ -1,6 +1,6 @@
 /**
  * Catálogo dos scripts da raiz: aplicação e ambiente que cada um atinge.
- * `bun run help` imprime esta tabela; scripts/commands.test.ts confere que ela
+ * `bun run help` imprime esta tabela; scripts/repo/commands.test.ts confere que ela
  * cobre todos os scripts do package.json e que o README só cita nomes válidos.
  *
  * Aplicações: plataforma (apps/console + platform/convex), pacotes

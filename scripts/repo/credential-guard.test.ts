@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
-import { blocked } from "../.claude/hooks/guard-credentials.mjs";
+import { blocked } from "../../.claude/hooks/guard-credentials.mjs";
 
 const convexConfig = [".convex", "config.json"].join("/");
 

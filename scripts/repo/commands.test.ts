@@ -4,9 +4,9 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { commands, helpText, renamed, renamedMessage, resolveDev } from "./lib/commands.mjs";
-import { isLinkedWorktree } from "./lib/worktree/registry.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { commands, helpText, renamed, renamedMessage, resolveDev } from "../lib/commands.mjs";
+import { isLinkedWorktree } from "../lib/worktree/registry.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const read = (file: string) => readFileSync(join(root, file), "utf8");
@@ -25,7 +25,7 @@ describe("catálogo de comandos", () => {
 
   it("mantém os nomes antigos só como aviso do novo nome", () => {
     for (const [old, next] of Object.entries(renamed)) {
-      expect(scripts[old]).toBe(`node scripts/commands.mjs renamed ${old}`);
+      expect(scripts[old]).toBe(`node scripts/repo/commands.mjs renamed ${old}`);
       expect(commands).toHaveProperty(next);
       expect(renamedMessage(old)).toContain(`bun run ${next}`);
     }

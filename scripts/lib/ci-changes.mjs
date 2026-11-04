@@ -19,7 +19,7 @@ export const documentationPaths = ["*.md", "docs/**/*.md", ".agents/**/*.md", ".
 
 /** Markdown que algum teste, build ou prova lê; muda-los roda o grafo. */
 export const consumedDocumentation = [
-  // scripts/commands.test.ts confere os comandos citados.
+  // scripts/repo/commands.test.ts confere os comandos citados.
   "README.md",
   "AGENTS.md",
   "CONTRIBUTING.md",

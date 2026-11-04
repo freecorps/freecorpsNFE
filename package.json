@@ -14,7 +14,7 @@
     "prepare": "vp config --no-agent",
     "backup:collect": "node scripts/backup/backup-offsite.mjs collect",
     "backup:prove-capacity": "node scripts/backup/prove-backup-capacity.mjs",
-    "help": "node scripts/commands.mjs help",
+    "help": "node scripts/repo/commands.mjs help",
     "ci:boundaries": "node scripts/build/check-package-boundaries.mjs",
     "validation:browser": "node apps/console/e2e/m0.mjs",
     "bench:navigation": "node apps/console/e2e/navigation-bench.mjs",
@@ -83,9 +83,9 @@
     "secrets:check": "node scripts/public-copy/check-secrets.mjs",
     "knip:check": "knip --include files,dependencies --no-progress",
     "public:tree": "node scripts/public-copy/public-tree.mjs",
-    "xml:build": "node scripts/commands.mjs renamed xml:build",
-    "xml:boundaries": "node scripts/commands.mjs renamed xml:boundaries",
-    "console:deploy": "node scripts/commands.mjs renamed console:deploy"
+    "xml:build": "node scripts/repo/commands.mjs renamed xml:build",
+    "xml:boundaries": "node scripts/repo/commands.mjs renamed xml:boundaries",
+    "console:deploy": "node scripts/repo/commands.mjs renamed console:deploy"
   },
   "dependencies": {
     "convex": "^1.48.0",
