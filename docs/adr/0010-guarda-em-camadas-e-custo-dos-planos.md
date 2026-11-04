@@ -224,16 +224,20 @@ Resolve a antiga pendência 4
   mês ou do ano seguinte; o anual no cartão começa e é cobrado na
   contratação; e as cotas dos planos pagos seguem o mês da assinatura. Isso
   substitui "no cartão, o anual começa no dia 1 do mês seguinte;
-  'imediatamente' é só pelo Pix", e a escolha entre o dia 1 e o início
-  imediato deixa de existir: o Pix começa na confirmação. Substitui também
-  "Mensal para anual: começa no dia 1 do mês seguinte ou imediatamente, com
-  cobrança cheia, à escolha do cliente": o anual começa no pagamento, com
-  cobrança cheia. Como consequência adotada na ADR 0012, e não decisão do
-  dono, os meses do reembolso passam a ser os meses da assinatura, e o acesso
-  depois da rescisão fora dos 7 dias vai até o fim do mês corrente da
-  assinatura, no lugar de "o fim do mês civil corrente", nas duas vezes
-  acima. Valores e prazos acima não mudam. Ver a
-  [ADR 0012](0012-periodo-por-aniversario.md), ainda não implementada.
+  'imediatamente' é só pelo Pix". O resto foi adotado no desenho da
+  [ADR 0012](0012-periodo-por-aniversario.md), e não decidido pelo dono:
+  - a escolha do Pix entre o dia 1 e o início imediato deixa de existir; o
+    Pix começa na confirmação ou, na renovação pedida no último mês, no fim
+    do plano em vigor;
+  - "Mensal para anual: começa no dia 1 do mês seguinte ou imediatamente,
+    com cobrança cheia, à escolha do cliente" passa a ser o anual no
+    pagamento ou na confirmação, com cobrança cheia, recusado com um mensal
+    maior em vigor;
+  - os meses do reembolso passam a ser os da assinatura, e o acesso depois
+    da rescisão fora dos 7 dias vai até o fim do mês corrente da assinatura,
+    no lugar de "o fim do mês civil corrente", nas duas vezes acima.
+
+  Valores e prazos acima não mudam. A ADR 0012 ainda não está implementada.
 
 ### 10. Importação e cota de notas do Gratuito
 
