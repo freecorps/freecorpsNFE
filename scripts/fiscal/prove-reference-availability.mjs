@@ -6,6 +6,7 @@ import { referenceLocal } from "../lib/reference-local.mjs";
 import { canonicalEntries, sha256 } from "../../lib/reference-dataset.ts";
 import { normalizeCnpj } from "../../packages/fiscal-core/src/cnpj.ts";
 import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
+import { termsAcceptance } from "../lib/organization-terms.mjs";
 
 // Local-only assay. Official reference payloads stay in ignored storage; CNPJ is synthetic.
 const root = repoRoot;
@@ -76,6 +77,7 @@ try {
   const org = await human("mutation", "organizations:create", {
     name: "Conferência sintética",
     slug: `conferencia-${suffix}`,
+    ...(await termsAcceptance((path, args) => human("query", path, args))),
   });
   const base = `TEST${suffix.toUpperCase()}`;
   const cnpj = Array.from({ length: 100 }, (_, i) => base + String(i).padStart(2, "0")).find(

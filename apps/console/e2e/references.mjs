@@ -13,6 +13,7 @@ import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { referenceLocal } from "../../../scripts/lib/reference-local.mjs";
 import { FreecorpsClient } from "../../../packages/sdk/dist/index.js";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "references", async () => {
@@ -117,6 +118,7 @@ await withLocalBrowser(root, "references", async () => {
     const org = await human("mutation", "organizations:create", {
       name: "Referências sintéticas",
       slug: `refs-${suffix}`,
+      ...(await termsAcceptance((path, args) => human("query", path, args))),
     });
     const company = await human("mutation", "companies:create", {
       organizationId: org.organizationId,

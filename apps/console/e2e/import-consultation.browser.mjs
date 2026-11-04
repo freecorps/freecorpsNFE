@@ -3,6 +3,7 @@
 import { authClient } from "../src/auth.ts";
 import { nfseXml } from "../../../tests/helpers/nfse.ts";
 import { routes } from "../../../packages/contracts/src/external.ts";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const storageKey = "fnfe-import-consultation-proof";
 const check = (condition, message) => {
@@ -46,6 +47,7 @@ export async function setup(cloud, site, apiSite = "http://127.0.0.1:5431") {
   const org = await rpc("mutation", "organizations:create", {
     name: "Jornada NF-e sintética",
     slug: `journey-${crypto.randomUUID()}`,
+    ...(await termsAcceptance((path, args) => rpc("query", path, args))),
   });
   const demo = await rpc("mutation", "onboarding:start", {
     organizationId: org.organizationId,

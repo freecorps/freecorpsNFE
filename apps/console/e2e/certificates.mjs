@@ -10,6 +10,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { referenceLocal } from "../../../scripts/lib/reference-local.mjs";
 import { syntheticCertificate } from "../../../tests/helpers/certificates.ts";
 import { localAuthPacer } from "./local-auth-pacing.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "certificates", async () => {
   const { site, urls, rpc } = referenceLocal(root),
@@ -86,6 +87,7 @@ await withLocalBrowser(root, "certificates", async () => {
     const org = await human("mutation", "organizations:create", {
       name: "Certificados de teste",
       slug: `cert-${suffix}`,
+      ...(await termsAcceptance((path, args) => human("query", path, args))),
     });
     const company = await human("mutation", "companies:create", {
       organizationId: org.organizationId,

@@ -17,6 +17,7 @@ import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { Resolver } from "node:dns/promises";
 import { get } from "node:https";
+import { termsAcceptance } from "../lib/organization-terms.mjs";
 
 const [mode, name, extra] = process.argv.slice(2);
 // CLI subprocesses and backend restarts can outlive pooled HTTP connections.
@@ -165,6 +166,7 @@ try {
       await rpc("mutation", "organizations:create", {
         name: "Instalação própria sintética",
         slug: `selfhost-${randomUUID()}`,
+        ...(await termsAcceptance((path, args) => rpc("query", path, args))),
       }),
     );
     const org = { organizationId: state.organizationId };

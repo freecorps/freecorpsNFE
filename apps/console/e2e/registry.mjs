@@ -10,6 +10,7 @@ import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { normalizeCnpj } from "../../../packages/fiscal-core/src/cnpj.ts";
 import { referenceLocal } from "../../../scripts/lib/reference-local.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "registry", async () => {
@@ -117,6 +118,7 @@ await withLocalBrowser(root, "registry", async () => {
     const org = await human("mutation", "organizations:create", {
       name: "Consulta sintética CNPJ",
       slug: `registry-${suffix}`,
+      ...(await termsAcceptance((path, args) => human("query", path, args))),
     });
     const address = {
       street: "Rua manual",

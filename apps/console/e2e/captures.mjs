@@ -16,6 +16,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { referenceLocal } from "../../../scripts/lib/reference-local.mjs";
 import { syntheticCertificate } from "../../../tests/helpers/certificates.ts";
 import { localAuthPacer } from "./local-auth-pacing.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "captures", async () => {
   const { site, urls, rpc } = referenceLocal(root);
@@ -114,6 +115,7 @@ await withLocalBrowser(root, "captures", async () => {
     const org = await human("mutation", "organizations:create", {
       name: "Certificados de teste",
       slug: `capture-${suffix}`,
+      ...(await termsAcceptance((path, args) => human("query", path, args))),
     });
     let cnpj = "99" + String(Date.now()).slice(-10);
     for (const weights of [

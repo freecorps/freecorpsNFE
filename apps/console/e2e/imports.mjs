@@ -19,6 +19,7 @@ import { currentLocalSiteUrl } from "../../../scripts/lib/worktree/env-file.mjs"
 import { assertLinkedWorktree } from "../../../scripts/lib/worktree/state.mjs";
 import { processNfe } from "../../../packages/fiscal-nfe/dist/index.js";
 import { usageJourney } from "./usage.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "imports", async () => {
@@ -227,6 +228,7 @@ await withLocalBrowser(root, "imports", async () => {
     const org = await rpc("mutation", "organizations:create", {
       name: "Equipe XML sintético",
       slug: `xml-${crypto.randomUUID()}`,
+      ...(await termsAcceptance((path, args) => rpc("query", path, args))),
     });
     const { companyId } = await rpc("mutation", "onboarding:start", {
       organizationId: org.organizationId,

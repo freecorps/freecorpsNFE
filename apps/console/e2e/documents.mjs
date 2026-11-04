@@ -5,6 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { processNfe, deriveFiscalSituation } from "../../../packages/fiscal-nfe/dist/index.js";
 import { currentOrganization, switchOrganization } from "./shell.mjs";
 import { allowTypeScriptSourceImports } from "./ts-source-imports.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 allowTypeScriptSourceImports();
 const { projectNfePayload, projectNfeItem } =
@@ -275,6 +276,7 @@ export async function documentsJourney({
   const other = await rpc("mutation", "organizations:create", {
     name: "Outro contexto sintético",
     slug: `docs-other-${crypto.randomUUID()}`,
+    ...(await termsAcceptance((path, args) => rpc("query", path, args))),
   });
   await switchOrganization(page, other.slug);
   await currentOrganization(page, "Outro contexto sintético").waitFor();

@@ -18,6 +18,7 @@ import {
   validatePlan,
 } from "../lib/fiscal-proof-plan.mjs";
 import { repoRoot } from "../lib/repo-root.mjs";
+import { termsAcceptance } from "../lib/organization-terms.mjs";
 
 // Local operator job only. No workflow receives the fiscal certificate.
 const root = repoRoot;
@@ -359,6 +360,7 @@ async function main() {
             await client.mutation(ref("organizations:create"), {
               name: "Prova fiscal autorizada Freecorps",
               slug: "fiscal-proof-50",
+              ...(await termsAcceptance((path, args) => client.query(ref(path), args))),
             })
           ).organizationId;
         save();
