@@ -319,6 +319,12 @@ const code = (promise: Promise<unknown>) =>
     () => "OK",
     (error: { data?: { code?: string } }) => error.data?.code ?? "ERROR",
   );
+/** The refusal's data: its code and, for a sale that waits, when it becomes available. */
+const refusal = (promise: Promise<unknown>) =>
+  promise.then(
+    () => "OK",
+    (error: { data?: unknown }) => error.data,
+  );
 function sign(body: string, secret = WEBHOOK_SECRET, at = s(Date.now())) {
   return `t=${at},v1=${createHmac("sha256", secret).update(`${at}.${body}`).digest("hex")}`;
 }
@@ -911,7 +917,7 @@ describe("ciclo da assinatura", () => {
     expect(response.status).toBe(400);
   });
 
-  it("a diferença após Pix é avulsa e o desconto inicial cobre só o recorrente maior", async () => {
+  it("o mensal no cartão espera o fim do Pix, mesmo num plano maior, e então cobra o mês inteiro", async () => {
     const f = await fixture();
     const request = await f.owner.mutation(api.plans.requestPaid, {
       organizationId: f.organizationId,
@@ -924,16 +930,30 @@ describe("ciclo da assinatura", () => {
       paymentReference: "synthetic-pix-difference",
       actor: "operator",
     });
-    await f.owner.action(api.billing.checkout, {
+    // One paid plan at a time (ADR 0012): the Pix month runs from 10/10 12:00 to 10/11 12:00 UTC.
+    const pixEnd = Date.UTC(2026, 10, 10, 12);
+    expect(
+      await refusal(
+        f.owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "large",
+          key: "large-during-pix",
+        }),
+      ),
+    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: pixEnd });
+    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
+    vi.setSystemTime(pixEnd);
+    const owner = await person(f.t, f.organizationId, "owner");
+    await owner.action(api.billing.checkout, {
       organizationId: f.organizationId,
       tier: "large",
       key: "large-after-pix",
     });
     expect(Object.fromEntries(f.fake.sent("/v1/checkout/sessions")[0]!.params)).toMatchObject({
       "line_items[0][price]": "price_large",
-      "line_items[1][price_data][unit_amount]": "35000",
+      "line_items[1][price_data][unit_amount]": "49900",
       "subscription_data[proration_behavior]": "create_prorations",
-      "subscription_data[billing_cycle_anchor]": String(s(NOV)),
+      "subscription_data[billing_cycle_anchor]": String(s(DEC)),
     });
     expect(f.fake.sent("/v1/coupons")[0]!.params.get("applies_to[products][0]")).toBe("prod_large");
     expect(await f.plan()).toMatchObject({ catalogTier: "intermediate" });
@@ -1192,55 +1212,64 @@ describe("ciclo da assinatura", () => {
     expect(sub.cancel_at_period_end).toBe(false);
   });
 
-  it("um mês já pago por Pix não é cobrado de novo no cartão", async () => {
+  it("o mês pago por Pix não abre o cartão: pedido aguardando e plano em vigor recusam o Checkout", async () => {
     const f = await fixture();
     const request = await f.owner.mutation(api.plans.requestPaid, {
       organizationId: f.organizationId,
       tier: "intermediate",
       key: "pix-october",
     });
-    expect(
-      await code(
-        f.owner.action(api.billing.checkout, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "card-during-pix",
-        }),
-      ),
-    ).toBe("PLAN_REQUEST_PENDING");
+    const card = (key: string) =>
+      f.owner.action(api.billing.checkout, {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        key,
+      });
+    expect(await code(card("card-during-pix"))).toBe("PLAN_REQUEST_PENDING");
     await f.t.mutation(internal.plans.confirmPayment, {
       requestId: request.id,
       amountCents: 14900,
       paymentReference: "synthetic-pix-ref",
       actor: "operator",
     });
-    await f.owner.action(api.billing.checkout, {
+    // The same tier is no longer credited at R$ 0: the card waits for the Pix plan to end.
+    expect(await refusal(card("card-after-pix"))).toEqual({
+      code: "PAYMENT_METHOD_PIX",
+      availableAt: Date.UTC(2026, 10, 10, 12),
+    });
+    // A renewal already paid by Pix holds the card until the end of the month it bought.
+    const renewal = await f.owner.mutation(api.plans.requestPaid, {
       organizationId: f.organizationId,
       tier: "intermediate",
-      key: "card-after-pix",
+      key: "pix-renewal",
     });
-    const params = Object.fromEntries(f.fake.sent("/v1/checkout/sessions").at(-1)!.params);
-    expect(params["line_items[1][price_data][unit_amount]"]).toBeUndefined();
-    expect(params["subscription_data[metadata][grantCents]"]).toBe("0");
-    expect(params["subscription_data[proration_behavior]"]).toBe("none");
-    expect(params["discounts[0][coupon]"]).toBeUndefined();
+    await f.t.mutation(internal.plans.confirmPayment, {
+      requestId: renewal.id,
+      amountCents: 14900,
+      paymentReference: "synthetic-pix-renewal-ref",
+      actor: "operator",
+    });
+    expect(await refusal(card("card-after-renewal"))).toEqual({
+      code: "PAYMENT_METHOD_PIX",
+      availableAt: Date.UTC(2026, 11, 10, 12),
+    });
+    await f.t.mutation(internal.plans.configureAnnual, {
+      enabled: true,
+      expectedVersion: 1,
+      evidence: "synthetic-annual-on",
+    });
+    expect(
+      await refusal(
+        f.owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "intermediate",
+          key: "annual-after-renewal",
+          cycle: "annual",
+        }),
+      ),
+    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: Date.UTC(2026, 10, 10, 12) });
+    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
     expect(f.fake.sent("/v1/coupons")).toHaveLength(0);
-    const customer = (await f.t.run((ctx) => ctx.db.query("billingAccounts").first()))!.customerId;
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
-    f.fake.invoice({ ...startInvoice(customer, sub.id, f.organizationId, 0), amount_paid: 0 });
-    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", version: 1 });
-    expect(await f.t.run((ctx) => ctx.db.query("billingGrants").collect())).toMatchObject([
-      { state: "skipped", code: "ZERO_AMOUNT" },
-    ]);
-    // A second payment for the same month is held for a person, not granted twice.
-    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
-    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect((await f.t.run((ctx) => ctx.db.query("billingGrants").collect())).at(-1)).toMatchObject({
-      state: "blocked",
-      code: "DUPLICATE_PAYMENT",
-    });
-    expect(await f.plan()).toMatchObject({ version: 1 });
   });
 
   it("reembolso e contestação só sinalizam; timeout do Stripe é retentado sem repetir efeito", async () => {
@@ -1424,12 +1453,16 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     );
   });
 
-  it("com o anual agendado para o mês seguinte, o mês corrente ainda é vendido por Pix", async () => {
+  it("com um anual agendado, o Pix mensal espera o último mês dele", async () => {
     const f = await fixture();
     await annual(f, f.organizationId, "scheduled", { firstPeriod: NOV });
-    const request = await requestPix(f, "pix-before-scheduled");
-    await confirm(f, request.id, "synthetic-pix-before-scheduled");
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
+    // One paid plan at a time (ADR 0012): a month from now would overlap the term; the monthly
+    // opens as its renewal, in its last month.
+    expect(await refusal(requestPix(f, "pix-before-scheduled"))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: Date.UTC(2027, 9, 1),
+    });
+    expect(await f.plan()).toBeNull();
   });
 
   it("recusa o Checkout mensal e bloqueia uma vez a fatura do mês coberto", async () => {
@@ -1487,7 +1520,13 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     await annual(f, f.organizationId, state, { firstPeriod });
     const request = await requestPix(f, "pix-after-annual");
     await confirm(f, request.id, "synthetic-pix-after-annual");
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
+    // A month from the confirmation, anchored on it (ADR 0012).
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "intermediate",
+      startsAt: OCT,
+      periodAnchor: OCT,
+      endsAt: Date.UTC(2026, 10, 10, 12),
+    });
   });
 
   it("o acesso de um termo rescindido segura o mensal até o fim do mês do termo", async () => {
@@ -1500,11 +1539,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
       reason: "Cliente pediu a rescisão ao suporte",
     });
     expect(await f.plan()).toMatchObject({ termId, catalogTier: "intermediate", endsAt: NOV });
-    const refusal = (promise: Promise<unknown>) =>
-      promise.then(
-        () => "OK",
-        (error: { data?: unknown }) => error.data,
-      );
     // One paid plan at a time (ADR 0012): not even a larger tier by the difference.
     expect(await refusal(requestPix(f, "pix-over-rescinded", "large"))).toEqual({
       code: "PLAN_UNAVAILABLE",
@@ -1537,11 +1571,20 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     expect(await f.plan()).toMatchObject({ termId, catalogTier: "intermediate", endsAt: NOV });
   });
 
-  it("o último mês coberto ainda recusa o Pix mensal", async () => {
+  it("no último mês do termo, o Pix mensal é a renovação no fim dele, com a âncora do termo", async () => {
     const f = await fixture();
     // November 2025 to November 2026: October is its last month.
-    await annual(f, f.organizationId, "active", { firstPeriod: Date.UTC(2025, 10, 1) });
-    expect(await code(requestPix(f, "pix-last-month"))).toBe("ANNUAL_TERM_ACTIVE");
+    const anchor = Date.UTC(2025, 10, 1);
+    await annual(f, f.organizationId, "active", { firstPeriod: anchor });
+    const request = await requestPix(f, "pix-last-month");
+    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", request.id))).toMatchObject({
+      start: "renewal",
+      firstPeriod: NOV,
+      anchor,
+      // Paid within the month it buys.
+      endsAt: DEC,
+      amountCents: 14900,
+    });
   });
 
   it.each([

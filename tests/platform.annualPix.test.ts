@@ -25,6 +25,10 @@ const DAY = 24 * 60 * 60 * 1000;
 const END = termEndsAt(OCT);
 /** The start of its last month, from which it may be renewed. */
 const LAST_MONTH = Date.UTC(2027, 8, 10, 12);
+/** A monthly Pix confirmed at `OCT` ends on its first anniversary, 10/11/2026 12:00 UTC (ADR 0012). */
+const MONTHLY_END = addMonths(OCT, 1);
+/** The annual that renews that monthly starts at its end and keeps its anchor, `OCT`. */
+const RENEWAL_END = termEndsAt(MONTHLY_END, OCT);
 usePlatformEnvironment({
   siteUrl: "http://localhost:5199",
   convexSiteUrl: "http://127.0.0.1:3257",
@@ -257,16 +261,17 @@ describe("pedido anual por Pix", () => {
     // One paid plan at a time (ADR 0012): starting now would replace the month in force.
     expect(await refusal(requestAnnual(f.owner, f.organizationId, "now"))).toEqual({
       code: "PLAN_UNAVAILABLE",
-      availableAt: NOV,
+      availableAt: MONTHLY_END,
     });
-    // A smaller tier enters as the renewal: from the end of the month paid, until the anniversary.
+    // A smaller tier enters as the renewal: from the end of the month paid, until the anniversary,
+    // keeping the monthly's anchor (slice 1c).
     const renewal = await requestAnnual(f.owner, f.organizationId, "renewal");
     expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", renewal.id))).toMatchObject({
       tier: "intermediate",
-      firstPeriod: NOV,
-      anchor: NOV,
+      firstPeriod: MONTHLY_END,
+      anchor: OCT,
       // Paid within the term's first month, as a renewal paid late starts at once.
-      endsAt: DEC,
+      endsAt: addMonths(OCT, 2),
     });
   });
 
@@ -349,7 +354,7 @@ describe("confirmação do anual por Pix", () => {
     });
   });
 
-  it("as cotas seguem os meses do termo e o Pix mensal é recusado até o fim dele", async () => {
+  it("as cotas seguem os meses do termo e o Pix mensal é recusado até o último mês dele", async () => {
     const f = await fixture();
     const request = await requestAnnual(f.owner, f.organizationId, "now");
     await confirm(f, request.id, "annual-quota-ref");
@@ -376,7 +381,8 @@ describe("confirmação do anual por Pix", () => {
           key: "monthly-under-annual",
         }),
       ),
-    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: END });
+      // The monthly opens in the term's last month, as its renewal (slice 1c).
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: LAST_MONTH });
   });
 
   it("a renovação de um mensal Pix agenda o termo e só troca o plano no fim do mês pago", async () => {
@@ -384,20 +390,29 @@ describe("confirmação do anual por Pix", () => {
     await payMonthly(f, f.owner, f.organizationId);
     const monthly = await f.plan();
     const request = await requestAnnual(f.owner, f.organizationId, "renewal");
+    // Paid 10 days before the month ends: the fake timers hold at most 24.8 days.
+    vi.setSystemTime(MONTHLY_END - 10 * DAY);
     await confirm(f, request.id, "annual-next-ref");
     const [term] = await f.terms();
-    expect(term).toMatchObject({ state: "scheduled", firstPeriod: NOV, endsAt: termEndsAt(NOV) });
+    expect(term).toMatchObject({
+      state: "scheduled",
+      firstPeriod: MONTHLY_END,
+      anchor: OCT,
+      endsAt: RENEWAL_END,
+    });
     expect(await f.plan()).toEqual(monthly);
-    await runUntil(f, NOV - 1);
+    await runUntil(f, MONTHLY_END - 1);
     expect(await f.plan()).toEqual(monthly);
-    await runUntil(f, NOV);
+    await runUntil(f, MONTHLY_END);
     expect(await f.terms()).toMatchObject([{ state: "active" }]);
     const annual = await f.plan();
+    // The chain keeps the monthly's anchor: the quota periods do not move.
     expect(annual).toMatchObject({
       catalogTier: "intermediate",
       termId: term!._id,
-      startsAt: NOV,
-      endsAt: termEndsAt(NOV),
+      startsAt: MONTHLY_END,
+      endsAt: RENEWAL_END,
+      periodAnchor: OCT,
       version: 2,
     });
     // Running it again, late or twice, changes nothing.
@@ -412,9 +427,9 @@ describe("confirmação do anual por Pix", () => {
     await confirm(f, request.id, "annual-rescinded-ref");
     const [term] = await f.terms();
     await f.t.run((ctx) => ctx.db.patch("platformPlanTerms", term!._id, { state: "rescinded" }));
-    await runUntil(f, NOV);
+    await runUntil(f, MONTHLY_END);
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: term!._id });
-    expect(await f.plan()).toMatchObject({ endsAt: NOV });
+    expect(await f.plan()).toMatchObject({ endsAt: MONTHLY_END });
     expect(await f.plan()).not.toHaveProperty("termId");
     expect(await f.terms()).toMatchObject([{ state: "rescinded" }]);
   });
@@ -431,7 +446,7 @@ describe("confirmação do anual por Pix", () => {
         await ctx.db.patch("platformPlanSettings", settings._id, { enabled });
       });
     await catalog(false);
-    await runUntil(f, NOV);
+    await runUntil(f, MONTHLY_END);
     expect(await f.terms()).toMatchObject([{ state: "scheduled", blockedCode: "PLANS_DISABLED" }]);
     expect(await f.plan()).not.toHaveProperty("termId");
     await catalog(true);
@@ -439,7 +454,7 @@ describe("confirmação do anual por Pix", () => {
     const [active] = await f.terms();
     expect(active).toMatchObject({ state: "active" });
     expect(active).not.toHaveProperty("blockedCode");
-    expect(await f.plan()).toMatchObject({ termId: term!._id, endsAt: termEndsAt(NOV) });
+    expect(await f.plan()).toMatchObject({ termId: term!._id, endsAt: RENEWAL_END });
   });
 
   it("o now é pago em 7 dias; a renovação, até o fim do primeiro mês do termo", async () => {
@@ -454,12 +469,12 @@ describe("confirmação do anual por Pix", () => {
     vi.setSystemTime(OCT + 7 * DAY);
     expect(await code(confirm(f, now.id, "annual-late-now"))).toBe("PLAN_REQUEST_UNAVAILABLE");
     expect(await f.terms()).toEqual([]);
-    // Paid within November, the renewal's first month: it starts at once, at its own start.
-    vi.setSystemTime(NOV + DAY);
+    // Paid within the renewal's first month: it starts at once, at its own start.
+    vi.setSystemTime(MONTHLY_END + DAY);
     await confirm(g, next.id, "annual-next-in-november");
-    expect(await g.terms()).toMatchObject([{ state: "active", firstPeriod: NOV }]);
-    expect(await g.plan()).toMatchObject({ startsAt: NOV + DAY, endsAt: termEndsAt(NOV) });
-    vi.setSystemTime(DEC);
+    expect(await g.terms()).toMatchObject([{ state: "active", firstPeriod: MONTHLY_END }]);
+    expect(await g.plan()).toMatchObject({ startsAt: MONTHLY_END + DAY, endsAt: RENEWAL_END });
+    vi.setSystemTime(addMonths(OCT, 2));
     expect(await code(confirm(h, late.id, "annual-late-next"))).toBe("PLAN_REQUEST_UNAVAILABLE");
     expect(await h.terms()).toEqual([]);
   });
@@ -476,7 +491,7 @@ describe("confirmação do anual por Pix", () => {
     expect(await f.terms()).toEqual([]);
     await confirm(f, request.id, "annual-other-ref");
     // Each organization keeps its own plan; the other's term does not touch this one.
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: MONTHLY_END });
     expect(await f.plan()).not.toHaveProperty("termId");
     expect(await f.plan(other)).toMatchObject({ endsAt: END });
   });
@@ -730,7 +745,7 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
     const late = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, late.id, "annual-ended-ref");
     const [ended] = await f.terms();
-    vi.setSystemTime(termEndsAt(NOV));
+    vi.setSystemTime(RENEWAL_END);
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: ended!._id });
     expect(await f.terms()).toMatchObject([{ state: "scheduled", blockedCode: "TERM_ENDED" }]);
     expect(await f.plan()).not.toHaveProperty("termId");
@@ -748,7 +763,7 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
     const request = await requestAnnual(g.owner, g.organizationId, "renewal");
     await confirm(g, request.id, "annual-archiving-ref");
     const [term] = await g.terms();
-    // An archived organization buys plans; its rehydration may start before the 1st.
+    // An archived organization buys plans; its rehydration may start before the renewal.
     await g.t.run((ctx) =>
       ctx.db.insert("coldArchiveRuns", {
         organizationId: g.organizationId,
@@ -769,7 +784,7 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
         digest: "",
       }),
     );
-    vi.setSystemTime(NOV);
+    vi.setSystemTime(MONTHLY_END);
     await g.t.mutation(internal.plans.activateScheduledTerm, { termId: term!._id });
     expect(await g.terms()).toMatchObject([
       { state: "scheduled", blockedCode: "ORGANIZATION_ARCHIVING" },
@@ -1557,14 +1572,14 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
       const settings = (await ctx.db.query("platformPlanSettings").first())!;
       await ctx.db.patch("platformPlanSettings", settings._id, { enabled: false });
     });
-    await runUntil(f, NOV);
+    await runUntil(f, MONTHLY_END);
     const [blocked] = await f.terms();
     expect(blocked).toMatchObject({ state: "scheduled", blockedCode: "PLANS_DISABLED" });
     const monthly = await f.plan();
-    expect(monthly).toMatchObject({ endsAt: NOV });
+    expect(monthly).toMatchObject({ endsAt: MONTHLY_END });
     expect(monthly).not.toHaveProperty("termId");
     // In its first month and past the 7 days of the payment: still nothing was used.
-    const at = NOV + 10 * DAY;
+    const at = MONTHLY_END + 10 * DAY;
     vi.setSystemTime(at);
     expect(await rescind(f, blocked!._id)).toEqual([
       {
@@ -1799,9 +1814,9 @@ describe("visão do anual no console (plans:overview)", () => {
       tier: "intermediate",
       cycle: "annual",
       start: "renewal",
-      firstPeriod: NOV,
-      periodStartsAt: NOV,
-      payBy: DEC,
+      firstPeriod: MONTHLY_END,
+      periodStartsAt: MONTHLY_END,
+      payBy: addMonths(OCT, 2),
       amountCents: 149000,
       state: "awaiting_payment",
     });
@@ -1811,9 +1826,9 @@ describe("visão do anual no console (plans:overview)", () => {
         id: expect.any(String),
         tier: "intermediate",
         segments: [],
-        firstPeriod: NOV,
-        endsAt: termEndsAt(NOV),
-        renewalFrom: Date.UTC(2027, 9, 1),
+        firstPeriod: MONTHLY_END,
+        endsAt: RENEWAL_END,
+        renewalFrom: Date.UTC(2027, 9, 10, 12),
         source: "pix",
         state: "scheduled",
         blocked: false,

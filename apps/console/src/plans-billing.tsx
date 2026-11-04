@@ -8,6 +8,7 @@ import type { Organization } from "./organizations";
 import { useQuery } from "./convex-query";
 import { useAsyncAction } from "./async-action";
 import { ErrorBoundary } from "./route-errors";
+import { formatUtcInstant } from "./format";
 import {
   annualMessages,
   price,
@@ -73,6 +74,13 @@ function reviewName(item: { source: string; code: string }) {
 }
 const ended = ["canceled", "incomplete_expired"];
 
+/**
+ * The plan in force and its end, the UTC instant it was bought until: a Pix plan ends on an
+ * anniversary of its confirmation (ADR 0012), the card still on a 1st at 00:00 UTC.
+ */
+const planUntil = (plan: { tier: string; endsAt: number | null }) =>
+  `${tierNames[plan.tier] ?? plan.tier}${plan.endsAt ? `, até ${formatUtcInstant(plan.endsAt)}` : ", sem vencimento"}`;
+
 function failure(error: unknown) {
   // A sale that waits for the plan in force ends with the date it becomes available (ADR 0012).
   const { code, availability } = refusalOf(error);
@@ -87,6 +95,9 @@ function failure(error: unknown) {
     PLAN_UNAVAILABLE: "Esta mudança de plano está indisponível. Confira a situação atual.",
     PLAN_REQUEST_PENDING:
       "Há um pedido por Pix aguardando pagamento. Cancele-o antes de usar o cartão.",
+    // One paid plan at a time (ADR 0012): the card waits for the plan paid by Pix to end.
+    PAYMENT_METHOD_PIX:
+      "Há um plano pago por Pix em vigor ou uma renovação dele já paga. O cartão espera o fim dele.",
     CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
     PERIOD_CLOSING: "O mês está terminando. Contrate depois de 00:00 UTC do dia 1.",
     SUBSCRIPTION_REQUIRED: "Não há assinatura por cartão nesta organização.",
@@ -230,9 +241,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
             { term: "Forma de pagamento", value: current ? "Pix assistido" : "Nenhum" },
             {
               term: "Plano e período",
-              value: data.plan
-                ? `${tierNames[data.plan.tier] ?? data.plan.tier}${data.plan.endsAt ? `, até ${utcDate(data.plan.endsAt)}` : ", sem vencimento"}`
-                : "Sem plano em vigor",
+              value: data.plan ? planUntil(data.plan) : "Sem plano em vigor",
             },
           ]}
         />
@@ -270,9 +279,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
           { term: "Forma de pagamento", value: method },
           {
             term: "Plano e período",
-            value: data.plan
-              ? `${tierNames[data.plan.tier] ?? data.plan.tier}${data.plan.endsAt ? `, até ${utcDate(data.plan.endsAt)}` : ", sem vencimento"}`
-              : "Sem plano em vigor",
+            value: data.plan ? planUntil(data.plan) : "Sem plano em vigor",
           },
           {
             term: "Próxima cobrança",
@@ -483,7 +490,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
             : pending?.kind === "checkout"
               ? live
                 ? "Você será levado ao Stripe para pagar a diferença integral do mês corrente. O plano muda quando o Stripe confirmar o pagamento, e a renovação passa a ser pelo novo plano."
-                : `Você será levado ao Stripe. O valor do mês corrente aparece antes da confirmação, integral e sem pró-rata, ou zero se o mês já foi pago por Pix. Depois, ${price(monthly[pending.tier])} por mês, cobrados no dia 1 às 00:00 UTC.`
+                : `Você será levado ao Stripe. O valor do mês corrente aparece antes da confirmação, integral e sem pró-rata. Depois, ${price(monthly[pending.tier])} por mês, cobrados no dia 1 às 00:00 UTC.`
               : pending?.kind === "abandon"
                 ? "O link de pagamento deixa de valer. Se o pagamento já tiver sido feito, ele continua valendo."
                 : pending?.kind === "renewal" && pending.change === "cancel"

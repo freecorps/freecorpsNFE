@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { getFunctionName } from "convex/server";
 import { ConvexError, type GenericId } from "convex/values";
 import type { Organization } from "./organizations";
@@ -72,9 +72,15 @@ function overview(): PlansOverview {
     annualEnabled: false,
     pixEnabled: true,
     annualStart: { start: "now", startsAt: null, endsAt: null, code: null, availableAt: null },
+    monthlyStart: { intermediate: monthlyNow(14900), large: monthlyNow(49900) },
+    scheduledRenewal: null,
     checkout: false,
     terms: [],
   };
+}
+type MonthlyStart = PlansOverview["monthlyStart"]["large"];
+function monthlyNow(amountCents: number): MonthlyStart {
+  return { start: "now", amountCents, startsAt: null, endsAt: null, code: null, availableAt: null };
 }
 function pending(): NonNullable<PlansOverview["request"]> {
   return {
@@ -217,13 +223,14 @@ it("refusal leaves the dialog open and makes retry possible without claiming suc
   expect(screen.queryByRole("alertdialog")).toBeNull();
 });
 
-it("registers a paid request, discloses the integral UTC month and never claims activation", async () => {
+it("registers a paid request, discloses a month from the confirmation and never claims activation", async () => {
   const view = show();
   await click("Solicitar Intermediário");
   const dialog = screen.getByRole("alertdialog");
-  expect(dialog.textContent).toMatch(/R\$\s149,00 pelo mês corrente em UTC/);
-  expect(dialog.textContent).toContain("inclusive no último dia do mês");
-  expect(dialog.textContent).toContain("no início do próximo mês");
+  expect(dialog.textContent).toMatch(
+    /R\$\s149,00 por um mês, da confirmação do pagamento pela equipe ao mesmo dia e horário do mês seguinte, em UTC\. O pedido vale por 7 dias\./,
+  );
+  expect(dialog.textContent).not.toMatch(/mês corrente|dia 1|mês civil/);
   await click("Registrar pedido");
   expect(state.request).toHaveBeenCalledWith({
     organizationId: "org-one",
@@ -966,4 +973,166 @@ it("with Pix off, a member who cannot contract gets no pointer to Cobrança", ()
   expect(screen.getByText(/Apenas o proprietário e administradores/)).toBeTruthy();
   expect(screen.queryByText("Assine pelo cartão em Cobrança.")).toBeNull();
   expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
+});
+
+describe("mensal por Pix nos aniversários (ADR 0012)", () => {
+  const MONTH_END = Date.UTC(2026, 10, 10, 12, 0, 7);
+  const NEXT_END = Date.UTC(2026, 11, 10, 12, 0, 7);
+  const inForce = (): PlansOverview => ({
+    ...overview(),
+    subscription: { tier: "intermediate", endsAt: MONTH_END, version: 1 },
+    monthlyStart: {
+      intermediate: {
+        start: "renewal",
+        amountCents: 14900,
+        startsAt: MONTH_END,
+        endsAt: NEXT_END,
+        code: null,
+        availableAt: null,
+      },
+      large: {
+        start: "upgrade",
+        amountCents: 35000,
+        startsAt: null,
+        endsAt: MONTH_END,
+        code: null,
+        availableAt: null,
+      },
+    },
+  });
+  const refusedMonthly = (code: string, availableAt: number): MonthlyStart => ({
+    start: null,
+    amountCents: null,
+    startsAt: null,
+    endsAt: null,
+    code,
+    availableAt,
+  });
+
+  it("com um mensal Pix em vigor, o mesmo tier é a renovação no fim dele e o maior, o upgrade pela diferença", async () => {
+    state.data = inForce();
+    show();
+    expect(
+      screen.getByText(
+        "Renovação do plano em vigor: começa em 10/11/2026 às 12:00:07 UTC, quando ele termina.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Mudança na confirmação, pela diferença, até 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor.",
+      ),
+    ).toBeTruthy();
+    await click("Solicitar Intermediário");
+    expect(screen.getByRole("alertdialog").textContent).toMatch(
+      /R\$\s149,00 pela renovação do plano em vigor: começa em 10\/11\/2026 às 12:00:07 UTC, quando ele termina, e vai até 10\/12\/2026 às 12:00:07 UTC\./,
+    );
+    await click("Registrar pedido");
+    // The server reads the renewal from the tier: the console sends only the intention.
+    expect(state.request).toHaveBeenCalledWith({
+      organizationId: "org-one",
+      tier: "intermediate",
+      key: expect.any(String),
+    });
+    await click("Solicitar Grande");
+    const upgrade = screen.getByRole("alertdialog").textContent;
+    expect(upgrade).toMatch(/R\$\s350,00, a diferença integral para o novo plano/);
+    expect(upgrade).toContain(
+      "até 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor, que não muda",
+    );
+    expect(document.body.textContent).not.toMatch(/mês civil|no dia 1 /);
+  });
+
+  it("um mensal recusado diz por quê e quando fica disponível", () => {
+    state.data = {
+      ...overview(),
+      monthlyStart: {
+        intermediate: refusedMonthly("PAYMENT_METHOD_CARD", Date.UTC(2026, 10, 1)),
+        large: refusedMonthly("ANNUAL_TERM_ACTIVE", Date.UTC(2027, 8, 10, 12)),
+      },
+    };
+    show();
+    for (const name of ["Solicitar Intermediário", "Solicitar Grande"])
+      expect(screen.getByRole<HTMLButtonElement>("button", { name }).disabled).toBe(true);
+    expect(
+      screen.getByText(
+        "Esta organização paga por cartão. O mensal por Pix espera o fim do período pago pelo cartão. Disponível a partir de 01/11/2026 às 00:00 UTC.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Há um plano anual em vigor ou agendado. Pelo Pix, o mensal é a renovação dele, pedida no último mês. Disponível a partir de 10/09/2027 às 12:00 UTC.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("mostra a renovação e o upgrade pedidos com os instantes, e a renovação paga à espera", () => {
+    state.data = {
+      ...inForce(),
+      request: {
+        ...pending(),
+        start: "renewal",
+        firstPeriod: MONTH_END,
+        periodStartsAt: MONTH_END,
+        periodEndsAt: NEXT_END,
+        payBy: NEXT_END,
+      },
+    };
+    const view = show();
+    expect(
+      screen.getByText(
+        "De 10/11/2026 às 12:00:07 UTC, no fim do plano em vigor, a 10/12/2026 às 12:00:07 UTC",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /só vale após a confirmação do pagamento pela equipe, até 10\/12\/2026 às 12:00:07 UTC\./,
+      ),
+    ).toBeTruthy();
+    state.data = {
+      ...inForce(),
+      request: {
+        ...pending(),
+        tier: "large",
+        amountCents: 35000,
+        start: "upgrade",
+        periodStartsAt: null,
+        periodEndsAt: MONTH_END,
+        payBy: MONTH_END,
+      },
+    };
+    view.rerender(<Plans org={org} contextKey="entry-one" />);
+    expect(screen.getByText("Para Grande")).toBeTruthy();
+    expect(screen.getByText(/R\$\s350,00, pela diferença integral/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Da confirmação do pagamento pela equipe a 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor",
+      ),
+    ).toBeTruthy();
+    state.data = {
+      ...inForce(),
+      scheduledRenewal: {
+        tier: "intermediate",
+        startsAt: MONTH_END,
+        endsAt: NEXT_END,
+        blocked: false,
+      },
+    };
+    view.rerender(<Plans org={org} contextKey="entry-one" />);
+    const card = screen.getByRole("region", { name: "Renovação mensal paga" });
+    expect(card.textContent).toContain(
+      "De 10/11/2026 às 12:00:07 UTC a 10/12/2026 às 12:00:07 UTC",
+    );
+    expect(card.textContent).toContain("O plano atual continua até o início da renovação.");
+    state.data = {
+      ...inForce(),
+      scheduledRenewal: {
+        tier: "intermediate",
+        startsAt: MONTH_END,
+        endsAt: NEXT_END,
+        blocked: true,
+      },
+    };
+    view.rerender(<Plans org={org} contextKey="entry-one" />);
+    expect(screen.getByText(/o início da renovação aguarda a equipe/)).toBeTruthy();
+  });
 });

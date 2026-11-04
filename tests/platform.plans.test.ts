@@ -168,7 +168,7 @@ it("refuses enrollment without prefunded company cash and rolls back every reser
   expect(await f.t.run((ctx) => ctx.db.query("platformPlanAllocations").collect())).toEqual([]);
 });
 
-it("charges full month at month-end, activates only on operator confirmation and deduplicates payment", async () => {
+it("charges the full month, activates only on operator confirmation and deduplicates payment", async () => {
   const f = await fixture();
   await f.configure();
   const args = {
@@ -177,7 +177,8 @@ it("charges full month at month-end, activates only on operator confirmation and
     key: "synthetic-payment-1",
   };
   const request = await f.owner.mutation(api.plans.requestPaid, args);
-  expect(request).toMatchObject({ amountCents: 14900, period: "2026-10" });
+  // No civil month is bought (ADR 0012): the month runs from the confirmation.
+  expect(request).toEqual({ id: request.id, amountCents: 14900 });
   expect(await f.t.run((ctx) => ctx.db.query("platformPlanAllocations").collect())).toEqual([]);
   expect(await f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique())).toMatchObject({
     allocatedCustodyCents: 0,
@@ -210,7 +211,7 @@ it("charges full month at month-end, activates only on operator confirmation and
         contextKey: "test",
       })
     ).subscription,
-  ).toMatchObject({ tier: "intermediate", version: 1, endsAt: Date.UTC(2026, 10, 1) });
+  ).toMatchObject({ tier: "intermediate", version: 1, endsAt: Date.UTC(2026, 10, 30, 12) });
 });
 
 it("upgrade bills the full difference, preserves usage and never duplicates custody", async () => {
@@ -281,7 +282,8 @@ it("cancellation never grants quota or recycles custody, and expired payment can
     tier: "intermediate",
     key: "synthetic-expire",
   });
-  vi.setSystemTime(Date.UTC(2026, 10, 1));
+  // The request is paid within 7 days.
+  vi.setSystemTime(Date.UTC(2026, 10, 7, 12));
   await expect(
     f.t.mutation(internal.plans.confirmPayment, {
       requestId: next.id,
@@ -369,8 +371,9 @@ it("an Intermediário activated with three companies keeps them until the next a
   });
   for (let n = 1; n <= 3; n++) await createCompany(f.owner, f.organizationId, n);
   await expect(createCompany(f.owner, f.organizationId, 4)).rejects.toThrow("QUOTA_EXCEEDED");
-  // The next month is paid again; a fresh session, since the first one expired overnight.
-  vi.setSystemTime(Date.UTC(2026, 10, 1, 1));
+  // The month ends on 30/11 at 12:00 UTC, a month after the confirmation; the next one is paid
+  // after it, with a fresh session, since the first one expired meanwhile.
+  vi.setSystemTime(Date.UTC(2026, 10, 30, 13));
   const owner = await person(f.t, f.organizationId, "owner");
   await payIntermediate(f, owner, f.organizationId, "synthetic-renewal");
   await createCompany(owner, f.organizationId, 4);
