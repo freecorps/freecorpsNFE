@@ -1,15 +1,7 @@
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { fail, processIsRunning } from "./exec.mjs";
+import { fail, processIsRunning, replaceFileSync } from "./exec.mjs";
 import { readProcessIdentity } from "./process-identity.mjs";
 import { normalizePath } from "./paths.mjs";
 
@@ -85,7 +77,8 @@ function writeSetupResult(paths, record) {
   const destination = join(paths.convexDir, "worktree-setup.json");
   const temporary = `${destination}.${record.runId}.tmp`;
   writeFileSync(temporary, `${JSON.stringify(record)}\n`, { mode: 0o600 });
-  renameSync(temporary, destination);
+  // `worktree:status` e `wait` leem este arquivo enquanto o setup roda.
+  replaceFileSync(temporary, destination);
 }
 
 export function assertPrivateDirectories(paths) {

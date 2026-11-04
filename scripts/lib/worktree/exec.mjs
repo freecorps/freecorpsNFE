@@ -4,7 +4,7 @@
  * passa por aqui, então o comportamento no Windows fica num lugar só.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, renameSync, rmSync } from "node:fs";
 
 import { isWindows } from "./paths.mjs";
 
@@ -149,4 +149,30 @@ export function stopWorktreeNodeExecutors(nodeExecutable) {
 /** Bloqueia a thread sem busy loop; usado só enquanto se segura um lock. */
 export function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Troca `destination` por `temporary` com rename, para que nenhum leitor veja o
+ * arquivo pela metade. O Windows recusa a troca (EPERM, EACCES ou EBUSY)
+ * enquanto outro processo lê o destino, o que `worktree:status`, `wait` e
+ * `list` fazem por alguns ms; a troca se repete a cada `waitMs` até `timeoutMs`.
+ * O prazo, e não um número de tentativas, porque um leitor frequente recusa a
+ * maioria das trocas. Esgotado o prazo, ou num erro de outro tipo, o temporário
+ * sai e o erro sobe.
+ */
+export function replaceFileSync(temporary, destination, { timeoutMs = 2000, waitMs = 5 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      renameSync(temporary, destination);
+      return;
+    } catch (error) {
+      const transient = ["EPERM", "EACCES", "EBUSY"].includes(error.code);
+      if (!transient || Date.now() >= deadline) {
+        rmSync(temporary, { force: true });
+        throw error;
+      }
+      sleepSync(waitMs);
+    }
+  }
 }

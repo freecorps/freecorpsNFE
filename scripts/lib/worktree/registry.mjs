@@ -7,15 +7,7 @@
  * derivarem para as portas de outro.
  */
 import { connect, createServer } from "node:net";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -29,7 +21,7 @@ import {
   worktreeConvexPorts,
 } from "../../../lib/worktree-local.ts";
 import { readLocalConfig } from "./deployment.mjs";
-import { fail, git, sleepSync } from "./exec.mjs";
+import { fail, git, replaceFileSync, sleepSync } from "./exec.mjs";
 import { currentRoot, normalizePath, worktreePaths } from "./paths.mjs";
 
 const REGISTRY_VERSION = 1;
@@ -140,24 +132,11 @@ function readRegistryFile(filePath) {
 }
 
 function writeRegistryFile(filePath, registry) {
-  // Escreve-e-renomeia: leitor nenhum chega a ver um registro truncado.
+  // Escreve-e-renomeia: leitor nenhum chega a ver um registro truncado. Um
+  // `list` concorrente segura o destino aberto por alguns ms no Windows.
   const temporary = `${filePath}.${process.pid}.tmp`;
   writeFileSync(temporary, `${JSON.stringify(registry, null, 2)}\n`);
-  for (let attempt = 1; ; attempt += 1) {
-    try {
-      renameSync(temporary, filePath);
-      return;
-    } catch (error) {
-      // O Windows recusa a substituição enquanto outro processo ainda mantém o
-      // destino aberto, o que um `list` concorrente faz por alguns ms.
-      const transient = error.code === "EPERM" || error.code === "EACCES";
-      if (!transient || attempt >= 5) {
-        rmSync(temporary, { force: true });
-        throw error;
-      }
-      sleepSync(LOCK_RETRY_MS);
-    }
-  }
+  replaceFileSync(temporary, filePath);
 }
 
 /**
