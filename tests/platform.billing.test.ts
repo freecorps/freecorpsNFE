@@ -1369,6 +1369,22 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     expect(await f.t.run((ctx) => ctx.db.query("platformPlanTerms").collect())).toEqual([]);
   });
 
+  it("recusa a ativação mensal que um termo agendado encurtaria e vende a que termina antes dele", async () => {
+    const f = await fixture();
+    const monthly = (endsAt: number) =>
+      f.t.run((ctx) =>
+        activateCatalogPlan(ctx, f.organizationId, "large", OCT, endsAt, 0, "op", "Mensal"),
+      );
+    await annual(f, f.organizationId, "scheduled", { firstPeriod: Date.UTC(2026, 9, 20, 9) });
+    expect(await code(monthly(NOV))).toBe("ANNUAL_TERM_ACTIVE");
+    expect(await f.plan()).toBeNull();
+    await monthly(Date.UTC(2026, 9, 20, 9));
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      endsAt: Date.UTC(2026, 9, 20, 9),
+    });
+  });
+
   it("no mês coberto, recusa Pix, confirmação, atribuição e gratuito sem mexer no plano anual", async () => {
     const f = await fixture();
     // Asked before the term existed, then paid by Pix under it.

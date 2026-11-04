@@ -3,8 +3,9 @@ import { PLATFORM_PLANS, type paidTier } from "./planCatalog";
 /**
  * Annual term arithmetic (ADR 0010, decision 9): UTC instants in ms and integer cents only. A term
  * runs from its start, any instant, to the same day and time 12 months later, its anniversary.
- * Its month `k`, a term month, runs from `termMonthStart(start, k)` to `termMonthStart(start,
- * k + 1)`, and the term month under way always counts whole. A term starting on a 1st at 00:00
+ * The term month of index `k`, counted from 0 (the (k + 1)-th month, ADR 0012), runs from
+ * `termMonthStart(start, k)` to `termMonthStart(start, k + 1)`, and the term month under way
+ * always counts whole. A term starting on a 1st at 00:00
  * UTC has the civil UTC months as its term months.
  */
 type PaidTier = typeof paidTier.type;

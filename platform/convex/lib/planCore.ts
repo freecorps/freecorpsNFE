@@ -288,7 +288,8 @@ export async function grantTerm(
  * term months, until its end (ADR 0010, decision 9), for Pix and card alike, and grants the plan
  * now over `expectedVersion`. The end and the renewal date stay; the upgrade becomes a segment, or
  * the term's `tier` in its first term month, which it covers whole. The charge is added to
- * `references`, `paidCents` and `upgrades`; `purchasedAt` stays the annual charge's. The grant goes through `activateCatalogPlan`, whose
+ * `references`, `paidCents` and `upgrades`; `purchasedAt` stays the annual charge's. The grant
+ * goes through `activateCatalogPlan`, whose
  * `allocatePlan` reserves the larger tier's stock and custody fund (the R$ 172 "aporte" between
  * Intermediário and Grande) in this same transaction, before the plan is raised: any refusal
  * throws and rolls the term back too. The caller has checked the term and the price.

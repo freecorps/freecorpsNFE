@@ -234,7 +234,8 @@ com o interruptor ligado.
 - **Cálculo.** `platform/convex/lib/annualTerms.ts`, puro, em centavos
   inteiros e instantes UTC em ms. O termo pode começar em qualquer instante
   e termina no aniversário: o mesmo dia e horário 12 meses depois
-  (`termEndsAt`). O mês `k` do termo vai de `termMonthStart(início, k)` a
+  (`termEndsAt`). O mês do termo de índice `k`, contado de 0 (o (k + 1)º
+  mês da ADR 0012), vai de `termMonthStart(início, k)` a
   `termMonthStart(início, k + 1)`, sempre contado do início: o dia fica o
   mesmo, limitado ao último dia do mês, então um termo de 31/01 às 10:00
   vira o mês em 28/02 (29/02 no bissexto) e em 31/03, e termina em 31/01 do
@@ -286,14 +287,19 @@ com o interruptor ligado.
     referência fora de `references` ou repetida, com centavos que não sejam
     inteiros maiores que zero, ou cuja soma não fique abaixo de `paidCents`.
 - **Guarda `ANNUAL_TERM_ACTIVE`.** Um termo `scheduled` ou `active` cobre os
-  meses de `firstPeriod` até antes de `endsAt` (`termCovering`). O anual pode
-  começar no dia 1 do mês seguinte, então o mês corrente continua mensal até
-  lá. Recusam com `ANNUAL_TERM_ACTIVE`:
-  - quando um termo cobre o mês corrente: o pedido Pix
-    (`plans:requestPaid`), a confirmação (`plans:confirmPayment`), a
-    atribuição manual (`usage:assignPlan`), a adesão ao Gratuito
-    (`plans:claimFree`) e qualquer outra ativação mensal de
-    `activateCatalogPlan`;
+  instantes de `firstPeriod` até antes de `endsAt` (`termCovering`). O anual
+  pode começar no dia 1 do mês seguinte, então o mês corrente continua mensal
+  até lá. Recusam com `ANNUAL_TERM_ACTIVE`:
+  - quando um termo se sobrepõe ao plano mensal, de `startsAt` até antes de
+    `endsAt` (`monthlyBlockedByTerm`), porque o termo o encurtaria: o pedido
+    Pix (`plans:requestPaid`), a confirmação (`plans:confirmPayment`) e
+    qualquer outra ativação mensal de `activateCatalogPlan`. Um plano sem fim,
+    como o Gratuito (`plans:claimFree`), só é recusado se um termo cobre
+    `startsAt`: a ativação do termo o substitui. Um mês que termina antes de
+    um termo agendado continua vendido;
+  - quando um termo cobre o instante atual: a atribuição manual
+    (`usage:assignPlan`). Um termo agendado para depois substitui a linha
+    atribuída quando começa;
   - enquanto houver qualquer termo `scheduled` ou `active` não terminado
     (`activeTerm`), mesmo agendado para depois: o Checkout mensal
     (`billing:checkout`) e "Retomar renovação" (`billing:changeRenewal` com
