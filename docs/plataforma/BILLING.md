@@ -200,17 +200,17 @@ o servidor decide pelo tier o que o pedido compra (`pixMonthlyStart`,
 `plans.ts`) e o mostra em `plans:overview` (`monthlyStart`, por tier, com o
 valor):
 
-| Situação                                                 | Pedido mensal por Pix                                                                                                                                   |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sem plano pago em vigor (sem plano, Gratuito ou vencido) | `now`: mensalidade integral; o mês começa na confirmação, truncada ao segundo, com âncora nova, e termina no 1º aniversário dela. O pedido vale 7 dias. |
-| Mensal Pix em vigor, mesmo tier ou menor                 | `renewal`: mensalidade integral; começa no fim do plano em vigor e mantém a âncora, até o aniversário seguinte. Vale até o fim do mês que compra.       |
-| Mensal Pix em vigor, tier maior                          | `upgrade`: diferença integral, cobrada agora; mesmo período, mesma âncora e mesmo fim. Vale até o fim do plano em vigor.                                |
-| Último mês de um termo anual Pix                         | `renewal`, em qualquer tier: começa no fim do termo, com a âncora da cadeia.                                                                            |
-| Termo anual Pix antes do último mês, ou agendado         | Recusado com `ANNUAL_TERM_ACTIVE` e `availableAt` no último mês do termo mais recente; um termo com a ativação recusada, no fim dele.                   |
-| Plano do cartão em vigor, mesmo sem renovação            | Recusado com `PAYMENT_METHOD_CARD` e `availableAt` no fim dele, mesmo num tier maior; com o cartão renovando ou um Checkout aberto, sem data.           |
-| Acesso deixado por um termo rescindido                   | Recusado com `PLAN_UNAVAILABLE` e `availableAt` no fim do acesso.                                                                                       |
-| Renovação mensal já paga e não começada                  | Recusado com `PLAN_UNAVAILABLE` e `availableAt` no início dela; com a ativação recusada, no fim do mês que ela comprou.                                 |
-| Plano personalizado                                      | Recusado com `PLAN_UNAVAILABLE`, sem data.                                                                                                              |
+| Situação                                                 | Pedido mensal por Pix                                                                                                                                                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sem plano pago em vigor (sem plano, Gratuito ou vencido) | `now`: mensalidade integral; o mês começa na confirmação, truncada ao segundo, com âncora nova, e termina no 1º aniversário dela. O pedido vale 7 dias.                                           |
+| Mensal Pix em vigor, mesmo tier ou menor                 | `renewal`: mensalidade integral; começa no fim do plano em vigor e mantém a âncora, até o aniversário seguinte. Vale até o fim do mês que compra.                                                 |
+| Mensal Pix em vigor, tier maior                          | `upgrade`: diferença integral, cobrada agora; mesmo período, mesma âncora e mesmo fim. Vale até o fim do plano em vigor.                                                                          |
+| Último mês de um termo anual Pix                         | `renewal`, em qualquer tier: começa no fim do termo, com a âncora da cadeia.                                                                                                                      |
+| Termo anual Pix antes do último mês, ou agendado         | Recusado com `ANNUAL_TERM_ACTIVE` e `availableAt` no último mês do termo mais recente; um termo com a ativação recusada, no fim dele.                                                             |
+| Plano do cartão em vigor, mesmo sem renovação            | Recusado com `PAYMENT_METHOD_CARD` e `availableAt` no fim dele, mesmo num tier maior; com o cartão renovando ou um Checkout aberto, sem data.                                                     |
+| Acesso deixado por um termo rescindido                   | Recusado com `PLAN_UNAVAILABLE` e `availableAt` no fim do acesso.                                                                                                                                 |
+| Renovação mensal já paga e não começada                  | Só o upgrade do mês em vigor, que não muda o tier da renovação. O resto é recusado com `PLAN_UNAVAILABLE` e `availableAt` no início dela; com a ativação recusada, no fim do mês que ela comprou. |
+| Plano personalizado                                      | Recusado com `PLAN_UNAVAILABLE`, sem data.                                                                                                                                                        |
 
 Todo aniversário sai da âncora original (`addMonths`): uma âncora em 31/01
 às 10:00:07 UTC renova em 28/02 e depois em 31/03, no mesmo horário. A
@@ -233,13 +233,38 @@ valor e referência, como no anual, e:
   com a âncora da cadeia;
 - `renewal` paga antes: reserva o estoque do tier, encerra um aviso de
   arquivamento pendente, marca o pedido `activated` com `scheduled` e agenda
-  `plans:activatePixRenewal` para o início. A tarefa concede o plano sobre a
-  versão em vigor nesse instante e apaga `scheduled`. Se a admissão recusar,
-  um termo cobrir o mês ou a execução chegar depois do fim dele
-  (`PERIOD_ENDED`), grava `blockedCode` sem conceder nada; o operador
-  resolve e chama a mesma mutation com o `requestId`. Enquanto agendada, ela
-  conta como plano pago (`paidPlanInForce`) e aparece no console como
-  "Renovação mensal paga" (`scheduledRenewal` em `plans:overview`).
+  `plans:activatePixRenewal` para o início; rodada antes dele, a tarefa se
+  agenda de novo. Ela concede o plano sobre a versão em vigor nesse
+  instante e apaga `scheduled`. Como a ativação de um termo agendado, ela
+  substitui a linha que estiver em vigor, inclusive uma atribuída pelo
+  operador (`usage:assignPlan`) entre a confirmação e o início, e o upgrade
+  vendido no meio-tempo vale só até o início.
+
+**Renovação recusada.** Se a admissão recusar, um termo cobrir o mês ou a
+execução chegar depois do fim dele (`PERIOD_ENDED`), a tarefa grava
+`blockedCode` sem conceder nada, e a organização fica sem plano pago até o
+operador resolver e chamar a mesma mutation com o `requestId`. É o caso de
+uma renovação para um tier menor que o uso, crescido desde o pedido, já não
+cabe (`QUOTA_EXCEEDED`; o pedido confere o uso). Foi mantido de propósito,
+igual à renovação do cartão, cuja fatura no tier menor fica `blocked` pela
+mesma recusa, e ao termo agendado: conceder um plano menor que o uso
+passaria a recusar entradas novas sem que uma pessoa visse o pagamento. Uma
+renovação cujo início passou há 10 minutos sem concessão nem recusa, por uma
+falha inesperada da tarefa, fica `overdue`. Recusada ou atrasada, aparece no
+console como "Início pendente" e segura a organização até o fim do mês que
+comprou: as outras vendas, o cartão e o arquivamento esperam
+(`ARCHIVE_PAID_ACTIVE`). Agendada, ela também conta como plano pago
+(`paidPlanInForce`) e aparece como "Renovação mensal paga"
+(`scheduledRenewal` em `plans:overview`). Só as renovações iniciadas nos
+últimos 31 dias são lidas, então linhas antigas que ficaram com `scheduled`
+não escondem a atual.
+
+**Plano pago por Pix.** Cada confirmação mensal grava em `planVersion` a
+versão da linha que concedeu, e a ativação agendada também. O Checkout
+mensal só espera por uma linha que um pedido Pix gravou (`paidByPix`,
+`lib/billingCore.ts`): uma linha de tier do catálogo atribuída pelo operador
+não é tomada por Pix, e um mensal Pix confirmado antes desse registro também
+não, como antes da 1c.
 
 Um pedido mensal feito antes da 1c, com `period`, continua repetido pela
 mesma chave e confirmado como foi pedido: o mês civil, sem âncora. O

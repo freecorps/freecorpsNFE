@@ -109,6 +109,11 @@ export const planTables = {
      */
     scheduled: v.optional(v.boolean()),
     blockedCode: v.optional(v.string()),
+    /**
+     * A monthly request: the `usagePlans` version its grant wrote, so the row in force is known to
+     * be paid by Pix (`pixMonthlyUntil`). Missing on requests confirmed before it was recorded.
+     */
+    planVersion: v.optional(v.number()),
     startsAt: v.number(),
     endsAt: v.number(),
     expectedVersion: v.number(),
@@ -141,7 +146,11 @@ export const planTables = {
   })
     .index("by_organizationId_and_key", ["organizationId", "key"])
     .index("by_organizationId_and_state", ["organizationId", "state"])
-    .index("by_organizationId_and_scheduled", ["organizationId", "scheduled"])
+    .index("by_organizationId_and_scheduled_and_firstPeriod", [
+      "organizationId",
+      "scheduled",
+      "firstPeriod",
+    ])
     .index("by_paymentReference", ["paymentReference"]),
   /**
    * One annual term (ADR 0010, decisions 4.2 and 9, and ADR 0012). Times are UTC instants in ms:

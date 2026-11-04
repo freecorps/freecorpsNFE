@@ -163,10 +163,19 @@ export async function paidByCard(ctx: QueryCtx, plan: Doc<"usagePlans">) {
 export const renewalEnd = (request: { firstPeriod: number; anchor: number }) =>
   termMonthStart(request.firstPeriod, 1, request.anchor);
 
+/** A month is at most 31 days: a renewal that started before this window has already ended. */
+const RENEWAL_WINDOW = 31 * 24 * 60 * 60 * 1000;
+/** The scheduled activation runs at the start; this long after it, the renewal is `overdue`. */
+const RENEWAL_OVERDUE = 10 * 60 * 1000;
+
 /**
  * A monthly Pix renewal paid before its start and not yet granted (`scheduled`, ADR 0012): it
  * holds the organization as a plan in force would, from now to the end of the month it bought. A
- * refused activation (`blockedCode`) waits for the team and no longer holds after that end.
+ * refused activation (`blockedCode`) waits for the team and no longer holds after that end. Only
+ * renewals starting in the last 31 days are read, so ended rows that keep `scheduled` never crowd
+ * out the current one. `availableAt` is when what it holds opens: its start, or, refused, its end.
+ * `overdue`: its start passed 10 minutes ago and it was neither granted nor refused (an
+ * activation that failed unexpectedly), so it needs the team as a refused one does.
  */
 export async function scheduledPixRenewal(
   ctx: QueryCtx,
@@ -175,8 +184,11 @@ export async function scheduledPixRenewal(
 ) {
   const rows = await ctx.db
     .query("platformPlanRequests")
-    .withIndex("by_organizationId_and_scheduled", (q) =>
-      q.eq("organizationId", organizationId).eq("scheduled", true),
+    .withIndex("by_organizationId_and_scheduled_and_firstPeriod", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("scheduled", true)
+        .gt("firstPeriod", now - RENEWAL_WINDOW),
     )
     .take(5);
   for (const request of rows) {
@@ -188,15 +200,41 @@ export async function scheduledPixRenewal(
       continue;
     const span = { firstPeriod: request.firstPeriod, anchor: request.anchor };
     const endsAt = renewalEnd(span);
-    if (endsAt > now) return { request, startsAt: request.firstPeriod, endsAt };
+    if (endsAt <= now) continue;
+    const blocked = request.blockedCode !== undefined;
+    return {
+      request,
+      startsAt: request.firstPeriod,
+      endsAt,
+      blocked,
+      overdue: !blocked && request.firstPeriod + RENEWAL_OVERDUE <= now,
+      availableAt: blocked ? endsAt : request.firstPeriod,
+    };
   }
   return null;
 }
 
 /**
+ * Whether a monthly Pix confirmation wrote this plan row: the activated monthly request that
+ * recorded its version (`planVersion`). A positive signal, unlike `paidByCard`: a row assigned by
+ * an operator, or granted before the version was recorded, is not taken for Pix. Only the newest
+ * activated requests can match the row in force.
+ */
+export async function paidByPix(ctx: QueryCtx, plan: Doc<"usagePlans">) {
+  const requests = await ctx.db
+    .query("platformPlanRequests")
+    .withIndex("by_organizationId_and_state", (q) =>
+      q.eq("organizationId", plan.organizationId).eq("state", "activated"),
+    )
+    .order("desc")
+    .take(20);
+  return requests.some((request) => request.planVersion === plan.version);
+}
+
+/**
  * When the monthly Pix plan in force, with any renewal of it already paid, ends; null without
- * one. A monthly plan row of a catalog tier without a term and not granted by a card invoice
- * (`paidByCard`) was paid by Pix. One paid plan at a time (ADR 0012): the monthly card Checkout
+ * one. A monthly plan row of a catalog tier without a term, written by a Pix confirmation
+ * (`paidByPix`), is a Pix plan. One paid plan at a time (ADR 0012): the monthly card Checkout
  * waits until then.
  */
 export async function pixMonthlyUntil(
@@ -219,7 +257,7 @@ export async function pixMonthlyUntil(
     plan.endsAt !== null &&
     !plan.termId &&
     (plan.catalogTier === "intermediate" || plan.catalogTier === "large") &&
-    !(await paidByCard(ctx, plan))
+    (await paidByPix(ctx, plan))
       ? plan.endsAt
       : null;
   if (renewal) return Math.max(renewal.endsAt, inForce ?? 0);

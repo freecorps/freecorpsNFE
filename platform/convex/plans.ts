@@ -302,16 +302,37 @@ const annualStartView = (start: AnnualStart) => ({
 /**
  * A monthly Pix renewal already paid and waiting for its start (`scheduledPixRenewal`) holds the
  * organization: no other Pix sale until it starts, when it is the plan in force and may be renewed
- * or upgraded in turn. One whose activation was refused waits for the team until its end.
+ * in turn, except the upgrade of the month in force (`pixMonthlyStart`). One whose activation was
+ * refused waits for the team until its end (`availableAt`).
  */
 async function renewalWait(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
   const scheduled = await scheduledPixRenewal(ctx, organizationId, now);
   if (!scheduled) return null;
-  return {
-    start: null,
-    code: "PLAN_UNAVAILABLE",
-    availableAt: scheduled.request.blockedCode ? scheduled.endsAt : scheduled.startsAt,
-  } as const;
+  return { start: null, code: "PLAN_UNAVAILABLE", availableAt: scheduled.availableAt } as const;
+}
+
+/**
+ * The upgrade of the monthly Pix plan in force to `tier`, or null: a catalog row in force without
+ * a term or a card invoice behind it, at a lower tier. It raises only the period in force.
+ */
+async function monthlyUpgrade(
+  ctx: QueryCtx,
+  plan: Doc<"usagePlans"> | null,
+  now: number,
+  tier: typeof paidTier.type,
+) {
+  if (
+    !plan ||
+    plan.startsAt > now ||
+    planEnded(plan, now) ||
+    plan.endsAt === null ||
+    plan.termId ||
+    (plan.catalogTier !== "intermediate" && plan.catalogTier !== "large") ||
+    PLATFORM_PLANS[tier].monthlyCents <= PLATFORM_PLANS[plan.catalogTier].monthlyCents ||
+    (await paidByCard(ctx, plan))
+  )
+    return null;
+  return { start: "upgrade", endsAt: plan.endsAt, anchor: plan.periodAnchor ?? null } as const;
 }
 
 type MonthlyStart =
@@ -330,8 +351,9 @@ type MonthlyStart =
  * (`pixAnnualStart`): a Pix term before its last month or already renewed (`ANNUAL_TERM_ACTIVE`);
  * a card plan, even without renewal, a higher tier included (`PAYMENT_METHOD_CARD`, from its
  * end); a renewing card or an open Checkout (`PAYMENT_METHOD_CARD`, no date); the access left by a
- * rescinded term (`PLAN_UNAVAILABLE`, from its end); a renewal already paid (`renewalWait`); a
- * custom plan (`PLAN_UNAVAILABLE`).
+ * rescinded term (`PLAN_UNAVAILABLE`, from its end); a renewal already paid (`renewalWait`),
+ * except the upgrade of the month in force, which invariant 7 always allows; a custom plan
+ * (`PLAN_UNAVAILABLE`).
  */
 async function pixMonthlyStart(
   ctx: QueryCtx,
@@ -345,7 +367,8 @@ async function pixMonthlyStart(
   if (await cardBlocksPix(ctx, organizationId))
     return { start: null, code: "PAYMENT_METHOD_CARD", availableAt: null };
   const scheduled = await renewalWait(ctx, organizationId, now);
-  if (scheduled) return scheduled;
+  // The paid renewal keeps its own tier; the upgrade raises only the month in force.
+  if (scheduled) return (await monthlyUpgrade(ctx, plan, now, tier)) ?? scheduled;
   const last = (await termsInForce(ctx, organizationId, now))
     .sort((a, b) => a.firstPeriod - b.firstPeriod)
     .at(-1);
@@ -633,7 +656,8 @@ export const overview = query({
     monthlyStart: v.object({ intermediate: monthlyStartValue, large: monthlyStartValue }),
     /**
      * A monthly Pix renewal paid and waiting for its start (`scheduledPixRenewal`). `blocked`: its
-     * activation was refused, and it waits for the team.
+     * activation was refused, or its start passed without it (`overdue`), and it waits for the
+     * team.
      */
     scheduledRenewal: v.union(
       v.null(),
@@ -738,7 +762,7 @@ export const overview = query({
             tier: scheduled.request.tier,
             startsAt: scheduled.startsAt,
             endsAt: scheduled.endsAt,
-            blocked: scheduled.request.blockedCode !== undefined,
+            blocked: scheduled.blocked || scheduled.overdue,
           }
         : null,
       checkout: !!(await openCheckout(ctx, args.organizationId, now)),
@@ -1044,10 +1068,17 @@ export const confirmPayment = internalMutation({
         args.actor,
         "Pagamento Pix conferido",
       );
+    // A monthly grant records the plan version it wrote: the row in force is then known to be
+    // paid by Pix (`paidByPix`).
+    const granted =
+      request.cycle !== "annual" && !scheduled
+        ? (await planFor(ctx, request.organizationId))?.version
+        : undefined;
     await ctx.db.patch("platformPlanRequests", request._id, {
       state: "activated",
       paymentReference: args.paymentReference,
       ...(scheduled ? { scheduled: true } : {}),
+      ...(granted !== undefined ? { planVersion: granted } : {}),
       updatedAt: Date.now(),
     });
     return null;
@@ -1150,9 +1181,12 @@ async function grantMonthly(ctx: MutationCtx, request: Doc<"platformPlanRequests
 /**
  * Grants a monthly Pix renewal paid before its start (`scheduled`) at its `firstPeriod`, with the
  * anchor it keeps, to the next anniversary. Scheduled at confirmation and safe to run again or
- * late: the operator runs it to reconcile a renewal whose start passed without activation. The
- * plan read now is replaced, as a term's activation does. A refusal (the month already over, a
- * term over it, the admission) is recorded in `blockedCode` for the operator, without retrying.
+ * late: the operator runs it to reconcile a renewal whose start passed without activation, which
+ * the console shows as needing the team (`overdue`). Run before the start, it schedules itself
+ * again for it. The plan read now is replaced, as a term's activation does, an operator's
+ * assignment made meanwhile included. A refusal (the month already over, a term over it, the
+ * admission, such as a smaller tier the usage no longer fits) is recorded in `blockedCode` for
+ * the operator, without retrying, as the card renewal and the scheduled term do.
  */
 export const activatePixRenewal = internalMutation({
   args: { requestId: v.id("platformPlanRequests") },
@@ -1165,10 +1199,15 @@ export const activatePixRenewal = internalMutation({
       !request?.scheduled ||
       request.state !== "activated" ||
       request.firstPeriod === undefined ||
-      request.anchor === undefined ||
-      request.firstPeriod > now
+      request.anchor === undefined
     )
       return null;
+    if (request.firstPeriod > now) {
+      await ctx.scheduler.runAt(request.firstPeriod, internal.plans.activatePixRenewal, {
+        requestId: request._id,
+      });
+      return null;
+    }
     const { organizationId, tier, anchor } = request;
     const endsAt = renewalEnd({ firstPeriod: request.firstPeriod, anchor });
     try {
@@ -1207,6 +1246,7 @@ export const activatePixRenewal = internalMutation({
     await ctx.db.patch("platformPlanRequests", request._id, {
       scheduled: undefined,
       blockedCode: undefined,
+      planVersion: version + 1,
       updatedAt: now,
     });
     return null;

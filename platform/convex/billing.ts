@@ -448,7 +448,7 @@ export const prepareCheckout = internalMutation({
       if (pixUntil !== null) deny("PAYMENT_METHOD_PIX", { availableAt: pixUntil });
     } else if (!upgrade) {
       const renewal = await scheduledPixRenewal(ctx, args.organizationId, now);
-      if (renewal) deny("PAYMENT_METHOD_PIX", { availableAt: renewal.startsAt });
+      if (renewal) deny("PAYMENT_METHOD_PIX", { availableAt: renewal.availableAt });
     }
     const anchor = nextUsagePeriodStart(now);
     // Stripe needs the anchor in the future when the customer finishes paying.

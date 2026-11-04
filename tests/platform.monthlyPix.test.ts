@@ -188,16 +188,21 @@ describe("mensal por Pix nos aniversários", () => {
       endsAt: MAR_31,
       blocked: false,
     });
-    // Renewed: nothing else is sold until the renewal starts.
-    expect(waiting.monthlyStart.large).toMatchObject({
+    // Renewed: nothing else is sold until the renewal starts, except the upgrade of the month in
+    // force.
+    expect(waiting.monthlyStart.intermediate).toMatchObject({
       start: null,
       code: "PLAN_UNAVAILABLE",
       availableAt: FEB_28,
     });
-    expect(await refusal(f.request("large", "monthly-after-renewal"))).toEqual({
+    expect(waiting.monthlyStart.large).toMatchObject({ start: "upgrade", endsAt: FEB_28 });
+    expect(await refusal(f.request("intermediate", "monthly-after-renewal"))).toEqual({
       code: "PLAN_UNAVAILABLE",
       availableAt: FEB_28,
     });
+    // Run before its start, the activation changes nothing and waits for it.
+    await f.t.mutation(internal.plans.activatePixRenewal, { requestId: renewal.id });
+    expect(await f.plan()).toEqual(monthly);
 
     // The quota period turns on the anniversary, to the second, with the plan.
     const limit = PLATFORM_PLANS.intermediate.limits.imports;
@@ -474,6 +479,108 @@ describe("um plano pago por vez no mensal por Pix", () => {
     const done = await f.stored(renewal.id);
     expect(done).not.toHaveProperty("scheduled");
     expect(done).not.toHaveProperty("blockedCode");
+  });
+
+  it("com a renovação paga à espera, o upgrade do mês em vigor é vendido, e a renovação mantém o tier dela", async () => {
+    const f = await fixture();
+    await payNow(f);
+    vi.setSystemTime(Date.UTC(2027, 1, 20));
+    const renewal = await f.request("intermediate", "monthly-renewal");
+    await f.confirm(renewal.id, 14900, "monthly-renewal-ref");
+    // The clock moves by the timers, so the activation scheduled for 28/02 keeps its instant.
+    await runUntil(f, Date.UTC(2027, 1, 21));
+    const upgrade = await f.request("large", "monthly-upgrade-while-renewed");
+    expect(upgrade.amountCents).toBe(35000);
+    expect(await f.stored(upgrade.id)).toMatchObject({ start: "upgrade", endsAt: FEB_28 });
+    await f.confirm(upgrade.id, 35000, "monthly-upgrade-while-renewed-ref");
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      periodAnchor: ANCHOR,
+      endsAt: FEB_28,
+      version: 2,
+    });
+    await runUntil(f, FEB_28);
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "intermediate",
+      startsAt: FEB_28,
+      periodAnchor: ANCHOR,
+      endsAt: MAR_31,
+      version: 3,
+    });
+  });
+
+  it("uma renovação cujo início passou sem ativação pede a equipe, e linhas antigas não a escondem", async () => {
+    const f = await fixture();
+    const row = (firstPeriod: number, key: string) =>
+      f.t.run((ctx) =>
+        ctx.db.insert("platformPlanRequests", {
+          organizationId: f.organizationId,
+          tier: "intermediate",
+          key,
+          cycle: "monthly",
+          start: "renewal",
+          firstPeriod,
+          anchor: firstPeriod,
+          amountCents: 14900,
+          startsAt: firstPeriod - 5 * DAY,
+          endsAt: addMonths(firstPeriod, 1),
+          expectedVersion: 0,
+          state: "activated",
+          paymentReference: `${key}-ref`,
+          scheduled: true,
+          requestedBy: "synthetic-user",
+          createdAt: firstPeriod - 5 * DAY,
+          updatedAt: firstPeriod - 5 * DAY,
+        }),
+      );
+    // Rows left `scheduled` long ago (blocked and never resolved) no longer hold anything.
+    for (let n = 0; n < 6; n++) await row(Date.UTC(2026, n, 1), `stale-renewal-${n}`);
+    expect((await f.view()).scheduledRenewal).toBeNull();
+    // A renewal whose start passed an hour ago without activation or refusal.
+    const start = CONFIRMED - 3600_000;
+    await row(start, "overdue-renewal");
+    expect((await f.view()).scheduledRenewal).toEqual({
+      tier: "intermediate",
+      startsAt: start,
+      endsAt: addMonths(start, 1),
+      blocked: true,
+    });
+    expect(await refusal(f.request("large", "monthly-over-overdue"))).toEqual({
+      code: "PLAN_UNAVAILABLE",
+      availableAt: start,
+    });
+  });
+
+  it("uma renovação paga e recusada mantém a organização quente até o fim do mês que comprou", async () => {
+    vi.stubEnv("FNFE_COLD_ARCHIVE", "enabled");
+    const f = await fixture();
+    await payNow(f);
+    await f.t.run((ctx) =>
+      ctx.db.insert("usageTotals", {
+        organizationId: f.organizationId,
+        environment: "production",
+        period: "2027-01-31T10:00:07.000Z",
+        metric: "imports",
+        committed: 1,
+        reserved: 0,
+        updatedAt: CONFIRMED,
+        startedAt: CONFIRMED,
+      }),
+    );
+    vi.setSystemTime(Date.UTC(2027, 1, 20));
+    const renewal = await f.request("intermediate", "monthly-hot");
+    await f.confirm(renewal.id, 14900, "monthly-hot-ref");
+    await f.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").first())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, { enabled: false });
+    });
+    await runUntil(f, FEB_28);
+    expect(await f.stored(renewal.id)).toMatchObject({ blockedCode: "PLANS_DISABLED" });
+    const notice = (key: string) =>
+      f.t.mutation(internal.coldArchive.notice, { organizationId: f.organizationId, key });
+    await expect(notice("synthetic-notice-1")).rejects.toThrow("ARCHIVE_PAID_ACTIVE");
+    vi.setSystemTime(MAR_31);
+    await notice("synthetic-notice-2");
   });
 
   it("com o Pix desligado responde PIX_DISABLED sem gravar", async () => {

@@ -1268,8 +1268,39 @@ describe("ciclo da assinatura", () => {
         }),
       ),
     ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: Date.UTC(2026, 10, 10, 12) });
+    // A renewal whose activation was refused waits for the team until the end of its month.
+    await f.t.run((ctx) =>
+      ctx.db.patch("platformPlanRequests", renewal.id, { blockedCode: "PLANS_DISABLED" }),
+    );
+    expect(
+      await refusal(
+        f.owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "intermediate",
+          key: "annual-after-blocked-renewal",
+          cycle: "annual",
+        }),
+      ),
+    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: Date.UTC(2026, 11, 10, 12) });
     expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
     expect(f.fake.sent("/v1/coupons")).toHaveLength(0);
+  });
+
+  it("uma linha de tier do catálogo atribuída pelo operador não é tomada por Pix", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      activateCatalogPlan(ctx, f.organizationId, "intermediate", OCT, NOV, 0, "op", "Atribuído"),
+    );
+    // No Pix confirmation wrote the row: the card is not sent to wait for a Pix plan.
+    expect(
+      await code(
+        f.owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "large",
+          key: "card-over-assigned",
+        }),
+      ),
+    ).toBe("OK");
   });
 
   it("reembolso e contestação só sinalizam; timeout do Stripe é retentado sem repetir efeito", async () => {
