@@ -23,6 +23,9 @@ Ligar a oferta continua sujeito aos termos e às provas da modalidade na issue
 da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md): a prova
 hospedada e a ativação do anual ficam na #35
 ([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
+Desde 03/11/2026, ligar o catálogo ou o anual também espera a implementação
+da [ADR 0012](../adr/0012-periodo-por-aniversario.md) e uma versão nova dos
+termos de uso ([Período por aniversário](#período-por-aniversário-decidido-em-03112026)).
 
 Não confundir com a [conexão Stripe](STRIPE.md) (ADR 0006): ela recebe os
 pagamentos dos apps consumidores para pedir emissão de NFS-e em nome deles.
@@ -147,6 +150,24 @@ Fatura não paga não é registrada e volta a ser lida na próxima conferência.
 - **Termos.** Estas regras estão na seção 5A dos
   [termos de uso 1.0](../termos/arquivo/termos-de-uso-2026-11-01.md), publicados em 01/11/2026 (#428). Elas valem quando um plano
   pago estiver à venda no console.
+
+## Período por aniversário, decidido em 03/11/2026
+
+Em 03/11/2026 o dono decidiu que toda assinatura paga, mensal ou anual, corre
+do instante da contratação ao mesmo dia e horário do mês ou do ano seguinte e
+renova nesse aniversário; que o anual no cartão começa e é cobrado na
+contratação; e que as cotas dos planos pagos seguem o mês da assinatura
+([ADR 0012](../adr/0012-periodo-por-aniversario.md)). Pelo desenho da ADR, o
+Pix começa na confirmação ou, na renovação pedida no último mês, no fim do
+plano em vigor. Isso substitui o mês civil UTC das políticas mensais da
+#556, a renovação no dia 1 e o anual que começa no dia 1 do mês seguinte.
+**A decisão ainda não está implementada:** o código faz o que este documento
+descreve, e cada fatia da ADR atualiza a seção correspondente. Até a
+implementação e uma versão nova dos termos de uso entrar no console, o
+catálogo e o anual não são ligados. A
+[prova hospedada da #35](#prova-hospedada-e-ativação-do-anual-35) precisa ser
+reescrita para o novo modelo antes de rodar, e as provas já feitas no Stripe
+de teste, com renovação ancorada no dia 1, precisam ser refeitas.
 
 ## Interruptor do Pix
 
@@ -1347,6 +1368,11 @@ mantenedor.
    `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
    sem chaves
    nem ids da conta.
+
+Este roteiro descreve o início no dia 1 e nunca rodou. Pela
+[ADR 0012](../adr/0012-periodo-por-aniversario.md), ele precisa ser reescrito
+para o período por aniversário antes de rodar, e a ativação abaixo também
+espera a implementação da ADR e uma versão nova dos termos de uso.
 
 Depois da prova, a ativação em produção segue esta ordem:
 `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave

@@ -27,6 +27,11 @@ continua em setembro. Os inteiros representam unidades e bytes, sem conversão
 para dinheiro. Repetir outra intenção de importação pode consumir outro arquivo
 e outros bytes, mas nunca outro documento único da mesma identidade.
 
+Em 03/11/2026 o dono decidiu que o período dos planos pagos passa a ser o mês
+da assinatura, a partir do instante da contratação, e que o Gratuito continua
+no mês civil UTC ([ADR 0012](../adr/0012-periodo-por-aniversario.md)). A
+decisão ainda não está implementada: hoje todo plano usa o mês UTC.
+
 `usageEvents` conserva a chave idempotente, o ambiente e o estado reservado,
 confirmado ou liberado. `usageTotals` agrega por organização, mês, unidade e
 ambiente na mesma transação do evento e da escrita do domínio. Não existe
