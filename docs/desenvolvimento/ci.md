@@ -10,29 +10,43 @@ histórico das entregas no CI.
 
 ## Workflows e gatilhos
 
-`.github/workflows/ci.yml` executa em PRs, incluindo Draft, por
-`workflow_dispatch` e como workflow reutilizável. `deploy-validation.yml` e
+`.github/workflows/ci.yml` executa em PRs, incluindo Draft, em push na `main`,
+por `workflow_dispatch` e como workflow reutilizável. `deploy-validation.yml` e
 `deploy-issuance-production.yml` o chamam, quando disparados manualmente na
-`main`; `deploy.yml` não o chama ([Produção sem nova validação](#produção-sem-nova-validação)). Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
-herdados. O token do job tem apenas `contents: read`; checkout não persiste
-credenciais. Em PR, um push novo cancela a execução anterior do mesmo PR.
+`main`; `deploy.yml` não o chama nem espera por ele ([Produção sem nova validação](#produção-sem-nova-validação)). Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
+herdados. O token do job tem `contents: read`, `actions: read` e
+`pull-requests: read`; os dois últimos servem só ao push na `main`, que procura
+o run da PR mesclada e baixa o cache dela ([Cache do grafo](#cache-do-grafo)), e
+o token só chega a esses passos. O repositório é público: as duas permissões
+leem o que qualquer pessoa vê. Um workflow chamado não recebe mais que o
+chamador concede, então `deploy-validation.yml` e
+`deploy-issuance-production.yml` concedem as mesmas três ao job que chama o
+CI. Checkout não persiste credenciais. Em PR, um push novo cancela a execução
+anterior do mesmo PR; cada push na `main` tem grupo próprio e termina, para
+salvar o cache que as PRs seguintes restauram.
 
 Em PR, o checkout padrão é o merge sintético. `revision.json` registra
 `checkedSha`, `headSha`, `baseSha`, tipo e estado Draft separadamente. O script
 confere o commit realmente obtido por `git rev-parse HEAD` com `GITHUB_SHA`.
 Não descrever o head como testado quando o runner executou outro commit.
 
-`Validate` instala pelo lockfile, executa o grafo `validate` (formatação, lint,
-tipos, testes, provas de consumidor e empacotamento do console, sem publicar) e depois `vp run ci:boundaries`. Somente após esses checks
-o job produz `tested_sha`. Em seguida, o passo `Require successful checks for
+`Validate` começa classificando a mudança (`scripts/ci-changes.mjs`). Numa PR
+que só muda documentação, confere formatação, credenciais e os testes que leem
+toda a documentação e termina aprovado, sem `tested_sha`
+([Mudança só de documentação](#mudança-só-de-documentação)). Nos demais casos,
+instala pelo lockfile, executa o grafo `validate` (formatação, lint, tipos,
+testes, provas de consumidor e empacotamento do console, sem publicar) e depois
+`vp run ci:boundaries`. Somente após esses checks o job produz `tested_sha`. Em seguida, o passo `Require successful checks for
 the same commit` recusa SHA diferente e produz `publication_sha` apenas para
 `workflow_dispatch` de `deploy-validation.yml` na `main` do repositório
 esperado. Até a #51 esse passo era o job `Validation publication gate`; como
 só compara variáveis do ambiente, virou o último check de `Validate` e poupa
 a cada execução o início de outro runner, o checkout e o setup. PR, fork, outra branch e os outros chamadores
 não recebem esse output de validação. Em `workflow_call`, evento, ref e
-`GITHUB_WORKFLOW_REF` são os do workflow chamador. Falha em qualquer step
-impede o gate; não há `continue-on-error`. Output não é
+`GITHUB_WORKFLOW_REF` são os do workflow chamador. Falha em qualquer check
+impede o gate. `continue-on-error` aparece só nos passos que transferem o cache
+(baixar o da PR mesclada, enviá-lo e salvá-lo), que não conferem nada: sem eles,
+as tarefas executam. Output não é
 credencial nem autoriza publicação sozinho: o chamador deve depender do
 sucesso do workflow e publicar esse SHA.
 
@@ -40,8 +54,9 @@ A validação automática não publica serviços. A
 [publicação de validação](../operacao/deploy-validacao.md) conecta o CI ao
 deploy em um workflow com dependência explícita, checkout do `tested_sha` e
 conferência do evento, repositório e SHA antes de escrever; a de produção
-segue [deploy-producao.md](../operacao/deploy-producao.md). `ci.yml` não tem
-trigger de push. Reexecuções manuais passam pelos mesmos checks e pela
+segue [deploy-producao.md](../operacao/deploy-producao.md). O push na `main`
+executa o `ci.yml` só para repetir os resultados da PR mesclada e salvar o
+cache; nada nele publica. Reexecuções manuais passam pelos mesmos checks e pela
 conferência de elegibilidade.
 
 ### Produção sem nova validação
@@ -56,42 +71,162 @@ em que reprovou, sete foram testes instáveis.
 O ruleset da `main` não exige PR atualizada e aceita merge, squash e rebase.
 O `Validate` da PR testa o merge sintético com a `main` do momento em que
 rodou: se outra PR entrou depois, a combinação publicada não passou pelo CI
-inteiro. A compilação e o smoke do publicador continuam valendo para ela. A
-publicação de validação e a da produção fiscal da emissão, ambas manuais,
-continuam validando o SHA que publicam.
+inteiro antes do deploy. A compilação e o smoke do publicador continuam
+valendo para ela. Desde 04/11/2026 o `CI` roda também no push na `main`, ao lado
+do deploy e sem bloqueá-lo: repete do cache o que a PR já aprovou e executa só
+as tarefas cujas entradas a combinação mudou. Uma falha ali aparece depois da
+publicação, como sinal para corrigir. A publicação de validação e a da produção
+fiscal da emissão, ambas manuais, continuam validando o SHA que publicam, sem
+cache.
 
 ## O grafo `validate`
 
 O job instala as dependências uma vez e executa
-`vp run --no-cache --verbose --log grouped validate`. As tarefas ficam em
-`vite.config.ts`, na chave `run.tasks`; o Vite Task as executa em ordem de
-dependência, até quatro ao mesmo tempo, e agrupa a saída de cada uma no log,
-com um resumo no final. `--no-cache` garante que nenhum resultado seja
-reaproveitado no lugar de um check.
+`vp run --verbose --log grouped validate`, com o cache do Vite Task em PR e push
+na `main` e com `--no-cache` nas execuções manuais e nas publicações que chamam
+o CI ([Cache do grafo](#cache-do-grafo)). As tarefas ficam em `vite.config.ts`,
+na chave `run.tasks`; o Vite Task as executa em ordem de dependência, até quatro
+ao mesmo tempo, e agrupa a saída de cada uma no log, com um resumo no final que
+diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
-| Tarefa              | Comando                                                         | Depende de                         |
-| ------------------- | --------------------------------------------------------------- | ---------------------------------- |
-| `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    |
-| `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      |
-| `ci:contracts`      | `bun scripts/check-contracts-ci.mjs`                            | `ci:packages`                      |
-| `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      |
-| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           |
-| `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            |
-| `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    |
-| `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            |
-| `ci:tests`          | `node scripts/ci.mjs test`                                      | `ci:packages`                      |
-| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    |
-| `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    |
-| `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` |
-| `ci:auth-worker`    | `node --experimental-strip-types scripts/prove-auth-worker.mjs` |                                    |
-| `ci:privacy-worker` | `node scripts/prove-privacy-mail-worker.mjs`                    |                                    |
+| Tarefa              | Comando                                                         | Depende de                         | Cache               |
+| ------------------- | --------------------------------------------------------------- | ---------------------------------- | ------------------- |
+| `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    | sim                 |
+| `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
+| `ci:contracts`      | `bun scripts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
+| `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
+| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
+| `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    | não: índice do Git  |
+| `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:test:<área>`    | `node scripts/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
+| `ci:tests`          | `node scripts/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
+| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
+| `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
+| `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| `ci:auth-worker`    | `node --experimental-strip-types scripts/prove-auth-worker.mjs` |                                    | não: Git            |
+| `ci:privacy-worker` | `node scripts/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
+
+As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
+`ci:distribution` instalam os tarballs num consumidor limpo com dependências do
+registro npm, que o Vite Task não registra como entrada, e as provas do SDK e da
+distribuição carimbam no recibo o commit e o estado do checkout, lidos do Git;
+`ci:auth-worker` também carimba. `ci:secrets` varre a lista do índice do Git: um
+arquivo novo não estaria entre as entradas da execução anterior. `ci:tests` lê
+a revisão do checkout. Somadas, levam cerca de 15 a 20 s no runner, lado a lado
+com as demais. `ci:contracts` usa cache com `CONTRACT_BASE` na chave e lê o
+objeto da base pelo Git; o Vite Task não registrou nada dentro de `.git` nos
+clones medidos, e a tarefa, de menos de 1 s, repete quando a base é a mesma.
+`ci:docs` executa em todo run do CI: o build do React Router informa toda
+variável de ambiente como entrada, e `GITHUB_RUN_ID` muda a cada run; a saída
+é a mesma e `ci:console` continua repetindo. `ci:console` lê o Git só para carimbar o SHA em
+`dist/build.json` e no bundle, que o CI nunca publica; `.git` fica fora das
+entradas dela, e uma repetição traz o pacote carimbado com o SHA do run que o
+compilou.
 
 `bun run build` equivale a `ci:packages`, `ci:typecheck`, `ci:docs` e à
 compilação do console. O que lê a árvore espera o SDK, porque os tsconfigs da
 raiz incluem `packages/sdk/dist`. Os testes resolvem os pacotes pelo
-código-fonte e não leem o SDK compilado; `ci:tests` espera só `ci:packages`,
-porque o teste de fronteiras inspeciona o `dist` fiscal quando ele existe e
-`ci:packages` o apaga e recria. Depois do grafo, o job executa
+código-fonte e não leem o SDK compilado; cada `ci:test:<área>` espera só
+`ci:packages`, porque o teste de fronteiras inspeciona o `dist` fiscal quando
+ele existe e `ci:packages` o apaga e recria.
+
+### Cache do grafo
+
+Em PR e push na `main`, o job restaura `node_modules/.vite/task-cache` depois do
+`vp install`, como no [guia do Vite+](https://viteplus.dev/guide/github-actions-cache):
+a chave é `vite-task-<OS>-<arquitetura>-<run>-<tentativa>`, com o prefixo
+`vite-task-<OS>-<arquitetura>-` para restaurar a entrada mais recente que o ref
+pode ler, a da própria PR ou a da `main`. O Vite Task registra os arquivos que
+cada tarefa leu, as variáveis da chave e os argumentos, e só repete uma tarefa,
+com a saída no log e os arquivos que ela gravou, quando tudo isso é igual ao de
+uma execução aprovada. Uma execução que falhou nunca entra no cache. O resumo
+do grafo diz, tarefa a tarefa, se executou ou repetiu e por quê
+(`cache miss: 'arquivo' modified`).
+
+O Vite Task registra também a listagem de cada pasta que a tarefa leu. O runner
+começa de um checkout novo, sem o que a execução anterior criou: `dist` dos
+pacotes e do console, `.react-router` e `build` da documentação, `.wrangler`,
+os caches em `node_modules` e as entradas de `.browser-results`. Com essas
+listagens nas entradas, nenhuma tarefa repetia num clone novo, embora a segunda
+execução no mesmo checkout repetisse todas. Por isso a constante `generated` de
+`vite.config.ts`, usada por toda tarefa com cache, tira das entradas as
+listagens dessas pastas e os caches das ferramentas; o conteúdo de cada arquivo
+lido nelas continua entrada. A raiz não pode sair assim (`!.` exclui a árvore
+inteira), e `node scripts/ci.mjs identity` cria `.browser-results` antes do
+grafo.
+
+Medido em clones novos no mesmo caminho, um por execução, como no runner
+(Windows local, dois workers por área, 04/11/2026): o grafo da `main` sem cache
+levou 158 s; a PR que muda um arquivo do console, com o cache da `main`, 106 s,
+executando só o que lê o arquivo; o push do commit squash, com o cache da PR,
+30 a 34 s, executando só as tarefas sem cache e `ci:docs`. O grafo antigo,
+com a suíte numa tarefa só e sem cache, levou 362 s no mesmo clone. O efeito no
+Actions ainda não foi visto.
+
+Cada área de testes de `scripts/lib/test-projects.mjs` é uma tarefa
+`ci:test:<área>`, que roda os projetos do Vitest dela e grava o recibo
+`.ci-results/tests/<área>.json` (resultado, contagens e o run e o commit em que
+os testes de fato rodaram). O recibo é a saída guardada no cache: uma repetição
+o restaura para as mesmas entradas. Ele não lê `revision.json`, que muda a cada
+commit. `ci:tests` junta os recibos em `tests.json`, sob a revisão do checkout,
+e reprova se uma área falta, falhou ou contou outro número de arquivos que os
+dela no checkout. `node scripts/ci.mjs identity` apaga os recibos antes do
+grafo, e o passo `approve` só emite `tested_sha` com todas as áreas aprovadas
+nesse `tests.json`. O resumo do job mostra, por área, se ela executou neste
+checkout ou repetiu o resultado de qual run.
+
+O push na `main` não lê o cache do Actions de uma PR, que o GitHub restringe ao
+ref dela. Por isso o run de cada PR, quando aprovado, envia o diretório do cache
+como artifact `vite-task-cache` (7 dias), e o push procura a PR mesclada pelo
+commit (`GET /repos/{repo}/commits/{sha}/pulls`, com `merge_commit_sha` igual ao
+SHA), o run aprovado mais recente do `ci.yml` na ponta final dela e o artifact
+desse run (`scripts/lib/ci-task-cache.mjs`). Só vale um run deste repositório:
+uma PR de fork executa o próprio código e grava o artifact que quiser, então o
+dela nunca é usado. Achado o artifact, ele substitui o diretório inteiro do
+cache restaurado da `main`; nenhum desses passos reprova o job. Depois do grafo,
+o push salva o cache para as próximas PRs. A PR também salva o seu, até depois
+de uma falha, para que uma nova tentativa repita o que passou; num fork, o
+token do cache é só de leitura e o passo apenas avisa.
+
+O artifact é gerado pelo código da PR, inclusive `vite.config.ts` e os scripts,
+e o que ele restaura chega ao cache da `main`. Aceitá-lo equivale a confiar no
+código revisado que a PR mesclou. As publicações manuais não leem cache nenhum.
+
+Execuções manuais do `ci.yml` e as chamadas por `workflow_call` (publicação de
+validação e da produção fiscal da emissão) rodam o grafo com `--no-cache`, sem
+restaurar nem salvar: toda tarefa executa, como antes de 04/11/2026. Para uma
+execução limpa de uma revisão, dispare o CI manualmente.
+
+### Mudança só de documentação
+
+`scripts/lib/ci-changes.mjs` compara o merge sintético da PR com o primeiro pai
+(a base). Se todo arquivo mudado é documentação que só a formatação e a
+varredura leem, o job instala as dependências, roda `vp fmt --check`,
+`node scripts/check-secrets.mjs` e os testes que leem toda a documentação
+versionada (`scripts/public-identifiers.test.ts` e
+`scripts/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
+emitir `tested_sha`. O check obrigatório continua sendo o mesmo `Validate`:
+`paths-ignore` deixaria o check ausente.
+
+Documentação, aqui, é `*.md` da raiz, `docs/**/*.md`, `.agents/**/*.md` e
+`.claude/**/*.md`, menos o que um teste ou build consome: `README.md`,
+`AGENTS.md`, `CONTRIBUTING.md`, `docs/worktrees.md`,
+`docs/operacao/deploy-producao.md` e os `docs/operacao/*-email.md` (comandos
+citados), `CONTRIBUICOES.md` (frase de aceite), `LICENSING.md` e
+`docs/licenses/**`, `docs/v1.0/**` (contrato REST gerado, evidências e matriz
+de aceite), `docs/termos/**` (termos arquivados), os `SKILL.md` de
+`.agents/skills/`, os Markdown da raiz dessa pasta e `.claude/skills/**`. A lista
+saiu das entradas que o Vite Task registrou para cada tarefa do grafo (em
+03/11/2026); `tests/ci.changes.test.ts` recusa um
+caminho de documentação citado entre aspas no código-fonte fora das menções
+conhecidas. Apagar ou renomear um arquivo roda o grafo, porque
+`tests/fixtureCorpus.test.ts` confere a existência das evidências citadas em
+`tests/coverage-matrix.json`. Se o diff não puder ser resolvido, o grafo roda.
+
+O risco que sobra é um teste ou script passar a ler um desses arquivos por um
+caminho calculado, que o teste não vê. O push na `main` roda o grafo depois do
+merge e executaria esse teste ali. Depois do grafo, o job executa
 `vp run ci:boundaries`, que inspeciona o `dist` dos pacotes fiscais, e só então
 aprova o SHA.
 
@@ -132,9 +267,11 @@ com o 6.0.
 ## Testes
 
 `scripts/lib/test-projects.mjs` divide a suíte em projetos do Vitest por área,
-que `vite.config.ts` monta com as tarefas `test:<área>`. `ci:tests` roda
-todos, sem cache e com três workers; os projetos servem ao ciclo local e dão a
-cada área o seu timeout.
+que `vite.config.ts` monta com as tarefas `test:<área>` do ciclo local e
+`ci:test:<área>` do grafo. No CI, cada área roda com três workers e timeout de
+60 s por teste, e só quando alguma entrada dela mudou
+([Cache do grafo](#cache-do-grafo)); os projetos dão a cada área o seu timeout
+local. `bun run ci:test` ainda roda a suíte inteira num processo só.
 
 | Projeto             | Arquivos                                                 | Timeout |
 | ------------------- | -------------------------------------------------------- | ------- |
@@ -143,12 +280,22 @@ cada área o seu timeout.
 | `packages`          | `packages/`                                              | 20 s    |
 | `console`           | `apps/*/src/` (jsdom por arquivo)                        | 20 s    |
 | `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus | 60 s    |
+| `repository`        | Os três testes que leem a árvore inteira                 | 60 s    |
 | `benchmark`         | `tests/**/*.benchmark.test.ts`                           | 120 s   |
 
 Os testes de `tests/` sem prefixo de área entram pelo nome no projeto do
 código que exercitam (por exemplo, `tests/webhookContract.test.ts` em
 `packages` e `tests/docsOutput.test.ts` em `tooling`). Nenhum projeto recolhe
 o restante: um arquivo novo sem projeto reprova `tests/ci.testProjects.test.ts`.
+
+`repository` reúne os testes cujas entradas são quase todo o repositório:
+`scripts/public-identifiers.test.ts` (todo Markdown), `scripts/public-tree.test.ts`
+(a lista do Git, para classificar cada arquivo da cópia pública) e
+`tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
+documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
+de `tooling`, cerca de 95 s localmente, eles faziam a área inteira executar a
+cada arquivo alterado do console ou da plataforma; separados, `tooling` repete
+o resultado enquanto não muda o que ela lê.
 
 Todos usam o pool `threads`, que inicia mais rápido e gasta menos CPU que
 processos. Os testes que precisam de sinais ou de `process.exit` os
@@ -406,9 +553,13 @@ posição de `ci:boundaries` em `ci.yml`) leem o YAML com o pacote `yaml` e
 comparam gatilhos, jobs, passos e expressões sem `${{ }}` nem espaços.
 Reformatar o arquivo não os quebra; remover o gate de SHA, a etapa obrigatória
 ou a restrição de publicação, sim. Ausências, como `CLERK`, continuam
-conferidas no texto inteiro. `tests/ci.testProjects.test.ts` executa
-`scripts/ci.mjs test` com o Vitest substituído e confere que o comando
-iniciado roda a suíte toda, sem projeto, arquivo, `--changed` ou `--shard`.
+conferidas no texto inteiro. `tests/ci.changes.test.ts` confere no `ci.yml` que
+aprovação, gate, grafo e fronteiras rodam sob a mesma condição, que o modo de
+documentação não emite SHA, a chave do cache e que o token só chega aos passos
+do push. `tests/ci.testProjects.test.ts` executa `scripts/ci.mjs test-area` de
+cada área com o Vitest substituído e confere que, juntas, elas rodam cada
+projeto do Vitest uma vez, sem arquivo, `--changed` ou `--shard`, e que
+`scripts/ci.mjs test` roda a suíte toda.
 
 ### Segredos no repositório
 
@@ -539,11 +690,11 @@ Limites:
 ## Instalação reproduzível e cache
 
 Bun `1.4.0`, Node `24.22.1`, Vite+ `1.4.0` e dependências resolvidas pelo
-`bun.lock`. Actions são fixadas por SHA; upload de artifacts usa v7.0.1. O CI
-não usa cache de dependências ou build e executa `vp install --frozen-lockfile`
-em runner novo. O grafo de tarefas também roda com `--no-cache`. Um checkout
-limpo precisa compilar. O patch de tipos do Better Auth também é aplicado pelo
-lockfile.
+`bun.lock`. Actions são fixadas por SHA; upload de artifacts usa v7.0.2. O CI
+não usa cache de dependências e executa `vp install --frozen-lockfile` em runner
+novo. O único cache é o do Vite Task ([Cache do grafo](#cache-do-grafo)). Um
+checkout limpo precisa compilar, e as publicações manuais rodam o grafo com
+`--no-cache`. O patch de tipos do Better Auth também é aplicado pelo lockfile.
 
 A atualização de dependências mantém Better Auth em 1.6.x, conforme o peer
 do adaptador Convex, e React/tipos em 19.2.x; mudar de linha fica separado.
@@ -554,23 +705,31 @@ e `oxlint-tsgolint` na versão exata que o Vite+ exige; a linha 1.x traz o
 Vitest 5. Mudanças de linha do plugin React e xmldom ficam separadas. O
 adaptador `@convex-dev/better-auth`, Workpool, Rate Limiter e `convex-test` preservam as versões dos patches locais em `patchedDependencies`.
 
-Se cache for introduzido no CI, usar OS, arquitetura, Node, Bun e hash do
-lockfile na chave. Nunca restaurar `node_modules`, builds ou o recibo de
-aprovação no lugar dos checks. Manter uma execução limpa verificável.
+A regra anterior pedia OS, arquitetura, Node, Bun e hash do lockfile na chave de
+qualquer cache. Ela valia para um cache que o Actions restaura sem conferir o
+conteúdo, como o de `node_modules`. O cache do Vite Task confere sozinho: o
+lockfile, o `node_modules` instalado e os executáveis lidos são entradas
+registradas de cada tarefa, e uma mudança neles faz a tarefa executar. Pôr esses
+hashes na chave do Actions só impediria a restauração antes de o Vite Task
+decidir; por isso a chave segue o guia do Vite+, com OS, arquitetura e run.
+Continua valendo: nunca restaurar `node_modules`, builds fora do cache do Vite
+Task ou o recibo de aprovação no lugar dos checks (`tests.json` é refeito a cada
+execução, e `approve` exige recibo aprovado de cada área), e manter uma execução
+limpa verificável, o disparo manual do CI.
 
 ```powershell
 bunx bun@1.4.0 install --frozen-lockfile
 bunx bun@1.4.0 run ci:local
 ```
 
-`ci:local` executa o mesmo grafo do job e a checagem de fronteiras. Localmente,
-o Vite Task reaproveita as tarefas cujas entradas não mudaram (cache em
-`node_modules/.vite/task-cache`; `vp cache clean` o apaga);
-`vp run --no-cache validate` repete a execução limpa do CI. Testes, provas de
-consumidor do SDK e do XML e a prova do proxy nunca usam cache. `ci:test`
-continua executando só a suíte. As tarefas `test:<área>` ficam fora do grafo
-`validate` e não substituem `ci:tests`, que roda todos os projetos de teste
-sem cache.
+`ci:local` executa o mesmo grafo do job e a checagem de fronteiras. Como no CI
+das PRs, o Vite Task repete as tarefas cujas entradas não mudaram, inclusive as
+áreas de teste (cache em `node_modules/.vite/task-cache`; `vp cache clean` o
+apaga); `vp run --no-cache validate` repete a execução limpa. As provas de
+consumidor do SDK, do XML e da distribuição, a prova do proxy de autenticação e
+a varredura de credenciais nunca usam cache. `ci:test` continua executando só a
+suíte, inteira. As tarefas `test:<área>` ficam fora do grafo `validate`; as do
+grafo são as `ci:test:<área>`, com o mesmo comando mais o recibo.
 
 `ci:local` aceita arquivos staged, unstaged e novos. Produz automaticamente
 recibo e resumo, inclusive quando uma etapa falha, em
@@ -594,11 +753,12 @@ Em uma stack, informe a base apropriada. CI usa checkout e base do evento.
 
 O Vite Task já faz aqui o papel do Turborepo usado em outros projetos da Freecorps: registra os
 arquivos efetivamente lidos, inclusive fixtures, sem `inputs` declarados à
-mão; `vp test run --changed` escolhe arquivos de teste, mais fino que o
-`--affected` do Turborepo; e o Validate é uma execução limpa por contrato, sem
-cache remoto. Adotá-lo poria um segundo executor de tarefas ao lado do Vite
-Task, com a dependência `turbo` e os `inputs` manuais; o ganho seria só o
-cache compartilhado entre worktrees.
+mão, e `vp test run --changed` escolhe arquivos de teste, mais fino que o
+`--affected` do Turborepo. Desde 04/11/2026 o Validate usa o cache dele como o
+groceryops usa o do Turborepo: restaurado do Actions, com o artifact da PR
+mesclada repetido no push da `main`. Adotar o Turborepo poria um segundo
+executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
+`inputs` manuais.
 
 ## Custo dos locks no Windows
 
@@ -651,10 +811,13 @@ atribuído um ganho de tempo isolado a essa segunda mudança.
 
 O JSON bruto do Vitest fica em pasta temporária, é reduzido a contagens e
 removido. O artifact `ci-*` de 14 dias contém `revision.json`, `tests.json`,
+os recibos das áreas em `tests/<área>.json`,
 `summary.md`, os recibos `nfe/independent.json`, `74/package.json`,
 `74/sdk-metafile.json` e `83/tarballs.json` e o relatório sanitizado
 `auth-worker/report.json` da prova do proxy no runtime Workers. O artifact
-`sdk-*` guarda o tarball de validação do SDK. Não inclui XML, resultados de
+`sdk-*` guarda o tarball de validação do SDK, e o `vite-task-cache` de 7 dias,
+só em PR aprovada, o cache do Vite Task que o push na `main` repete. Um recibo
+repetido do cache traz o commit e o run em que a tarefa de fato rodou. Não inclui XML, resultados de
 funções, nomes de testes, mensagens de falha, stack traces, caminhos
 absolutos, env, arquivos de acesso ou HAR. Os logs de falha continuam
 disponíveis no job e devem conter só dados sintéticos. Os relatórios também
@@ -852,6 +1015,13 @@ A publicação de validação (6 por execução) já rodava na Blacksmith. A tab
 não inclui publicação de produção, snapshots nem o monitor do backup na
 configuração atual. Medir esses jobs após a migração antes de estimar o
 total mensal. Um push novo numa PR cancela a validação anterior da mesma PR.
+
+Com o cache do grafo (04/11/2026), uma PR paga a instalação, a restauração do
+cache, as tarefas sem cache e as que a mudança alcança; uma PR só de
+documentação paga a instalação, a formatação e dois arquivos de teste. Cada
+merge na `main` passou a rodar o `CI` de novo, mas repetindo o que a PR
+aprovou. Medir os minutos cobrados dessas execuções antes de atualizar a
+estimativa acima.
 
 ### Tempos
 

@@ -289,7 +289,7 @@ export function helpText() {
     ...lines,
     "",
     `Nomes antigos, que só indicam o novo: ${old.join(", ")}.`,
-    "Testes por área: vp run test:<platform|packages|console|tooling|benchmark>.",
+    "Testes por área: vp run test:<platform|packages|console|tooling|repository|benchmark>.",
     "Grafo do CI: vp run validate. Publicação de produção: só pelos workflows Deploy production",
     "e Deploy NFS-e fiscal production; o Worker de e-mail, por deploy:mail.",
   ].join("\n");

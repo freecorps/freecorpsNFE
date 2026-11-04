@@ -1,5 +1,14 @@
 import { expect, it } from "vite-plus/test";
-import { publicationSha, revision, sanitizeReport, testEnvironment } from "../scripts/lib/ci.mjs";
+import {
+  approvedTests,
+  areaReceipt,
+  collectTests,
+  publicationSha,
+  revision,
+  sanitizeReport,
+  testEnvironment,
+} from "../scripts/lib/ci.mjs";
+import { testProjects } from "../scripts/lib/test-projects.mjs";
 
 const head = "a".repeat(40);
 const checked = "b".repeat(40);
@@ -95,4 +104,79 @@ it("publishes counts and revision only, including failed and pending suites", ()
 it("does not turn a missing or crashed runner report into success", () => {
   expect(sanitizeReport({}, "/repo", {}, 0).result).toBe("failed");
   expect(sanitizeReport({ success: true }, "/repo", {}, 1).result).toBe("failed");
+});
+
+const areas = testProjects.map(({ name }) => name);
+const passing = (area: string, files = 2) => ({
+  schemaVersion: 1,
+  area,
+  result: "passed",
+  files,
+  passed: 3,
+  failed: 0,
+  pending: 0,
+  ranOn: { sha: head, runId: "1" },
+});
+const everyArea = (files = 2): Record<string, ReturnType<typeof passing>> =>
+  Object.fromEntries(areas.map((area) => [area, passing(area, files)]));
+const expected = (files = 2) => Object.fromEntries(areas.map((area) => [area, files]));
+it("records an area receipt from counts only, never the revision", () => {
+  const raw = {
+    success: true,
+    testResults: [
+      {
+        name: "/repo/tests/platform.example.test.ts",
+        assertionResults: [
+          { status: "passed", fullName: "private identity" },
+          { status: "skipped" },
+        ],
+      },
+    ],
+  };
+  const receipt = areaReceipt(raw, "/repo", "platform", 0, {
+    GITHUB_SHA: checked,
+    GITHUB_RUN_ID: "7",
+  });
+  expect(receipt).toEqual({
+    schemaVersion: 1,
+    area: "platform",
+    result: "passed",
+    files: 1,
+    passed: 1,
+    failed: 0,
+    pending: 1,
+    ranOn: { sha: checked, runId: "7" },
+  });
+  expect(JSON.stringify(receipt)).not.toContain("private");
+  expect(areaReceipt(raw, "/repo", "platform", 0, {}).ranOn).toBeNull();
+  // A crash, a failed exit or a file from another area never passes.
+  expect(areaReceipt({}, "/repo", "platform", 0).result).toBe("failed");
+  expect(areaReceipt(raw, "/repo", "platform", 1).result).toBe("failed");
+  expect(() => areaReceipt(raw, "/repo", "console", 0)).toThrow("outside the area");
+});
+it("approves the checkout only with a passing receipt for every area under its revision", () => {
+  const metadata = revision({}, {}, checked);
+  const report = collectTests(metadata, everyArea(), expected());
+  expect(report.result).toBe("passed");
+  expect(Object.keys(report.areas)).toEqual(areas);
+  expect(approvedTests(metadata, report)).toBe(true);
+  // A replayed receipt (another run's SHA) is still valid evidence for these inputs.
+  expect(report.areas.platform).toMatchObject({ result: "passed", ranOn: { sha: head } });
+  // Another checkout's tests.json does not approve this one.
+  expect(approvedTests(revision({}, {}, head), report)).toBe(false);
+  for (const area of areas) {
+    const missing = everyArea();
+    delete missing[area];
+    const failed = { ...everyArea(), [area]: { ...passing(area), result: "failed", failed: 1 } };
+    const fewer = { ...everyArea(), [area]: passing(area, 1) };
+    const other = { ...everyArea(), [area]: passing(areas.find((name) => name !== area)!) };
+    for (const receipts of [missing, failed, fewer, other]) {
+      const collected = collectTests(metadata, receipts, expected());
+      expect(collected.result, area).toBe("failed");
+      expect(collected.areas[area]!.result).not.toBe("passed");
+      expect(approvedTests(metadata, collected)).toBe(false);
+    }
+  }
+  // The whole-suite report of `ci:test` (schema 1) never approves the graph.
+  expect(approvedTests(metadata, { ...report, schemaVersion: 1 })).toBe(false);
 });

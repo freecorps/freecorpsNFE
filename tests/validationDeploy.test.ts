@@ -241,7 +241,16 @@ it("keeps the writer serialized and secret-free PR validation separate from depl
     /pull_request|secrets\.CLOUDFLARE_API_TOKEN|secrets\.CONVEX_DEPLOY_KEY|continue-on-error/,
   );
   const ci = readWorkflow("ci.yml").workflow;
-  expect(Object.keys(ci.on)).not.toContain("push");
+  // CI runs on push to main only to replay the merged PR's results and save the
+  // task cache; nothing in it publishes, and deploy.yml does not wait for it.
+  expect(ci.on.push).toEqual({ branches: ["main"] });
+  // The call grants exactly what ci.yml's Validate declares: read only.
+  expect(workflow.jobs.validate!.permissions).toEqual(ci.jobs.validate!.permissions);
+  expect(workflow.jobs.validate!.permissions).toEqual({
+    contents: "read",
+    actions: "read",
+    "pull-requests": "read",
+  });
   expect(Object.keys(ci.on)).toContain("pull_request");
 });
 

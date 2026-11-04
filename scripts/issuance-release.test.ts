@@ -553,9 +553,18 @@ describe("workflows", () => {
     expect([publish!.needs].flat()).toEqual(["plan", "validate"]);
     expect(expression(publish!.if)).toBe("needs.validate.outputs.tested_sha==github.sha");
     expect(publish!.environment).toBe(RELEASE_WORKFLOWS.publish.environment);
-    // Only the publication job reads the run's approvals; the plan and the CI keep contents: read.
+    // Only the publication job reads the run's approvals; the plan keeps contents: read.
     expect(publish!.permissions).toEqual({ contents: "read", actions: "read" });
     expect(plan!.permissions).toBeUndefined();
+    // The CI grants exactly what ci.yml's Validate declares (read only, used just
+    // by a push on main to fetch a pull request's task cache), never a write.
+    const ci = parse(read(".github/workflows/ci.yml")) as { jobs: Record<string, Job> };
+    expect(validate!.permissions).toEqual(ci.jobs.validate!.permissions);
+    expect(validate!.permissions).toEqual({
+      contents: "read",
+      actions: "read",
+      "pull-requests": "read",
+    });
     const run = publish!.steps!.find((step) =>
       step.run?.includes("deploy-issuance-production.mjs"),
     )!;

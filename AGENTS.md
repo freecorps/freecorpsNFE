@@ -299,8 +299,9 @@ proteção: um padrão errado imprime o segredo inteiro.
 - Os testes ficam em projetos do Vitest por área, definidos em
   `scripts/lib/test-projects.mjs` e montados por `vite.config.ts`:
   `platform` (`tests/platform.*`, `tests/sdk.*` e `platform/`), `packages`,
-  `console` (`apps/*/src/`), `tooling` (scripts, `tooling/`, worktree, validação e CI) e
-  `benchmark`. Os poucos testes de `tests/` fora desses prefixos são
+  `console` (`apps/*/src/`), `tooling` (scripts, `tooling/`, worktree, validação e CI),
+  `repository` (os três testes que leem a árvore inteira) e `benchmark`. Os
+  poucos testes de `tests/` fora desses prefixos são
   nomeados no projeto da área; um arquivo novo sem dono reprova
   `tests/ci.testProjects.test.ts`. Durante o desenvolvimento, rode só a área
   alterada:
@@ -327,9 +328,10 @@ proteção: um padrão errado imprime o segredo inteiro.
   relógio e bytes grandes) estão em `docs/desenvolvimento/ci.md`, Isolamento;
   `freecorps/no-wall-clock-in-tests` reprova relógio real e polling.
 
-- Antes de concluir, rode a suíte toda sem cache: `vp test run` ou
-  `bun run ci:local`, que reproduz o grafo Validate, aceita alterações locais e
-  grava resumo e recibo por tentativa. `bun run ci:prove` exige candidato limpo
+- Antes de concluir, rode a suíte toda sem cache: `vp test run`.
+  `bun run ci:local` reproduz o grafo Validate como numa PR, com cache: repete
+  as tarefas e áreas de teste cujas entradas não mudaram, aceita alterações
+  locais e grava resumo e recibo por tentativa. `bun run ci:prove` exige candidato limpo
   e desliga o cache do grafo; não faça commit só para executar essa prova sem
   que commit faça parte do escopo. Use `vp check`; na plataforma,
   `bun run platform:check` confere os tipos da plataforma, dos testes e das

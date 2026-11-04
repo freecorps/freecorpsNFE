@@ -87,13 +87,15 @@ it("checks the real workspaces and connects the blocking command before CI appro
     jobs: Record<string, { steps?: Array<{ run?: string; if?: string }> }>;
   };
   // The boundary check is a step of the job that approves the revision,
-  // before the approval and without a condition that would let it be skipped.
+  // before the approval and under the same condition: the approval never runs
+  // without it (a documentation-only change skips both, and issues no SHA).
   const steps = workflow.jobs.validate!.steps!;
   const step = (run: string) => steps.findIndex((s) => s.run?.trim() === run);
   const command = step("vp run ci:boundaries");
+  const approve = step("node scripts/ci.mjs approve");
   expect(command).toBeGreaterThanOrEqual(0);
-  expect(command).toBeLessThan(step("node scripts/ci.mjs approve"));
-  expect(steps[command]).not.toHaveProperty("if");
+  expect(command).toBeLessThan(approve);
+  expect(steps[command]!.if).toBe(steps[approve]!.if);
   expect(steps[command]).not.toHaveProperty("continue-on-error");
 });
 
