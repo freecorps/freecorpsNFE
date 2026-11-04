@@ -6,15 +6,18 @@ import { activateCatalogPlan, allocateOffer, startTerm, upgradeTerm } from "./pl
 import { denialCode } from "./organizationAccess";
 import {
   annualTermBlocks,
+  chainAnchor,
   monthlyBlockedByTerm,
   rescindedSubscription,
+  termCovering,
+  termMonth,
   termTierAt,
   termUpgradeCents,
   upgradableTerm,
 } from "./planTerms";
-import { isTermReference, termEndsAt, termMonthStart } from "./annualTerms";
+import { isTermMonthStart, isTermReference, termMonthStart } from "./annualTerms";
 import { planFor } from "./usageCore";
-import { nextUsagePeriodStart, planEnded } from "./usageValues";
+import { planEnded } from "./usageValues";
 import { periodKey, periodKeyStart, quotaPeriod } from "./quotaPeriod";
 import {
   ENDED_STATUSES,
@@ -41,48 +44,6 @@ export const needsPerson = (grant: Pick<Doc<"billingGrants">, "state" | "code">)
   (grant.state === "applied" && grant.code === "RENEWAL_BELOW_UPGRADE");
 /** A Checkout Session whose creation never answered is abandoned after this, never reused. */
 export const CREATING_TTL = 10 * 60 * 1000;
-/**
- * The admission of a completed annual start is checked again this long before its anchor, so a
- * refusal still cancels the subscription before Stripe bills it: the five retries of the
- * cancellation add up to 3 h 45 min.
- */
-export const ADMISSION_RECHECK_MARGIN = 6 * 60 * 60 * 1000;
-
-/**
- * The admission of a completed annual start Checkout (ADR 0010, D3), as the invoice of its 1st
- * will weigh it: `reserve` takes the stock of the tier now, as the annual Pix `next` does on its
- * confirmation, so the admission window, the stock and the other sales cannot refuse that
- * invoice afterwards (`allocateOffer` only raises a reservation); `recheck` writes nothing and
- * reads what can still refuse it: the catalog switch, the usage, the capacity inventory, an
- * archiving under way and a custom plan. A closed organization, or one being closed, is refused
- * with `ORGANIZATION_CLOSED` before anything is reserved: the closure cancels its subscription
- * anyway (`billing:stopForClosure`). Returns the denial code, or null when admitted.
- */
-export async function admitAnnualCheckout(
-  ctx: MutationCtx,
-  row: Pick<Doc<"billingCheckouts">, "organizationId" | "tier">,
-  mode: "reserve" | "recheck",
-): Promise<string | null> {
-  if (
-    await ctx.db
-      .query("organizationClosures")
-      .withIndex("by_organizationId", (q) => q.eq("organizationId", row.organizationId))
-      .unique()
-  )
-    return "ORGANIZATION_CLOSED";
-  if ((await planFor(ctx, row.organizationId))?.catalogTier === "custom") return "PLAN_CUSTOM";
-  try {
-    // Every denial comes before the first write, so a refusal reserves nothing.
-    await allocateOffer(ctx, row.organizationId, row.tier, PLATFORM_PLANS[row.tier], {
-      checkOnly: mode === "recheck",
-    });
-    return null;
-  } catch (error) {
-    const code = denialCode(error);
-    if (!code) throw error;
-    return code;
-  }
-}
 
 export const accountOf = (ctx: QueryCtx, organizationId: Id<"organizations">, livemode: boolean) =>
   ctx.db
@@ -344,7 +305,7 @@ export async function applyInvoice(
       // The canonical key of the period bought (ADR 0012): `AAAA-MM` or the exact ISO instant.
       period: !bought
         ? null
-        : decision.kind === "grant"
+        : decision.kind === "grant" || decision.kind === "annual"
           ? periodKey(decision.startsAt)
           : decision.period,
       amountCents: invoice.amountPaid,
@@ -357,7 +318,7 @@ export async function applyInvoice(
   if (decision.kind === "none") return void (await record("skipped", decision.code));
   if (decision.kind === "review") return void (await record("blocked", decision.code));
   if (decision.kind === "annual")
-    return applyAnnualInvoice(ctx, account, invoice, decision.tier, decision.period, now, record);
+    return applyAnnualInvoice(ctx, account, invoice, decision, now, record);
   if (decision.kind === "annualUpgrade")
     return applyAnnualUpgrade(
       ctx,
@@ -465,10 +426,16 @@ export async function applyInvoice(
 }
 
 /**
- * A paid annual invoice becomes one term (ADR 0010, decision 9), as a confirmed annual Pix does:
- * the first invoice for the marked month, a renewal for the month its line starts, which is the
- * previous term's `endsAt`, so the renewal leaves no gap. The annual switch is not checked: it
- * stops new sales, and this money was taken. Admission still is, and every refusal is `blocked`.
+ * A paid annual invoice becomes one term (ADR 0010, decision 9), as a confirmed annual Pix does,
+ * for the year of the subscription's anchor its yearly line bills (ADR 0012, invariant 6): the
+ * first invoice, charged at the signing since slice 2b, from the anchor itself; a renewal from
+ * the anniversary 12(n − 1), which is the previous term's `endsAt`, so the renewal leaves no gap.
+ * The term records the anchor as the one of its chain when it does not start on it, so its
+ * months, its end and the quota periods of its plan count from it. The annual switch is not
+ * checked: it stops new sales, and this money was taken. Admission still is, and every refusal is
+ * `blocked`; granted, the term reserves the admission as the monthly does (`startTerm`). A
+ * monthly plan of the same tier or below in force is replaced at once, without discount (one paid
+ * plan at a time, ADR 0012).
  *
  * A renewal below the tier the term it follows reached (an annual upgrade whose price switch did
  * not reach Stripe before the anchor) is granted at the tier it charged, since that is the money
@@ -479,20 +446,20 @@ async function applyAnnualInvoice(
   ctx: MutationCtx,
   account: Doc<"billingAccounts">,
   invoice: InvoiceFacts,
-  tier: PaidTier,
-  period: string,
+  year: { tier: PaidTier; startsAt: number; endsAt: number; anchor: number },
   now: number,
   record: GrantRecord,
 ) {
   const organizationId = account.organizationId;
-  const firstPeriod = periodStart(period);
-  const endsAt = termEndsAt(firstPeriod);
+  const { tier, startsAt: firstPeriod, endsAt, anchor } = year;
   const paidAt = invoice.paidAt ?? now;
   // The Pix `payBy`: the whole term only if paid within its first term month.
-  if (paidAt >= termMonthStart(firstPeriod, 1) || now >= endsAt)
+  if (paidAt >= termMonthStart(firstPeriod, 1, anchor) || now >= endsAt)
     return void (await record("blocked", "LATE_PAYMENT"));
-  // As the Pix request, a term starts this month or the next; the term keeps the invoice id.
-  if (firstPeriod > nextUsagePeriodStart(now) || !isTermReference(invoice.id))
+  // Stripe charges a year when it starts: one starting after the anchor's month in force (a
+  // renewal paid more than a month early) is no sale; the term keeps the invoice id.
+  const latest = now < anchor ? anchor : quotaPeriod({ periodAnchor: anchor }, now).endsAt;
+  if (firstPeriod > latest || !isTermReference(invoice.id))
     return void (await record("blocked", "INVOICE_UNEXPECTED"));
   const closure = await ctx.db
     .query("organizationClosures")
@@ -510,7 +477,8 @@ async function applyAnnualInvoice(
     (await rescindedSubscription(ctx, organizationId, invoice.subscriptionId))
   )
     return void (await record("blocked", "ANNUAL_TERM_RESCINDED"));
-  // Starting now replaces the month in force: as the Pix `now`, never with a lower tier.
+  // Starting now replaces the monthly in force without discount, never with a lower tier: the
+  // Checkout refuses that sale until the monthly ends (`PLAN_UNAVAILABLE`, with the date).
   if (
     firstPeriod <= now &&
     plan &&
@@ -535,6 +503,8 @@ async function applyAnnualInvoice(
       organizationId,
       tier,
       firstPeriod,
+      // The chain's anchor is the subscription's (ADR 0012, section 1); a first term is its own.
+      ...(anchor !== firstPeriod ? { anchor } : {}),
       endsAt,
       source: "stripe",
       references: [invoice.id],
@@ -597,12 +567,14 @@ async function renewalBelowUpgrade(
 
 /**
  * A paid annual upgrade (ADR 0010, decision 9), a one-off payment from the upgrade Checkout,
- * raises the card term in force to `tier` from the 1st of `period` until the term ends, as the
- * Pix confirmation does (`upgradeTerm`). The amount must be the difference the server prices on
- * that term for that month. Every check runs before any write, so a refusal is `blocked` for a
- * person with the money already taken. Applied, the account renews at `tier`: the reconciliation
- * then moves the annual subscription to that tier's yearly price, without proration and keeping
- * the anchor, so the renewal date stays and the next year is the larger tier.
+ * raises the card term in force to `tier` from `period`, the start of the term month it was sold
+ * in (counted from the chain's anchor, ADR 0012), until the term ends, as the Pix confirmation
+ * does (`upgradeTerm`). It must be paid within that term month (`LATE_PAYMENT` otherwise), and
+ * the amount must be the difference the server prices on that term for that month. Every check
+ * runs before any write, so a refusal is `blocked` for a person with the money already taken.
+ * Applied, the account renews at `tier`: the reconciliation then moves the annual subscription to
+ * that tier's yearly price, without proration and keeping the anchor, so the renewal date stays
+ * and the next year is the larger tier.
  */
 async function applyAnnualUpgrade(
   ctx: MutationCtx,
@@ -617,8 +589,14 @@ async function applyAnnualUpgrade(
   const organizationId = account.organizationId;
   const fromPeriod = periodStart(period);
   const paidAt = invoice.paidAt ?? now;
-  // The price depends on the month: paid after it, the difference no longer matches.
-  if (paidAt >= nextUsagePeriodStart(fromPeriod))
+  // The price depends on the term month: paid after it, the difference no longer matches. The
+  // month is the one of the term covering `period`, even one that has ended since.
+  const priced = await termCovering(ctx, organizationId, fromPeriod);
+  if (
+    priced &&
+    isTermMonthStart(priced.firstPeriod, fromPeriod, chainAnchor(priced)) &&
+    paidAt >= termMonth(priced, fromPeriod).endsAt
+  )
     return void (await record("blocked", "LATE_PAYMENT"));
   if (!isTermReference(invoice.id)) return void (await record("blocked", "INVOICE_UNEXPECTED"));
   const closure = await ctx.db
@@ -639,6 +617,9 @@ async function applyAnnualUpgrade(
   // The term of the month paid for, bought by card: a Pix term is upgraded by Pix.
   if (term.firstPeriod > fromPeriod || term.source !== "stripe")
     return void (await record("blocked", "ANNUAL_TERM_REQUIRED"));
+  // A segment starts at the start of a term month, as the Checkout priced it.
+  if (!isTermMonthStart(term.firstPeriod, fromPeriod, chainAnchor(term)))
+    return void (await record("blocked", "INVOICE_UNEXPECTED"));
   // Its subscription must be one this customer has, in this mode, as the Checkout required:
   // otherwise no price switch could follow.
   if (!term.stripeSubscriptionId || !annualSubscriptions.includes(term.stripeSubscriptionId))

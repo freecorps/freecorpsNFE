@@ -278,24 +278,6 @@ export function withoutLastUpgrade(term: Doc<"platformPlanTerms">) {
   return { upgrade, fields };
 }
 
-/** Whether the Stripe subscription `subscriptionId` bought a term scheduled or in force. */
-export async function subscriptionHasTerm(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  subscriptionId: string,
-) {
-  for (const state of ["scheduled", "active"] as const) {
-    const terms = await ctx.db
-      .query("platformPlanTerms")
-      .withIndex("by_organizationId_and_state_and_endsAt", (q) =>
-        q.eq("organizationId", organizationId).eq("state", state),
-      )
-      .take(100);
-    if (terms.some((term) => term.stripeSubscriptionId === subscriptionId)) return true;
-  }
-  return false;
-}
-
 /**
  * Whether the Stripe subscription `subscriptionId` bought a term that was rescinded: it must not
  * charge again (`billing:stopTermRenewal` cancels it), so its renewal is blocked and resuming it

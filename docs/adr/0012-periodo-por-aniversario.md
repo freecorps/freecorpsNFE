@@ -1,9 +1,11 @@
 # Período por aniversário nas assinaturas e nas cotas pagas
 
 Data: 03/11/2026 · Status: **Aceita** pelo dono do projeto em 03/11/2026.
-**Não implementada:** até cada fatia de [Implementação](#implementação) ser
-publicada, o código segue o mês civil UTC descrito em
+**Implementada no código nas fatias 0 a 2b** de
+[Implementação](#implementação), descritas em
 [BILLING.md](../plataforma/BILLING.md) e [USAGE.md](../plataforma/USAGE.md).
+Ligar o catálogo ou o anual ainda espera a versão nova dos termos de uso e a
+[prova hospedada](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35).
 Esta ADR substitui pontos da
 [decisão 9 da ADR 0010](0010-guarda-em-camadas-e-custo-dos-planos.md#9-anual-reembolso-e-ciclo)
 e das políticas mensais da #556, listados em [Consequências](#consequências).

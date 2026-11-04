@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { PLATFORM_PLANS } from "./planCatalog";
-import { usagePeriod } from "./usageValues";
+import { addMonths, termMonthAt } from "./annualTerms";
 import { isPeriodAnchor, isPeriodInstant, periodKeyStart, quotaPeriod } from "./quotaPeriod";
 
 /**
@@ -203,11 +203,12 @@ export function pricedTier(
 /**
  * Our own markers, set by the server on the Checkout Session; anything else is ignored. An
  * annual Checkout marks its subscription (`subscription_data[metadata]`) with `kind: "start"`,
- * `cycle: ANNUAL_CYCLE`, `tier`, `period` (the term's first month, `YYYY-MM`: the current or the
- * next one) and `grantCents` (`annualCents`). Its first invoice becomes the term; renewals are
- * recognized by the yearly price alone. An annual upgrade Checkout, a one-off payment, marks its
- * invoice with `kind: "upgrade"`, `cycle: ANNUAL_CYCLE`, the higher `tier`, the `period` it
- * starts (the current month) and `grantCents`, the difference priced on the term.
+ * `cycle: ANNUAL_CYCLE`, `tier` and `grantCents` (`annualCents`), without `period` since slice 2b
+ * of ADR 0012: the term starts when it is paid, and its line says which year of the anchor it
+ * is. Its first invoice becomes the term; renewals are recognized by the yearly price alone. An
+ * annual upgrade Checkout, a one-off payment, marks its invoice with `kind: "upgrade"`,
+ * `cycle: ANNUAL_CYCLE`, the higher `tier`, the `period` it starts (the canonical key of the
+ * start of the current term month) and `grantCents`, the difference priced on the term.
  */
 export const ourMetadata = v.object({
   organizationId: v.optional(v.string()),
@@ -377,14 +378,44 @@ export function anchorMonth(anchor: number | undefined, start: number, end: numb
   return month.startsAt === start && month.endsAt === end;
 }
 
+/**
+ * The annual half of invariant 6 of ADR 0012: `[start, end)` is exactly one year of the
+ * subscription's `billing_cycle_anchor`, its n-th term, from the monthly anniversary 12(n − 1)
+ * to 12n, always counted from the anchor. A subscription anchored on 29/02/2028 renews on
+ * 28/02/2029, 2030 and 2031 and on 29/02/2032, without drift. One anchored on a 1st at 00:00
+ * UTC, as the annual Checkouts before slice 2b, has its terms from that 1st.
+ */
+export function anchorYear(anchor: number | undefined, start: number, end: number) {
+  if (
+    anchor === undefined ||
+    !isPeriodAnchor(anchor) ||
+    !isPeriodInstant(start) ||
+    !isPeriodInstant(end) ||
+    start < anchor
+  )
+    return false;
+  const month = termMonthAt(anchor, start);
+  return (
+    month.startsAt === start &&
+    month.index % 12 === 0 &&
+    addMonths(anchor, month.index + 12) === end
+  );
+}
+
 export type GrantDecision =
   /** A month of the subscription's `anchor` (ADR 0012, invariant 6): `[startsAt, endsAt)`. */
   | { kind: "grant"; tier: PaidTier; startsAt: number; endsAt: number; anchor: number }
   /** Raises the monthly plan to `tier` for the rest of its quota period `period` (canonical key). */
   | { kind: "upgrade"; tier: PaidTier; period: string }
-  /** A 12-month term from the 1st of `period` (ADR 0010, decision 9). */
-  | { kind: "annual"; tier: PaidTier; period: string }
-  /** Raises the annual term covering `period` to `tier` until its end; priced on the term. */
+  /**
+   * A 12-month term (ADR 0010, decision 9), `[startsAt, endsAt)`: one year of the
+   * subscription's `anchor` (ADR 0012, invariant 6), which the term keeps as its chain's anchor.
+   */
+  | { kind: "annual"; tier: PaidTier; startsAt: number; endsAt: number; anchor: number }
+  /**
+   * Raises the annual term covering `period` to `tier` until its end, priced on the term from
+   * `period`, the canonical key of the start of the term month it was sold in.
+   */
   | { kind: "annualUpgrade"; tier: PaidTier; period: string }
   | { kind: "none"; code: string }
   | { kind: "review"; code: string };
@@ -394,10 +425,11 @@ export type GrantDecision =
  * invoice or renewal buys the period of its line at the monthly price, which must be exactly one
  * month of the subscription's `billing_cycle_anchor` (`anchors`, ADR 0012, invariant 6); a
  * monthly upgrade buys the rest of the quota period its marks name (`period`, a canonical key).
- * Anything else, or any amount that does not match, goes to a person. An annual
- * invoice charges exactly `annualCents`: the first one, marked `cycle: ANNUAL_CYCLE`, buys the
- * term from the marked `period`; a renewal at a yearly price, the term from the line's month.
- * Without the yearly prices (`annual` empty), both stay `PRICE_UNKNOWN`. A monthly-marked
+ * Anything else, or any amount that does not match, goes to a person. An annual invoice charges
+ * exactly `annualCents` and buys the period of its yearly line, which must be exactly one year
+ * of the subscription's anchor (`anchorYear`, invariant 6): the first one, marked
+ * `cycle: ANNUAL_CYCLE` and charged at the signing since slice 2b, and each renewal at a yearly
+ * price. Without the yearly prices (`annual` empty), both stay `PRICE_UNKNOWN`. A monthly-marked
  * invoice of one of `annualSubscriptions` (`readSubscriptions`) is `INVOICE_UNEXPECTED`. An
  * annual upgrade, a one-off payment marked `kind: "upgrade"` and annual, needs the verified yearly
  * price of its tier, which the subscription then moves to; its amount is checked on the term.
@@ -425,17 +457,23 @@ export function invoiceGrant(
       : anchorMonth(anchor, line.periodStart, line.periodEnd)
         ? { kind: "grant", tier, startsAt: line.periodStart, endsAt: line.periodEnd, anchor }
         : { kind: "review", code: "INVOICE_UNEXPECTED" };
+  /** A line at a yearly price bills one year of the anchor (invariant 6), as `month` a month. */
+  const year = (tier: PaidTier, line: InvoiceFacts["lines"][number]): GrantDecision =>
+    anchor === undefined
+      ? { kind: "none", code: "ANCHOR_UNKNOWN" }
+      : anchorYear(anchor, line.periodStart, line.periodEnd)
+        ? { kind: "annual", tier, startsAt: line.periodStart, endsAt: line.periodEnd, anchor }
+        : { kind: "review", code: "INVOICE_UNEXPECTED" };
   const priced = (marks: typeof ourMetadata.type, kind: string): GrantDecision => {
     if (marks.organizationId !== organizationId)
       return { kind: "review", code: "ORGANIZATION_MISMATCH" };
     const yearly = marks.cycle === ANNUAL_CYCLE;
-    // A monthly start begins when it is paid, so its period is its line's, never a mark; an
-    // annual start and every upgrade name the period they were priced for.
-    const named = yearly || kind === "upgrade";
+    // A start, monthly or annual, begins when it is paid (ADR 0012), so its period is its line's,
+    // never a mark; every upgrade names the period it was priced for.
     if (
       marks.kind !== kind ||
       !isPaidTier(marks.tier) ||
-      (named && periodKeyStart(marks.period ?? "") === null) ||
+      (kind === "upgrade" && periodKeyStart(marks.period ?? "") === null) ||
       String(invoice.amountPaid) !== marks.grantCents
     )
       return { kind: "review", code: "AMOUNT_MISMATCH" };
@@ -467,11 +505,11 @@ export function invoiceGrant(
       return { kind: "annualUpgrade", tier: marks.tier, period: marks.period! };
     if (invoice.amountPaid !== PLATFORM_PLANS[marks.tier].annualCents)
       return { kind: "review", code: "AMOUNT_MISMATCH" };
-    // The subscription must renew at the verified yearly price of the tier bought.
+    // The first year: the recurring line at the verified yearly price of the tier bought,
+    // charged at the signing and running to the same day and time a year later.
     const yearlyPrice = annual[marks.tier]!.priceId;
-    if (!invoice.lines.some((line) => line.priceId === yearlyPrice))
-      return { kind: "review", code: "INVOICE_UNEXPECTED" };
-    return { kind: "annual", tier: marks.tier, period: marks.period! };
+    const line = invoice.lines.find((item) => item.priceId === yearlyPrice);
+    return line ? year(marks.tier, line) : { kind: "review", code: "INVOICE_UNEXPECTED" };
   };
   if (invoice.billingReason === "subscription_create")
     return priced(invoice.subscriptionMetadata, "start");
@@ -483,12 +521,7 @@ export function invoiceGrant(
     const plan = PLATFORM_PLANS[price.tier];
     if (invoice.amountPaid !== (yearly ? plan.annualCents : plan.monthlyCents))
       return { kind: "review", code: "AMOUNT_MISMATCH" };
-    if (!yearly) return month(price.tier, line);
-    // A term starts on a 1st at 00:00 UTC; a yearly line starting elsewhere is no term renewal.
-    const start = new Date(line.periodStart);
-    if (line.periodStart !== Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1))
-      return { kind: "review", code: "INVOICE_UNEXPECTED" };
-    return { kind: "annual", tier: price.tier, period: usagePeriod(line.periodStart) };
+    return yearly ? year(price.tier, line) : month(price.tier, line);
   }
   if (!invoice.subscriptionId && invoice.metadata.kind === "upgrade")
     return priced(invoice.metadata, "upgrade");

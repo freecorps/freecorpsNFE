@@ -60,9 +60,15 @@ fatia Q da ADR implementou o modelo do período em
   `2026-10-13T14:30:07.000Z`, `2026-11-13T14:30:07.000Z` e assim por
   diante, e a renovação mantém a âncora: numa cadeia de 29/02/2028, o termo
   renovado começa em 28/02/2029, porque fevereiro não tem dia 29, e o
-  período seguinte começa em 29/03/2029, não em 28/03. O anual no cartão ainda
-  começa no dia 1 às 00:00 UTC, então as chaves dele continuam `AAAA-MM`
-  ([BILLING.md](BILLING.md#plano-anual)). O mensal pelo Pix tem âncora
+  período seguinte começa em 29/03/2029, não em 28/03. O anual no cartão
+  começa na contratação desde a fatia 2b, e a âncora da cadeia é o
+  `billing_cycle_anchor` da assinatura: assinado em 31/01/2027 às 10:00:07
+  UTC, tem os períodos `2027-01-31T10:00:07.000Z`,
+  `2027-02-28T10:00:07.000Z`, `2027-03-31T10:00:07.000Z` e assim por diante,
+  e os termos renovados mantêm essa âncora
+  ([BILLING.md](BILLING.md#fatura-anual-do-cartão)). Um anual no cartão
+  anterior à 2b começa no dia 1 às 00:00 UTC, e as chaves dele continuam
+  `AAAA-MM`. O mensal pelo Pix tem âncora
   desde a fatia 1c: a confirmação de um mês novo, truncada ao segundo, e a
   renovação e o upgrade mantêm a da cadeia, inclusive entre o mensal e o
   anual ([BILLING.md](BILLING.md#mensal-por-pix)). Confirmado em 31/01/2027

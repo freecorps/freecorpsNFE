@@ -165,8 +165,9 @@ export async function allocateOffer(
 /**
  * The quota anchor of the plan rows a term grants (ADR 0012, section 4): the anchor of the term's
  * chain (`chainAnchor`), truncated to the whole second, so a Pix renewal keeps the periods of the
- * term it follows and a chain anchored on 29/02 does not drift to 28/02. A card term is still its
- * own anchor until slice 2b; it starts on a 1st at 00:00 UTC, so its keys stay `AAAA-MM`.
+ * term it follows and a chain anchored on 29/02 does not drift to 28/02. A card term's chain is
+ * its subscription's `billing_cycle_anchor` (slice 2b); one bought before it starts on a 1st at
+ * 00:00 UTC, so its keys stay `AAAA-MM`.
  */
 const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor">) =>
   Math.floor(chainAnchor(term) / 1000) * 1000;
