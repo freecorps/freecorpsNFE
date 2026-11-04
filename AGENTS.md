@@ -329,6 +329,11 @@ proteção: um padrão errado imprime o segredo inteiro.
   relógio e bytes grandes) estão em `docs/desenvolvimento/ci.md`, Isolamento;
   `freecorps/no-wall-clock-in-tests` reprova relógio real e polling.
 
+- Antes de todo push, rode `bun run check:changed`: formatação, lint (aviso
+  novo reprova), typecheck dos projetos afetados, fronteiras dos pacotes e os
+  testes alcançados pela mudança desde `origin/main`
+  ([detalhes](docs/desenvolvimento/ci.md#conferir-só-o-que-mudou)). Não
+  substitui `ci:local` antes da PR.
 - Antes de concluir, rode a suíte toda sem cache: `vp test run`.
   `bun run ci:local` reproduz o grafo Validate como numa PR, com cache: repete
   as tarefas e áreas de teste cujas entradas não mudaram, aceita alterações

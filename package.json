@@ -66,6 +66,7 @@
     "content:prove-hosted": "node scripts/proofs/prove-document-content-hosted.mjs",
     "plans:browser": "node apps/console/e2e/plans.mjs",
     "test:changed": "vp test run --changed origin/main --passWithNoTests",
+    "check:changed": "node scripts/ci/check-changed.mjs",
     "worktree:mail": "bun scripts/worktree.mjs mail",
     "platform:browser": "node --experimental-strip-types apps/console/e2e/foundation.mjs",
     "platform:worker": "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
