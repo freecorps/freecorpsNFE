@@ -132,6 +132,22 @@ it("rejects revoked sessions at once and expired ones outside queries (#43)", as
   await expect(active.client.query(api.access.session, {})).resolves.toBeNull();
   await expect(active.client.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
 });
+it("refuses a session that belongs to another user than the token's subject", async () => {
+  const t = setup();
+  const operator = await identity(t, "operator");
+  const viewer = await identity(t, "viewer");
+  const viewerId = (await t.query(components.betterAuth.adapter.findOne, {
+    model: "session",
+    where: [{ field: "_id", value: viewer.sessionId }],
+  }))!.userId as string;
+  const mixed = t.withIdentity({
+    subject: viewerId,
+    sessionId: operator.sessionId,
+    issuer: validationTarget.siteUrl,
+  });
+  await expect(mixed.query(api.access.session, {})).resolves.toBeNull();
+  await expect(mixed.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
+});
 it("does not accept a user ID supplied by the caller", async () => {
   const t = setup();
   await expect(

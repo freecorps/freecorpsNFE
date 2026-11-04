@@ -49,7 +49,8 @@ export async function sessionUser(
       ...(now === null ? [] : [{ field: "expiresAt", operator: "gt" as const, value: now }]),
     ],
   });
-  if (!session) return null;
+  // The session must belong to the token's subject, not only exist.
+  if (!session || session.userId !== identity.subject) return null;
   const user: AuthUser | null = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
     where: [{ field: "_id", value: identity.subject }],
