@@ -127,7 +127,13 @@ export function releaseInterruptedDev(paths, expected) {
     return false;
   // Sem intervalo assíncrono entre a última leitura e a remoção.
   if (JSON.stringify(readOperationRecord(path)) !== JSON.stringify(current)) return false;
-  unlinkSync(path);
+  try {
+    unlinkSync(path);
+  } catch (error) {
+    // Outro cleanup simultâneo passou pela mesma conferência e já liberou.
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
   return true;
 }
 
