@@ -9,6 +9,7 @@ import { purger, type Budget } from "./purge";
 import { assertPlanChangeable, endArchiveNotice, inCustody } from "./coldArchiveCore";
 import { internal } from "../_generated/api";
 import {
+  chainAnchor,
   insertTerm,
   monthlyBlockedByTerm,
   termRescission,
@@ -161,20 +162,20 @@ export async function allocateOffer(
 }
 
 /**
- * The quota anchor of the plan rows a term grants (ADR 0012, slice Q): the term's start, truncated
- * to the whole second. Terms sold so far start on a 1st at 00:00 UTC, so their keys stay `AAAA-MM`.
- * Interim: ADR 0012 anchors a chain at its original instant, but each term here anchors at its own
- * `firstPeriod`, so a renewal re-anchors at `addMonths(anchor, 12)` and a 29/02 anchor drifts to
- * 28/02. Slices 1b (Pix) and 2b (card) give the terms their chain anchor.
+ * The quota anchor of the plan rows a term grants (ADR 0012, section 4): the anchor of the term's
+ * chain (`chainAnchor`), truncated to the whole second, so a Pix renewal keeps the periods of the
+ * term it follows and a chain anchored on 29/02 does not drift to 28/02. A card term is still its
+ * own anchor until slice 2b; it starts on a 1st at 00:00 UTC, so its keys stay `AAAA-MM`.
  */
-const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod">) =>
-  Math.floor(term.firstPeriod / 1000) * 1000;
+const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor">) =>
+  Math.floor(chainAnchor(term) / 1000) * 1000;
 
 /**
  * Without `termId`, a monthly activation: refused when an annual term overlaps it from `startsAt`
  * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. It has no `periodAnchor` yet
  * (ADR 0012, slice Q): its quotas count by the civil UTC month. With it, the plan row records the
- * term it grants and the term's start as `periodAnchor`, and the grant must match the term
+ * term it grants and the anchor of the term's chain as `periodAnchor` (`termAnchor`), and the
+ * grant must match the term
  * (`INVALID_REQUEST` otherwise): same organization, `scheduled` or `active`, the tier in force at
  * `startsAt`, `startsAt` within the term and `endsAt` equal to the term's.
  */

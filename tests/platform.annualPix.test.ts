@@ -2,19 +2,29 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
 import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
-import { termEndsAt } from "../platform/convex/lib/annualTerms";
+import { addMonths, termEndsAt } from "../platform/convex/lib/annualTerms";
 import { activateCatalogPlan } from "../platform/convex/lib/planCore";
 import { insertTerm, termTierAt } from "../platform/convex/lib/planTerms";
 import { archiveStatus } from "../platform/convex/lib/coldArchiveCore";
-import { checkUsage, reserveUsage } from "../platform/convex/lib/usageCore";
+import { checkUsage, planFor, reserveUsage } from "../platform/convex/lib/usageCore";
+import { quotaPeriod } from "../platform/convex/lib/quotaPeriod";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import * as plansModule from "../platform/convex/plans";
 
-/** The annual plan sold by assisted Pix (ADR 0010, decision 9), server side only. */
+/**
+ * The annual plan sold by assisted Pix (ADR 0010, decision 9), server side only, on anniversary
+ * terms (ADR 0012): `now` starts at the confirmation, a `renewal` at the end of the Pix plan in
+ * force, keeping the chain's anchor.
+ */
 const OCT = Date.UTC(2026, 9, 10, 12);
 const OCT_1 = Date.UTC(2026, 9, 1);
 const NOV = Date.UTC(2026, 10, 1);
 const DEC = Date.UTC(2026, 11, 1);
+const DAY = 24 * 60 * 60 * 1000;
+/** The term confirmed at `OCT`: from 10/10/2026 12:00 UTC to 10/10/2027 12:00 UTC. */
+const END = termEndsAt(OCT);
+/** The start of its last month, from which it may be renewed. */
+const LAST_MONTH = Date.UTC(2027, 8, 10, 12);
 usePlatformEnvironment({
   siteUrl: "http://localhost:5199",
   convexSiteUrl: "http://127.0.0.1:3257",
@@ -73,11 +83,17 @@ const code = (promise: Promise<unknown>) =>
     (error: { data?: { code?: string } | string }) =>
       typeof error.data === "string" ? error.data : (error.data?.code ?? "ERROR"),
   );
+/** The refusal's data: its code and, for a sale that waits, when it becomes available. */
+const refusal = (promise: Promise<unknown>) =>
+  promise.then(
+    () => "OK",
+    (error: { data?: unknown }) => error.data,
+  );
 
 const requestAnnual = (
   member: Member,
   organizationId: Id<"organizations">,
-  start: "now" | "next",
+  start: "now" | "renewal",
   key = `annual-${start}-key`,
   tier: Tier = "intermediate",
 ) => member.mutation(api.plans.requestPaid, { organizationId, tier, key, cycle: "annual", start });
@@ -129,7 +145,7 @@ describe("pedido anual por Pix", () => {
           organizationId: g.organizationId,
           tier: "intermediate",
           key: "monthly-with-start",
-          start: "next",
+          start: "renewal",
         }),
       ),
     ).toBe("INVALID_REQUEST");
@@ -142,28 +158,25 @@ describe("pedido anual por Pix", () => {
       const settings = (await ctx.db.query("platformPlanSettings").unique())!;
       await ctx.db.patch("platformPlanSettings", settings._id, { enabled: false });
     });
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe("ANNUAL_DISABLED");
+    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("ANNUAL_DISABLED");
   });
 
-  it("cobra o annualCents e começa no dia 1 deste mês ou do seguinte", async () => {
+  it("cobra o annualCents, começa na confirmação e vale 7 dias; sem plano, não há renovação", async () => {
     const f = await fixture();
     const now = await requestAnnual(f.owner, f.organizationId, "now", "annual-now-key", "large");
-    expect(now).toMatchObject({ amountCents: PLATFORM_PLANS.large.annualCents, period: "2026-10" });
-    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", now.id))).toMatchObject({
-      cycle: "annual",
-      firstPeriod: OCT_1,
-      endsAt: NOV,
-    });
+    // No civil month is bought: the term runs from the confirmation.
+    expect(now).toEqual({ id: now.id, amountCents: PLATFORM_PLANS.large.annualCents });
+    const stored = await f.t.run((ctx) => ctx.db.get("platformPlanRequests", now.id));
+    expect(stored).toMatchObject({ cycle: "annual", startsAt: OCT, endsAt: OCT + 7 * DAY });
+    expect(stored).not.toHaveProperty("firstPeriod");
+    expect(stored).not.toHaveProperty("period");
+    // Nothing in force to renew.
     await f.owner.mutation(api.plans.cancelRequest, {
       organizationId: f.organizationId,
       requestId: now.id,
     });
-    const next = await requestAnnual(f.owner, f.organizationId, "next");
-    expect(next).toMatchObject({ amountCents: 149000, period: "2026-11" });
-    // The deadline is the end of the term's first month.
-    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", next.id))).toMatchObject({
-      firstPeriod: NOV,
-      endsAt: DEC,
+    expect(await refusal(requestAnnual(f.owner, f.organizationId, "renewal"))).toEqual({
+      code: "PLAN_UNAVAILABLE",
     });
     // The intent reserves nothing.
     expect(await f.t.run((ctx) => ctx.db.query("platformPlanAllocations").collect())).toEqual([]);
@@ -201,7 +214,7 @@ describe("pedido anual por Pix", () => {
     const f = await fixture();
     const first = await requestAnnual(f.owner, f.organizationId, "now");
     expect(await requestAnnual(f.owner, f.organizationId, "now")).toEqual(first);
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next", "annual-now-key"))).toBe(
+    expect(await code(requestAnnual(f.owner, f.organizationId, "renewal", "annual-now-key"))).toBe(
       "OPERATION_CONFLICT",
     );
     expect(
@@ -223,17 +236,17 @@ describe("pedido anual por Pix", () => {
       await ctx.db.patch("platformPlanSettings", settings._id, { admissionsUntil: OCT - 1 });
     });
     expect(
-      await code(requestAnnual(f.owner, f.organizationId, "next", "annual-larger", "large")),
+      await code(requestAnnual(f.owner, f.organizationId, "renewal", "annual-larger", "large")),
     ).toBe("PLAN_UNAVAILABLE");
     const other = await f.org("Sem reserva");
     const otherOwner = await person(f.t, other, "owner");
-    expect(await code(requestAnnual(otherOwner, other, "next"))).toBe("PLAN_UNAVAILABLE");
-    const same = await requestAnnual(f.owner, f.organizationId, "next");
+    expect(await code(requestAnnual(otherOwner, other, "now"))).toBe("PLAN_UNAVAILABLE");
+    const same = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, same.id, "annual-same-tier-ref");
     expect(await f.terms()).toMatchObject([{ state: "scheduled", tier: "intermediate" }]);
   });
 
-  it("começar agora não desce de plano no meio do mês", async () => {
+  it("com um mensal Pix em vigor, o anual só entra como renovação no fim dele, de qualquer tier", async () => {
     const f = await fixture();
     const request = await f.owner.mutation(api.plans.requestPaid, {
       organizationId: f.organizationId,
@@ -241,8 +254,20 @@ describe("pedido anual por Pix", () => {
       key: "monthly-large",
     });
     await confirm(f, request.id, "monthly-large-ref", request.amountCents);
-    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("PLAN_UNAVAILABLE");
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe("OK");
+    // One paid plan at a time (ADR 0012): starting now would replace the month in force.
+    expect(await refusal(requestAnnual(f.owner, f.organizationId, "now"))).toEqual({
+      code: "PLAN_UNAVAILABLE",
+      availableAt: NOV,
+    });
+    // A smaller tier enters as the renewal: from the end of the month paid, until the anniversary.
+    const renewal = await requestAnnual(f.owner, f.organizationId, "renewal");
+    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", renewal.id))).toMatchObject({
+      tier: "intermediate",
+      firstPeriod: NOV,
+      anchor: NOV,
+      // Paid within the term's first month, as a renewal paid late starts at once.
+      endsAt: DEC,
+    });
   });
 
   it("com o Pix desligado responde PIX_DISABLED; com o anual também desligado, ANNUAL_DISABLED", async () => {
@@ -253,7 +278,7 @@ describe("pedido anual por Pix", () => {
       evidence: "synthetic-pix-off",
     });
     expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("PIX_DISABLED");
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe("PIX_DISABLED");
+    expect(await code(requestAnnual(f.owner, f.organizationId, "renewal"))).toBe("PIX_DISABLED");
     await f.t.mutation(internal.plans.configureAnnual, {
       enabled: false,
       expectedVersion: 3,
@@ -265,13 +290,16 @@ describe("pedido anual por Pix", () => {
 });
 
 describe("confirmação do anual por Pix", () => {
-  it("começando agora, cria um termo ativo e concede o plano até o fim do termo, uma vez", async () => {
+  it("começando agora, o termo vai da confirmação, truncada ao segundo, ao mesmo instante 12 meses depois", async () => {
     const f = await fixture();
-    await payMonthly(f, f.owner, f.organizationId);
     const request = await requestAnnual(f.owner, f.organizationId, "now");
     expect(await code(confirm(f, request.id, "annual-now-ref", 149000 - 1))).toBe(
       "PLAN_REQUEST_UNAVAILABLE",
     );
+    // Confirmed mid-month, at 14:30:07.250 UTC.
+    const paidAt = Date.UTC(2026, 9, 13, 14, 30, 7, 250);
+    const start = Date.UTC(2026, 9, 13, 14, 30, 7);
+    vi.setSystemTime(paidAt);
     await confirm(f, request.id, "annual-now-ref");
     await confirm(f, request.id, "annual-now-ref");
     const [term, ...rest] = await f.terms();
@@ -279,32 +307,49 @@ describe("confirmação do anual por Pix", () => {
     expect(term).toMatchObject({
       organizationId: f.organizationId,
       tier: "intermediate",
-      firstPeriod: OCT_1,
-      endsAt: termEndsAt(OCT_1),
+      firstPeriod: start,
+      endsAt: Date.UTC(2027, 9, 13, 14, 30, 7),
       source: "pix",
       references: ["annual-now-ref"],
       paidCents: 149000,
-      purchasedAt: OCT,
+      purchasedAt: paidAt,
       segments: [],
       state: "active",
     });
+    // A new chain: the term is its own anchor.
+    expect(term).not.toHaveProperty("anchor");
     expect(await f.plan()).toMatchObject({
       catalogTier: "intermediate",
       termId: term!._id,
+      startsAt: paidAt,
       endsAt: term!.endsAt,
-      version: 2,
+      periodAnchor: start,
+      version: 1,
     });
     expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", request.id))).toMatchObject({
       state: "activated",
       paymentReference: "annual-now-ref",
     });
-    // A second annual waits for this one to end.
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next", "annual-second"))).toBe(
-      "ANNUAL_TERM_ACTIVE",
+    // The quotas count by the term's months, from the anchor.
+    await f.t.run((ctx) =>
+      reserveUsage(ctx, f.organizationId, "production", "imports", "first-import", 1),
     );
+    const totals = await f.t.run((ctx) => ctx.db.query("usageTotals").collect());
+    expect(totals.filter((row) => row.reserved > 0)).toMatchObject([
+      { period: "2026-10-13T14:30:07.000Z", metric: "imports", reserved: 1 },
+    ]);
+    // A second annual is the renewal, from the term's last month.
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(
+      await refusal(requestAnnual(owner, f.organizationId, "renewal", "annual-second")),
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: Date.UTC(2027, 8, 13, 14, 30, 7) });
+    expect(await refusal(requestAnnual(owner, f.organizationId, "now", "annual-third"))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: Date.UTC(2027, 8, 13, 14, 30, 7),
+    });
   });
 
-  it("as cotas continuam mensais e o Pix mensal do mês seguinte é recusado", async () => {
+  it("as cotas seguem os meses do termo e o Pix mensal é recusado até o fim dele", async () => {
     const f = await fixture();
     const request = await requestAnnual(f.owner, f.organizationId, "now");
     await confirm(f, request.id, "annual-quota-ref");
@@ -315,25 +360,30 @@ describe("confirmação do anual por Pix", () => {
     const another = (key: string) =>
       code(f.t.run((ctx) => checkUsage(ctx, f.organizationId, "production", "imports", key)));
     expect(await another("october-more")).toBe("QUOTA_EXCEEDED");
+    // The civil month turns, the term month does not: until 10/11 at 12:00 UTC.
     vi.setSystemTime(NOV + 3600_000);
-    expect(await another("november-first")).toBe("OK");
+    expect(await another("november-1st")).toBe("QUOTA_EXCEEDED");
+    vi.setSystemTime(Date.UTC(2026, 10, 10, 12) - 1);
+    expect(await another("november-9th")).toBe("QUOTA_EXCEEDED");
+    vi.setSystemTime(Date.UTC(2026, 10, 10, 12));
+    expect(await another("second-month")).toBe("OK");
     const owner = await person(f.t, f.organizationId, "owner");
     expect(
-      await code(
+      await refusal(
         owner.mutation(api.plans.requestPaid, {
           organizationId: f.organizationId,
           tier: "large",
           key: "monthly-under-annual",
         }),
       ),
-    ).toBe("ANNUAL_TERM_ACTIVE");
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: END });
   });
 
-  it("começando no mês seguinte, agenda o termo e só troca o plano no dia 1", async () => {
+  it("a renovação de um mensal Pix agenda o termo e só troca o plano no fim do mês pago", async () => {
     const f = await fixture();
     await payMonthly(f, f.owner, f.organizationId);
     const monthly = await f.plan();
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    const request = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, request.id, "annual-next-ref");
     const [term] = await f.terms();
     expect(term).toMatchObject({ state: "scheduled", firstPeriod: NOV, endsAt: termEndsAt(NOV) });
@@ -355,21 +405,24 @@ describe("confirmação do anual por Pix", () => {
     expect(await f.plan()).toEqual(annual);
   });
 
-  it("um termo rescindido antes do dia 1 não é ativado", async () => {
+  it("um termo rescindido antes do início não é ativado", async () => {
     const f = await fixture();
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    await payMonthly(f, f.owner, f.organizationId);
+    const request = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, request.id, "annual-rescinded-ref");
     const [term] = await f.terms();
     await f.t.run((ctx) => ctx.db.patch("platformPlanTerms", term!._id, { state: "rescinded" }));
     await runUntil(f, NOV);
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: term!._id });
-    expect(await f.plan()).toBeNull();
+    expect(await f.plan()).toMatchObject({ endsAt: NOV });
+    expect(await f.plan()).not.toHaveProperty("termId");
     expect(await f.terms()).toMatchObject([{ state: "rescinded" }]);
   });
 
   it("uma ativação recusada fica registrada no termo e o operador a repete", async () => {
     const f = await fixture();
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    await payMonthly(f, f.owner, f.organizationId);
+    const request = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, request.id, "annual-blocked-ref");
     const [term] = await f.terms();
     const catalog = (enabled: boolean) =>
@@ -380,7 +433,7 @@ describe("confirmação do anual por Pix", () => {
     await catalog(false);
     await runUntil(f, NOV);
     expect(await f.terms()).toMatchObject([{ state: "scheduled", blockedCode: "PLANS_DISABLED" }]);
-    expect(await f.plan()).toBeNull();
+    expect(await f.plan()).not.toHaveProperty("termId");
     await catalog(true);
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: term!._id });
     const [active] = await f.terms();
@@ -389,21 +442,23 @@ describe("confirmação do anual por Pix", () => {
     expect(await f.plan()).toMatchObject({ termId: term!._id, endsAt: termEndsAt(NOV) });
   });
 
-  it("pago até o fim do primeiro mês do termo; depois, é recusado", async () => {
+  it("o now é pago em 7 dias; a renovação, até o fim do primeiro mês do termo", async () => {
     const f = await fixture();
     const now = await requestAnnual(f.owner, f.organizationId, "now");
     const g = await fixture();
-    const next = await requestAnnual(g.owner, g.organizationId, "next");
+    await payMonthly(g, g.owner, g.organizationId);
+    const next = await requestAnnual(g.owner, g.organizationId, "renewal");
     const h = await fixture();
-    const late = await requestAnnual(h.owner, h.organizationId, "next");
-    vi.setSystemTime(NOV);
+    await payMonthly(h, h.owner, h.organizationId);
+    const late = await requestAnnual(h.owner, h.organizationId, "renewal");
+    vi.setSystemTime(OCT + 7 * DAY);
     expect(await code(confirm(f, now.id, "annual-late-now"))).toBe("PLAN_REQUEST_UNAVAILABLE");
     expect(await f.terms()).toEqual([]);
-    // Paid within November, the term's first month: it starts at once.
-    vi.setSystemTime(NOV + 86400_000);
+    // Paid within November, the renewal's first month: it starts at once, at its own start.
+    vi.setSystemTime(NOV + DAY);
     await confirm(g, next.id, "annual-next-in-november");
     expect(await g.terms()).toMatchObject([{ state: "active", firstPeriod: NOV }]);
-    expect(await g.plan()).toMatchObject({ startsAt: NOV + 86400_000, endsAt: termEndsAt(NOV) });
+    expect(await g.plan()).toMatchObject({ startsAt: NOV + DAY, endsAt: termEndsAt(NOV) });
     vi.setSystemTime(DEC);
     expect(await code(confirm(h, late.id, "annual-late-next"))).toBe("PLAN_REQUEST_UNAVAILABLE");
     expect(await h.terms()).toEqual([]);
@@ -423,7 +478,7 @@ describe("confirmação do anual por Pix", () => {
     // Each organization keeps its own plan; the other's term does not touch this one.
     expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
     expect(await f.plan()).not.toHaveProperty("termId");
-    expect(await f.plan(other)).toMatchObject({ endsAt: termEndsAt(OCT_1) });
+    expect(await f.plan(other)).toMatchObject({ endsAt: END });
   });
 
   it("desligar o anual depois do pedido não recusa a confirmação", async () => {
@@ -536,8 +591,12 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
       );
       return termId;
     });
-    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("ANNUAL_TERM_ACTIVE");
-    const renewal = await requestAnnual(f.owner, f.organizationId, "next");
+    // A new chain waits for this one to end; its renewal keeps the anchor.
+    expect(await refusal(requestAnnual(f.owner, f.organizationId, "now"))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: NOV,
+    });
+    const renewal = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, renewal.id, "annual-renewal-ref");
     // Same tier: the renewal reserves nothing more, at confirmation or on the 1st.
     const stock = () =>
@@ -562,34 +621,41 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
       });
     const before = await stock();
     const renewed = (await f.terms()).find((term) => term._id !== old)!;
-    expect(renewed).toMatchObject({ state: "scheduled", firstPeriod: NOV });
-    // A second scheduled term is refused, even for a later month.
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next", "annual-third"))).toBe(
-      "ANNUAL_TERM_ACTIVE",
-    );
+    expect(renewed).toMatchObject({
+      state: "scheduled",
+      firstPeriod: NOV,
+      anchor: firstPeriod,
+      endsAt: termEndsAt(NOV),
+    });
+    // A second scheduled term is refused: the next renewal opens in the renewal's last month.
+    expect(
+      await refusal(requestAnnual(f.owner, f.organizationId, "renewal", "annual-third")),
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: Date.UTC(2027, 9, 1) });
     expect(await f.plan()).toMatchObject({ termId: old, endsAt: NOV });
     await runUntil(f, NOV);
     expect(await f.t.run((ctx) => ctx.db.get("platformPlanTerms", renewed._id))).toMatchObject({
       state: "active",
     });
     expect(await stock()).toEqual(before);
+    // The quotas keep the chain's anchor.
     expect(await f.plan()).toMatchObject({
       termId: renewed._id,
       startsAt: NOV,
       endsAt: termEndsAt(NOV),
+      periodAnchor: firstPeriod,
       version: 2,
     });
   });
 
   it("a mesma chave ainda responde depois de o anual ser desligado", async () => {
     const f = await fixture();
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    const request = await requestAnnual(f.owner, f.organizationId, "now");
     await f.t.mutation(internal.plans.configureAnnual, {
       enabled: false,
       expectedVersion: 2,
       evidence: "synthetic-annual-off",
     });
-    expect(await requestAnnual(f.owner, f.organizationId, "next")).toEqual(request);
+    expect(await requestAnnual(f.owner, f.organizationId, "now")).toEqual(request);
   });
 
   it("um pedido mensal e um anual não ficam pendentes juntos", async () => {
@@ -599,14 +665,14 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
       tier: "intermediate",
       key: "monthly-pending",
     });
-    expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe(
+    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe(
       "PLAN_REQUEST_PENDING",
     );
     await f.owner.mutation(api.plans.cancelRequest, {
       organizationId: f.organizationId,
       requestId: monthly.id,
     });
-    await requestAnnual(f.owner, f.organizationId, "next");
+    await requestAnnual(f.owner, f.organizationId, "now");
     expect(
       await code(
         f.owner.mutation(api.plans.requestPaid, {
@@ -660,24 +726,26 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
 
   it("registra TERM_ENDED e ORGANIZATION_ARCHIVING sem conceder o plano", async () => {
     const f = await fixture();
-    const late = await requestAnnual(f.owner, f.organizationId, "next");
+    await payMonthly(f, f.owner, f.organizationId);
+    const late = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, late.id, "annual-ended-ref");
     const [ended] = await f.terms();
     vi.setSystemTime(termEndsAt(NOV));
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: ended!._id });
     expect(await f.terms()).toMatchObject([{ state: "scheduled", blockedCode: "TERM_ENDED" }]);
-    expect(await f.plan()).toBeNull();
+    expect(await f.plan()).not.toHaveProperty("termId");
     // Running it again stays blocked, and the ended term no longer stops a new annual sale.
     await f.t.mutation(internal.plans.activateScheduledTerm, { termId: ended!._id });
     expect(await f.terms()).toMatchObject([{ state: "scheduled", blockedCode: "TERM_ENDED" }]);
     const owner = await person(f.t, f.organizationId, "owner");
-    expect(await code(requestAnnual(owner, f.organizationId, "next", "annual-after-ended"))).toBe(
+    expect(await code(requestAnnual(owner, f.organizationId, "now", "annual-after-ended"))).toBe(
       "OK",
     );
 
     vi.setSystemTime(OCT);
     const g = await fixture();
-    const request = await requestAnnual(g.owner, g.organizationId, "next");
+    await payMonthly(g, g.owner, g.organizationId);
+    const request = await requestAnnual(g.owner, g.organizationId, "renewal");
     await confirm(g, request.id, "annual-archiving-ref");
     const [term] = await g.terms();
     // An archived organization buys plans; its rehydration may start before the 1st.
@@ -706,9 +774,76 @@ describe("revisão: versão, renovação, pedidos e bloqueios", () => {
     expect(await g.terms()).toMatchObject([
       { state: "scheduled", blockedCode: "ORGANIZATION_ARCHIVING" },
     ]);
-    expect(await g.plan()).toBeNull();
+    expect(await g.plan()).not.toHaveProperty("termId");
   });
 });
+
+describe("cadeia de renovações pelo Pix (ADR 0012, seção 1)", () => {
+  it("uma cadeia de 29/02/2028 vira em 28/02/2029, 2030 e 2031 e volta a 29/02/2032, sem deriva", async () => {
+    const ANCHOR = Date.UTC(2028, 1, 29, 9, 15);
+    vi.setSystemTime(ANCHOR - 3600_000);
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, {
+        admissionsUntil: Date.UTC(2035, 0, 1),
+      });
+    });
+    const first = await requestAnnual(f.owner, f.organizationId, "now");
+    vi.setSystemTime(ANCHOR + 400);
+    await confirm(f, first.id, "annual-leap-0");
+    let [current] = await f.terms();
+    expect(current).toMatchObject({ firstPeriod: ANCHOR, endsAt: Date.UTC(2029, 1, 28, 9, 15) });
+    const starts = [
+      Date.UTC(2029, 1, 28, 9, 15),
+      Date.UTC(2030, 1, 28, 9, 15),
+      Date.UTC(2031, 1, 28, 9, 15),
+      Date.UTC(2032, 1, 29, 9, 15),
+    ];
+    for (const [n, start] of starts.slice(0, 3).entries()) {
+      // The last month of term n + 1 starts on the anchor's anniversary 12(n + 1) − 1.
+      const lastMonth = addMonths(ANCHOR, 12 * (n + 1) - 1);
+      expect(lastMonth).toBe(Date.UTC(2029 + n, 0, 29, 9, 15));
+      vi.setSystemTime(lastMonth);
+      const owner = await person(f.t, f.organizationId, "owner");
+      const request = await requestAnnual(owner, f.organizationId, "renewal", `renewal-${n}`);
+      await confirm(f, request.id, `annual-leap-${n + 1}`);
+      await runUntil(f, start);
+      const renewal = (await f.terms()).find((term) => term.firstPeriod === start)!;
+      expect(renewal).toMatchObject({
+        state: "active",
+        anchor: ANCHOR,
+        endsAt: starts[n + 1],
+      });
+      // The plan and its quota periods keep the chain's anchor: the month after 28/02 turns on
+      // the 29th, as the anchor's, not on the 28th.
+      const plan = await f.plan();
+      expect(plan).toMatchObject({ termId: renewal._id, periodAnchor: ANCHOR });
+      expect(quotaPeriod(plan!, start)).toEqual({
+        key: new Date(start).toISOString(),
+        startsAt: start,
+        endsAt: Date.UTC(2029 + n, 2, 29, 9, 15),
+      });
+      // So do the term months: a Pix upgrade in the first one is paid by the 29th.
+      expect((await view(f)).terms.at(-1)!.upgrade).toMatchObject({
+        from: start,
+        until: Date.UTC(2029 + n, 2, 29, 9, 15),
+        months: 12,
+      });
+      current = renewal;
+    }
+    expect(current).toMatchObject({ firstPeriod: starts[2], endsAt: Date.UTC(2032, 1, 29, 9, 15) });
+    expect(await f.t.run((ctx) => planFor(ctx, f.organizationId))).toMatchObject({
+      endsAt: Date.UTC(2032, 1, 29, 9, 15),
+    });
+  });
+});
+
+const view = async (f: Fixture) =>
+  (await person(f.t, f.organizationId, "owner")).query(api.plans.overview, {
+    organizationId: f.organizationId,
+    contextKey: "annual-view",
+  });
 
 describe("custódia fria com termo anual", () => {
   /** A paid monthly plan ended on the 1st and Production use, so only the term keeps it hot. */
@@ -742,13 +877,13 @@ describe("custódia fria com termo anual", () => {
     f.t.mutation(internal.coldArchive.notice, { organizationId: f.organizationId, key });
   const run = (f: Fixture) => f.t.run((ctx) => archiveStatus(ctx, f.organizationId));
 
-  it("confirmar um anual agendado encerra o aviso e impede outro", async () => {
+  it("confirmar um anual encerra o aviso e impede outro", async () => {
     vi.stubEnv("FNFE_COLD_ARCHIVE", "enabled");
     const f = await fixture();
     await expired(f);
     await notice(f, "synthetic-notice-1");
     expect(await run(f)).toMatchObject({ state: "notice" });
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    const request = await requestAnnual(f.owner, f.organizationId, "now");
     await confirm(f, request.id, "annual-notice-ref");
     expect(await run(f)).toMatchObject({ state: "hot", noticeEnded: { by: "plan" } });
     await expect(notice(f, "synthetic-notice-2")).rejects.toThrow("ARCHIVE_PAID_ACTIVE");
@@ -785,9 +920,10 @@ describe("custódia fria com termo anual", () => {
 });
 
 describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
-  const FEB = Date.UTC(2027, 1, 10, 12);
-  const FEB_1 = Date.UTC(2027, 1, 1);
-  const END = termEndsAt(OCT_1);
+  /** In the 5th term month, from 10/02 at 12:00 UTC to 10/03 at 12:00 UTC. */
+  const FEB = Date.UTC(2027, 1, 11, 9);
+  const FEB_10 = Date.UTC(2027, 1, 10, 12);
+  const MAR_10 = Date.UTC(2027, 2, 10, 12);
   /** A session lasts an hour: the owner signs in again after each jump in time. */
   const requestUpgrade = async (
     f: Fixture,
@@ -818,16 +954,17 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
     const f = await fixture();
     const term = await annualNow(f);
     expect(await custody(f)).toEqual({ settings: 10800, organization: 10800 });
-    // February: February to September, 8 months left, the current one whole.
+    // The 5th term month, from 10/02 at 12:00 UTC: 8 months left, the current one whole.
     vi.setSystemTime(FEB);
     const request = await requestUpgrade(f);
-    expect(request).toEqual({ id: request.id, amountCents: 233333, period: "2027-02" });
+    expect(request).toEqual({ id: request.id, amountCents: 233333 });
+    // It starts with the term month, and is paid before the next one.
     expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", request.id))).toMatchObject({
       tier: "large",
       cycle: "annual",
       termId: term._id,
-      firstPeriod: FEB_1,
-      endsAt: Date.UTC(2027, 2, 1),
+      firstPeriod: FEB_10,
+      endsAt: MAR_10,
       state: "awaiting_payment",
     });
     // The intent reserves nothing, and repeating it answers the same request.
@@ -839,9 +976,9 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
       _id: term._id,
       state: "active",
       tier: "intermediate",
-      firstPeriod: OCT_1,
+      firstPeriod: OCT,
       endsAt: END,
-      segments: [{ tier: "large", fromPeriod: FEB_1 }],
+      segments: [{ tier: "large", fromPeriod: FEB_10 }],
       references: ["annual-pix-ref", "annual-upgrade-ref"],
       paidCents: 149000 + 233333,
       purchasedAt: OCT,
@@ -849,14 +986,15 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
         {
           fromTier: "intermediate",
           tier: "large",
-          fromPeriod: FEB_1,
+          fromPeriod: FEB_10,
           reference: "annual-upgrade-ref",
           paidCents: 233333,
           paidAt: FEB,
         },
       ],
     });
-    expect(termTierAt(upgraded!, FEB)).toBe("large");
+    expect(termTierAt(upgraded!, FEB_10 - 1)).toBe("intermediate");
+    expect(termTierAt(upgraded!, FEB_10)).toBe("large");
     expect(await f.plan()).toMatchObject({
       catalogTier: "large",
       termId: term._id,
@@ -887,20 +1025,20 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
         tier: "large",
         segments: [],
         paidCents: 499000,
-        upgrades: [{ fromPeriod: OCT_1, paidCents: 350000 }],
+        upgrades: [{ fromPeriod: OCT, paidCents: 350000 }],
       },
     ]);
     expect(await f.plan()).toMatchObject({ catalogTier: "large", termId: term._id, endsAt: END });
 
     const g = await fixture();
     await annualNow(g);
-    // September 2027, the last month of the term.
+    // 30/09/2027 is still in the last term month, from 10/09 at 12:00 UTC.
     vi.setSystemTime(Date.UTC(2027, 8, 30, 23));
     const last = await requestUpgrade(g);
-    expect(last).toMatchObject({ amountCents: 29166, period: "2027-09" });
+    expect(last).toEqual({ id: last.id, amountCents: 29166 });
     await confirm(g, last.id, "annual-upgrade-last", 29166);
     expect(await g.terms()).toMatchObject([
-      { endsAt: END, segments: [{ tier: "large", fromPeriod: Date.UTC(2027, 8, 1) }] },
+      { endsAt: END, segments: [{ tier: "large", fromPeriod: LAST_MONTH }] },
     ]);
     expect(await g.plan()).toMatchObject({ catalogTier: "large", endsAt: END });
   });
@@ -910,17 +1048,18 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
     expect(await code(requestUpgrade(none))).toBe("ANNUAL_TERM_REQUIRED");
     // Not started yet: upgraded once it starts.
     const scheduled = await fixture();
-    const next = await requestAnnual(scheduled.owner, scheduled.organizationId, "next");
+    await payMonthly(scheduled, scheduled.owner, scheduled.organizationId);
+    const next = await requestAnnual(scheduled.owner, scheduled.organizationId, "renewal");
     await confirm(scheduled, next.id, "annual-next-upgrade");
     expect(await code(requestUpgrade(scheduled))).toBe("ANNUAL_TERM_SCHEDULED");
     // The renewal was paid at its own tier: the term it follows is no longer upgraded.
     const renewed = await fixture();
     await annualNow(renewed);
-    vi.setSystemTime(Date.UTC(2027, 8, 10));
+    vi.setSystemTime(Date.UTC(2027, 8, 15));
     const renewal = await requestAnnual(
       await person(renewed.t, renewed.organizationId, "owner"),
       renewed.organizationId,
-      "next",
+      "renewal",
       "renew-key",
     );
     await confirm(renewed, renewal.id, "annual-renewal-ref");
@@ -1010,16 +1149,25 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
     expect(await code(requestUpgrade(card))).toBe("PAYMENT_METHOD_CARD");
   });
 
-  it("a confirmação vale só no mês do pedido e recusa a admissão sem gravar nada", async () => {
+  it("a confirmação vale só no mês do termo do pedido e recusa a admissão sem gravar nada", async () => {
     const f = await fixture();
     await annualNow(f);
     vi.setSystemTime(FEB);
     const late = await requestUpgrade(f);
-    vi.setSystemTime(Date.UTC(2027, 2, 1));
-    // In March the same difference covers one month fewer.
+    vi.setSystemTime(MAR_10);
+    // From the next term month the same difference covers one month fewer.
     expect(await code(confirm(f, late.id, "annual-upgrade-late", 233333))).toBe(
       "PLAN_REQUEST_UNAVAILABLE",
     );
+    // The civil month turning does not end the term month.
+    vi.setSystemTime(OCT);
+    const h = await fixture();
+    await annualNow(h);
+    vi.setSystemTime(FEB);
+    const inMarch = await requestUpgrade(h);
+    vi.setSystemTime(MAR_10 - 1);
+    await confirm(h, inMarch.id, "annual-upgrade-march", 233333);
+    expect(await h.terms()).toMatchObject([{ segments: [{ tier: "large", fromPeriod: FEB_10 }] }]);
 
     vi.setSystemTime(OCT);
     const g = await fixture();
@@ -1045,11 +1193,10 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
 });
 
 describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
-  const DAY = 24 * 60 * 60 * 1000;
-  const FEB = Date.UTC(2027, 1, 10, 12);
-  const FEB_1 = Date.UTC(2027, 1, 1);
-  const MAR_1 = Date.UTC(2027, 2, 1);
-  const END = termEndsAt(OCT_1);
+  /** In the 5th term month of a term from `OCT`, which runs from 10/02 to 10/03 at 12:00 UTC. */
+  const FEB = Date.UTC(2027, 1, 11, 9);
+  const FEB_10 = Date.UTC(2027, 1, 10, 12);
+  const MAR_10 = Date.UTC(2027, 2, 10, 12);
   const OPERATOR = "operador-sintetico";
   const rescind = (f: Fixture, termId: Id<"platformPlanTerms">, key = "rescission-key") =>
     f.t.mutation(internal.plans.rescindTerm, {
@@ -1121,7 +1268,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         withdrawal: false,
         usedMonths: 4,
         refundCents: 149000 - 4 * 14900,
-        accessEndsAt: FEB_1,
+        accessEndsAt: FEB_10,
       },
     ]);
     expect(await term(f, annual._id)).toMatchObject({
@@ -1137,14 +1284,16 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         usedMonths: 4,
         usedCents: 4 * 14900,
         refundCents: 89400,
-        accessEndsAt: FEB_1,
+        accessEndsAt: FEB_10,
       },
     });
-    // Access until the end of the civil month, at the same tier.
+    // Access until the end of the term month, 10/02 at 12:00 UTC, at the same tier, with the
+    // same quota periods.
     expect(await f.plan()).toMatchObject({
       catalogTier: "intermediate",
       termId: annual._id,
-      endsAt: FEB_1,
+      endsAt: FEB_10,
+      periodAnchor: OCT,
       version: 2,
     });
     // The reservation stays, as on any expiry: only the legal purge returns it.
@@ -1153,20 +1302,29 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     expect(await rescind(f, annual._id)).toEqual(result);
     expect(await code(rescind(f, annual._id, "rescission-other"))).toBe("TERM_RESCINDED");
     expect(await f.plan()).toMatchObject({ version: 2 });
-    // The term no longer holds the month: the monthly paths answer as for any monthly plan.
+    // The access left is a paid plan in force: any sale, a larger monthly or an annual
+    // included, waits for its end (ADR 0012, one paid plan at a time).
     const owner = await person(f.t, f.organizationId, "owner");
-    expect(
-      await code(
-        owner.mutation(api.plans.requestPaid, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "monthly-after-rescission",
-        }),
-      ),
-    ).toBe("PLAN_UNAVAILABLE");
-    await runUntil(f, FEB_1);
+    for (const tier of ["intermediate", "large"] as const)
+      expect(
+        await refusal(
+          owner.mutation(api.plans.requestPaid, {
+            organizationId: f.organizationId,
+            tier,
+            key: `monthly-after-rescission-${tier}`,
+          }),
+        ),
+      ).toEqual({ code: "PLAN_UNAVAILABLE", availableAt: FEB_10 });
+    for (const start of ["now", "renewal"] as const)
+      expect(
+        await refusal(requestAnnual(owner, f.organizationId, start, `after-rescission-${start}`)),
+      ).toEqual({
+        code: "PLAN_UNAVAILABLE",
+        availableAt: FEB_10,
+      });
+    await runUntil(f, FEB_10);
     const ended = await f.plan();
-    expect(ended).toMatchObject({ endsAt: FEB_1, version: 2, updatedAt: FEB_1 });
+    expect(ended).toMatchObject({ endsAt: FEB_10, version: 2, updatedAt: FEB_10 });
     expect(await stock(f)).toEqual(reserved);
 
     // The operator records each refund made; together they reach the computed amount.
@@ -1188,8 +1346,8 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
       refundedCents: 89400,
     });
     expect((await term(f, annual._id))!.rescission!.refunds).toEqual([
-      { cents: 60000, reference: "pix-refund-0001", actor: OPERATOR, at: FEB_1 },
-      { cents: 29400, reference: "pix-refund-0002", actor: OPERATOR, at: FEB_1 },
+      { cents: 60000, reference: "pix-refund-0001", actor: OPERATOR, at: FEB_10 },
+      { cents: 29400, reference: "pix-refund-0002", actor: OPERATOR, at: FEB_10 },
     ]);
     expect(await code(refund(f, annual._id, 1, "pix-refund-0003"))).toBe("AMOUNT_MISMATCH");
   });
@@ -1213,19 +1371,37 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     const g = await fixture();
     const late = await annualNow(g);
     vi.setSystemTime(OCT + 7 * DAY + 1);
+    // Access until the end of the term's first month, 10/11 at 12:00 UTC.
     expect(await rescind(g, late._id)).toMatchObject([
-      { withdrawal: false, usedMonths: 1, refundCents: 149000 - 14900, accessEndsAt: NOV },
+      {
+        withdrawal: false,
+        usedMonths: 1,
+        refundCents: 149000 - 14900,
+        accessEndsAt: Date.UTC(2026, 10, 10, 12),
+      },
     ]);
   });
 
   it("a partir do 10º mês o reembolso é zero e não há o que registrar", async () => {
     const f = await fixture();
     const annual = await annualNow(f);
+    // 02/07 is still the 9th term month; the 10th starts on 10/07 at 12:00 UTC.
     vi.setSystemTime(Date.UTC(2027, 6, 2));
     expect(await rescind(f, annual._id)).toMatchObject([
-      { usedMonths: 10, refundCents: 0, accessEndsAt: Date.UTC(2027, 7, 1) },
+      { usedMonths: 9, refundCents: 14900, accessEndsAt: Date.UTC(2027, 6, 10, 12) },
     ]);
-    expect(await code(refund(f, annual._id, 1))).toBe("REFUND_NOT_DUE");
+    vi.setSystemTime(OCT);
+    const h = await fixture();
+    const tenth = await annualNow(h);
+    vi.setSystemTime(Date.UTC(2027, 6, 10, 12));
+    expect(await rescind(h, tenth._id)).toMatchObject([
+      { usedMonths: 10, refundCents: 0, accessEndsAt: Date.UTC(2027, 7, 10, 12) },
+    ]);
+    expect(await code(refund(h, tenth._id, 1))).toBe("REFUND_NOT_DUE");
+    expect(await refund(f, annual._id, 14900)).toEqual({
+      refundCents: 14900,
+      refundedCents: 14900,
+    });
     // An ended term is refused.
     vi.setSystemTime(OCT);
     const g = await fixture();
@@ -1238,6 +1414,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     const f = await fixture();
     const annual = await annualNow(f);
     await upgradeAt(f, FEB, 233333);
+    // The 8th term month starts on 10/05 at 12:00 UTC.
     vi.setSystemTime(Date.UTC(2027, 4, 10, 12));
     // 4 × R$ 149 + 4 × R$ 499 used, out of R$ 1.490 + R$ 2.333,33 paid.
     expect(await rescind(f, annual._id)).toEqual([
@@ -1246,17 +1423,20 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         withdrawal: false,
         usedMonths: 8,
         refundCents: 123133,
-        accessEndsAt: Date.UTC(2027, 5, 1),
+        accessEndsAt: Date.UTC(2027, 5, 10, 12),
       },
     ]);
     const rescinded = (await term(f, annual._id))!;
     expect(rescinded).toMatchObject({
       paidCents: 382333,
-      segments: [{ tier: "large", fromPeriod: FEB_1 }],
+      segments: [{ tier: "large", fromPeriod: FEB_10 }],
       rescission: { usedCents: 4 * 14900 + 4 * 49900, refundCents: 123133 },
     });
     expect(rescinded.undoneUpgrades).toBeUndefined();
-    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: Date.UTC(2027, 5, 1) });
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      endsAt: Date.UTC(2027, 5, 10, 12),
+    });
   });
 
   it("desfaz o upgrade em 7 dias: devolve a cobrança e o termo volta ao Intermediário", async () => {
@@ -1281,7 +1461,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         {
           fromTier: "intermediate",
           tier: "large",
-          fromPeriod: FEB_1,
+          fromPeriod: FEB_10,
           reference: "annual-upgrade-ref",
           paidCents: 233333,
           paidAt: FEB,
@@ -1313,7 +1493,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     // A key belongs to one action: the undo's key cannot rescind the term.
     expect(await code(rescind(f, annual._id, "undo-upgrade-key"))).toBe("OPERATION_CONFLICT");
     // The term keeps its own rules: rescinded later, it is an Intermediário all along.
-    vi.setSystemTime(Date.UTC(2027, 4, 10));
+    vi.setSystemTime(Date.UTC(2027, 4, 10, 12));
     expect(await rescind(f, annual._id)).toMatchObject([
       { usedMonths: 8, refundCents: 149000 - 8 * 14900 },
     ]);
@@ -1354,7 +1534,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         withdrawal: false,
         usedMonths: 5,
         refundCents: 149000 - 5 * 14900,
-        accessEndsAt: MAR_1,
+        accessEndsAt: MAR_10,
       },
     ]);
     expect(await term(f, annual._id)).toMatchObject({
@@ -1363,14 +1543,15 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
       paidCents: 149000,
       undoneUpgrades: [{ reference: "annual-upgrade-ref", refundCents: 233333, via: "rescission" }],
     });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: MAR_1 });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: MAR_10 });
     // The rescission's key does not answer for an undo.
     expect(await code(undo(f, annual._id, "rescission-key"))).toBe("OPERATION_CONFLICT");
   });
 
   it("um termo agendado com a ativação recusada não usou nada: tudo volta, sem acesso a encerrar", async () => {
     const f = await fixture();
-    const request = await requestAnnual(f.owner, f.organizationId, "next");
+    await payMonthly(f, f.owner, f.organizationId);
+    const request = await requestAnnual(f.owner, f.organizationId, "renewal");
     await confirm(f, request.id, "annual-blocked-ref");
     await f.t.run(async (ctx) => {
       const settings = (await ctx.db.query("platformPlanSettings").first())!;
@@ -1379,7 +1560,9 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     await runUntil(f, NOV);
     const [blocked] = await f.terms();
     expect(blocked).toMatchObject({ state: "scheduled", blockedCode: "PLANS_DISABLED" });
-    expect(await f.plan()).toBeNull();
+    const monthly = await f.plan();
+    expect(monthly).toMatchObject({ endsAt: NOV });
+    expect(monthly).not.toHaveProperty("termId");
     // In its first month and past the 7 days of the payment: still nothing was used.
     const at = NOV + 10 * DAY;
     vi.setSystemTime(at);
@@ -1392,19 +1575,24 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         accessEndsAt: at,
       },
     ]);
-    expect(await f.plan()).toBeNull();
+    expect(await f.plan()).toEqual(monthly);
   });
 
   it("leva junto a renovação agendada, já paga, com tudo devolvido, e cancela o pedido anual pendente", async () => {
     const f = await fixture();
     const annual = await annualNow(f);
-    const SEP = Date.UTC(2027, 8, 10, 12);
-    vi.setSystemTime(SEP);
+    // The first instant of the term's last month: the renewal opens.
+    const SEP = LAST_MONTH;
+    vi.setSystemTime(SEP - 1);
     const owner = await person(f.t, f.organizationId, "owner");
-    const next = await requestAnnual(owner, f.organizationId, "next", "annual-renewal");
+    expect(
+      await refusal(requestAnnual(owner, f.organizationId, "renewal", "annual-renewal")),
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: SEP });
+    vi.setSystemTime(SEP);
+    const next = await requestAnnual(owner, f.organizationId, "renewal", "annual-renewal");
     await confirm(f, next.id, "annual-renewal-ref");
     const renewal = (await f.terms()).find((row) => row._id !== annual._id)!;
-    expect(renewal).toMatchObject({ state: "scheduled", firstPeriod: END });
+    expect(renewal).toMatchObject({ state: "scheduled", firstPeriod: END, anchor: OCT });
     expect(await rescind(f, annual._id)).toEqual([
       { termId: annual._id, withdrawal: false, usedMonths: 12, refundCents: 0, accessEndsAt: END },
       // Paid today: within its own 7 days, and unused either way.
@@ -1433,7 +1621,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
     const pending = await requestAnnual(
       await person(g.t, g.organizationId, "owner"),
       g.organizationId,
-      "next",
+      "renewal",
       "annual-renewal",
     );
     await rescind(g, current._id);
@@ -1474,15 +1662,91 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
   });
 });
 
-describe("visão do anual no console (plans:overview)", () => {
-  const FEB = Date.UTC(2027, 1, 10, 12);
-  const FEB_1 = Date.UTC(2027, 1, 1);
-  const END = termEndsAt(OCT_1);
-  const view = async (f: Fixture) =>
-    (await person(f.t, f.organizationId, "owner")).query(api.plans.overview, {
-      organizationId: f.organizationId,
-      contextKey: "annual-view",
+describe("pedidos anteriores à fatia 1b e pedidos vencidos", () => {
+  /** An annual request as written before slice 1b: a term from a 1st, without `anchor`. */
+  const legacy = (f: Fixture, firstPeriod: number, key: string, period: string, endsAt: number) =>
+    f.t.run((ctx) =>
+      ctx.db.insert("platformPlanRequests", {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        key,
+        cycle: "annual",
+        firstPeriod,
+        amountCents: 149000,
+        period,
+        startsAt: OCT,
+        endsAt,
+        expectedVersion: 0,
+        state: "awaiting_payment",
+        requestedBy: "synthetic",
+        createdAt: OCT,
+        updatedAt: OCT,
+      }),
+    );
+
+  it("um now ou next anterior à 1b é mostrado, repetido e confirmado como foi pedido", async () => {
+    const f = await fixture();
+    const now = await legacy(f, OCT_1, "legacy-now-key", "2026-10", NOV);
+    expect((await view(f)).request).toMatchObject({
+      id: now,
+      start: "now",
+      firstPeriod: OCT_1,
+      periodStartsAt: OCT_1,
+      expired: false,
     });
+    expect(await requestAnnual(f.owner, f.organizationId, "now", "legacy-now-key")).toMatchObject({
+      id: now,
+    });
+    await confirm(f, now, "legacy-now-ref");
+    expect(await f.terms()).toMatchObject([
+      { state: "active", firstPeriod: OCT_1, endsAt: termEndsAt(OCT_1) },
+    ]);
+
+    const g = await fixture();
+    const next = await legacy(g, NOV, "legacy-next-key", "2026-11", DEC);
+    expect((await view(g)).request).toMatchObject({ id: next, start: "next", firstPeriod: NOV });
+    const replay = (key: string) =>
+      g.owner.mutation(api.plans.requestPaid, {
+        organizationId: g.organizationId,
+        tier: "intermediate",
+        key,
+        cycle: "annual",
+        start: "next",
+      });
+    expect(await replay("legacy-next-key")).toMatchObject({ id: next });
+    // Nothing new starts on the next 1st.
+    expect(await code(replay("brand-new-next"))).toBe("INVALID_REQUEST");
+    await confirm(g, next, "legacy-next-ref");
+    expect(await g.terms()).toMatchObject([{ state: "scheduled", firstPeriod: NOV }]);
+  });
+
+  it("um pedido vencido não segura a organização e o pedido seguinte o cancela", async () => {
+    const f = await fixture();
+    const stale = await requestAnnual(f.owner, f.organizationId, "now");
+    vi.setSystemTime(OCT + 7 * DAY);
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(await view(f)).toMatchObject({
+      request: { id: stale.id, payBy: OCT + 7 * DAY, expired: true },
+      availability: { canClaimFree: true },
+    });
+    const fresh = await requestAnnual(owner, f.organizationId, "now", "annual-fresh");
+    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", stale.id))).toMatchObject({
+      state: "cancelled",
+    });
+    expect((await view(f)).request).toMatchObject({ id: fresh.id, expired: false });
+    // Within its deadline, a request still holds the next one.
+    expect(await code(requestAnnual(owner, f.organizationId, "now", "annual-third"))).toBe(
+      "PLAN_REQUEST_PENDING",
+    );
+  });
+});
+
+describe("visão do anual no console (plans:overview)", () => {
+  const FEB = Date.UTC(2027, 1, 11, 9);
+  const FEB_10 = Date.UTC(2027, 1, 10, 12);
+  /** The card term below starts on a 1st: its months are the civil ones. */
+  const FEB_1 = Date.UTC(2027, 1, 1);
+  const CARD_END = termEndsAt(OCT_1);
 
   it("o preço anual e o interruptor só aparecem com o anual à venda", async () => {
     const off = await view(await fixture({ annual: false }));
@@ -1497,15 +1761,47 @@ describe("visão do anual no console (plans:overview)", () => {
     ]);
   });
 
+  it("com um Checkout aberto, o anual por Pix não é oferecido, como o pedido o recusa", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.insert("billingCheckouts", {
+        organizationId: f.organizationId,
+        key: "open-card-checkout",
+        kind: "start",
+        tier: "intermediate",
+        period: "2026-10",
+        grantCents: 14900,
+        state: "open",
+        expiresAt: OCT + 3600_000,
+        requestedBy: "synthetic",
+        createdAt: OCT,
+        updatedAt: OCT,
+      }),
+    );
+    expect((await view(f)).annualStart).toEqual({
+      start: null,
+      startsAt: null,
+      endsAt: null,
+      code: "PAYMENT_METHOD_CARD",
+      availableAt: null,
+    });
+    expect(await refusal(requestAnnual(f.owner, f.organizationId, "now"))).toEqual({
+      code: "PAYMENT_METHOD_CARD",
+    });
+  });
+
   it("mostra o pedido anual, o termo agendado sem upgrade e o termo em vigor com o preço do upgrade", async () => {
     const f = await fixture();
-    const next = await requestAnnual(f.owner, f.organizationId, "next");
+    await payMonthly(f, f.owner, f.organizationId);
+    const next = await requestAnnual(f.owner, f.organizationId, "renewal");
     expect((await view(f)).request).toMatchObject({
       id: next.id,
       tier: "intermediate",
       cycle: "annual",
-      start: "next",
+      start: "renewal",
       firstPeriod: NOV,
+      periodStartsAt: NOV,
+      payBy: DEC,
       amountCents: 149000,
       state: "awaiting_payment",
     });
@@ -1517,6 +1813,7 @@ describe("visão do anual no console (plans:overview)", () => {
         segments: [],
         firstPeriod: NOV,
         endsAt: termEndsAt(NOV),
+        renewalFrom: Date.UTC(2027, 9, 1),
         source: "pix",
         state: "scheduled",
         blocked: false,
@@ -1528,23 +1825,40 @@ describe("visão do anual no console (plans:overview)", () => {
 
     const g = await fixture();
     const now = await requestAnnual(g.owner, g.organizationId, "now");
-    expect((await view(g)).request).toMatchObject({ start: "now", firstPeriod: OCT_1 });
+    // Starting at the confirmation: no instant to show yet, only the deadline.
+    expect((await view(g)).request).toMatchObject({
+      start: "now",
+      firstPeriod: null,
+      periodStartsAt: null,
+      periodEndsAt: null,
+      payBy: OCT + 7 * DAY,
+    });
     await confirm(g, now.id, "annual-view-now");
     // The first month: the upgrade covers all 12 months.
     expect((await view(g)).terms).toMatchObject([
       {
         state: "active",
-        firstPeriod: OCT_1,
+        firstPeriod: OCT,
         endsAt: END,
-        upgrade: { tier: "large", amountCents: 350000, months: 12, cardUntil: null },
+        renewalFrom: LAST_MONTH,
+        upgrade: {
+          tier: "large",
+          amountCents: 350000,
+          months: 12,
+          from: OCT,
+          until: Date.UTC(2026, 10, 10, 12),
+          cardUntil: null,
+        },
       },
     ]);
-    // February: 8 months left, the same price the request is charged.
+    // The 5th term month: 8 months left, the same price the request is charged.
     vi.setSystemTime(FEB);
     expect((await view(g)).terms[0]!.upgrade).toEqual({
       tier: "large",
       amountCents: 233333,
       months: 8,
+      from: FEB_10,
+      until: Date.UTC(2027, 2, 10, 12),
       cardUntil: null,
     });
     const owner = await person(g.t, g.organizationId, "owner");
@@ -1559,13 +1873,15 @@ describe("visão do anual no console (plans:overview)", () => {
       tier: "large",
       cycle: "annual",
       start: "upgrade",
-      firstPeriod: FEB_1,
+      firstPeriod: FEB_10,
+      periodStartsAt: FEB_10,
+      payBy: Date.UTC(2027, 2, 10, 12),
       amountCents: 233333,
     });
     await confirm(g, upgrade.id, "annual-view-upgrade-ref", 233333);
     // Upgraded: the segment shows, and there is nothing left to raise.
     expect((await view(g)).terms).toMatchObject([
-      { tier: "intermediate", segments: [{ tier: "large", fromPeriod: FEB_1 }], upgrade: null },
+      { tier: "intermediate", segments: [{ tier: "large", fromPeriod: FEB_10 }], upgrade: null },
     ]);
   });
 
@@ -1580,27 +1896,50 @@ describe("visão do anual no console (plans:overview)", () => {
     });
     expect(await view(f)).toMatchObject({
       annualEnabled: false,
-      // A term in force holds a new annual for both starts until its last month.
-      annualStarts: { now: false, next: false },
+      // A term in force holds a new annual until its last month, when its renewal opens.
+      annualStart: {
+        start: null,
+        startsAt: null,
+        endsAt: null,
+        code: "ANNUAL_TERM_ACTIVE",
+        availableAt: LAST_MONTH,
+      },
       terms: [{ state: "active", upgrade: null }],
     });
     const g = await fixture();
-    expect((await view(g)).annualStarts).toEqual({ now: true, next: true });
+    expect((await view(g)).annualStart).toEqual({
+      start: "now",
+      startsAt: null,
+      endsAt: null,
+      code: null,
+      availableAt: null,
+    });
     await confirm(g, (await requestAnnual(g.owner, g.organizationId, "now")).id, "annual-a");
-    vi.setSystemTime(Date.UTC(2027, 8, 10, 12));
-    // The last month: only the renewal starting next month.
-    expect((await view(g)).annualStarts).toEqual({ now: false, next: true });
+    vi.setSystemTime(LAST_MONTH);
+    // The last month: only the renewal, from the end of the term, keeping its anchor.
+    expect((await view(g)).annualStart).toEqual({
+      start: "renewal",
+      startsAt: END,
+      endsAt: termEndsAt(END),
+      code: null,
+      availableAt: null,
+    });
     const owner = await person(g.t, g.organizationId, "owner");
     await confirm(
       g,
-      (await requestAnnual(owner, g.organizationId, "next", "annual-renewal")).id,
+      (await requestAnnual(owner, g.organizationId, "renewal", "annual-renewal")).id,
       "annual-b",
     );
     expect((await view(g)).terms).toMatchObject([
-      { state: "active", firstPeriod: OCT_1, upgrade: null },
+      { state: "active", firstPeriod: OCT, upgrade: null },
       { state: "scheduled", firstPeriod: END, upgrade: null },
     ]);
-    expect((await view(g)).annualStarts).toEqual({ now: false, next: false });
+    // The next renewal opens in the renewal's own last month.
+    expect((await view(g)).annualStart).toMatchObject({
+      start: null,
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: Date.UTC(2028, 8, 10, 12),
+    });
   });
 
   it("o termo do cartão fecha o upgrade 72 horas antes do fim, e o rescindido mostra o fim do acesso", async () => {
@@ -1610,7 +1949,7 @@ describe("visão do anual no console (plans:overview)", () => {
         organizationId: f.organizationId,
         tier: "intermediate",
         firstPeriod: OCT_1,
-        endsAt: END,
+        endsAt: CARD_END,
         source: "stripe",
         references: ["in_annual_view_card"],
         stripeSubscriptionId: "sub_annual_view",
@@ -1622,14 +1961,14 @@ describe("visão do anual no console (plans:overview)", () => {
     );
     // No subscription renews it here, so it does not renew.
     expect((await view(f)).terms).toMatchObject([
-      { source: "stripe", renews: false, upgrade: { cardUntil: END - 72 * 3600_000 } },
+      { source: "stripe", renews: false, upgrade: { cardUntil: CARD_END - 72 * 3600_000 } },
     ]);
     const subscription = (cancelAtPeriodEnd: boolean) => ({
       id: "sub_annual_view",
       status: "active",
       tier: "intermediate" as const,
       cancelAtPeriodEnd,
-      periodEnd: END,
+      periodEnd: CARD_END,
       annual: true as const,
     });
     const accountId = await f.t.run((ctx) =>

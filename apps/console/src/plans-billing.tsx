@@ -8,7 +8,15 @@ import type { Organization } from "./organizations";
 import { useQuery } from "./convex-query";
 import { useAsyncAction } from "./async-action";
 import { ErrorBoundary } from "./route-errors";
-import { annualMessages, price, tierNames, utcDate, utcDateTime, utcMonth } from "./plans";
+import {
+  annualMessages,
+  price,
+  refusalOf,
+  tierNames,
+  utcDate,
+  utcDateTime,
+  utcMonth,
+} from "./plans";
 import { Button, buttonClass } from "./ui/button";
 import { ConfirmDialog } from "./ui/dialog";
 import { Callout, Card, DescriptionList, StatusBadge } from "./ui/layout";
@@ -66,8 +74,8 @@ function reviewName(item: { source: string; code: string }) {
 const ended = ["canceled", "incomplete_expired"];
 
 function failure(error: unknown) {
-  const data: unknown = error instanceof ConvexError ? error.data : null;
-  const code = data && typeof data === "object" && "code" in data ? data.code : null;
+  // A sale that waits for the plan in force ends with the date it becomes available (ADR 0012).
+  const { code, availability } = refusalOf(error);
   const messages: Record<string, string> = {
     ...annualMessages,
     ACCESS_DENIED: "Apenas o proprietário e administradores podem gerenciar a cobrança.",
@@ -88,8 +96,8 @@ function failure(error: unknown) {
     RATE_LIMITED: "Muitas consultas seguidas. Aguarde um minuto.",
     ORGANIZATION_CLOSED: "Esta organização foi encerrada.",
   };
-  return typeof code === "string" && messages[code]
-    ? messages[code]
+  return code && messages[code]
+    ? messages[code] + availability
     : "Não foi possível concluir. Confira a situação da cobrança e tente novamente.";
 }
 
@@ -359,8 +367,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
       ) : null}
       {canManage && data.annualEnabled && !live?.annual && data.annualBlocked ? (
         <p className="gestao-help">
-          Há um plano anual em vigor ou agendado. Um novo anual no cartão só pode ser assinado no
-          último mês dele.
+          Há um plano anual em vigor ou agendado. Um novo anual no cartão só pode ser assinado
+          depois que ele terminar.
         </p>
       ) : null}
       {!canManage ? null : (

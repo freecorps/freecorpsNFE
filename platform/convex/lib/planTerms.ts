@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
+  TERM_MONTHS,
   assertTermShape,
   remainingMonths,
   rescissionCents,
@@ -22,11 +23,28 @@ export async function insertTerm(ctx: MutationCtx, term: TermFields) {
   return ctx.db.insert("platformPlanTerms", { ...term, updatedAt: Date.now() });
 }
 
-/** 1st of the UTC month of `at`, 00:00 UTC: the start of the period a monthly payment buys. */
-export function monthStart(at: number) {
-  const date = new Date(at);
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
-}
+type TermClock = Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor" | "endsAt">;
+
+/**
+ * The anchor of the term's chain (ADR 0012, section 1): stored on a renewal, otherwise the term's
+ * own start. Its months, its end and the quota periods of the plan it grants count from it.
+ */
+export const chainAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor">) =>
+  term.anchor ?? term.firstPeriod;
+
+/** The term month holding `at` (`termMonthAt`, counted from the chain's anchor). */
+export const termMonth = (term: TermClock, at: number) =>
+  termMonthAt(term.firstPeriod, at, chainAnchor(term));
+
+/** The start of the term's last month: a Pix renewal may be asked from it (ADR 0012). */
+export const termLastMonth = (term: TermClock) =>
+  termMonthStart(term.firstPeriod, TERM_MONTHS - 1, chainAnchor(term));
+
+const span = (term: TermClock) => ({
+  startsAt: term.firstPeriod,
+  endsAt: term.endsAt,
+  anchor: chainAnchor(term),
+});
 
 /** Tier of the term at `at`: the last upgrade segment begun by then, or `tier`. */
 export function termTierAt(term: Pick<Doc<"platformPlanTerms">, "tier" | "segments">, at: number) {
@@ -67,6 +85,15 @@ export async function termsInForce(
         .take(10)),
     );
   return terms;
+}
+
+/**
+ * The end of the last `scheduled` or `active` term not yet ended at `now`, or null. One paid plan
+ * at a time (ADR 0012): a sale that waits for the terms in force becomes available then.
+ */
+export async function termsEnd(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
+  const terms = await termsInForce(ctx, organizationId, now);
+  return terms.length ? Math.max(...terms.map((term) => term.endsAt)) : null;
 }
 
 /**
@@ -166,7 +193,7 @@ export async function upgradableTerm(
  * (`upgradeCents`). `null` when `tier` is not above the tier the term has in that month.
  */
 export function termUpgradeCents(
-  term: Pick<Doc<"platformPlanTerms">, "tier" | "segments" | "firstPeriod" | "endsAt">,
+  term: Pick<Doc<"platformPlanTerms">, "tier" | "segments" | "firstPeriod" | "anchor" | "endsAt">,
   tier: typeof paidTier.type,
   from: number,
 ) {
@@ -176,13 +203,13 @@ export function termUpgradeCents(
   return upgradeCents({
     fromAnnualCents: current.annualCents,
     toAnnualCents: target.annualCents,
-    remainingMonths: remainingMonths({ startsAt: term.firstPeriod, endsAt: term.endsAt }, from),
+    remainingMonths: remainingMonths(span(term), from),
   });
 }
 
 type TermMoney = Pick<
   Doc<"platformPlanTerms">,
-  "tier" | "segments" | "firstPeriod" | "endsAt" | "paidCents" | "purchasedAt" | "state"
+  "tier" | "segments" | "firstPeriod" | "anchor" | "endsAt" | "paidCents" | "purchasedAt" | "state"
 >;
 
 /**
@@ -197,11 +224,12 @@ type TermMoney = Pick<
 export function termRescission(term: TermMoney, now: number) {
   const withdrawal = withinWithdrawal(term.purchasedAt, now);
   const started = term.state !== "scheduled" && now >= term.firstPeriod;
-  const used = started ? usedMonths({ startsAt: term.firstPeriod, endsAt: term.endsAt }, now) : 0;
+  const used = started ? usedMonths(span(term), now) : 0;
   const usedMonthlyCents = Array.from(
     { length: used },
     (_, index) =>
-      PLATFORM_PLANS[termTierAt(term, termMonthStart(term.firstPeriod, index))].monthlyCents,
+      PLATFORM_PLANS[termTierAt(term, termMonthStart(term.firstPeriod, index, chainAnchor(term)))]
+        .monthlyCents,
   );
   return {
     withdrawal,
@@ -212,10 +240,7 @@ export function termRescission(term: TermMoney, now: number) {
       usedMonthlyCents,
       withinWithdrawal: withdrawal,
     }),
-    accessEndsAt:
-      withdrawal || !started
-        ? now
-        : Math.min(termMonthAt(term.firstPeriod, now).endsAt, term.endsAt),
+    accessEndsAt: withdrawal || !started ? now : Math.min(termMonth(term, now).endsAt, term.endsAt),
   };
 }
 

@@ -129,6 +129,20 @@ export async function cardBlocksPix(ctx: QueryCtx, organizationId: Id<"organizat
   return accounts.some(renews) || !!(await openCheckout(ctx, organizationId, Date.now()));
 }
 
+/**
+ * A Pix request awaiting payment within its deadline (`endsAt`, its `payBy`): it holds the card.
+ * One past the deadline can no longer be confirmed, and the next Pix request cancels it.
+ */
+export async function pixPending(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
+  const requests = await ctx.db
+    .query("platformPlanRequests")
+    .withIndex("by_organizationId_and_state", (q) =>
+      q.eq("organizationId", organizationId).eq("state", "awaiting_payment"),
+    )
+    .take(10);
+  return requests.some((request) => request.endsAt > now);
+}
+
 export const periodStart = (period: string) =>
   Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)) - 1, 1);
 
@@ -214,6 +228,9 @@ export async function applyInvoice(
   const plan = await planFor(ctx, organizationId);
   if (plan?.catalogTier === "custom") return void (await record("blocked", "PLAN_CUSTOM"));
   const active = plan && plan.startsAt <= now && !planEnded(plan, now);
+  // A plan a term granted, the access left by a rescinded term included, ends with the term
+  // month: a monthly would replace it (one paid plan at a time, ADR 0012), so a person looks.
+  if (active && plan.termId) return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
   if (active && plan.endsAt !== null && plan.endsAt > end)
     return void (await record("skipped", "SUPERSEDED"));
   if (

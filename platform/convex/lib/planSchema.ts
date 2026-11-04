@@ -88,7 +88,11 @@ export const planTables = {
     tier: paidTier,
     key: v.string(),
     amountCents: v.number(),
-    period: v.string(),
+    /**
+     * Monthly only: the civil UTC month bought, `AAAA-MM`. Annual requests written before ADR 0012
+     * have it too; the newer ones do not, as a term does not run by civil months.
+     */
+    period: v.optional(v.string()),
     startsAt: v.number(),
     endsAt: v.number(),
     expectedVersion: v.number(),
@@ -100,13 +104,17 @@ export const planTables = {
     /** Missing is monthly. An annual request is paid in full (`annualCents`) and grants a term. */
     cycle: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     /**
-     * Annual only: the 1st, 00:00 UTC, the term starts. Its `endsAt` is the payment deadline
-     * (`payBy`), the end of the term's first month, as a monthly request expires at month end.
+     * Annual renewal (`start: "renewal"`): the instant the term starts, the end of the plan it
+     * renews. Missing on an annual `now`, which starts at the confirmation (ADR 0012). `endsAt` is
+     * the payment deadline (`payBy`): 7 days after the request for `now`, the end of the term's
+     * first month for a renewal, the end of the current term month for an upgrade.
      */
     firstPeriod: v.optional(v.number()),
+    /** Annual renewal only: the anchor of the chain the term continues (`platformPlanTerms.anchor`). */
+    anchor: v.optional(v.number()),
     /**
-     * An annual upgrade (`start: "upgrade"`): the term it raises. `firstPeriod` is then the month
-     * the upgrade starts and `amountCents` the difference over the remaining months.
+     * An annual upgrade (`start: "upgrade"`): the term it raises. `firstPeriod` is then the start
+     * of the term month the upgrade starts and `amountCents` the difference over the months left.
      */
     termId: v.optional(v.id("platformPlanTerms")),
   })
@@ -114,8 +122,10 @@ export const planTables = {
     .index("by_organizationId_and_state", ["organizationId", "state"])
     .index("by_paymentReference", ["paymentReference"]),
   /**
-   * One annual term (ADR 0010, decisions 4.2 and 9). Times are ms at 00:00 UTC of a 1st, and
-   * `endsAt` is `termEndsAt(firstPeriod)`; `assertTermShape` checks each write (`insertTerm`).
+   * One annual term (ADR 0010, decisions 4.2 and 9, and ADR 0012). Times are UTC instants in ms:
+   * the card still starts on a 1st at 00:00 UTC, the Pix at the confirmation, truncated to the
+   * second, or at the end of the plan it renews. `endsAt` is `termEndsAt(firstPeriod, anchor)`;
+   * `assertTermShape` checks each write (`insertTerm`).
    * While a `scheduled` or `active` term has not ended, the monthly paths refuse
    * (`ANNUAL_TERM_ACTIVE`, `activeTerm`).
    */
@@ -127,6 +137,14 @@ export const planTables = {
      */
     tier: paidTier,
     firstPeriod: v.number(),
+    /**
+     * The anchor of the chain the term continues (ADR 0012, section 1), stored on a Pix renewal:
+     * the first term's start, or the anchor of the monthly it renews. Its months, its end and the
+     * quota periods of the plan it grants (`usagePlans.periodAnchor`) count from it, so a chain
+     * anchored on 29/02 does not drift to 28/02. Missing, the term is its own anchor, as every
+     * term written before 1b and every card term.
+     */
+    anchor: v.optional(v.number()),
     endsAt: v.number(),
     source: v.union(v.literal("stripe"), v.literal("pix")),
     /** Stripe invoice IDs or Pix payment references of the charges of this term. */
@@ -140,7 +158,7 @@ export const planTables = {
     segments: v.array(v.object({ tier: paidTier, fromPeriod: v.number() })),
     /**
      * Each upgrade charge, apart from the annual one, so the rescission can weigh it on its own:
-     * the tier before and after, the month it starts (a 1st), its reference (also in
+     * the tier before and after, the term month it starts, its reference (also in
      * `references`), what it charged and when it was paid.
      */
     upgrades: v.optional(v.array(v.object(termUpgrade))),
@@ -169,7 +187,7 @@ export const planTables = {
      * The operator's rescission (`plans:rescindTerm`), with the refund the server computed:
      * `withdrawal` within 7 days of `purchasedAt` (everything paid back, access ends at once),
      * otherwise `paidCents` minus `usedCents`, the `usedMonths` at the full monthly price of the
-     * tier of each, with access until `accessEndsAt`, the end of the current civil month. `after`
+     * tier of each, with access until `accessEndsAt`, the end of the current term month. `after`
      * names the term whose rescission took this scheduled renewal with it. `refunds` are the
      * operator's statements that the money went back, summing at most to `refundCents`.
      * `renewalStopFailed` flags a card subscription `billing:stopTermRenewal` could not cancel
