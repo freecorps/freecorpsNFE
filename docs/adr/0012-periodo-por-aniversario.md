@@ -32,11 +32,12 @@ contratação, e as cotas dos planos pagos seguem o mês da assinatura, com o
 Gratuito no mês civil. Tudo o mais nesta seção é desenho, adotado para
 cumprir essas decisões sem decisão própria do dono. Isso inclui os detalhes
 das seções 1 e 2 (cálculo em UTC, ajuste ao último dia do mês, âncora
-original, início e renovação pelo Pix, troca de forma de pagamento, mensal
-para anual, Grande desde o início do mês corrente do termo, lista de
-métricas), as seções 3 e 4 inteiras e as consequências de desenho em
-[Consequências](#consequências). Uma mudança no desenho não reabre as três
-decisões.
+original, início e renovação pelo Pix, Grande desde o início do mês corrente
+do termo, lista de métricas), as seções 3 e 4 inteiras e as consequências de
+desenho em [Consequências](#consequências). A regra de
+[um plano pago por vez](#um-plano-pago-por-vez), que cobre a troca de forma
+de pagamento e a passagem do mensal ao anual, também é desenho, aprovado
+pelo dono em 03/11/2026. Uma mudança no desenho não reabre as três decisões.
 
 ### 1. Assinaturas por aniversário
 
@@ -55,43 +56,64 @@ no anual. Ela renova nesse aniversário.
   anterior. Uma âncora em 31/01 dá 28/02 e depois 31/03, sem deriva.
 - Os meses contam a partir de 1. O 1º mês vai do início, o aniversário 0, ao
   1º aniversário mensal; o k-ésimo, do aniversário k − 1 ao aniversário k. O
-  termo anual tem 12 meses e termina no 12º aniversário mensal.
-- Termos anuais e períodos de cota saem da âncora original da assinatura. No
-  cartão, a âncora é o `billing_cycle_anchor` da assinatura, e o n-ésimo
-  termo cobre o n-ésimo ano da âncora, do aniversário mensal 12(n − 1) ao
-  12n. Uma assinatura iniciada em 29/02/2028 tem termos que viram em
-  28/02/2029, 28/02/2030, 28/02/2031 e 29/02/2032, sem intervalo, como o
-  Stripe deve cobrar. No Pix, a âncora é o início do primeiro termo, e as
-  renovações a continuam.
+  termo anual tem 12 meses; o que começa na âncora termina no 12º
+  aniversário mensal.
+- Termos anuais e períodos de cota saem da âncora original da cadeia. Um
+  termo cobre 12 meses seguidos da âncora, do aniversário mensal m ao
+  m + 12, e a renovação continua do fim dele. No cartão, a âncora é o
+  `billing_cycle_anchor` da assinatura do Stripe (invariante 6), e o n-ésimo
+  termo vai do aniversário 12(n − 1) ao 12n. Uma assinatura iniciada em
+  29/02/2028 tem termos que viram em 28/02/2029, 28/02/2030, 28/02/2031 e
+  29/02/2032, sem intervalo, como o Stripe deve cobrar. No Pix, a âncora é
+  a confirmação que abriu a cadeia, e as renovações a mantêm.
 - No cartão, a cobrança acontece na contratação, e o período começa nela. O
   anual deixa de esperar o dia 1 do mês seguinte, e a admissão é reservada
   quando a primeira fatura é concedida, como no mensal.
 - No Pix assistido, desligado desde 03/11/2026 em `platformPlanSettings.pix`,
-  um mensal pedido no último mês de um plano Pix em vigor é renovação:
-  começa no fim desse plano e mantém a âncora. Fora disso, o mensal começa na
-  confirmação do pagamento, com âncora nova. O anual segue a mesma regra: a
-  renovação de um termo Pix, pedida no último mês dele, começa no fim do
-  termo e mantém a âncora; um anual novo começa na confirmação. Não há mais a
-  escolha de começar no dia 1 seguinte.
-- Do mensal para o anual, o anual começa no pagamento, no cartão, ou na
-  confirmação, no Pix, com cobrança cheia e âncora nova, e substitui o mensal
-  sem desconto. No cartão, o cliente cancela antes a renovação do mensal,
-  como hoje. Com um mensal maior em vigor, como o Grande mensal antes do
-  Intermediário anual, o pedido é recusado com `PLAN_UNAVAILABLE` até o fim
-  do mensal, no cartão e no Pix, porque o downgrade só vale na renovação. É o
-  que o início `now` do Pix já faz hoje.
-- Trocar a forma de pagamento abre uma cadeia nova. Do Pix para o cartão, com
-  um plano Pix em vigor, a assinatura do cartão começa adiada no fim desse
-  plano, sem cobrança agora, com âncora nova nesse instante; ela não herda a
-  âncora do Pix, para não acumular deriva do ajuste ao fim do mês. Um tier
-  diferente vale a partir desse início. Do cartão para o Pix, o pedido é
-  recusado enquanto o cartão renova (`PAYMENT_METHOD_CARD`, como hoje);
-  depois do fim do plano do cartão, o Pix começa na confirmação, com âncora
-  nova. A renovação no último mês vale só de Pix para Pix.
+  um plano novo começa na confirmação do pagamento, com âncora nova, e uma
+  renovação começa no fim do plano em vigor. Não há mais a escolha de começar
+  no dia 1 seguinte.
 - O upgrade do Intermediário anual para o Grande anual cobra a diferença dos
   preços anuais dividida por 12 por mês restante do termo, com o corrente
   inteiro. O Grande vale desde o início do mês corrente do termo, e a data de
   renovação não muda.
+
+#### Um plano pago por vez
+
+Esta regra é desenho, aprovado pelo dono em 03/11/2026, e não uma quarta
+decisão. Uma organização tem no máximo um plano pago em vigor. Enquanto ele
+vale, só três vendas cabem:
+
+- **Upgrade.** Fica na mesma cadeia, com a mesma âncora, e cobra a
+  diferença. Num mensal Pix em vigor, o pedido de um tier maior é upgrade
+  pela diferença, cobrada agora, no mesmo período, como hoje.
+- **Renovação.** É pedida no último mês do plano em vigor, começa no fim
+  dele e mantém a âncora. No cartão, a renovação é automática. Num mensal Pix
+  em vigor, o pedido do mesmo tier ou de um tier menor é a renovação no fim
+  dele, e o pedido de um anual Pix também. Um mensal pedido no último mês de
+  um termo anual é renovação que começa no fim do termo, com a mesma âncora.
+- **Anual no cartão sobre um mensal.** Com um mensal em vigor de tier igual
+  ou menor, o anual no cartão é cobrado e começa na hora, com âncora nova, e
+  substitui o mensal sem desconto (segunda decisão do dono). Se o mensal é do
+  cartão, o cliente cancela antes a renovação dele, como hoje.
+
+Qualquer outra venda espera o fim do plano em vigor. Ela é recusada com um
+código que informa a data em que fica disponível. Entram aqui:
+
+- o mensal no cartão com um plano Pix em vigor;
+- o Pix com um plano do cartão em vigor, mesmo depois de cancelada a
+  renovação, enquanto o período pago corre;
+- a mudança para um tier menor fora da renovação;
+- um mensal durante um termo anual, fora do último mês dele
+  (`ANNUAL_TERM_ACTIVE`, como hoje);
+- um anual menor que o mensal em vigor para começar na hora, como o
+  Intermediário anual no cartão sobre o Grande mensal (`PLAN_UNAVAILABLE`,
+  como hoje). Pelo Pix, ele só entra como renovação, no fim do mensal.
+
+Não existe início adiado: nenhuma venda é paga agora para começar depois,
+exceto a renovação. Trocar a forma de pagamento abre uma cadeia nova, com
+âncora nova, e pode deixar um intervalo entre o fim de um plano e a compra do
+outro. Com o Pix desligado, isso só importa quando ele voltar a ser ligado.
 
 ### 2. Cotas pagas pelo mês da assinatura
 
@@ -159,17 +181,17 @@ R$ 1.490 − 4 × R$ 149 = R$ 894 e mantém o acesso até 15/02 às 14:30 UTC.
   uma linha de `usagePlans` por organização), não herda a âncora dela. Os
   contadores já gravados na chave ancorada ficam nela.
 
-| Mudança                                                                      | Âncora                                                                                                                                                                     |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Do Gratuito para um plano pago no meio do mês                                | Nova; a chave é nova e os contadores começam do zero                                                                                                                       |
-| Renovação no cartão, ou pelo Pix no último mês do plano em vigor             | Mantida; pelo Pix, o plano novo começa no fim do anterior                                                                                                                  |
-| Upgrade, downgrade, pagamento atrasado, rescisão, upgrade desfeito em 7 dias | Mantida                                                                                                                                                                    |
-| Assinatura nova, cadeia nova de termos anuais, mensal para anual             | Nova, no início da assinatura ou do primeiro termo                                                                                                                         |
-| Do Pix para o cartão, com plano Pix em vigor                                 | Nova, no fim do plano Pix, sem cobrança antes dele                                                                                                                         |
-| Do cartão para o Pix, depois do fim do plano do cartão                       | Nova, na confirmação                                                                                                                                                       |
-| Do plano pago para o Gratuito                                                | Não há caminho automático: `plans:claimFree` recusa uma organização que já teve linha de plano                                                                             |
-| Personalizado ou interno por `usage:assignPlan`, a partir da fatia Q         | Catálogo desligado: nenhuma por padrão, e o operador pode passar uma até `startsAt`. Catálogo ligado: obrigatória, por padrão `startsAt`, e `endsAt` é um aniversário dela |
-| Gratuito                                                                     | Nunca tem                                                                                                                                                                  |
+| Mudança                                                                                      | Âncora                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Do Gratuito para um plano pago no meio do mês                                                | Nova; a chave é nova e os contadores começam do zero                                                                                                                       |
+| Renovação, inclusive do mensal ao anual pelo Pix e do anual ao mensal no último mês do termo | Mantida; o plano novo começa no fim do anterior                                                                                                                            |
+| Upgrade, downgrade na renovação, pagamento atrasado, rescisão, upgrade desfeito em 7 dias    | Mantida                                                                                                                                                                    |
+| Anual no cartão sobre um mensal de tier igual ou menor                                       | Nova, na contratação; o anual substitui o mensal                                                                                                                           |
+| Plano novo sem plano pago em vigor, inclusive com outra forma de pagamento                   | Nova, na contratação ou na confirmação                                                                                                                                     |
+| Outra venda com plano pago em vigor                                                          | Nenhuma: recusada até o fim do plano em vigor                                                                                                                              |
+| Do plano pago para o Gratuito                                                                | Não há caminho automático: `plans:claimFree` recusa uma organização que já teve linha de plano                                                                             |
+| Personalizado ou interno por `usage:assignPlan`, a partir da fatia Q                         | Catálogo desligado: nenhuma por padrão, e o operador pode passar uma até `startsAt`. Catálogo ligado: obrigatória, por padrão `startsAt`, e `endsAt` é um aniversário dela |
+| Gratuito                                                                                     | Nunca tem                                                                                                                                                                  |
 
 Invariantes:
 
@@ -189,6 +211,9 @@ Invariantes:
    mensal só concede o plano quando o período da linha é exatamente um mês
    dessa âncora, e uma fatura anual, quando é exatamente um ano dela. Senão,
    a fatura vai à revisão com `INVOICE_UNEXPECTED`.
+7. Uma organização tem no máximo um plano pago em vigor. Com ele em vigor, só
+   entram o upgrade, a renovação e o anual no cartão sobre um mensal de tier
+   igual ou menor, e nenhuma outra venda paga agora para começar depois.
 
 ## Consequências
 
@@ -196,13 +221,15 @@ Invariantes:
   anual começa no dia 1 do mês seguinte; 'imediatamente' é só pelo Pix". O
   resto vem do desenho. Pela seção 1, a escolha do Pix entre o dia 1 e o
   início imediato deixa de existir: o Pix começa na confirmação ou, na
-  renovação pedida no último mês, no fim do plano em vigor. Também pela
-  seção 1, "Mensal para anual: começa no dia 1 do mês seguinte ou
+  renovação pedida no último mês, no fim do plano em vigor. Pela regra de um
+  plano pago por vez, "Mensal para anual: começa no dia 1 do mês seguinte ou
   imediatamente, com cobrança cheia, à escolha do cliente" passa a ser o
-  anual no pagamento ou na confirmação, com cobrança cheia, recusado com um
-  mensal maior em vigor. Pela seção 3, "o acesso vai até o fim do mês civil
-  corrente", nas duas vezes em que aparece, passa a ser o fim do mês
-  corrente da assinatura. Valores, prazos e a decisão 10 não mudam.
+  anual no cartão cobrado e iniciado no pagamento, com cobrança cheia, sobre
+  um mensal de tier igual ou menor, ou o anual Pix como renovação no fim do
+  mensal; no cartão, um anual menor que o mensal em vigor espera o fim dele.
+  Pela seção 3, "o acesso vai até o fim do mês civil corrente", nas duas
+  vezes em que aparece, passa a ser o fim do mês corrente da assinatura.
+  Valores, prazos e a decisão 10 não mudam.
 - Nas políticas mensais da #556, em BILLING.md, ficam substituídos o mês
   civil UTC, a renovação no dia 1 e o item avulso com a mensalidade do mês
   corrente seguido de preço ancorado no dia 1. Continuam a primeira
@@ -211,8 +238,8 @@ Invariantes:
 - As linhas "Mês já pago por Pix" de
   [Contratação e ciclo](../plataforma/BILLING.md#contratação-e-ciclo), com
   R$ 0 agora no mesmo plano, a diferença agora no plano maior e o plano menor
-  na renovação, dão lugar ao início adiado da seção 1: o cartão começa no fim
-  do plano Pix, sem cobrança antes, e o tier escolhido vale desde esse início.
+  na renovação, dão lugar a "espera o fim do plano em vigor": o mensal no
+  cartão só é vendido depois que o plano Pix termina.
 - Cada termo anual precisa conhecer a âncora da sua cadeia, gravada ou
   derivada; as fatias 1b e 2b decidem como.
 - Os planos internos que já existem não têm âncora e continuam no mês civil.
@@ -253,20 +280,23 @@ Não implementada. A ordem das fatias:
    `quotaPeriod`) nas cotas de uso, nas de capacidade (`capacityCore`) e na
    retomada da captura (`captureProcessing`), sem mudar comportamento. Os
    termos anuais passam a âncora; os caminhos mensais ainda não. A regra do
-   Personalizado começa a valer.
+   Personalizado começa a valer: a guarda de `usage:assignPlan` que hoje
+   recusa com `INVALID_REQUEST` um `endsAt` depois de
+   `nextUsagePeriodStart(now)` muda para que um Personalizado comercial
+   termine num aniversário da sua âncora.
 4. Fatia 1b: anual pelo Pix a partir da confirmação, âncora da cadeia nos
    termos e guardas de termo por instante.
 5. Fatia 1c: mensal pelo Pix nos aniversários; as concessões mensais pelo Pix
    ganham âncora. Até a fatia 2a, as concessões mensais do cartão continuam
-   no mês civil; o cartão contratado com um plano Pix em vigor fica adiado
-   para o fim dele, com início civil.
+   no mês civil.
 6. Fatia 2a: mensal no cartão renovado no aniversário, sem âncora no dia 1
    nem item avulso, com as invariantes 4 e 6.
 7. Fatia 2b: anual no cartão cobrado na contratação, nos anos da âncora, sem
    o Checkout ancorado no dia 1.
 8. Nova versão dos termos de uso.
 
-Cada fatia atualiza BILLING.md e USAGE.md na mesma PR.
+Cada fatia aplica a regra de um plano pago por vez (invariante 7) aos
+caminhos de venda que muda e atualiza BILLING.md e USAGE.md na mesma PR.
 
 ## Alternativas recusadas pelo dono
 
