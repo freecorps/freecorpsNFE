@@ -115,9 +115,12 @@ async function go(to: string) {
 
 it("navegar entre páginas da organização mantém o shell, o seletor e o contexto autorizado", async () => {
   window.history.replaceState(null, "", "/app/equipe/documents");
+  // The first load compiles the route chunks on demand, which under the full suite took more than
+  // the 5 s a `findByRole` waited. The test awaits that load, bounded only by the test timeout, and
+  // the provider then renders the already loaded location without loading it again.
+  await router.load();
   render(<RouterProvider router={router} />);
-  // The first render compiles the route chunks on demand: under the full suite, more than 1 s.
-  await screen.findByRole("heading", { level: 1, name: "Documentos fiscais" }, { timeout: 5000 });
+  await screen.findByRole("heading", { level: 1, name: "Documentos fiscais" });
   const sidebar = screen.getByRole("complementary", { name: "Menu do console" });
   const switcher = within(sidebar).getByRole("button", { name: /Organização atual: Equipe Ipê/ });
   const nav = within(sidebar).getByRole("navigation", { name: "Navegação da organização" });
