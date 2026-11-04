@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
-import { platformTest, person, usePlatformEnvironment } from "./helpers/platform";
+import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
 import {
   billingConfig,
   invoiceGrant,
@@ -301,6 +301,7 @@ async function fixture() {
     admissionsUntil: Date.UTC(2027, 11, 31),
     evidence: "synthetic-local-proof",
   });
+  await enablePix(t);
   const fake = fakeStripe();
   const plan = () =>
     t.run((ctx) =>
@@ -742,6 +743,22 @@ describe("respostas inconsistentes do portal", () => {
     expect(
       await code(f.owner.action(api.billing.portal, { organizationId: f.organizationId })),
     ).toBe("BILLING_UNAVAILABLE");
+  });
+});
+
+describe("interruptor do Pix na cobrança", () => {
+  it("billing:overview traz pixEnabled, com e sem o cartão configurado", async () => {
+    const f = await fixture();
+    expect((await f.billing()).pixEnabled).toBe(true);
+    await f.t.mutation(internal.plans.configurePix, {
+      enabled: false,
+      expectedVersion: 1,
+      evidence: "synthetic-pix-off",
+    });
+    expect((await f.billing()).pixEnabled).toBe(false);
+    vi.stubEnv("STRIPE_BILLING_SECRET_KEY", "");
+    vi.stubEnv("STRIPE_BILLING_WEBHOOK_SECRET", "");
+    expect(await f.billing()).toMatchObject({ card: false, pixEnabled: false });
   });
 });
 

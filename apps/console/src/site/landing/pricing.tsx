@@ -132,7 +132,7 @@ export function Pricing() {
           </p>
         </div>
         <ul className="price-terms">
-          <li>Cartão pelo Stripe ou Pix</li>
+          <li>Cartão pelo Stripe</li>
           <li>Anual: 12 meses pelo preço de 10</li>
           <li>Cancelamento sem multa, vale até o fim do período pago</li>
           <li>Emissão com validade fiscal fora dos planos</li>

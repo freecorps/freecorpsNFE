@@ -214,7 +214,12 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
 
   if (!data.card)
     return (
-      <Card title="Cobrança" description="Pagamento por Pix assistido.">
+      <Card
+        title="Cobrança"
+        description={
+          data.pixEnabled ? "Pagamento por Pix assistido." : "Contratação indisponível no momento."
+        }
+      >
         <DescriptionList
           items={[
             { term: "Forma de pagamento", value: current ? "Pix assistido" : "Nenhum" },
@@ -232,7 +237,11 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
   return (
     <Card
       title="Cobrança"
-      description="Cartão com renovação automática no dia 1 de cada mês, em UTC, ou Pix assistido. Uma forma de pagamento por vez."
+      description={
+        data.pixEnabled
+          ? "Cartão com renovação automática no dia 1 de cada mês, em UTC, ou Pix assistido. Uma forma de pagamento por vez."
+          : "Cartão com renovação automática no dia 1 de cada mês, em UTC."
+      }
       actions={
         live ? (
           <StatusBadge tone={live.status === "active" ? "success" : "warning"}>
@@ -465,7 +474,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
         }
         description={
           pending?.kind === "checkout" && pending.cycle === "annual"
-            ? `Nada é cobrado agora. Você será levado ao Stripe, e ${price(annual[pending.tier])} são cobrados em ${utcDate(nextMonth)}, início dos 12 meses. Até lá, o mês corrente segue no plano atual. Depois, a renovação é anual, na mesma data. Para começar agora, peça o anual por Pix em Escolha seu plano.`
+            ? `Nada é cobrado agora. Você será levado ao Stripe, e ${price(annual[pending.tier])} são cobrados em ${utcDate(nextMonth)}, início dos 12 meses. Até lá, o mês corrente segue no plano atual. Depois, a renovação é anual, na mesma data.${data.pixEnabled ? " Para começar agora, peça o anual por Pix em Escolha seu plano." : ""}`
             : pending?.kind === "checkout"
               ? live
                 ? "Você será levado ao Stripe para pagar a diferença integral do mês corrente. O plano muda quando o Stripe confirmar o pagamento, e a renovação passa a ser pelo novo plano."

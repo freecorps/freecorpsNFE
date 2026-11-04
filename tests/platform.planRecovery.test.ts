@@ -6,6 +6,7 @@ import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import { assignPlan } from "../platform/convex/usage";
 import { resumeArchived } from "../platform/convex/plans";
 import {
+  enablePix,
   person,
   platformTest,
   usePlatformEnvironment,
@@ -74,6 +75,7 @@ async function fixture() {
     admissionsUntil: MONTH_END,
     evidence: "synthetic-prefunded-admission",
   });
+  await enablePix(t);
   return { t, organizationId, otherId, args: assignment(organizationId) };
 }
 

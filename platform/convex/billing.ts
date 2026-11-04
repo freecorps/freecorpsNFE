@@ -19,7 +19,7 @@ import {
   requireMembership,
 } from "./lib/organizationAccess";
 import { PLATFORM_PLANS, isCatalogTier, paidTier } from "./lib/planCatalog";
-import { allocateOffer, annualEnabled, markTermRenewalStop } from "./lib/planCore";
+import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from "./lib/planCore";
 import {
   activeTerm,
   annualTermBlocks,
@@ -173,6 +173,8 @@ export const overview = query({
     pixPending: v.boolean(),
     /** The annual switch (`annualEnabled`): the annual Checkout is on sale. */
     annualEnabled: v.boolean(),
+    /** The Pix switch (`pixEnabled`): the console offers the assisted Pix beside the card. */
+    pixEnabled: v.boolean(),
     /**
      * The subscription in the account bought a term in force or scheduled. An annual one without
      * it has not been charged yet: cancelling its renewal gives up a year never paid.
@@ -193,7 +195,7 @@ export const overview = query({
     try {
       cfg = config();
     } catch {
-      // Misconfigured card billing reads as unavailable; Pix keeps working.
+      // Misconfigured card billing reads as unavailable; Pix, if switched on, keeps working.
     }
     const now = Date.now();
     const current = await planFor(ctx, args.organizationId);
@@ -208,6 +210,7 @@ export const overview = query({
       )
       .first());
     const annualOnSale = await annualEnabled(ctx);
+    const pixOnSale = await pixEnabled(ctx);
     const annualBlocked = await annualTermBlocks(
       ctx,
       args.organizationId,
@@ -223,6 +226,7 @@ export const overview = query({
         plan,
         pixPending,
         annualEnabled: annualOnSale,
+        pixEnabled: pixOnSale,
         subscriptionTerm: false,
         annualBlocked,
       };
@@ -317,6 +321,7 @@ export const overview = query({
       plan,
       pixPending,
       annualEnabled: annualOnSale,
+      pixEnabled: pixOnSale,
       subscriptionTerm,
       annualBlocked,
     };

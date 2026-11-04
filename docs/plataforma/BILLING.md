@@ -8,15 +8,21 @@ na renovação. Uma organização paga por uma forma de cada vez. A decisão é 
 27/10/2026 (#556), e as políticas de inadimplência, reembolso e contestação
 foram decididas pelo mantenedor em 28/10/2026.
 
+**Por enquanto, só o cartão.** Em 03/11/2026 o mantenedor decidiu não aceitar
+Pix: a venda nova é só pelo Stripe. O Pix assistido continua no código, atrás
+do [interruptor do Pix](#interruptor-do-pix), desligado.
+
 **O catálogo continua desligado.** A cobrança por cartão existe no código e nos
 testes, mas toda contratação passa por `requirePlanAdmissions`: sem
 `platformPlanSettings.enabled` e janela de admissão aberta, nada é vendido.
 Mensal e anual foram exercitados numa conta Stripe de teste, conforme a
 matriz de assinaturas.
 Não houve cobrança real nem configuração de cobrança no deployment.
-Ligar a oferta continua sujeito à #549 e aos termos e provas da modalidade
-na issue da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md).
-O anual tem sua própria prova e ativação na #690.
+A viabilidade dos planos foi aprovada com o fechamento da #34, em 03/11/2026.
+Ligar a oferta continua sujeito aos termos e às provas da modalidade na issue
+da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md): a prova
+hospedada e a ativação do anual ficam na #35
+([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
 
 Não confundir com a [conexão Stripe](STRIPE.md) (ADR 0006): ela recebe os
 pagamentos dos apps consumidores para pedir emissão de NFS-e em nome deles.
@@ -142,6 +148,29 @@ Fatura não paga não é registrada e volta a ser lida na próxima conferência.
   [termos de uso 1.0](../termos/arquivo/termos-de-uso-2026-11-01.md), publicados em 01/11/2026 (#428). Elas valem quando um plano
   pago estiver à venda no console.
 
+## Interruptor do Pix
+
+`platformPlanSettings.pix` (`enabled`, `evidence`, `updatedAt`) fica
+desligado quando ausente. Só o operador o altera, pela mutation interna
+`plans:configurePix`, com as mesmas regras de `plans:configureAnnual`:
+`expectedVersion`, evidência de 8 a 500 caracteres, recusa com o catálogo
+desligado (`PLANS_DISABLED`) e avanço da `version` comum. `pixOn` em
+`planCore.ts` exige o catálogo e o Pix ligados, e `plans:configure` preserva o
+campo.
+
+Desligado, `plans:requestPaid` recusa todo pedido novo com `PIX_DISABLED`,
+mensal, anual ou upgrade de termo Pix, antes de gravar qualquer coisa. Com o
+anual também desligado, o pedido anual responde `ANNUAL_DISABLED`. A
+repetição de um pedido já feito, pela mesma chave, continua respondendo, e
+`plans:confirmPayment` ainda confirma um pedido feito antes. Termos pagos por
+Pix não mudam. A adesão ao Gratuito não passa pelo Pix e continua.
+
+`plans:overview` e `billing:overview` trazem `pixEnabled`. Com o Pix
+desligado, o console troca os botões "Solicitar …" dos planos pagos por
+"Assine pelo cartão em Cobrança.", não oferece o upgrade de um termo Pix e
+tira o Pix dos textos de Cobrança. Sem Pix, o anual só começa no dia 1
+seguinte, pelo [Checkout anual](#checkout-anual).
+
 ## Janela de admissão
 
 `admissionsUntil`, em `platformPlanSettings`, limita só a **nova reserva** de
@@ -158,7 +187,8 @@ decidiu em 29/10/2026 na #549. Antes, a renovação depois da janela ficava
 O anual dá 12 meses pelo preço de 10
 ([ADR 0010](../adr/0010-guarda-em-camadas-e-custo-dos-planos.md), decisões 4.2
 e 9). O Pix assistido e o [Checkout anual](#checkout-anual) do cartão
-vendem o anual, só com o interruptor ligado, que segue desligado. Uma fatura
+vendem o anual, só com o interruptor ligado, que segue desligado; o Pix
+também depende do [interruptor do Pix](#interruptor-do-pix). Uma fatura
 anual paga vira termo ([Fatura anual do cartão](#fatura-anual-do-cartão)). O
 [upgrade](#upgrade-do-anual) do Intermediário anual para o Grande anual é
 vendido pelas duas formas. A [rescisão](#rescisão-do-anual), com o
@@ -177,8 +207,9 @@ com o interruptor ligado.
   feito continua valendo e os anuais pagos não mudam. Ligar ou
   desligar avança a `version` comum das configurações, como
   `plans:configure`, e uma chamada com a versão anterior recebe
-  `OPERATION_CONFLICT`. `plans:configure` preserva o campo. O anual só é ligado depois da
-  fase E da ADR (#642).
+  `OPERATION_CONFLICT`. `plans:configure` preserva o campo. A fase E da
+  ADR (#642), a viabilidade, foi aprovada com o fechamento da #34; o anual
+  só é ligado depois da prova da #35.
 - **Cálculo.** `platform/convex/lib/annualTerms.ts`, puro, em centavos
   inteiros e meses civis UTC: o período vai do dia 1 de um mês ao dia 1 do
   12º mês seguinte, às 00:00 UTC; o mês corrente conta inteiro. Até 7 × 24 h
@@ -298,7 +329,7 @@ com o interruptor ligado.
 
 ### Venda por Pix
 
-O fluxo é o do Pix mensal, com `cycle: "annual"` em `plans:requestPaid`:
+Só com o [interruptor do Pix](#interruptor-do-pix) ligado. O fluxo é o do Pix mensal, com `cycle: "annual"` em `plans:requestPaid`:
 
 1. **Pedido.** O owner ou admin escolhe o tier pago e `start`: `now` começa o
    termo no dia 1 do mês corrente, que conta como o 1º mês, com cobrança
@@ -670,8 +701,8 @@ regra é a mesma nas duas:
   O orçamento de custódia (`platformPlanSettings.custodyCents`), o estoque e
   a janela de admissão precisam comportar a reserva; senão, nada sobe.
 - **Renovação.** Passa a ser do Grande anual. No cartão, a assinatura muda
-  de preço; no Pix, o cliente pede a renovação (`next`) no último mês, como
-  antes, e pode descer para o Intermediário nela, porque o downgrade vale na
+  de preço; no Pix, com o [interruptor do Pix](#interruptor-do-pix) ligado,
+  o cliente pede a renovação (`next`) no último mês, como antes, e pode descer para o Intermediário nela, porque o downgrade vale na
   renovação.
 - **Downgrade.** Continua recusado no meio do termo: o Intermediário num
   termo já Grande responde `PLAN_UNAVAILABLE`, e a assinatura anual não
@@ -694,6 +725,9 @@ Recusas, as mesmas nas duas formas e antes de qualquer chamada ao Stripe:
 - `OPERATION_CONFLICT`: a mesma chave com outra escolha;
 - as demais recusas de `allocateOffer` (`PLANS_DISABLED`,
   `CAPACITY_INVENTORY_REQUIRED`, `QUOTA_EXCEEDED`).
+
+Só no Pix, com o Pix desligado, o pedido de upgrade responde `PIX_DISABLED`
+depois de `ANNUAL_DISABLED` ([interruptor do Pix](#interruptor-do-pix)).
 
 **Pix.** O pedido guarda `termId`, `firstPeriod` (o dia 1 do mês corrente) e
 a diferença em `amountCents`, e vence no fim do mês (`endsAt`). Não reserva
@@ -978,7 +1012,7 @@ e `annualBlocked`, se um termo impede o anual no cartão.
   renova: a assinatura que o comprou está ativa e sem "Não renovar". Só
   então o fim aparece como data de renovação; senão, o termo diz que não
   renova. O termo Pix nunca renova sozinho e só fala no pedido do último mês
-  com o anual à venda. Um termo agendado com a ativação recusada aparece como
+  com o anual e o Pix à venda. Um termo agendado com a ativação recusada aparece como
   "Início pendente". O reembolso calculado não aparece.
 - **Upgrade.** Com o anual à venda e sem termo agendado, o termo `active` do
   mês corrente traz `upgrade`: o preço de `termUpgradeCents`, os meses
@@ -1062,9 +1096,10 @@ Variáveis do deployment Convex, as duas juntas ou nenhuma:
 
 Configuração parcial ou inválida derruba as funções de cobrança com
 `Invalid platform configuration: STRIPE_BILLING`; a tela trata como cartão
-indisponível e o Pix continua. A chave restrita precisa de escrita em
+indisponível, e o Pix, se ligado, continua. A chave restrita precisa de escrita em
 Customers, Checkout Sessions, Coupons, Subscriptions e Billing Portal, e leitura de
-Prices, Invoices e Charges.
+Prices, Invoices e Charges. Essa chave não lê Webhook Endpoints: a
+conferência abaixo usa outra chave, só de leitura.
 
 No painel do Stripe, antes de ligar:
 
@@ -1088,6 +1123,28 @@ No painel do Stripe, antes de ligar:
    do mês que comprou (no anual, depois do 1º mês do termo) fica
    `LATE_PAYMENT`, bloqueada com o dinheiro já recebido.
 6. Pix não é habilitado no Stripe; continua assistido.
+
+Os itens 1 a 4 são conferidos só lendo a conta, sem escrever no Stripe nem no
+Convex:
+
+```sh
+node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]
+```
+
+O arquivo guarda uma chave restrita própria da conferência (`rk_`, ou `sk_`;
+`test` ou `live`), só com leitura em Prices, Webhook Endpoints e Customer
+portal, separada da que o deployment usa. Sem `--endpoint`, a URL esperada é a
+de produção. `--endpoint` muda a URL esperada,
+por exemplo para a validação. O comando confere os quatro preços com as regras
+de `readCatalogPrices` e `readAnnualPrices`, um único endpoint ativo nessa URL
+com todos os eventos assinados e a configuração padrão do portal com as regras
+de `readPortalSession`. Sai com 0 se tudo passar, 1 se algum item falhar e 2
+se não conseguiu conferir (argumento, chave, rede ou resposta de erro do
+Stripe), e
+imprime um relatório sem chave nem ids da conta, com os itens 5 e 6 e os
+e-mails do Stripe listados para conferência manual no painel.
+`scripts/billing-stripe-check.test.ts` impede que essas regras se afastem das
+da plataforma.
 
 ## Tarifas e tratamento fiscal
 
@@ -1238,3 +1295,65 @@ Sem prova, dependendo de validação operacional:
   [Upgrade do anual](#upgrade-do-anual) e [Rescisão](#rescisão-do-anual).
 - Smart Retries, portal e e-mails do Stripe dependem da configuração da conta.
 - Tarifas, repasse e Invoicing precisam ser conferidos na conta.
+
+### Prova hospedada e ativação do anual (#35)
+
+Esta prova cobre o que a matriz de sandbox não cobriu: eventos entregues a um
+backend hospedado, concessão gravada e lida pelo console conectado, e a
+configuração padrão da conta. Ela roda no deployment de validação
+(`modest-seal-118`), com chave de teste e
+organização sintética. A produção não liga o catálogo só para provar. Cada
+passo que escreve no Stripe ou no deployment precisa de autorização do
+mantenedor.
+
+1. **Conta de teste.** Preparar os itens 1 a 4 de
+   [Configuração](#configuração), com o endpoint em
+   `https://modest-seal-118.convex.site/v1/billing/stripe/events`, o host HTTP
+   da validação: o Worker `freecorpsnfe-validation` só encaminha a
+   autenticação e não chega a `/v1`.
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <essa URL>`
+   passa com a chave de teste.
+2. **Deployment.** Antes das variáveis, um `POST` sem assinatura nessa URL
+   responde 404; depois de gravar `STRIPE_BILLING_SECRET_KEY` (`rk_test_…`) e
+   `STRIPE_BILLING_WEBHOOK_SECRET`, responde 400. Ligar só na validação o
+   catálogo (`plans:configure`, com a janela de admissão aberta) e o anual
+   (`plans:configureAnnual`), com evidência citando a #35.
+3. **Mensal.** O owner sintético contrata o Intermediário mensal pelo console
+   com cartão de teste. Conferir os eventos `processed` em `billingEvents`, a
+   concessão `applied` em `billingGrants` e o plano no console, sem
+   "Conferir pagamento". "Cartão e faturas" abre o portal só com cartão e faturas.
+4. **Anual no cartão.** Depois de "Cancelar renovação" na mensal, "Assinar …
+   anual no cartão" termina `no_payment_required`, sem fatura, e o console
+   mostra o termo agendado com a reserva de admissão. O Customer nasce no
+   Checkout, sem relógio de teste, então a cobrança do dia 1 não pode ser
+   antecipada. Por isso o Checkout deve ser feito nos últimos dias do mês. No
+   dia 1, a fatura `subscription_cycle` paga vira termo `active`, pelo
+   evento ou pela conferência agendada duas horas depois, e o console mostra
+   o anual em vigor.
+5. **Upgrade e rescisão.** Com o termo do cartão em vigor, o upgrade
+   para o Grande e a rescisão (`plans:rescindTerm`) aparecem no console como
+   em [Tela do anual no console](#tela-do-anual-no-console). Com o Pix
+   desligado, o console não oferece o pedido Pix, e `plans:requestPaid`
+   responde `PIX_DISABLED`.
+6. **Repetição.** Reenviar pelo painel um evento já processado não cria
+   efeito novo.
+7. **Limpeza.** Cancelar as assinaturas de teste, desligar o anual
+   (`plans:configureAnnual`) e fechar a janela de admissão na validação
+   (`plans:configure` com `admissionsUntil` no passado: a mutation não
+   desliga um catálogo já ligado) e retirar as variáveis, salvo decisão de
+   manter o cartão de teste ali.
+8. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado na
+   validação, os estados e códigos observados e o resultado de
+   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
+   sem chaves
+   nem ids da conta.
+
+Depois da prova, a ativação em produção segue esta ordem:
+`node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave
+`live` contra o endpoint de produção, os
+segredos no deployment de produção, o catálogo ligado e
+`plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O
+Pix continua desligado.
+Depois, conferir no console conectado que o anual aparece à venda. Os limites
+da matriz continuam valendo: testes locais de Pix não são transferência real,
+e 3DS, disputas, Smart Retries e e-mails não foram demonstrados.

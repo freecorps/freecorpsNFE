@@ -157,6 +157,13 @@ describe("distribuição pública estática", () => {
     ]);
   });
 
+  // Since 03/11/2026 new plan sales are card only (docs/plataforma/BILLING.md, interruptor do Pix).
+  it("anuncia na landing só o cartão como forma de pagamento", () => {
+    const terms = parse(landing()).querySelector(".price-terms")?.textContent ?? "";
+    expect(terms).toContain("Cartão pelo Stripe");
+    expect(terms).not.toMatch(/Pix/);
+  });
+
   // The landing announces only accepted coverage (docs/plataforma/PUBLIC.md, decision
   // of 18/10/2026). Text, figure labels and code samples all count as claims.
   it("anuncia na landing só a cobertura aceita", () => {

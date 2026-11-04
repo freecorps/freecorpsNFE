@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
-import { platformTest, person, usePlatformEnvironment } from "./helpers/platform";
+import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
 import { termEndsAt } from "../platform/convex/lib/annualTerms";
 import { activateCatalogPlan } from "../platform/convex/lib/planCore";
 import { insertTerm, termTierAt } from "../platform/convex/lib/planTerms";
@@ -48,6 +48,7 @@ async function fixture({ annual = true } = {}) {
     admissionsUntil: Date.UTC(2027, 11, 31),
     evidence: "synthetic-local-proof",
   });
+  await enablePix(t);
   if (annual)
     await t.mutation(internal.plans.configureAnnual, {
       enabled: true,
@@ -242,6 +243,24 @@ describe("pedido anual por Pix", () => {
     await confirm(f, request.id, "monthly-large-ref", request.amountCents);
     expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("PLAN_UNAVAILABLE");
     expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe("OK");
+  });
+
+  it("com o Pix desligado responde PIX_DISABLED; com o anual também desligado, ANNUAL_DISABLED", async () => {
+    const f = await fixture();
+    await f.t.mutation(internal.plans.configurePix, {
+      enabled: false,
+      expectedVersion: 2,
+      evidence: "synthetic-pix-off",
+    });
+    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("PIX_DISABLED");
+    expect(await code(requestAnnual(f.owner, f.organizationId, "next"))).toBe("PIX_DISABLED");
+    await f.t.mutation(internal.plans.configureAnnual, {
+      enabled: false,
+      expectedVersion: 3,
+      evidence: "synthetic-annual-off",
+    });
+    expect(await code(requestAnnual(f.owner, f.organizationId, "now"))).toBe("ANNUAL_DISABLED");
+    expect(await f.t.run((ctx) => ctx.db.query("platformPlanRequests").collect())).toEqual([]);
   });
 });
 
@@ -923,6 +942,19 @@ describe("upgrade do Intermediário anual para o Grande anual por Pix", () => {
           .then((rows) => rows.filter((row) => row.termId)),
       ),
     ).toEqual([]);
+  });
+
+  it("com o Pix desligado, o upgrade do termo Pix responde PIX_DISABLED sem gravar", async () => {
+    const f = await fixture();
+    await annualNow(f);
+    await f.t.mutation(internal.plans.configurePix, {
+      enabled: false,
+      expectedVersion: 2,
+      evidence: "synthetic-pix-off",
+    });
+    expect(await code(requestUpgrade(f))).toBe("PIX_DISABLED");
+    const requests = await f.t.run((ctx) => ctx.db.query("platformPlanRequests").collect());
+    expect(requests.filter((row) => row.termId)).toEqual([]);
   });
 
   it("recusa papel sem gestão, Grande já em vigor, pedido pendente, chave repetida e termo do cartão", async () => {

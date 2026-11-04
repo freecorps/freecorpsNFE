@@ -38,6 +38,7 @@ function overview(patch: Partial<BillingOverview> = {}): BillingOverview {
     plan: null,
     pixPending: false,
     annualEnabled: false,
+    pixEnabled: true,
     subscriptionTerm: false,
     annualBlocked: false,
     ...patch,
@@ -458,4 +459,18 @@ it("after the Checkout is abandoned, the next one is a new intention", async () 
   view.rerender(<PlanBilling org={owner} contextKey="test" />);
   await attempt();
   expect(keys()[2]).not.toBe(keys()[0]);
+});
+
+it("com o Pix desligado, a cobrança fala só do cartão", () => {
+  state.data = overview({ annualEnabled: true, pixEnabled: false });
+  show();
+  expect(
+    screen.getByText("Cartão com renovação automática no dia 1 de cada mês, em UTC."),
+  ).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Assinar Grande anual no cartão" }));
+  expect(screen.getByRole("alertdialog").textContent).not.toContain("Pix");
+  cleanup();
+  state.data = overview({ card: false, pixEnabled: false });
+  show();
+  expect(screen.getByText("Contratação indisponível no momento.")).toBeTruthy();
 });

@@ -94,6 +94,8 @@ function failure(error: unknown) {
     CAPACITY_INVENTORY_REQUIRED:
       "O inventário de capacidade está pendente. Solicite a conferência à Freecorps.",
     QUOTA_EXCEEDED: "O uso atual não cabe neste plano. Nada foi alterado.",
+    PIX_DISABLED:
+      "O pagamento por Pix não está disponível no momento. Assine pelo cartão em Cobrança. Nada foi registrado.",
     PAYMENT_METHOD_CARD:
       "Esta organização paga por cartão. Cancele a renovação ou desista do pagamento em andamento antes de pedir o Pix.",
     // The card upgrade of an annual term opens a Stripe Checkout from here.
@@ -411,10 +413,12 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
       {data.terms.map((term) => (
         <AnnualTerm
           annualEnabled={data.annualEnabled}
+          pixEnabled={data.pixEnabled}
           key={term.id}
           term={term}
           actions={
-            canManage && term.upgrade ? (
+            // A Pix term is upgraded by Pix: with Pix off, only a card term offers it.
+            canManage && term.upgrade && (term.source === "stripe" || data.pixEnabled) ? (
               <>
                 <Button
                   disabled={blocked || (term.source === "stripe" && cardUpgradeClosed)}
@@ -523,6 +527,12 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               header: "Contratação",
               cell: (item) => {
                 const free = item.tier === "free";
+                // The paid tiers here are Pix requests; with Pix off, the card sells them below.
+                // Only managers see Cobrança; the others already read who can contract above.
+                if (!free && !data.pixEnabled)
+                  return canManage ? (
+                    <p className="gestao-help">Assine pelo cartão em Cobrança.</p>
+                  ) : null;
                 const yearly = !free && annualView;
                 const unavailable =
                   blocked ||
@@ -715,10 +725,13 @@ function AnnualTerm({
   term,
   actions,
   annualEnabled,
+  pixEnabled,
 }: {
   term: Term;
   actions: ReactNode;
   annualEnabled: boolean;
+  /** A Pix term renews by a new Pix request, offered only while Pix is on sale. */
+  pixEnabled: boolean;
 }) {
   const rescinded = term.state === "rescinded";
   return (
@@ -787,7 +800,7 @@ function AnnualTerm({
               ? `No cartão, os próximos 12 meses, pelo ${tierNames[lastTier(term)]} anual, são cobrados nessa data. “Cancelar renovação”, em Cobrança, mantém os meses pagos, sem reembolso.`
               : term.source === "stripe"
                 ? "No cartão, este plano anual não renova: termina nessa data, e os meses pagos continuam até lá."
-                : annualEnabled
+                : annualEnabled && pixEnabled
                   ? "No Pix, a renovação é um novo pedido anual, feito no último mês. Sem ele, o plano termina nessa data, e os meses pagos continuam até lá."
                   : "No Pix, o plano termina nessa data, sem renovação automática, e os meses pagos continuam até lá."}
           </p>

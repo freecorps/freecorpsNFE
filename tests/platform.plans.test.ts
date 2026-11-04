@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "../platform/convex/_generated/api";
-import { platformTest, person, usePlatformEnvironment } from "./helpers/platform";
+import { enablePix, platformTest, person, usePlatformEnvironment } from "./helpers/platform";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import { reserveUsage } from "../platform/convex/lib/usageCore";
-import { annualEnabled, requireEntitySlot } from "../platform/convex/lib/planCore";
+import { annualEnabled, pixEnabled, requireEntitySlot } from "../platform/convex/lib/planCore";
 import { consoleProjectFor } from "./helpers/console";
 import { normalizeCnpj } from "../packages/fiscal-core/src/cnpj";
 import type { Id } from "../platform/convex/_generated/dataModel";
@@ -27,8 +27,8 @@ async function fixture() {
     }),
   );
   const owner = await person(t, organizationId, "owner");
-  const configure = (custodyCents = 100000) =>
-    t.mutation(internal.plans.configure, {
+  const configure = async (custodyCents = 100000) => {
+    const version = await t.mutation(internal.plans.configure, {
       enabled: true,
       expectedVersion: 0,
       filesBytes: 10 * 2 ** 30,
@@ -38,6 +38,9 @@ async function fixture() {
       admissionsUntil: Date.now() + 86400000,
       evidence: "synthetic-local-proof",
     });
+    await enablePix(t);
+    return version;
+  };
   return { t, organizationId, owner, configure };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
@@ -484,6 +487,104 @@ describe("annual switch", () => {
       await ctx.db.patch("platformPlanSettings", row._id, { enabled: false });
     });
     expect((await settings(f))?.annual?.enabled).toBe(true);
+    expect(await isOn(f)).toBe(false);
+  });
+});
+
+describe("Pix switch", () => {
+  const pix = (
+    f: Fixture,
+    enabled: boolean,
+    expectedVersion: number,
+    evidence = "cartao-somente",
+  ) => f.t.mutation(internal.plans.configurePix, { enabled, expectedVersion, evidence });
+  const settings = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique());
+  const isOn = (f: Fixture) => f.t.run((ctx) => pixEnabled(ctx));
+  const view = (f: Fixture) =>
+    f.owner.query(api.plans.overview, { organizationId: f.organizationId, contextKey: "pix" });
+  const request = (f: Fixture, key: string) =>
+    f.owner.mutation(api.plans.requestPaid, {
+      organizationId: f.organizationId,
+      tier: "intermediate",
+      key,
+    });
+  const requests = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanRequests").collect());
+  /** The catalog on without the fixture's Pix: what a deployment has before `configurePix`. */
+  const catalogOnly = (f: Fixture) =>
+    f.t.mutation(internal.plans.configure, {
+      enabled: true,
+      expectedVersion: 0,
+      filesBytes: 10 * 2 ** 30,
+      databaseBytes: 2 ** 30,
+      custodyCents: 100000,
+      freeMonthlyCents: 10000,
+      admissionsUntil: Date.now() + 86400000,
+      evidence: "synthetic-local-proof",
+    });
+
+  it("is off by default: the request is refused before anything is written", async () => {
+    const f = await fixture();
+    await expect(pix(f, true, 0)).rejects.toThrow("PLANS_DISABLED");
+    await catalogOnly(f);
+    expect(await isOn(f)).toBe(false);
+    expect((await view(f)).pixEnabled).toBe(false);
+    await expect(request(f, "pix-while-off")).rejects.toThrow("PIX_DISABLED");
+    expect(await requests(f)).toEqual([]);
+    // The free tier does not go through Pix.
+    await f.owner.mutation(api.plans.claimFree, { organizationId: f.organizationId });
+  });
+
+  it("turned off, keeps the request already made and its confirmation", async () => {
+    const f = await fixture();
+    await catalogOnly(f);
+    expect(await pix(f, true, 1)).toBe(2);
+    expect((await view(f)).pixEnabled).toBe(true);
+    const made = await request(f, "pix-before-off");
+    expect(await pix(f, false, 2, "so-cartao-por-ora")).toBe(3);
+    expect(await settings(f)).toMatchObject({
+      pix: { enabled: false, evidence: "so-cartao-por-ora", updatedAt: Date.now() },
+    });
+    expect((await view(f)).pixEnabled).toBe(false);
+    expect(await request(f, "pix-before-off")).toEqual(made);
+    await expect(request(f, "pix-after-off")).rejects.toThrow("PIX_DISABLED");
+    await f.t.mutation(internal.plans.confirmPayment, {
+      requestId: made.id,
+      amountCents: 14900,
+      paymentReference: "pix-before-off-receipt",
+      actor: "operator",
+    });
+    expect((await view(f)).subscription?.tier).toBe("intermediate");
+  });
+
+  it("refuses a stale version and short evidence, and survives a catalog reconfiguration", async () => {
+    const f = await fixture();
+    await catalogOnly(f);
+    await expect(pix(f, true, 0)).rejects.toThrow("OPERATION_CONFLICT");
+    await expect(pix(f, true, 1, "curta")).rejects.toThrow("INVALID_REQUEST");
+    await pix(f, true, 1);
+    const before = (await settings(f))!;
+    await f.t.mutation(internal.plans.configure, {
+      enabled: true,
+      expectedVersion: 2,
+      filesBytes: before.filesBytes,
+      databaseBytes: before.databaseBytes,
+      custodyCents: before.custodyCents + 1,
+      freeMonthlyCents: before.freeMonthlyCents,
+      admissionsUntil: before.admissionsUntil,
+      evidence: "synthetic-more-custody",
+    });
+    expect(await settings(f)).toMatchObject({ version: 3, pix: before.pix });
+    expect(await isOn(f)).toBe(true);
+  });
+
+  it("is off whenever the catalog is off, even with the Pix flag set", async () => {
+    const f = await fixture();
+    await f.configure();
+    await f.t.run(async (ctx) => {
+      const row = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", row._id, { enabled: false });
+    });
+    expect((await settings(f))?.pix?.enabled).toBe(true);
     expect(await isOn(f)).toBe(false);
   });
 });
