@@ -1,0 +1,19 @@
+diff --git a/dist/index.js b/dist/index.js
+index a47e615f487430160d2539b7d5605e913ccefc9e..238b72b6bc8ed78b477b8199ebb8292169136498 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1410,9 +1410,13 @@ function jsSyscallImpl() {
+     };
+ }
+ // If we're in action, wrap the write in a transaction.
++// freecorpsNFE patch: the caller's context decides, not whether some function holds the lock.
++// An action that stores a file while a concurrent function runs would otherwise write into that
++// function's transaction, and throw "Write outside of transaction" once it committed first.
+ async function writeToDatabase(impl) {
+     const db = getDb();
+-    if (!getTransactionManager().isInTransaction()) {
++    const udfType = executionContextStorage.getStore()?.udfType;
++    if (udfType !== "mutation" && udfType !== "query") {
+         return await withAuth().run(async () => {
+             return await impl(db);
+         });

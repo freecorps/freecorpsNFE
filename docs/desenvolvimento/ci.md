@@ -571,7 +571,7 @@ o alias `typescript-7` atende às checagens nativas. Os tipos do Node seguem a
 linha 24 do CI. Vite+ e seu alias `vite` avançam juntos, com `oxfmt`, `oxlint`
 e `oxlint-tsgolint` na versão exata que o Vite+ exige; a linha 1.x traz o
 Vitest 5. Mudanças de linha do plugin React e xmldom ficam separadas. O
-adaptador `@convex-dev/better-auth`, Workpool e Rate Limiter preservam as versões dos patches locais em `patchedDependencies`.
+adaptador `@convex-dev/better-auth`, Workpool, Rate Limiter e `convex-test` preservam as versões dos patches locais em `patchedDependencies`.
 
 Se cache for introduzido no CI, usar OS, arquitetura, Node, Bun e hash do
 lockfile na chave. Nunca restaurar `node_modules`, builds ou o recibo de
