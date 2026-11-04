@@ -240,9 +240,12 @@ it.each(["validation", "installation"])(
     expect(new Date(renewed.session.expiresAt).getTime()).toBe(startedAt + 8 * day);
     expect(renewedResponse.headers.get("set-better-auth-cookie")).toContain("Max-Age=604800");
 
-    // Sem novo acesso, até a sessão renovada vence e o backend recusa o acesso.
+    // Sem novo acesso, até a sessão renovada vence: o Better Auth não emite outro token e a
+    // mutation recusa. A query não lê o relógio; o JWT que já tem dura 15 minutos (#43).
     vi.setSystemTime(startedAt + 8 * day + 1000);
-    await expect(actor.query(api.account.profile, {})).rejects.toThrow("UNAUTHENTICATED");
+    await expect(actor.mutation(api.account.rename, { name: "Outro nome" })).rejects.toThrow(
+      "UNAUTHENTICATED",
+    );
     expect(
       await (await request(t, "/get-session", undefined, undefined, cookie)).json(),
     ).toBeNull();

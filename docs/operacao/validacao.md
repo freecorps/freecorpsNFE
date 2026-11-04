@@ -314,10 +314,13 @@ da origem do painel. Isso evita depender de cookies de terceiros, mas **não é
 uma sessão protegida por cookie HttpOnly no host do painel**. A CSP e a ausência
 de scripts externos reduzem a exposição a scripts injetados; não adicionar HTML
 arbitrário ou scripts de terceiros ao console. O backend configura cookies
-seguros, sessão de sete dias, renovação durante o uso após 24 horas e JWT de 60 segundos.
-Cache de cookie de sessão está desativado. As consultas protegidas conferem
-também a sessão atual no banco com `safeGetAuthUser`; um JWT ainda válido não
-autoriza sessão revogada ou vencida. O rate limit de autenticação persiste no
+seguros, sessão de sete dias, renovação durante o uso após 24 horas e JWT de 15 minutos.
+Cache de cookie de sessão está desativado. As funções protegidas conferem
+também a sessão atual no banco com `sessionUser`; um JWT ainda válido não
+autoriza sessão revogada. Sessão vencida é recusada em mutations e nas actions
+que conferem a sessão por conta própria; uma query, e a action que confere
+acesso por uma query, não lê o relógio e a aceita até o JWT terminar, porque o
+token só é emitido para sessão viva (#43). O rate limit de autenticação persiste no
 banco, com limite geral de 30 requisições/minuto e regras explícitas de cinco
 tentativas/minuto para `/sign-in/email`, `/change-password` e `/change-email`.
 A sexta tentativa inválida de login recebe 429 com `X-Retry-After`, sem bloquear
@@ -377,8 +380,9 @@ node apps/console/e2e/validation.mjs
 Instalar Chromium com `bunx playwright install chromium` se necessário. O teste
 verifica login, consulta, logout, perfis, rotas diretas, headers e layout móvel.
 Se `VALIDATION_CONVEX_DEPLOY_KEY` estiver presente, também antecipa a expiração
-**somente da sessão sintética criada nessa execução** e confere a recusa com o
-JWT anterior. Isso modifica o ambiente compartilhado e exige execução explícita
+**somente da sessão sintética criada nessa execução**, recarrega o console, que
+volta ao login e faz o Better Auth descartar a sessão vencida, e confere a recusa
+com o JWT anterior. Isso modifica o ambiente compartilhado e exige execução explícita
 do operador; o script recusa GitHub Actions. Sem a chave, informa que esse passo
 foi omitido. Screenshots ficam em `~/.freecorpsnfe/validation-evidence` e não
 incluem o formulário preenchido. Não ativar trace/HAR com credenciais reais.

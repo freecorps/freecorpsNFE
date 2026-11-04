@@ -68,6 +68,7 @@ export const utilities = {
     "originOf",
   ],
   "lib/organizationAccess": [
+    "sessionUser",
     "deny",
     "denialCode",
     "findMembership",

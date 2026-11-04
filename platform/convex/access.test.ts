@@ -113,16 +113,39 @@ it("enforces operator, viewer and missing grant on the server", async () => {
   await expect(outsider.client.query(api.access.diagnostics, {})).rejects.toThrow("ACCESS_DENIED");
   await expect(t.query(api.access.diagnostics, {})).rejects.toThrow("UNAUTHENTICATED");
 });
-it("rejects expired and revoked sessions even with an authenticated Convex identity", async () => {
+it("rejects revoked sessions at once and expired ones outside queries (#43)", async () => {
   const t = setup();
   const expired = await identity(t, "operator", true);
   const active = await identity(t, "operator");
-  await expect(expired.client.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
+  // A query does not read the clock: the 15-minute JWT, only issued for a live session, bounds
+  // an expired row. A mutation still compares `expiresAt`.
+  await expect(expired.client.query(api.access.overview, {})).resolves.toMatchObject({
+    role: "operator",
+  });
+  await expect(expired.client.mutation(api.account.rename, { name: "Outro nome" })).rejects.toThrow(
+    "UNAUTHENTICATED",
+  );
   await t.mutation(components.betterAuth.adapter.deleteOne, {
     input: { model: "session", where: [{ field: "_id", value: active.sessionId }] },
   });
   await expect(active.client.query(api.access.session, {})).resolves.toBeNull();
   await expect(active.client.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
+});
+it("refuses a session that belongs to another user than the token's subject", async () => {
+  const t = setup();
+  const operator = await identity(t, "operator");
+  const viewer = await identity(t, "viewer");
+  const viewerId = (await t.query(components.betterAuth.adapter.findOne, {
+    model: "session",
+    where: [{ field: "_id", value: viewer.sessionId }],
+  }))!.userId as string;
+  const mixed = t.withIdentity({
+    subject: viewerId,
+    sessionId: operator.sessionId,
+    issuer: validationTarget.siteUrl,
+  });
+  await expect(mixed.query(api.access.session, {})).resolves.toBeNull();
+  await expect(mixed.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
 });
 it("does not accept a user ID supplied by the caller", async () => {
   const t = setup();

@@ -248,6 +248,21 @@ it("denies removed accounts and expired sessions through the protected profile",
   vi.useFakeTimers({ toFake: ["Date"] });
   const now = Date.now();
   vi.setSystemTime(now + 7 * 24 * 60 * 60 * 1000 + 1000);
+  // Past `expiresAt` a mutation refuses. A query does not read the clock, and the JWT it already
+  // holds lasts at most 15 minutes (#43); Better Auth issues no new token and drops the row.
+  await expect(client.query(api.account.profile, {})).resolves.toMatchObject({
+    emailVerified: true,
+  });
+  await expect(client.mutation(api.account.rename, { name: "Outro nome" })).rejects.toThrow(
+    "UNAUTHENTICATED",
+  );
+  await expect(
+    client.action(api.account.requestEmailChange, { email: "outro@development.invalid" }),
+  ).rejects.toThrow("UNAUTHENTICATED");
+  const expired = await t.fetch("/api/auth/get-session", {
+    headers: { Origin: "http://localhost:5182", "Better-Auth-Cookie": cookie },
+  });
+  expect(await expired.json()).toBeNull();
   await expect(client.query(api.account.profile, {})).rejects.toThrow("UNAUTHENTICATED");
   vi.setSystemTime(now);
   await t.mutation(components.betterAuth.adapter.deleteOne, {

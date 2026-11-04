@@ -3,7 +3,6 @@ import { ConvexError, v } from "convex/values";
 import { action, internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { authComponent } from "./auth";
 import { requirePlatformEnvironment } from "./environment";
 import { createAccountMailProvider } from "./lib/accountMail";
 import { limitAccountMail } from "./lib/authRequest";
@@ -13,6 +12,7 @@ import {
   limitOrganizationAction,
   normalizeEmail,
   requireUser,
+  sessionUser,
   withdrawMembership,
 } from "./lib/organizationAccess";
 import { closureOf } from "./lib/organizationClosure";
@@ -50,7 +50,7 @@ export const profile = query({
   returns: v.object({ name: v.string(), emailVerified: v.literal(true), organization: v.null() }),
   handler: async (ctx) => {
     requirePlatformEnvironment();
-    const user = await authComponent.safeGetAuthUser(ctx);
+    const user = await sessionUser(ctx);
     if (!user) throw new ConvexError({ code: "UNAUTHENTICATED" });
     if (!user.emailVerified) throw new ConvexError({ code: "EMAIL_UNVERIFIED" });
     return {

@@ -177,9 +177,11 @@ try {
       },
       format: "json",
     });
-    assert.equal((await query("access:overview", token)).status, "error");
+    // A query does not read the clock (#43): the reload asks Better Auth for the session, which
+    // refuses the expired one and drops its row; only then the previous JWT is refused.
     await page.reload();
     await page.getByRole("heading", { name: "Entre para continuar." }).waitFor();
+    assert.equal((await query("access:overview", token)).status, "error");
     console.log("PASS expired session rejected with previously valid JWT");
   } else
     console.log(
