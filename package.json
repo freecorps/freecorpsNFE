@@ -112,7 +112,7 @@
     "@types/react": "~19.2.18",
     "@types/react-dom": "~19.2.7",
     "@vitejs/plugin-react": "^5.2.0",
-    "convex-test": "^0.0.60",
+    "convex-test": "0.0.60",
     "jsdom": "^30.1.3",
     "jsqr": "^1.4.0",
     "oxfmt": "0.74.0",
@@ -140,6 +140,7 @@
   "patchedDependencies": {
     "@convex-dev/better-auth@0.12.5": "patches/@convex-dev%2Fbetter-auth@0.12.5.patch",
     "@convex-dev/workpool@0.4.12": "patches/@convex-dev%2Fworkpool@0.4.12.patch",
-    "@convex-dev/rate-limiter@0.3.2": "patches/@convex-dev%2Frate-limiter@0.3.2.patch"
+    "@convex-dev/rate-limiter@0.3.2": "patches/@convex-dev%2Frate-limiter@0.3.2.patch",
+    "convex-test@0.0.60": "patches/convex-test@0.0.60.patch"
   }
 }

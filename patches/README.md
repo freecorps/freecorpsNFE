@@ -1,11 +1,11 @@
 # Patches de dependências
 
-Bun aplica os três patches deste diretório pelo `patchedDependencies` do
+Bun aplica os quatro patches deste diretório pelo `patchedDependencies` do
 `package.json` da raiz e pelo lockfile.
 
 ## Licença e aviso de modificação
 
-Os três pacotes são Apache-2.0, e o `LICENSE` de cada um continua no pacote
+Os quatro pacotes são Apache-2.0, e o `LICENSE` de cada um continua no pacote
 instalado. Os patches são modificações feitas pela Freecorps e ficam sob a
 mesma Apache-2.0, inclusive os arquivos novos `partitioned.ts`,
 `partitioned.js` e `partitioned.d.ts` do rate-limiter. Por decisão do
@@ -18,6 +18,7 @@ e data.
 | `@convex-dev/better-auth@0.12.5` | `dist/react/index.d.ts`, `src/component/schema.ts`, `dist/component/schema.js`                        | 09/09/2026 |
 | `@convex-dev/rate-limiter@0.3.2` | `lib`, `internal`, `schema` e `_generated/component` em `src` e `dist`, mais os novos `partitioned.*` | 27/10/2026 |
 | `@convex-dev/workpool@0.4.12`    | `src/component/shared.ts`                                                                             | 12/09/2026 |
+| `convex-test@0.0.60`             | `dist/index.js`                                                                                       | 03/11/2026 |
 
 Alterar um patch atualiza a data nesta tabela.
 
@@ -108,6 +109,26 @@ contra o validador `retryBehavior`, vira uma expressão `void` com o mesmo
 de comportamento. As operações persistidas usam o componente conforme
 [OPERATIONS.md](../docs/plataforma/OPERATIONS.md).
 
+## Arquivos guardados por actions no convex-test
+
+`convex-test@0.0.60` roda uma query ou mutation por vez, sob uma trava, e grava
+o arquivo que uma action guarda (`ctx.storage.store`, `ctx.storage.delete`)
+numa transação própria. Para decidir se abria essa transação, o pacote
+perguntava se alguma função segurava a trava, e não se quem gravava era uma
+mutation. Uma action que guardava um arquivo enquanto outra função rodava
+gravava na transação dessa outra função; se ela terminasse antes do hash do
+arquivo, a gravação falhava com `Write outside of transaction`. Duas entregas
+concorrentes de `tests/platform.privacyMail.test.ts` caíram nisso no CI.
+
+O patch troca a pergunta em `writeToDatabase`, de `dist/index.js`: fora de uma
+query ou mutation, a gravação abre a própria transação e espera a trava. Só os
+testes usam o pacote; o runtime do Convex não muda.
+`tests/platform.convexTestStorage.test.ts` segura a trava com uma mutation
+enquanto uma action guarda um arquivo e falha sem o patch com o mesmo erro do
+CI. A 0.0.67, a mais recente em 03/11/2026, ainda tem o defeito. Remover o
+patch quando uma versão publicada decidir pelo contexto de quem grava, depois
+de rodar esse teste sem ele.
+
 ## Revisão a cada atualização
 
 Revisado em 21/10/2026 (#294): os três patches continuam necessários. Nenhum
@@ -121,6 +142,7 @@ manter a versão.
 | `@convex-dev/better-auth`  | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza      | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso         |
 | `@convex-dev/rate-limiter` | Consumo conjunto atômico e partições com saldo migrado                              | Versão publicada com operação conjunta equivalente               | `tests/platform.rate-limits.test.ts`, testes de chaves e uso e `scripts/prove-hosted-rate-limits.mjs` |
 | `@convex-dev/workpool`     | O `shared.ts` publicado declara uma local não usada, acusada pela checagem de tipos | Versão publicada sem a local `_` em `src/component/shared.ts`    | `bun run platform:check` e os testes de operações                                                     |
+| `convex-test`              | O arquivo guardado por uma action entra na transação de outra função concorrente    | Versão publicada que decida pelo contexto de quem grava          | `tests/platform.convexTestStorage.test.ts` sem o patch e `vp run test:platform`                       |
 
 O índice `lastRequest` não tem equivalente no Better Auth publicado. Retirar a
 correção de tipos não retira o patch: ele só sai quando o componente trouxer o
