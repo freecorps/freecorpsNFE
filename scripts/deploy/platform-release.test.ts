@@ -483,7 +483,10 @@ function executableGraph(root: string, entries: string[], tasks: Tasks, notRun: 
   const pending = [...entries];
   const task = (name: string) => {
     const definition = tasks[name];
-    const script = /^node ([\w./-]+)$/.exec(definition?.command ?? "")?.[1];
+    // `node [--flag[=valor]...] <script> [argumentos]`: o script é o primeiro caminho depois das flags.
+    const script = /^node\s+(?:--[\w-]+(?:=\S+)?\s+)*([\w./-]+\.(?:[cm]?js|ts))(?:\s|$)/.exec(
+      definition?.command ?? "",
+    )?.[1];
     if (!script) throw new Error(`Tarefa ${name} não roda um script com node`);
     pending.push("vite.config.ts", script);
     for (const dependency of definition!.dependsOn ?? []) task(dependency);
@@ -508,9 +511,9 @@ function executableGraph(root: string, entries: string[], tasks: Tasks, notRun: 
         throw new Error(`${file} importa ${specifier}, fora do grafo`);
       if (!specifier!.startsWith(".")) continue;
       const target = posix.join(posix.dirname(file), specifier!);
-      const found = [target, `${target}.ts`, `${target}.mjs`].find((path) =>
-        existsSync(join(root, path)),
-      );
+      const found = ["", ".ts", ".mjs", ".js", ".cjs"]
+        .map((ext) => target + ext)
+        .find((path) => existsSync(join(root, path)));
       if (!found) throw new Error(`${file} importa ${target}, que não existe`);
       pending.push(found);
     }
@@ -590,8 +593,17 @@ it("o grafo do publicador reprova o que não consegue seguir", () => {
       return () => executableGraph(root, ["entry.mjs"], tasks);
     };
     mkdirSync(join(root, "scripts"));
-    for (const name of ["vite.config.ts", "scripts/child.mjs", "scripts/a.mjs", "scripts/b.mjs"])
+    for (const name of [
+      "vite.config.ts",
+      "scripts/child.mjs",
+      "scripts/a.mjs",
+      "scripts/b.mjs",
+      "scripts/c.mjs",
+      "scripts/plain.js",
+    ])
       writeFileSync(join(root, name), "");
+    // Import sem extensão de um arquivo .js.
+    expect(graph('import "./scripts/plain";')()).toEqual(["entry.mjs", "scripts/plain.js"]);
     // Um arquivo importado que roda outro script leva esse script ao grafo.
     writeFileSync(
       join(root, "scripts/lib.mjs"),
@@ -605,12 +617,14 @@ it("o grafo do publicador reprova o que não consegue seguir", () => {
     // A tarefa do vp leva o vite.config.ts, o script dela e os das tarefas que ela pede antes.
     const tasks = {
       "ci:a": { command: "node scripts/a.mjs", dependsOn: ["ci:b"] },
-      "ci:b": { command: "node scripts/b.mjs" },
+      "ci:b": { command: "node --experimental-strip-types scripts/b.mjs", dependsOn: ["ci:c"] },
+      "ci:c": { command: "node scripts/c.mjs -p tsconfig.json" },
     };
     expect(graph('run(vp, ["run", "ci:a"]);', tasks)()).toEqual([
       "entry.mjs",
       "scripts/a.mjs",
       "scripts/b.mjs",
+      "scripts/c.mjs",
       "vite.config.ts",
     ]);
     expect(graph('run("scripts/gone.mjs");')).toThrow("Arquivo ausente: scripts/gone.mjs");
