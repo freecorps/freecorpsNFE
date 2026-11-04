@@ -61,11 +61,10 @@ fatia Q da ADR implementou o modelo do período em
   [Plano e autorização](#plano-e-autorização). Uma linha que substitui outra
   não herda a âncora dela; os contadores já gravados ficam na chave antiga.
 
-A retomada automática da captura parada por cota ainda espera o próximo mês
-civil UTC (`nextUsagePeriodStart`, em `captureProcessing.ts`), e não o fim do
-período de cota. Sob um plano ancorado fora do dia 1, ela pode esperar até o
-mês civil seguinte ao fim do período; retomar no console ou atribuir um plano
-continua liberando na hora.
+A retomada automática da captura parada por cota espera o fim do período de
+cota do plano (`quotaPeriod`, em `captureProcessing.ts`): o próximo dia 1 no
+mês civil, ou o aniversário seguinte da âncora. Retomar no console ou
+atribuir um plano continua liberando na hora.
 
 `usageEvents` conserva a chave idempotente, o ambiente e o estado reservado,
 confirmado ou liberado. `usageTotals` agrega por organização, período, unidade e
