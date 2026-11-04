@@ -681,7 +681,7 @@ export const findingAllowlist = [
   // Decisão 1 de 28/10: o login fica onde o processo exige uma pessoa nomeada
   // e o código o lê; no resto da cópia, o mantenedor é citado pelo papel.
   ...[
-    [".github/CODEOWNERS", 62, "Dono dos caminhos que o GitHub pede para revisar"],
+    [".github/CODEOWNERS", 68, "Dono dos caminhos que o GitHub pede para revisar"],
     [
       "deploy/issuance-gate.json",
       2,

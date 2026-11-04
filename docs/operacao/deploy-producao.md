@@ -59,6 +59,16 @@ O `CODEOWNERS` continua pedindo a revisão do dono nas PRs, sem impedir o
 merge nem a publicação. O ruleset da `main` exige PR, os checks `Validate` e
 `Public scan` e conversas resolvidas, com 0 aprovações.
 
+O que o publicador importa, os scripts que ele e esses módulos rodam com
+`node` e as tarefas `vp run` que eles chamam, com o `vite.config.ts` e os
+imports de cada um, têm dono no `CODEOWNERS`. Isso inclui o build da
+documentação (`apps/docs/scripts/build.mjs`, a tarefa `ci:docs`). Um teste de
+`scripts/deploy/platform-release.test.ts` percorre esse grafo a partir do
+publicador e reprova arquivo sem dono, import de pacote do workspace e import
+com caminho calculado. As configurações e o código das aplicações que o Vite
+e o React Router carregam dentro dos builds do console e da documentação
+ficam fora dessas regras.
+
 ## Configuração
 
 | Tipo     | Nome                    | Uso                                       |

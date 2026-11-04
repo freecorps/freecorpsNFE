@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -19,6 +19,7 @@ import {
   legacyEnvironmentNames,
 } from "../lib/platform-release.mjs";
 import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
+import viteConfig from "../../vite.config";
 
 it("exige retirar credenciais legadas e de wipe sem remover chaves da plataforma", () => {
   expect(
@@ -465,4 +466,177 @@ it("o publicador recusa o bootstrap da instalação concluída antes de ler cred
   expect(release.status).not.toBe(0);
   expect(release.stderr).not.toContain("Bootstrap requires");
   expect(release.stderr).toContain("Release requires the exact approved main SHA and plan");
+});
+
+type Tasks = Record<string, { command?: string; dependsOn?: string[] }>;
+
+/**
+ * O que roda com o publicador: os módulos locais que cada arquivo importa
+ * (estático, de efeito ou dinâmico), os scripts que ele cita por caminho a
+ * partir da raiz e, para cada `vp run <tarefa>`, o `vite.config.ts` e o
+ * `node <script>` da tarefa e das que ela pede antes. Pacote do workspace e
+ * import com caminho calculado reprovam: o código deles fica no repositório,
+ * fora do grafo. Os outros pacotes do npm são do lockfile.
+ */
+function executableGraph(root: string, entries: string[], tasks: Tasks, notRun: string[] = []) {
+  const seen = new Set<string>();
+  const pending = [...entries];
+  const task = (name: string) => {
+    const definition = tasks[name];
+    // `node [--flag[=valor]...] <script> [argumentos]`: o script é o primeiro caminho depois das flags.
+    const script = /^node\s+(?:--[\w-]+(?:=\S+)?\s+)*([\w./-]+\.(?:[cm]?js|ts))(?:\s|$)/.exec(
+      definition?.command ?? "",
+    )?.[1];
+    if (!script) throw new Error(`Tarefa ${name} não roda um script com node`);
+    pending.push("vite.config.ts", script);
+    for (const dependency of definition!.dependsOn ?? []) task(dependency);
+  };
+  while (pending.length) {
+    const file = pending.pop()!;
+    if (seen.has(file)) continue;
+    if (!existsSync(join(root, file))) throw new Error(`Arquivo ausente: ${file}`);
+    seen.add(file);
+    // Linhas de comentário citam imports de exemplo; o código fica com as demais.
+    const source = readFileSync(join(root, file), "utf8")
+      .split("\n")
+      .filter((line) => !/^\s*(?:\/\/|\/\*|\*)/.test(line))
+      .join("\n");
+    if (/\bimport\s*\(\s*(?!["'`])/.test(source))
+      throw new Error(`${file} importa um caminho calculado`);
+    for (const [, , specifier] of source.matchAll(
+      /\b(?:from|import)\s*\(?\s*(["'`])([^"'`]+)\1/g,
+    )) {
+      if (specifier!.startsWith("node:")) continue;
+      if (specifier!.includes("${") || /^(?:#|@freecorps\/)/.test(specifier!))
+        throw new Error(`${file} importa ${specifier}, fora do grafo`);
+      if (!specifier!.startsWith(".")) continue;
+      const target = posix.join(posix.dirname(file), specifier!);
+      const found = ["", ".ts", ".mjs", ".js", ".cjs"]
+        .map((ext) => target + ext)
+        .find((path) => existsSync(join(root, path)));
+      if (!found) throw new Error(`${file} importa ${target}, que não existe`);
+      pending.push(found);
+    }
+    // Um script chamado por caminho a partir da raiz: run("scripts/x.mjs"),
+    // spawnSync(process.execPath, [join(root, "scripts/x.mjs")]). Listas de dados ficam de fora.
+    for (const [, path] of source.matchAll(
+      /(?:\b(?:run|spawn|spawnSync|execFileSync)\(|\bjoin\(\w+,)\s*["'`]((?:[\w-]+\/)+[\w.-]+\.(?:[cm]?js|ts))["'`]/g,
+    ))
+      if (!path!.startsWith("node_modules/") && !notRun.includes(path!)) pending.push(path!);
+    for (const [, name] of source.matchAll(/["']run["'],\s*["']([\w:-]+)["']/g)) task(name!);
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b));
+}
+
+/** Arquivos sem dono no CODEOWNERS. Vale a última regra que casa; uma regra com `/` no fim cobre a pasta. */
+const uncovered = (rules: string[][], files: string[]) =>
+  files.filter(
+    (file) =>
+      ![...rules]
+        .reverse()
+        .find(([rule]) =>
+          rule!.endsWith("/") ? `/${file}`.startsWith(rule!) : rule === `/${file}`,
+        )
+        ?.slice(1).length,
+  );
+
+const codeownerRules = () =>
+  readFileSync(join(repository, ".github/CODEOWNERS"), "utf8")
+    .split("\n")
+    .filter((line) => line.trim() && !line.startsWith("#"))
+    .map((line) => line.trim().split(/\s+/));
+const viteTasks = (viteConfig as unknown as { run: { tasks: Tasks } }).run.tasks;
+// O publicador e o build regravam o arquivo com o SHA antes de usá-lo e o restauram depois.
+const notRun = ["platform/convex/buildInfo.ts"];
+
+it("CODEOWNERS cobre o que o publicador importa e o que ele roda com node, inclusive o build da documentação", () => {
+  const rules = codeownerRules();
+  const graph = executableGraph(
+    repository,
+    ["scripts/deploy/deploy-platform.mjs"],
+    viteTasks,
+    notRun,
+  );
+  // Os scripts chamados por caminho, o import dinâmico, o .ts fora de scripts/ e a tarefa ci:docs.
+  expect(graph).toEqual(
+    expect.arrayContaining([
+      "scripts/build/build-fiscal-packages.mjs",
+      "scripts/selfhost.mjs",
+      "scripts/lib/selfhost-server.mjs",
+      "lib/worktree-local.ts",
+      "vite.config.ts",
+      "apps/docs/scripts/build.mjs",
+      "apps/docs/scripts/output.mjs",
+    ]),
+  );
+  expect(uncovered(rules, graph)).toEqual([]);
+  // A exceção continua citada pelo publicador; se sair, sai daqui também.
+  expect(readFileSync(publisher, "utf8")).toContain(`"${notRun[0]}"`);
+  // Casos negados: sem a regra, o build da documentação fica descoberto; uma regra
+  // posterior sem dono tira a cobertura, porque vale a última.
+  expect(
+    uncovered(
+      rules.filter(([rule]) => !rule!.startsWith("/apps/docs/")),
+      graph,
+    ),
+  ).toEqual(["apps/docs/scripts/build.mjs", "apps/docs/scripts/output.mjs"]);
+  expect(uncovered([...rules, ["/scripts/lib/repo-root.mjs"]], graph)).toEqual([
+    "scripts/lib/repo-root.mjs",
+  ]);
+});
+
+it("o grafo do publicador reprova o que não consegue seguir", () => {
+  const root = mkdtempSync(join(tmpdir(), "fnfe-graph-"));
+  try {
+    const graph = (source: string, tasks: Tasks = {}) => {
+      writeFileSync(join(root, "entry.mjs"), source);
+      return () => executableGraph(root, ["entry.mjs"], tasks);
+    };
+    mkdirSync(join(root, "scripts"));
+    for (const name of [
+      "vite.config.ts",
+      "scripts/child.mjs",
+      "scripts/a.mjs",
+      "scripts/b.mjs",
+      "scripts/c.mjs",
+      "scripts/plain.js",
+    ])
+      writeFileSync(join(root, name), "");
+    // Import sem extensão de um arquivo .js.
+    expect(graph('import "./scripts/plain";')()).toEqual(["entry.mjs", "scripts/plain.js"]);
+    // Um arquivo importado que roda outro script leva esse script ao grafo.
+    writeFileSync(
+      join(root, "scripts/lib.mjs"),
+      'spawnSync(process.execPath, [join(root, "scripts/child.mjs")]);\n// from "./comentario.mjs"',
+    );
+    expect(graph('import "./scripts/lib.mjs";')()).toEqual([
+      "entry.mjs",
+      "scripts/child.mjs",
+      "scripts/lib.mjs",
+    ]);
+    // A tarefa do vp leva o vite.config.ts, o script dela e os das tarefas que ela pede antes.
+    const tasks = {
+      "ci:a": { command: "node scripts/a.mjs", dependsOn: ["ci:b"] },
+      "ci:b": { command: "node --experimental-strip-types scripts/b.mjs", dependsOn: ["ci:c"] },
+      "ci:c": { command: "node scripts/c.mjs -p tsconfig.json" },
+    };
+    expect(graph('run(vp, ["run", "ci:a"]);', tasks)()).toEqual([
+      "entry.mjs",
+      "scripts/a.mjs",
+      "scripts/b.mjs",
+      "scripts/c.mjs",
+      "vite.config.ts",
+    ]);
+    expect(graph('run("scripts/gone.mjs");')).toThrow("Arquivo ausente: scripts/gone.mjs");
+    writeFileSync(join(root, "scripts/spawned.mjs"), 'import "./missing.mjs";');
+    expect(graph('run("scripts/spawned.mjs");')).toThrow("scripts/missing.mjs, que não existe");
+    expect(graph('import { x } from "@freecorps/fiscal-core";')).toThrow("fora do grafo");
+    expect(graph("await import(`./${name}.mjs`);")).toThrow("fora do grafo");
+    expect(graph("await import(path);")).toThrow("caminho calculado");
+    expect(graph('run(vp, ["run", "ci:x"]);', { "ci:x": { command: "vp build" } })).toThrow(
+      "Tarefa ci:x não roda um script com node",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
