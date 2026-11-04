@@ -32,7 +32,7 @@ describe("classificação da mudança", () => {
   });
 
   it("só documentação roda a formatação e os testes que leem toda a documentação", () => {
-    const change = classify({ files: ["docs/plataforma/USAGE.md"] });
+    const change = classify({ files: ["docs/plataforma/EXEMPLO.md"] });
     expect(change.mode).toBe("docs");
     expect(steps(change, { base: "abc" }).map((step) => step.name)).toEqual([
       "formatação",
@@ -42,17 +42,17 @@ describe("classificação da mudança", () => {
 
   it("documentação lida por teste, ou apagada, roda o conjunto inteiro", () => {
     expect(classify({ files: ["AGENTS.md"] }).mode).toBe("full");
-    expect(classify({ files: [], deleted: ["docs/plataforma/USAGE.md"] }).mode).toBe("full");
+    expect(classify({ files: [], deleted: ["docs/plataforma/EXEMPLO.md"] }).mode).toBe("full");
   });
 
   it("formata o que existe e faz lint só de JS e TS", () => {
     const change = classify({
-      files: ["platform/convex/keys.ts", "docs/plataforma/USAGE.md", "apps/console/src/a.tsx"],
+      files: ["platform/convex/keys.ts", "docs/plataforma/EXEMPLO.md", "apps/console/src/a.tsx"],
       deleted: ["platform/convex/old.ts"],
     });
     expect(change.format).toEqual([
       "platform/convex/keys.ts",
-      "docs/plataforma/USAGE.md",
+      "docs/plataforma/EXEMPLO.md",
       "apps/console/src/a.tsx",
     ]);
     expect(change.lint).toEqual(["platform/convex/keys.ts", "apps/console/src/a.tsx"]);
