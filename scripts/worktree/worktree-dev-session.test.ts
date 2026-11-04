@@ -316,7 +316,7 @@ async function devLock(paths: ReturnType<typeof worktreePaths>, owner: ChildProc
     pid: owner.pid,
     identity: readProcessIdentity(owner.pid!),
     command: "dev",
-    startedAt: new Date().toISOString(),
+    startedAt: "2026-11-04T12:00:00.000Z",
     outcome: "running",
   };
   writeFileSync(join(paths.convexDir, "worktree-operation.lock"), JSON.stringify(record));
