@@ -1,14 +1,16 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { referenceCorpus } from "../../tests/helpers/reference-corpus";
 import { sha256 } from "../../lib/reference-dataset";
-const root = "tests/fixtures/references/1.0";
+import { repoRoot } from "../lib/repo-root.mjs";
+const root = join(repoRoot, "tests/fixtures/references/1.0");
 mkdirSync(root, { recursive: true });
 const files = [];
 for (const dataset of ["ncm", "municipalities"] as const) {
   const corpus = await referenceCorpus(dataset);
   const file = `${dataset}.json`,
     data = JSON.stringify(corpus, null, 2) + "\n";
-  writeFileSync(`${root}/${file}`, data, "utf8");
+  writeFileSync(join(root, file), data, "utf8");
   files.push({
     file,
     sha256: await sha256(data),
@@ -23,7 +25,7 @@ for (const dataset of ["ncm", "municipalities"] as const) {
   });
 }
 writeFileSync(
-  `${root}/manifest.json`,
+  join(root, "manifest.json"),
   JSON.stringify(
     {
       version: 1,

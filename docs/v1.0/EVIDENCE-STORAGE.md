@@ -9,18 +9,23 @@ ser segue a [evidência restrita](#evidência-restrita).
 
 ## Inventário de 20/10/2026
 
+O inventário, a linha de base e os testes que conferem os recibos são do
+repositório anterior, hoje `freecorps/freecorpsNFE-arquivo`, onde os recibos
+ficaram (decisão 6 da [matriz](ACCEPTANCE.md)); a cópia pública não traz
+nenhum deles.
+
 Medido sobre `d2c29bd` com `git ls-tree -l` (tamanho dos blobs, sem blocos
 do sistema de arquivos) e `git cat-file --batch-check` sobre os objetos
 alcançáveis da `main`.
 
-| Classe                               | Arquivos |        MiB | Uso                                                                 |
-| ------------------------------------ | -------: | ---------: | ------------------------------------------------------------------- |
-| Capturas de tela (`.png`)            |      645 |      99,99 | Revisão visual; 76 MiB em `console-*` e `issuance-console`          |
-| Dados brutos (`.jsonl`)              |       20 |      21,57 | Carga hospedada; lidos por `scripts/summarize-hosted-round.test.ts` |
-| Recibos e resumos (`.json`)          |      594 |       8,06 | Resultado verificável; inclui os recibos de gate do publicador      |
-| Vídeos (`.webm`, `.mp4`)             |        8 |       7,77 | Jornadas de #71, #72, #81 e console                                 |
-| Texto, tabelas e roteiros de captura |      218 |       1,12 | README, `.txt`, `.tsv`, `.mjs`                                      |
-| **Total em `docs/v1.0/evidence`**    | **1485** | **138,51** | De 154,13 MiB do checkout inteiro                                   |
+| Classe                               | Arquivos |        MiB | Uso                                                               |
+| ------------------------------------ | -------: | ---------: | ----------------------------------------------------------------- |
+| Capturas de tela (`.png`)            |      645 |      99,99 | Revisão visual; 76 MiB em `console-*` e `issuance-console`        |
+| Dados brutos (`.jsonl`)              |       20 |      21,57 | Carga hospedada; lidos pelo teste do resumo da rodada, no arquivo |
+| Recibos e resumos (`.json`)          |      594 |       8,06 | Resultado verificável; inclui os recibos de gate do publicador    |
+| Vídeos (`.webm`, `.mp4`)             |        8 |       7,77 | Jornadas de #71, #72, #81 e console                               |
+| Texto, tabelas e roteiros de captura |      218 |       1,12 | README, `.txt`, `.tsv`, `.mjs`                                    |
+| **Total em `docs/v1.0/evidence`**    | **1485** | **138,51** | De 154,13 MiB do checkout inteiro                                 |
 
 Três medidas diferentes respondem a perguntas diferentes:
 
@@ -36,7 +41,7 @@ Três medidas diferentes respondem a perguntas diferentes:
 
 Os 29 arquivos acima de 512 KiB (36,98 MiB) e os 14 diretórios com mais de
 2 MiB de mídia (81,07 MiB) estão em
-storage-baseline.json: cada arquivo com seu
+`storage-baseline.json`, no arquivo: cada arquivo com seu
 SHA-256 e cada diretório com o total de mídia em bytes.
 
 ## Classes e destino
@@ -63,11 +68,11 @@ Para evidências novas, a partir desta política:
 - PNG otimizado sem perda (por exemplo, `oxipng -o 4 --strip safe`) antes do
   commit. Vídeo só quando a sequência não cabe em capturas.
 
-`scripts/evidence-storage.test.ts`, no projeto `tooling`, recusa arquivos e
-diretórios fora do orçamento, confere que os 29 arquivos inventariados
-continuam com os mesmos bytes e que os recibos de `installation` em
-`deploy/platform-release.json` passam por `installationRecord`. Os diretórios do inventário podem manter o
-tamanho atual, mas não crescer.
+No arquivo, `scripts/evidence-storage.test.ts` recusava arquivos e
+diretórios fora do orçamento e conferia que os 29 arquivos inventariados
+continuavam com os mesmos bytes. Ele só confere recibos e não veio para a
+cópia pública; aqui, o orçamento é conferido na revisão. Os diretórios do
+inventário podem manter o tamanho atual, mas não crescer.
 
 Exemplo: uma tela nova em quatro variações (desktop/mobile, claro/escuro)
 cabe no orçamento com as capturas "depois" otimizadas. A matriz completa

@@ -9,8 +9,9 @@ import { formatEnvFile } from "../lib/worktree/env-file.mjs";
 import type { TLSSocket } from "node:tls";
 import { syntheticCertificate, syntheticServer } from "../../tests/helpers/certificates";
 import { encryptCertificate } from "../../platform/convex/lib/certificateCrypto";
+import { repoRoot } from "../lib/repo-root.mjs";
 
-const root = process.cwd(),
+const root = repoRoot,
   output = join(root, ".ci-results/77");
 mkdirSync(output, { recursive: true });
 const target: { name: string; type: string; reference: string } = JSON.parse(

@@ -28,5 +28,9 @@
     "vite.config.ts",
     "packages",
     "examples"
-  ]
+  ],
+  // ci:distribution apaga e recria packages/contracts/dist (contracts:build) ao
+  // lado de ci:typecheck e ci:check; nada importa esse dist, cujos exports
+  // apontam para src/. Os outros dist saem de tarefas que terminam antes.
+  "exclude": ["**/node_modules", "packages/contracts/dist"]
 }
