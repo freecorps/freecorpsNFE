@@ -396,9 +396,20 @@ it("encerrar exige o owner e a confirmação, bloqueia operações e revoga as i
   expect(state.invitations.every((i) => i.status === "revoked")).toBe(true);
   expect((await closureOf(f))?.revoked).toBe(true);
 
-  // After the window the export closes as well, before any row is purged.
+  // After the window the export closes as well, before any row is purged: a mutation compares
+  // the clock, a query the state the purge persists once the window ends (#45).
   vi.setSystemTime(closed.exportUntil);
   const later = await actor(f);
+  expect(
+    await code(later.client.mutation(api.exports.create, { ...exportArgs, key: "late" })),
+  ).toBe("ORGANIZATION_CLOSED");
+  await f.t.run(async (ctx) => {
+    const closure = (await ctx.db
+      .query("organizationClosures")
+      .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
+      .unique())!;
+    await ctx.db.patch("organizationClosures", closure._id, { state: "purging" });
+  });
   expect(
     await code(
       later.client.query(api.exports.parts, {

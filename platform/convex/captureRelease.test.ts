@@ -722,7 +722,7 @@ describe("selo da captura fiscal e leituras de Produção (#433)", () => {
       const company = (await ctx.db.get("companies", s.companyId))!;
       return fiscalCaptureOf(ctx, { role: "viewer" }, company);
     });
-    expect(view).toBe("halted");
+    expect(view).toEqual({ fiscalCapture: "halted", fiscalCaptureTermsDeadline: null });
   });
   it("só para quem lê a captura, com o acesso das outras leituras", async () => {
     const s = await scope();
@@ -809,7 +809,7 @@ describe("novos termos para quem já liberou (#428)", () => {
       });
     const expired = () =>
       s.t.run(async (ctx) =>
-        captureTermsExpired(ctx, (await ctx.db.get("companies", s.companyId))!),
+        captureTermsExpired(ctx, (await ctx.db.get("companies", s.companyId))!, Date.now()),
       );
     return { ...s, accept, expired };
   }
@@ -817,25 +817,21 @@ describe("novos termos para quem já liberou (#428)", () => {
 
   it("o prazo conta da data da versão atual, à meia-noite de Brasília", () => {
     expect(termsStanding(CAPTURE_TERMS_VERSION)).toBeNull();
-    expect(termsStanding("captura-fiscal-2026-01-01", deadline - 1)).toEqual({
+    expect(termsStanding("captura-fiscal-2026-01-01")).toEqual({
       version: CAPTURE_TERMS_VERSION,
       deadline,
-      expired: false,
     });
-    expect(termsStanding(null, deadline)!.expired).toBe(true);
+    expect(termsStanding(null)).toEqual({ version: CAPTURE_TERMS_VERSION, deadline });
   });
   it("antes do prazo a captura segue e o console pede o aceite; depois, as consultas esperam", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(deadline - 60_000);
     const s = await olderRelease();
-    expect((await s.status()).termsUpdate).toEqual({
-      version: CAPTURE_TERMS_VERSION,
-      deadline,
-      expired: false,
-    });
+    // The console compares the deadline with its clock: the query never reads it (#45).
+    expect((await s.status()).termsUpdate).toEqual({ version: CAPTURE_TERMS_VERSION, deadline });
     expect(await s.expired()).toBe(false);
     vi.setSystemTime(deadline);
-    expect((await s.status()).termsUpdate!.expired).toBe(true);
+    expect((await s.status()).termsUpdate).toEqual({ version: CAPTURE_TERMS_VERSION, deadline });
     expect(await s.expired()).toBe(true);
     // Waiting for the terms is not a withdrawal: production, keys and reading stay.
     expect(await s.status()).toMatchObject({ state: "released", blocked: false });
@@ -917,11 +913,19 @@ describe("novos termos para quem já liberou (#428)", () => {
         const company = (await ctx.db.get("companies", s.companyId))!;
         return fiscalCaptureOf(ctx, { role: "viewer" }, company);
       });
-    expect(await view()).toBe("terms");
+    // A mutation answers with its clock; the companies' queries return the deadline, which the
+    // console compares with its own (#45).
+    expect(await view()).toEqual({ fiscalCapture: "terms", fiscalCaptureTermsDeadline: deadline });
+    // The same reading in a query's context, which carries no scheduler.
+    const inQuery = await s.t.run(async ({ scheduler: _scheduler, ...ctx }) => {
+      const company = (await ctx.db.get("companies", s.companyId))!;
+      return fiscalCaptureOf(ctx, { role: "viewer" }, company);
+    });
+    expect(inQuery).toEqual({ fiscalCapture: "active", fiscalCaptureTermsDeadline: deadline });
     vi.stubEnv("APP_ENV", "development");
     await s.accept();
     vi.stubEnv("APP_ENV", "installation");
-    expect(await view()).toBe("active");
+    expect(await view()).toEqual({ fiscalCapture: "active", fiscalCaptureTermsDeadline: null });
   });
 });
 

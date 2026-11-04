@@ -241,6 +241,7 @@ export function observedAction(
         const admission = await ctx.runQuery(internal.usage.downloadAdmissionScope, {
           tokenHash: await hashApiKey(downloadToken),
           kind: transport,
+          now: Date.now(),
         });
         if (admission) {
           actor = admission.actor;

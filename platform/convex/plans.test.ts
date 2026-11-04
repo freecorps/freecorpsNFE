@@ -112,7 +112,11 @@ it("denies enrollment without rollout, unauthorized roles and cross-organization
   await f.configure();
   const viewer = await person(f.t, f.organizationId, "viewer");
   await expect(
-    viewer.query(api.plans.overview, { organizationId: f.organizationId, contextKey: "test" }),
+    viewer.query(api.plans.overview, {
+      asOf: Date.now(),
+      organizationId: f.organizationId,
+      contextKey: "test",
+    }),
   ).rejects.toThrow("ACCESS_DENIED");
   await expect(
     viewer.mutation(api.plans.requestPaid, {
@@ -135,7 +139,11 @@ it("denies enrollment without rollout, unauthorized roles and cross-organization
     }),
   );
   await expect(
-    f.owner.query(api.plans.overview, { organizationId: otherId, contextKey: "other" }),
+    f.owner.query(api.plans.overview, {
+      asOf: Date.now(),
+      organizationId: otherId,
+      contextKey: "other",
+    }),
   ).rejects.toThrow("ACCESS_DENIED");
 });
 
@@ -145,6 +153,7 @@ it("claims permanent free once and reserves capacity and custody exactly once", 
   await f.owner.mutation(api.plans.claimFree, { organizationId: f.organizationId });
   await f.owner.mutation(api.plans.claimFree, { organizationId: f.organizationId });
   const result = await f.owner.query(api.plans.overview, {
+    asOf: Date.now(),
     organizationId: f.organizationId,
     contextKey: "test",
   });
@@ -193,6 +202,7 @@ it("charges the full month, activates only on operator confirmation and deduplic
   expect(
     (
       await f.owner.query(api.plans.overview, {
+        asOf: Date.now(),
         organizationId: f.organizationId,
         contextKey: "test",
       })
@@ -212,6 +222,7 @@ it("charges the full month, activates only on operator confirmation and deduplic
   expect(
     (
       await f.owner.query(api.plans.overview, {
+        asOf: Date.now(),
         organizationId: f.organizationId,
         contextKey: "test",
       })
@@ -423,7 +434,11 @@ describe("annual switch", () => {
     const f = await fixture();
     await f.configure();
     const view = () =>
-      f.owner.query(api.plans.overview, { organizationId: f.organizationId, contextKey: "annual" });
+      f.owner.query(api.plans.overview, {
+        asOf: Date.now(),
+        organizationId: f.organizationId,
+        contextKey: "annual",
+      });
     const off = await view();
     expect(off.annualEnabled).toBe(false);
     for (const offer of off.offers) expect(offer).not.toHaveProperty("annualCents");
@@ -509,7 +524,11 @@ describe("Pix switch", () => {
   const settings = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique());
   const isOn = (f: Fixture) => f.t.run((ctx) => pixEnabled(ctx));
   const view = (f: Fixture) =>
-    f.owner.query(api.plans.overview, { organizationId: f.organizationId, contextKey: "pix" });
+    f.owner.query(api.plans.overview, {
+      asOf: Date.now(),
+      organizationId: f.organizationId,
+      contextKey: "pix",
+    });
   const request = (f: Fixture, key: string) =>
     f.owner.mutation(api.plans.requestPaid, {
       organizationId: f.organizationId,

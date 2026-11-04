@@ -784,11 +784,13 @@ node scripts/cold-tier/cold-archive.mjs due plano.json 400
 node scripts/cold-tier/cold-archive.mjs renew plano.json RUN_ID
 ```
 
-`renew` pede ao servidor o prazo de hoje (`coldArchive:retention`): a guarda
-contada da data atual, ou do encerramento, se a organização foi encerrada
-depois do arquivamento. Primeiro estende a regra no R2, depois grava o novo
-`retainUntil` no run (`coldArchive:renewRetention`); o run nunca promete uma
-data que o R2 ainda não garante. Só estende, é idempotente, e uma retenção
+`renew` pede ao servidor o prazo de hoje (`coldArchive:retention`, com o
+relógio do executor): a guarda contada da data atual, ou do encerramento, se a
+organização foi encerrada depois do arquivamento. Primeiro estende a regra no
+R2, depois grava o novo `retainUntil` no run (`coldArchive:renewRetention`); o
+run nunca promete uma data que o R2 ainda não garante. A gravação aceita o
+relógio do executor até uma hora adiantado em relação ao servidor, para que a
+virada do ano não recuse um prazo que o R2 já guarda. Só estende, é idempotente, e uma retenção
 legal não o impede. Como a guarda conta por ano civil, o prazo só anda na
 virada do ano: rode `due` e `renew` ao menos uma vez por ano para cada run
 arquivado. Os manifestos continuam com a data do selo; o catálogo compactado

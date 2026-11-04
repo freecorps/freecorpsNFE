@@ -6,12 +6,13 @@ import { deny } from "./organizationAccess";
 import { activeClaim, executionAllowed, type Claim } from "./operationCore";
 import { captureTask } from "./captureValues";
 import { certificateHead } from "./certificateAccess";
+import { clockOf } from "./clock";
 import {
   CAPTURE_FISCAL_HALTED,
   CAPTURE_TERMS_PENDING,
   captureFiscalHalted,
   captureReleaseState,
-  captureTermsExpired,
+  captureTermsDeadline,
 } from "./fiscalCaptureRelease";
 
 /** The source confirms that the probed next NSU does not exist. A known
@@ -70,12 +71,12 @@ export async function captureClaim(ctx: MutationCtx, claim: Claim) {
     return null;
   return { op, stream };
 }
-/** Whether the stream's company is past the deadline to accept new terms (#428). */
-async function termsExpiredFor(ctx: QueryCtx, stream: Doc<"captureStreams">) {
+/** The stream's company deadline to accept new terms (#428), or `null` with current terms. */
+async function termsDeadlineFor(ctx: QueryCtx, stream: Doc<"captureStreams">) {
   const company = await ctx.db.get("companies", stream.companyId);
-  return (
-    company?.organizationId === stream.organizationId && (await captureTermsExpired(ctx, company))
-  );
+  return company?.organizationId === stream.organizationId
+    ? await captureTermsDeadline(ctx, company)
+    : null;
 }
 /**
  * The stream's situation as the console shows it: in attention also while it stays active with
@@ -83,6 +84,10 @@ async function termsExpiredFor(ctx: QueryCtx, stream: Doc<"captureStreams">) {
  * an active production stream waits without asking the customer to act. `termsPending`: an active
  * production stream waiting for the company to accept new terms (#428). One rule for the panel
  * (`captureView`) and the badges of the companies (#433, `fiscalCaptureOf`).
+ *
+ * `termsPending` needs the clock, so only a mutation answers it (`clockOf`). A query answers
+ * `termsDeadline` instead, the deadline of an active production stream whose company has not
+ * accepted the current terms, and the console compares it with its own clock (#45).
  */
 export async function streamSituation(ctx: QueryCtx, stream: Doc<"captureStreams">) {
   const op = stream.operationId ? await ctx.db.get("operations", stream.operationId) : null;
@@ -95,18 +100,31 @@ export async function streamSituation(ctx: QueryCtx, stream: Doc<"captureStreams
     stream.environment === "production" &&
     process.env.APP_ENV === "installation" &&
     (await captureFiscalHalted(ctx));
-  const termsPending =
+  const termsDeadline =
     !halted &&
     state === "active" &&
     stream.environment === "production" &&
-    process.env.APP_ENV === "installation" &&
-    (await termsExpiredFor(ctx, stream));
-  return { op, state, halted, termsPending };
+    process.env.APP_ENV === "installation"
+      ? await termsDeadlineFor(ctx, stream)
+      : null;
+  const now = clockOf(ctx);
+  const termsPending = termsDeadline !== null && now !== null && now >= termsDeadline;
+  return { op, state, halted, termsPending, termsDeadline };
 }
-export async function captureView(ctx: QueryCtx, stream: Doc<"captureStreams">) {
+/**
+ * The stream as the panel and the REST connection show it. In a query the certificate's expiry
+ * is its persisted state (`certificates.expire`) and pending terms stay in `termsDeadline` of the
+ * situation, which the caller may pass when it also needs it.
+ */
+export async function captureView(
+  ctx: QueryCtx,
+  stream: Doc<"captureStreams">,
+  situation?: Awaited<ReturnType<typeof streamSituation>>,
+) {
   const head = await certificateHead(ctx, stream.companyId);
   const cert = head?.activeId ? await ctx.db.get("certificates", head.activeId) : null;
-  const { op, state, halted, termsPending } = await streamSituation(ctx, stream);
+  const { op, state, halted, termsPending } = situation ?? (await streamSituation(ctx, stream));
+  const now = clockOf(ctx);
   return {
     id: stream._id,
     organizationId: stream.organizationId,
@@ -130,7 +148,7 @@ export async function captureView(ctx: QueryCtx, stream: Doc<"captureStreams">) 
     operationId: op?._id ?? null,
     operationState: op?.state ?? null,
     certificateState:
-      cert?.metadata && cert.metadata.notAfter <= Date.now()
+      cert?.metadata && now !== null && cert.metadata.notAfter <= now
         ? "expired"
         : (cert?.state ?? "missing"),
     certificateExpiresAt: cert?.metadata?.notAfter ?? null,
@@ -170,19 +188,31 @@ export const fiscalCaptureBadge = v.union(
   /** Waiting for the company to accept new terms (#428). */
   v.literal("terms"),
 );
+/**
+ * The badge and, for an `active` one, the deadline after which it reads `terms` (#428): the
+ * companies are queries, so the console compares the deadline with its own clock (#45).
+ */
 export async function fiscalCaptureOf(
   ctx: QueryCtx,
   membership: Pick<Doc<"memberships">, "role">,
   company: Doc<"companies">,
-): Promise<Infer<typeof fiscalCaptureBadge>> {
-  if (!READ_ROLES.includes(membership.role)) return null;
-  if ((await captureReleaseState(ctx, company)) !== "released") return null;
+): Promise<{
+  fiscalCapture: Infer<typeof fiscalCaptureBadge>;
+  fiscalCaptureTermsDeadline: number | null;
+}> {
+  const none = { fiscalCaptureTermsDeadline: null };
+  if (!READ_ROLES.includes(membership.role)) return { fiscalCapture: null, ...none };
+  if ((await captureReleaseState(ctx, company)) !== "released")
+    return { fiscalCapture: null, ...none };
   const stream = await scopedStream(ctx, {
     organizationId: company.organizationId,
     companyId: company._id,
     environment: "production",
   });
-  if (!stream) return "not-started";
-  const { state, halted, termsPending } = await streamSituation(ctx, stream);
-  return halted ? "halted" : termsPending ? "terms" : state;
+  if (!stream) return { fiscalCapture: "not-started", ...none };
+  const { state, halted, termsPending, termsDeadline } = await streamSituation(ctx, stream);
+  return {
+    fiscalCapture: halted ? "halted" : termsPending ? "terms" : state,
+    fiscalCaptureTermsDeadline: termsDeadline,
+  };
 }

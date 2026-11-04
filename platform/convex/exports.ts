@@ -129,7 +129,7 @@ export async function createExport(
           prior.selection.projectId !== args.selection.projectId))
     )
       return deny("IDEMPOTENCY_CONFLICT");
-    return summarizeExport(prior);
+    return summarizeExport(prior, Date.now());
   }
   await limitOrganizationAction(ctx, "export", args.organizationId, 2);
   const running = await ctx.db
@@ -169,7 +169,7 @@ export async function createExport(
   });
   await ctx.db.patch("documentExports", id, { expireJobId });
   await requestCleanup(ctx, now + DAY + 3_600_000);
-  return summarizeExport((await ctx.db.get("documentExports", id))!);
+  return summarizeExport((await ctx.db.get("documentExports", id))!, Date.now());
 }
 /**
  * Console: a document export belongs to the organization's console project. The environment is
@@ -263,7 +263,7 @@ export const list = query({
     for (const job of result.page) {
       try {
         await exportAllowed(ctx, job);
-        page.push({ ...summarizeExport(job), description: await describeExport(ctx, job) });
+        page.push({ ...summarizeExport(job, null), description: await describeExport(ctx, job) });
       } catch {
         /* fail closed */
       }
@@ -278,7 +278,8 @@ export const parts = query({
     const job = await ctx.db.get("documentExports", args.exportId);
     if (!job) return deny("NOT_FOUND");
     await exportActor(ctx, job);
-    if (job.state !== "succeeded" || job.expiresAt <= Date.now()) return deny("NOT_FOUND");
+    // `exports.expire` turns the job `expired` at `expiresAt`; a query never reads the clock (#45).
+    if (job.state !== "succeeded") return deny("NOT_FOUND");
     const result = await ctx.db
       .query("exportParts")
       .withIndex("by_exportId_and_sequence", (q) => q.eq("exportId", job._id))

@@ -147,7 +147,7 @@ export async function paidPlanInForce(ctx: MutationCtx, organizationId: Id<"orga
       .first()) ||
     (await scheduledPixRenewal(ctx, organizationId, Date.now())) ||
     (await activeTerm(ctx, organizationId, Date.now())) ||
-    (await cardBlocksPix(ctx, organizationId))
+    (await cardBlocksPix(ctx, organizationId, Date.now()))
   );
 }
 

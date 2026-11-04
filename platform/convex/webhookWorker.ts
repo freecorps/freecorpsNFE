@@ -43,6 +43,7 @@ export const run = internalAction({
         !(await ctx.runQuery(internal.webhookDelivery.canSend, {
           ...args,
           endpointVersion: e.version,
+          now: Date.now(),
         }))
       )
         return null;

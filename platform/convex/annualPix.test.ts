@@ -861,6 +861,7 @@ describe("cadeia de renovações pelo Pix (ADR 0012, seção 1)", () => {
 
 const view = async (f: Fixture) =>
   (await person(f.t, f.organizationId, "owner")).query(api.plans.overview, {
+    asOf: Date.now(),
     organizationId: f.organizationId,
     contextKey: "annual-view",
   });

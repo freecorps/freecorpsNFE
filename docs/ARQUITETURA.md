@@ -50,6 +50,20 @@ sanitizada, monitores por organização/projeto/empresa/ambiente e investigaçã
 no console; auditorias originais e dados fiscais permanecem nos respectivos
 domínios.
 
+Query do Convex não lê o relógio (#45): o resultado fica em cache e não é
+reexecutado quando o tempo passa. Mutations e actions comparam prazos com o
+próprio relógio. Uma query interna recebe o `now` da action ou do script que a
+chama. Um helper compartilhado usa `clockOf(ctx)` (`lib/clock.ts`), que devolve
+`null` em query; com `null`, ele confia no estado que o job agendado do prazo
+grava (certificado, exportação, encerramento) ou na admissão REST, que já
+comparou a validade da chave. Enquanto o job não roda, a query mostra o estado
+anterior: o expurgo de um encerramento que espera um run do arquivo frio deixa a
+janela de exportação aberta nas leituras, mas ticket e download, que são
+mutations, já recusam. As queries do console devolvem o prazo, e a tela
+o compara com o relógio do navegador. Planos e cobrança recebem `asOf`,
+arredondado ao minuto. O relógio do cliente só decide o que a tela mostra e
+habilita; a mutation decide de novo.
+
 Municípios e NCM usam versões imutáveis, importação candidata e publicação
 atômica. Persistência fica em `platform/convex`, contrato e vigência em
 `packages/contracts` e pesquisa em `apps/console`. A fronteira, as fontes e o

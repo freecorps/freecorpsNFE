@@ -86,7 +86,7 @@ async function stillOwner(ctx: MutationCtx, request: Doc<"assistedExports">) {
 }
 async function openForExport(ctx: MutationCtx, organizationId: Id<"organizations">) {
   const closure = await closureOf(ctx, organizationId);
-  if (closure && !exportWindowOpen(closure)) deny("ORGANIZATION_CLOSED");
+  if (closure && !exportWindowOpen(closure, Date.now())) deny("ORGANIZATION_CLOSED");
 }
 
 const requestResult = v.object({
@@ -483,8 +483,9 @@ async function destinationJob(
   await assertAssistedDestination(ctx, job.organizationId);
   return job;
 }
+/** `now` is the executor's clock: a query never reads it (#45). */
 export const progress = internalQuery({
-  args: { jobId: v.id("documentExports") },
+  args: { jobId: v.id("documentExports"), now: v.number() },
   returns: v.object({
     state: v.string(),
     sequence: v.number(),
@@ -492,7 +493,7 @@ export const progress = internalQuery({
   }),
   handler: async (ctx, args) => {
     const job = await destinationJob(ctx, args.jobId);
-    const expired = job.state === "running" && job.expiresAt <= Date.now();
+    const expired = job.state === "running" && job.expiresAt <= args.now;
     return {
       state: expired ? "expired" : job.state,
       sequence: job.sequence,

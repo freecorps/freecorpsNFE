@@ -263,7 +263,12 @@ it("revalida chave, escopo, concessão, empresa e ambiente a cada página", asyn
   await f.t.run((ctx) =>
     ctx.db.patch("apiKeys", f.scope.keyId, { revokedAt: null, expiresAt: Date.now() - 1 }),
   );
-  await expect(f.read()).rejects.toThrow("INVALID_API_KEY");
+  // Admission compares the expiry with the action's clock; the query never reads it (#45).
+  const expired = await f.t.fetch(`/v1/references/ncm?companyId=${f.scope.companyId}`, {
+    headers: { Authorization: `Bearer ${f.secret}`, "X-Environment": "sandbox" },
+  });
+  expect(expired.status).toBe(401);
+  expect((await expired.json()).error.code).toBe("INVALID_API_KEY");
   await f.t.run(async (ctx) => {
     await ctx.db.patch("apiKeys", f.scope.keyId, { expiresAt: Date.now() + 3600000 });
     const grant = await ctx.db

@@ -62,7 +62,9 @@ export const capture = internalMutation({
   },
 });
 
-// Only the operator's local deployment credential can inspect this test mailbox.
+// Only the operator's local deployment credential can inspect this test mailbox. An expired
+// message stays listed with its `expiresAt` until `capture` removes it: a query never reads the
+// clock (#45).
 export const inbox = internalQuery({
   args: { email: v.string() },
   returns: v.array(accountMail.extend({ createdAt: v.number(), expiresAt: v.number() })),
@@ -85,7 +87,7 @@ export const inbox = internalQuery({
         )
         .order("desc")
         .take(perOrganization(type) ? 20 : 1);
-      for (const mail of latest) if (mail.expiresAt > Date.now()) messages.push(mail);
+      messages.push(...latest);
     }
     messages.sort((a, b) => b.createdAt - a.createdAt);
     return messages.map(({ email, otp, type, createdAt, expiresAt }) => ({

@@ -12,9 +12,12 @@ export async function closureOf(ctx: QueryCtx, organizationId: Id<"organizations
     .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
     .unique();
 }
-/** Only the export of a closing organization stays available, and only inside its window. */
-export function exportWindowOpen(closure: Doc<"organizationClosures">, now = Date.now()) {
-  return closure.state === "closing" && now < closure.exportUntil;
+/**
+ * Only the export of a closing organization stays available, and only inside its window. A query
+ * passes `null` (`clockOf`): the purge, scheduled for `exportUntil`, ends `closing`.
+ */
+export function exportWindowOpen(closure: Doc<"organizationClosures">, now: number | null) {
+  return closure.state === "closing" && (now === null || now < closure.exportUntil);
 }
 export function summarizeClosure(closure: Doc<"organizationClosures">) {
   return {

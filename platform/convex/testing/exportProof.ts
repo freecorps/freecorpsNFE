@@ -141,7 +141,12 @@ export const inspect = internalQuery({
 });
 
 export const measuredRead = internalQuery({
-  args: { exportId: v.id("documentExports"), sequence: v.number(), checkpoint: v.string() },
+  args: {
+    exportId: v.id("documentExports"),
+    sequence: v.number(),
+    now: v.number(),
+    checkpoint: v.string(),
+  },
   returns: v.string(),
   handler: async (ctx, args) => {
     requireLocalProof();

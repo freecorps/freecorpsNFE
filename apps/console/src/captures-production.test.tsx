@@ -169,6 +169,85 @@ describe("captura em produção", () => {
     expect(screen.getByText(/Ela volta sozinha, sem ação sua/)).toBeTruthy();
     expect(screen.queryByText(/precisa de atenção/)).toBeNull();
   });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+  });
+  it("o prazo dos novos termos passa com a página aberta: a captura passa a esperar o aceite (#428)", () => {
+    // The server returns the deadline; the console compares it with its own clock (#45).
+    vi.useFakeTimers({ now: new Date("2026-06-15T15:00:00Z") });
+    const deadline = Date.now() + 1_000;
+    state.queries["captures:get:sandbox"] = null;
+    state.queries["captures:get:production"] = {
+      id: "stream",
+      organizationId: "org",
+      companyId: "company",
+      projectId: "console",
+      environment: "production",
+      state: "active",
+      version: 3,
+      checkpoint: "000000000000002",
+      sourceCursor: null,
+      nextAllowedAt: Date.now() + 3600_000,
+      lastAttemptAt: Date.now() - 60_000,
+      lastSuccessAt: Date.now() - 60_000,
+      code: null,
+      received: 2,
+      operationId: "op",
+      operationState: "retry_wait",
+      certificateState: "active",
+      certificateExpiresAt: Date.now() + 30 * 86_400_000,
+      origin: { kind: "console", integration: null },
+      sourceMaxNsu: null,
+      termsDeadline: deadline,
+    };
+    state.queries["captureRelease:status"] = release("released");
+    render(<Captures org={org} companyId={"company" as never} />);
+    const reason = /o prazo para aceitar a nova versão terminou/;
+    expect(screen.queryByText(reason)).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(1_100);
+    });
+    expect(screen.getByText(reason)).toBeTruthy();
+  });
+  it("um prazo de termos que chega já vencido aparece na hora, sem esperar timer (#45)", () => {
+    vi.useFakeTimers({ now: new Date("2026-06-15T15:00:00Z") });
+    const stream = (termsDeadline: number | null) => ({
+      id: "stream",
+      organizationId: "org",
+      companyId: "company",
+      projectId: "console",
+      environment: "production",
+      state: "active",
+      version: 3,
+      checkpoint: "000000000000002",
+      sourceCursor: null,
+      nextAllowedAt: Date.now() + 3600_000,
+      lastAttemptAt: Date.now() - 60_000,
+      lastSuccessAt: Date.now() - 60_000,
+      code: null,
+      received: 2,
+      operationId: "op",
+      operationState: "retry_wait",
+      certificateState: "active",
+      certificateExpiresAt: Date.now() + 30 * 86_400_000,
+      origin: { kind: "console", integration: null },
+      sourceMaxNsu: null,
+      termsDeadline,
+    });
+    state.queries["captures:get:sandbox"] = null;
+    state.queries["captures:get:production"] = stream(null);
+    state.queries["captureRelease:status"] = release("released");
+    const view = render(<Captures org={org} companyId={"company" as never} />);
+    const reason = /o prazo para aceitar a nova versão terminou/;
+    // Days later on the same page, the stream comes back with a deadline already past.
+    act(() => {
+      vi.setSystemTime(Date.now() + 3 * 86_400_000);
+    });
+    state.queries["captures:get:production"] = stream(Date.now() - 86_400_000);
+    view.rerender(<Captures org={org} companyId={"company" as never} />);
+    expect(screen.getByText(reason)).toBeTruthy();
+  });
   it("em atenção por cota, diz que a captura de produção volta sozinha; no sandbox, não", () => {
     const stream = (environment: string) => ({
       id: `stream-${environment}`,

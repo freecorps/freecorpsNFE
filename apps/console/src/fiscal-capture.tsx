@@ -4,7 +4,7 @@ import { ConvexError } from "convex/values";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "../../../platform/convex/_generated/dataModel";
 import { api } from "../../../platform/convex/_generated/api";
-import { ActionFailure } from "./product-components";
+import { ActionFailure, useNow } from "./product-components";
 import { TermsLink, TermsText, archivedTerms, termsDate } from "./capture-terms";
 import { formatDateTime } from "./format";
 import { releaseFailureText } from "./capture-messages";
@@ -289,6 +289,8 @@ function TermsUpdate({
   const termsShown = archivedTerms[update.version] !== undefined;
   // The deadline is the midnight in Brasília that ends its last day, whatever the reader's zone.
   const deadline = brasiliaDay.format(update.deadline - 1);
+  // The server returns the deadline, not whether it passed: its query never reads the clock.
+  const expired = useNow(update.deadline) >= update.deadline;
   async function submit() {
     setBusy(true);
     setFailure(null);
@@ -300,7 +302,7 @@ function TermsUpdate({
       setBusy(false);
     }
   }
-  const notice = update.expired ? (
+  const notice = expired ? (
     <Callout tone="warning" title="Consultas à Receita pausadas até o aceite dos novos termos">
       O prazo para aceitar os termos da captura fiscal de {termsDate(update.version)} terminou em{" "}
       {deadline}. A captura continua ativa e volta a consultar em até uma hora depois do aceite.{" "}

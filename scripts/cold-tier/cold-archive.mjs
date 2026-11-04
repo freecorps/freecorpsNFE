@@ -237,12 +237,14 @@ export async function main(args = process.argv.slice(2)) {
     });
   if (mode === "renew") {
     // Lock first, then record: the run never claims a date R2 does not already hold.
-    const retention = await source.query("coldArchive:retention", { runId });
+    const now = Date.now();
+    const retention = await source.query("coldArchive:retention", { runId, now });
     const lockedUntil = await locks().ensure(lockRule(), retention.target);
     await source.mutation("coldArchive:renewRetention", {
       runId,
       version: retention.version,
       retainUntil: retention.target,
+      now,
     });
     console.log(
       JSON.stringify({

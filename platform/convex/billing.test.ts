@@ -408,7 +408,7 @@ async function fixture() {
         .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
         .unique(),
     );
-  const billing = () => owner.query(api.billing.overview, { organizationId });
+  const billing = () => owner.query(api.billing.overview, { asOf: Date.now(), organizationId });
   return { t, org, organizationId, owner, fake, plan, billing };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
@@ -988,7 +988,9 @@ describe("permissões e isolamento", () => {
       key: "denied-key-1",
     };
     expect(
-      await code(viewer.query(api.billing.overview, { organizationId: f.organizationId })),
+      await code(
+        viewer.query(api.billing.overview, { asOf: Date.now(), organizationId: f.organizationId }),
+      ),
     ).toBe("ACCESS_DENIED");
     expect(await code(viewer.action(api.billing.checkout, args))).toBe("ACCESS_DENIED");
     expect(await code(operator.action(api.billing.checkout, args))).toBe("ACCESS_DENIED");
@@ -1008,9 +1010,9 @@ describe("permissões e isolamento", () => {
     expect(
       await code(f.owner.action(api.billing.checkout, { ...args, organizationId: other })),
     ).toBe("ACCESS_DENIED");
-    expect(await code(f.owner.query(api.billing.overview, { organizationId: other }))).toBe(
-      "ACCESS_DENIED",
-    );
+    expect(
+      await code(f.owner.query(api.billing.overview, { asOf: Date.now(), organizationId: other })),
+    ).toBe("ACCESS_DENIED");
     expect(f.fake.state.calls).toEqual([]);
     vi.stubEnv("STRIPE_BILLING_SECRET_KEY", "");
     vi.stubEnv("STRIPE_BILLING_WEBHOOK_SECRET", "");
@@ -1388,7 +1390,12 @@ describe("ciclo da assinatura", () => {
       expires_at: String(s(Date.UTC(2026, 9, 26, 9))),
     });
     expect(
-      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).checkout,
+      (
+        await owner.query(api.billing.overview, {
+          asOf: Date.now(),
+          organizationId: f.organizationId,
+        })
+      ).checkout,
     ).toMatchObject({
       kind: "upgrade",
       periodStartsAt: OCT,
@@ -1445,8 +1452,12 @@ describe("ciclo da assinatura", () => {
     expect(sub.cancel_at_period_end).toBe(true);
     expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV_10 });
     expect(
-      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).account
-        ?.subscription?.cancelAtPeriodEnd,
+      (
+        await owner.query(api.billing.overview, {
+          asOf: Date.now(),
+          organizationId: f.organizationId,
+        })
+      ).account?.subscription?.cancelAtPeriodEnd,
     ).toBe(true);
     // One paid plan at a time: a new subscription beside the card plan in force waits for its
     // end, with the date; the renewal is "Retomar renovação".
@@ -1773,7 +1784,12 @@ describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
     expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
     const owner = await person(f.t, f.organizationId, "owner");
     expect(
-      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).reviews,
+      (
+        await owner.query(api.billing.overview, {
+          asOf: Date.now(),
+          organizationId: f.organizationId,
+        })
+      ).reviews,
     ).toMatchObject([{ code: "INVOICE_UNEXPECTED" }]);
   });
 
@@ -1863,7 +1879,12 @@ describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
     expect((sub.items.data[0] as Json).price).toBe("price_large");
     const owner = await person(f.t, f.organizationId, "owner");
     expect(
-      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).reviews,
+      (
+        await owner.query(api.billing.overview, {
+          asOf: Date.now(),
+          organizationId: f.organizationId,
+        })
+      ).reviews,
     ).toMatchObject([{ code: "RENEWAL_BELOW_UPGRADE" }]);
   });
 
@@ -2804,7 +2825,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       (
         await (
           await person(f.t, f.organizationId, "owner")
-        ).query(api.billing.overview, { organizationId: f.organizationId })
+        ).query(api.billing.overview, { asOf: Date.now(), organizationId: f.organizationId })
       ).reviews.map((row) => [row.source, row.code]);
     expect(await reviews()).toEqual(
       expect.arrayContaining([
@@ -2852,7 +2873,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       (
         await (
           await person(g.t, g.organizationId, "owner")
-        ).query(api.billing.overview, { organizationId: g.organizationId })
+        ).query(api.billing.overview, { asOf: Date.now(), organizationId: g.organizationId })
       ).reviews.map((row) => row.code),
     ).toContain("SUBSCRIPTION_STOP_FAILED");
     await g.t.action(internal.billing.stopBlockedAnnual, {
@@ -3276,7 +3297,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       expect(
         await (
           await person(f.t, f.organizationId, "owner")
-        ).query(api.billing.overview, { organizationId: f.organizationId }),
+        ).query(api.billing.overview, { asOf: Date.now(), organizationId: f.organizationId }),
       ).toMatchObject({
         checkout: { kind: "upgrade", cycle: "annual", periodStartsAt: FEB_10, period: FEB_KEY },
       });
@@ -3561,7 +3582,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       expect(grant).toMatchObject({ state: "applied", code: "RENEWAL_BELOW_UPGRADE" });
       const owner = await person(f.t, f.organizationId, "owner");
       const overview = () =>
-        owner.query(api.billing.overview, { organizationId: f.organizationId });
+        owner.query(api.billing.overview, { asOf: Date.now(), organizationId: f.organizationId });
       expect((await overview()).reviews).toMatchObject([
         { source: "grant", code: "RENEWAL_BELOW_UPGRADE", amountCents: 149000 },
       ]);
@@ -3920,7 +3941,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       const owner = await person(g.f.t, g.f.organizationId, "owner");
       const reviews = () =>
         owner
-          .query(api.billing.overview, { organizationId: g.f.organizationId })
+          .query(api.billing.overview, { asOf: Date.now(), organizationId: g.f.organizationId })
           .then((overview) => overview.reviews.map((row) => [row.source, row.code]));
       expect(await reviews()).toContainEqual(["term", "SUBSCRIPTION_STOP_FAILED"]);
       // Its scheduled renewal, rescinded with it and flagged for the same subscription, is the
@@ -4406,8 +4427,12 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     expect(monthly.cancel_at_period_end).toBe(true);
     expect(f.fake.sent(`/v1/subscriptions/${monthly.id}`, "DELETE")).toEqual([]);
     expect(
-      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).account
-        ?.subscription,
+      (
+        await owner.query(api.billing.overview, {
+          asOf: Date.now(),
+          organizationId: f.organizationId,
+        })
+      ).account?.subscription,
     ).toMatchObject({ id: sub.id, annual: true });
   });
 
@@ -4599,6 +4624,7 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     const f = await fixture();
     const view = async () =>
       (await person(f.t, f.organizationId, "owner")).query(api.billing.overview, {
+        asOf: Date.now(),
         organizationId: f.organizationId,
       });
     expect(await view()).toMatchObject({
@@ -4670,9 +4696,7 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     expect(
       await (
         await person(f.t, f.organizationId, "owner")
-      ).query(api.billing.overview, {
-        organizationId: f.organizationId,
-      }),
+      ).query(api.billing.overview, { asOf: Date.now(), organizationId: f.organizationId }),
     ).toMatchObject({ annualBlocked: true });
   });
 
