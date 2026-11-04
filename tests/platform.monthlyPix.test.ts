@@ -547,7 +547,8 @@ describe("um plano pago por vez no mensal por Pix", () => {
     });
     expect(await refusal(f.request("large", "monthly-over-overdue"))).toEqual({
       code: "PLAN_UNAVAILABLE",
-      availableAt: start,
+      // Overdue, it still holds the organization until the end of the month it bought.
+      availableAt: addMonths(start, 1),
     });
   });
 

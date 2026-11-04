@@ -202,13 +202,15 @@ export async function scheduledPixRenewal(
     const endsAt = renewalEnd(span);
     if (endsAt <= now) continue;
     const blocked = request.blockedCode !== undefined;
+    const overdue = !blocked && request.firstPeriod + RENEWAL_OVERDUE <= now;
     return {
       request,
       startsAt: request.firstPeriod,
       endsAt,
       blocked,
-      overdue: !blocked && request.firstPeriod + RENEWAL_OVERDUE <= now,
-      availableAt: blocked ? endsAt : request.firstPeriod,
+      overdue,
+      // Blocked or overdue, it still holds the organization until its end: never a past date.
+      availableAt: blocked || overdue ? endsAt : request.firstPeriod,
     };
   }
   return null;

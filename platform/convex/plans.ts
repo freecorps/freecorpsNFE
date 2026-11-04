@@ -1186,7 +1186,9 @@ async function grantMonthly(ctx: MutationCtx, request: Doc<"platformPlanRequests
  * again for it. The plan read now is replaced, as a term's activation does, an operator's
  * assignment made meanwhile included. A refusal (the month already over, a term over it, the
  * admission, such as a smaller tier the usage no longer fits) is recorded in `blockedCode` for
- * the operator, without retrying, as the card renewal and the scheduled term do.
+ * the operator, without retrying, as the card renewal and the scheduled term do. A refusal from the
+ * grant itself is not caught: only a thrown error rolls back what `activateCatalogPlan` wrote, so
+ * the run fails, Convex does not retry it, and the renewal shows as `overdue` for the operator.
  */
 export const activatePixRenewal = internalMutation({
   args: { requestId: v.id("platformPlanRequests") },
