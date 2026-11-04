@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import { getDocumentSize } from "convex/values";
@@ -25,8 +24,8 @@ import {
 } from "../platform/convex/lib/documentContent";
 import { importTask } from "../platform/convex/lib/importValues";
 import type { MutationCtx } from "../platform/convex/_generated/server";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const defaults = { ...PLATFORM_PLANS.free.capacity };
 beforeEach(() => {
   vi.useFakeTimers();

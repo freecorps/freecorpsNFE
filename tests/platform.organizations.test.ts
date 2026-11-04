@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import {
@@ -10,7 +9,7 @@ import {
 import schema from "../platform/convex/schema";
 import { api, components, internal } from "../platform/convex/_generated/api";
 import { register } from "../platform/test-setup";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 const paginationOpts = { numItems: 50, cursor: null };
 const contextKey = "isolated-test";
 beforeEach(() => {

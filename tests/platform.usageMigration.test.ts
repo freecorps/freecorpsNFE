@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -11,8 +10,8 @@ import {
   compareReceipts,
   summarize,
 } from "../scripts/lib/usage-migration-status.mjs";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-24T12:00:00Z"));

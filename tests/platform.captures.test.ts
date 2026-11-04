@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import { createHash } from "node:crypto";
@@ -17,8 +16,8 @@ import type { Doc, Id } from "../platform/convex/_generated/dataModel";
 import { requirePlatformEnvironment } from "../platform/convex/environment";
 import type { FiscalProofPolicy } from "../platform/convex/lib/fiscalProof";
 import * as certificateRuntime from "../platform/convex/lib/certificateRuntime";
+import { modules } from "./helpers/convex-modules";
 vi.mock("../platform/convex/buildInfo", () => ({ buildSha: "a".repeat(40) }));
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 beforeEach(() => {
   vi.useFakeTimers();
   for (const [key, value] of Object.entries({

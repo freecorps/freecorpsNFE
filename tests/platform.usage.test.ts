@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -19,8 +18,8 @@ import { usagePeriod } from "../platform/convex/lib/usageValues";
 import { retryImportAdmission } from "../platform/convex/lib/importAdmission";
 import { ConvexError } from "convex/values";
 import type { Id } from "../platform/convex/_generated/dataModel";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 it("admission retries a lost commit response with the same intent and never reserves twice", async () => {
   const f = await fixture();
   await f.plan();

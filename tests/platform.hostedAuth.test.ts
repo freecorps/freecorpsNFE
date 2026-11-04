@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -7,8 +6,8 @@ import { register } from "../platform/test-setup";
 import { signAuthRequest } from "../platform/auth-transport";
 import { accountPolicy, recipientAllowed } from "../platform/account-policy.mjs";
 import { accountSenderName } from "../platform/convex/lib/accountMail";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const origin = "https://freecorpsnfe-validation.freecorps.workers.dev";
 const site = "https://modest-seal-118.convex.site";
 const secret = "a".repeat(64);

@@ -1,10 +1,9 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { expect, it, vi, afterEach } from "vite-plus/test";
 import schema from "../platform/convex/schema";
 import { components } from "../platform/convex/_generated/api";
 import { register } from "../platform/test-setup";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 afterEach(() => vi.useRealTimers());
 
 it("consome orçamentos existentes atomicamente e conserva o primeiro quando o último recusa", async () => {

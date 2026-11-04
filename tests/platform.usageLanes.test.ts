@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -15,6 +14,7 @@ import {
 } from "../platform/convex/lib/usageCore";
 import { ConvexError } from "convex/values";
 import type { Id } from "../platform/convex/_generated/dataModel";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * #559: an environment's balance is split in lanes so concurrent admissions of one organization
@@ -32,7 +32,6 @@ import type { Id } from "../platform/convex/_generated/dataModel";
  * Any write to a row or range in a read set between the read and the commit retries the
  * mutation. The local load probe (#559) checked exactly min(N, balance) under real concurrency.
  */
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const PERIOD = "2026-09";
 type Metric = "imports" | "bytes" | "captures";
 type Environment = "sandbox" | "production";

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
@@ -9,8 +8,8 @@ import { register } from "../platform/test-setup";
 import { hashApiKey } from "../platform/convex/lib/apiKeyCrypto";
 import { jsonAnswer } from "../platform/convex/lib/externalHttp";
 import { publicError } from "../platform/convex/lib/publicErrors";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});
   for (const [k, v] of Object.entries({

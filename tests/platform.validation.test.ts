@@ -1,11 +1,10 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
 import { internal } from "../platform/convex/_generated/api";
 import { validationTarget } from "../scripts/lib/validation.mjs";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const nonce = "a0b1c2d3-1234-4567-89ab-123456789abc";
 beforeEach(() => {
   for (const [name, value] of Object.entries(validationTarget.environment))

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -7,13 +6,13 @@ import { register } from "../platform/test-setup";
 import type { Id } from "../platform/convex/_generated/dataModel";
 import type { MembershipRole } from "../packages/contracts/src/organizations";
 import { normalizeNfseProfile } from "../platform/convex/lib/nfseProfile";
+import { modules } from "./helpers/convex-modules";
 
 // Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
 // (freecorps/no-wall-clock-in-tests).
 vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
 afterAll(() => vi.useRealTimers());
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const contextKey = "nfse-profile-proof",
   paginationOpts = { numItems: 50, cursor: null };
 const company = {

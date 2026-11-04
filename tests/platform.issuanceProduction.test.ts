@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
 import schema from "../platform/convex/schema";
@@ -28,6 +27,7 @@ import {
   syntheticApiKey,
   usePlatformEnvironment,
 } from "./helpers/platform";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * Profile of the NFS-e fiscal production deployment (ADR 0004 §8, phase 4, #198). The versioned
@@ -45,7 +45,6 @@ vi.mock("../deploy/issuance-production.json", () => ({
   },
 }));
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 /** The named deployment, marked: the hosted installation profile in fiscal production. */
 const production = {
   APP_ENV: "installation",

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -6,13 +5,13 @@ import { api, components } from "../platform/convex/_generated/api";
 import type { Id } from "../platform/convex/_generated/dataModel";
 import { register } from "../platform/test-setup";
 import { CAPTURE_TERMS_VERSION } from "../platform/convex/lib/fiscalCaptureRelease";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * Início of the console (`consoleHome.summary`) and the landing after login
  * (`organizations.landing`): what each member sees is limited to its organization, to the
  * companies it reaches and to its role. Synthetic data only.
  */
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 9, 15, 15);
 const MONTH_START = Date.UTC(2026, 9, 1);

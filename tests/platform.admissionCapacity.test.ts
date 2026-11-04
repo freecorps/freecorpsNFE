@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -9,12 +8,12 @@ import { totalFor } from "../platform/convex/lib/usageCore";
 import { reserveCapacity } from "../platform/convex/lib/capacityCore";
 import { uploadTicket } from "../platform/convex/imports";
 import type { Id } from "../platform/convex/_generated/dataModel";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * #559: concurrent admissions of one organization must not all rewrite the organization's stock
  * total and capacity account when nothing is gated by them.
  */
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const PERIOD = "2026-09";
 type Tester = Awaited<ReturnType<typeof fixture>>;
 

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -34,13 +33,13 @@ import { signApiRequest } from "../platform/auth-transport";
 import { errorResponse, routes } from "../packages/contracts/src/external";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import { usagePeriod } from "../platform/convex/lib/usageValues";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * ADR 0007, phase 4: on the hosted site, a released company's production stream reaches the
  * distribution in production through its own policy, never the #50 one. Synthetic transport only.
  */
 vi.mock("../platform/convex/buildInfo", () => ({ buildSha: "a".repeat(40) }));
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const CNPJ = "00000000000191";
 const development = {
   APP_ENV: "development",

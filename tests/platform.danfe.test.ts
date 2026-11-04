@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { createHash } from "node:crypto";
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
@@ -17,12 +16,12 @@ import { fixture as xmlFixture } from "./helpers/nfe-corpus";
 import { companyGrant } from "./helpers/platform";
 import { inspectPdf } from "./helpers/pdf";
 import { keepInline, writeContent } from "./helpers/document-footprint";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * DANFE delivery (#402): REST, SDK and console ticket over the synthetic corpus. The corpus
  * invoice and cancellation share one key; nothing here was authorized by a tax authority.
  */
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const SITE_URL = "http://localhost:5190";
 const DAY = 86_400_000;
 
@@ -720,7 +719,7 @@ it("ignores a cancellation of the same key in another company or environment", a
 });
 
 it("finds the cancellation through the version card, without the event's content (B5)", async () => {
-  const f = await setup(keepInline("../"));
+  const f = await setup(keepInline());
   const invoice = await f.importXml(xmlFixture("invoice-authorized"));
   await f.importXml(xmlFixture("event-110111"));
   await writeContent(f.t);

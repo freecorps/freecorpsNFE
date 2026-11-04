@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import { ConvexError } from "convex/values";
@@ -8,7 +7,7 @@ import { register } from "../platform/test-setup";
 import { hashApiKey } from "../platform/convex/lib/apiKeyCrypto";
 import { canonicalRequest, LEASE_MS, RECOVERY_BATCH } from "../platform/convex/lib/operationValues";
 import { publicError } from "../platform/convex/lib/publicErrors";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 beforeEach(() => {
   vi.useFakeTimers();
   for (const [k, value] of Object.entries({

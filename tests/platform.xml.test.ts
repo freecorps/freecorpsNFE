@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -6,7 +5,7 @@ import { internal } from "../platform/convex/_generated/api";
 import { validationTarget } from "../scripts/lib/validation.mjs";
 import { processNfe } from "../packages/fiscal-nfe/src/index";
 import { corpus, fixture } from "./helpers/nfe-corpus";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 beforeEach(() => {
   for (const [name, value] of Object.entries(validationTarget.environment))
     vi.stubEnv(name, value as string);

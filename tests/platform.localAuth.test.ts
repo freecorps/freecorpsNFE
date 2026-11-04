@@ -1,11 +1,10 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
 import { components, internal } from "../platform/convex/_generated/api";
 import { register } from "../platform/test-setup";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const origin = "http://localhost:5182";
 const minute = 1_800_000_000_000;
 const routes = ["/get-session", "/convex/token", "/convex/jwks"];

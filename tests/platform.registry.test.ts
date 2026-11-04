@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -8,7 +7,7 @@ import { hashApiKey } from "../platform/convex/lib/apiKeyCrypto";
 import { lookupOpenCnpj } from "../platform/convex/lib/registryProvider";
 import { CACHE_TTL, RETENTION } from "../platform/convex/lib/registryValues";
 import { registryLookup } from "../packages/contracts/src/registry";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 const cnpj = "00000000000191";
 const raw = {
   cnpj,

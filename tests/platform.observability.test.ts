@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { consoleProjectFor } from "./helpers/console";
 import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
@@ -9,7 +8,7 @@ import { hashApiKey } from "../platform/convex/lib/apiKeyCrypto";
 import { recordAudit, DAY } from "../platform/convex/lib/operationalAudit";
 import { defaultThresholds } from "../platform/convex/lib/operationalMetrics";
 import { finishAttempt } from "../platform/convex/lib/operationCore";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, "info").mockImplementation(() => {});

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -21,6 +20,7 @@ import { splitStreet } from "../platform/convex/lib/stripeAddress";
 import { normalizeIssuanceInput } from "../platform/convex/lib/issuanceCore";
 import { canonicalEntries, sha256 } from "../lib/reference-dataset";
 import type { StripeCharge, StripeConnectionConfig } from "../platform/convex/lib/stripeValues";
+import { modules } from "./helpers/convex-modules";
 
 /**
  * Stripe connection (ADR 0006). Every customer, id and secret is synthetic; the issuances run on
@@ -38,7 +38,6 @@ vi.mock("../deploy/issuance-production.json", () => ({
   },
 }));
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const NOW = Date.UTC(2026, 9, 8, 15); // 08/10/2026 12:00 in Brasília
 const SECRET = `whsec_${"a1".repeat(16)}`;
 

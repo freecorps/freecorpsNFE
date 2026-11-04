@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { randomBytes, createHash } from "node:crypto";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
@@ -11,7 +10,7 @@ import { verifyWebhook, webhookEvents } from "../packages/contracts/src/webhooks
 import { fixture as xmlFixture } from "./helpers/nfe-corpus";
 import { processNfe } from "../packages/fiscal-nfe/src/index";
 import type { Id } from "../platform/convex/_generated/dataModel";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 async function human(
   t: ReturnType<typeof testDatabase>,
   organizationId: Id<"organizations">,

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { convexTest } from "convex-test";
@@ -25,7 +24,7 @@ import type { Id } from "../platform/convex/_generated/dataModel";
 import { routes, errorResponse } from "../packages/contracts/src/external";
 import { FreecorpsClient } from "../packages/sdk/src/index";
 import { CAPTURE_TERMS_VERSION } from "../platform/convex/lib/fiscalCaptureRelease";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 function testDatabase() {
   return convexTest(schema, modules);
 }

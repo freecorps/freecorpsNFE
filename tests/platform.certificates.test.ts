@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { randomBytes } from "node:crypto";
@@ -10,7 +9,7 @@ import { consoleProjectFor } from "./helpers/console";
 import { certificateUsable } from "../platform/convex/lib/certificateAccess";
 import { executionAllowed } from "../platform/convex/lib/operationCore";
 import { validatePendingCertificate } from "../platform/convex/certificateWorker";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 const ring = {
   active: "v1",
   keys: { v1: randomBytes(32).toString("hex"), v2: randomBytes(32).toString("hex") },

@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { isDeepStrictEqual } from "node:util";
 import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
@@ -6,13 +5,13 @@ import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
 import { register } from "../platform/test-setup";
 import { validationTarget } from "../scripts/lib/validation.mjs";
+import { modulePath, modules } from "./helpers/convex-modules";
 
 // Varredura da superfície pública do Convex da plataforma: descobre toda
 // query, mutation e action pública de platform/convex, inclusive módulos
 // novos, e a chama diretamente, sem sessão e com IDs forjados. Uma função que
 // responda sem estar declarada abaixo reprova o CI. Os testes de cada domínio
 // continuam cobrindo papéis, membership e dados reais de outra organização.
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 beforeEach(() => {
   for (const [name, value] of Object.entries(validationTarget.environment))
     vi.stubEnv(name, value as string);
@@ -85,7 +84,7 @@ async function publicFunctions() {
   const found: { name: string; kind: Kind; args: unknown }[] = [];
   for (const [path, load] of Object.entries(modules)) {
     if (path.includes("/_generated/") || path.endsWith(".config.ts")) continue;
-    const module = path.replace("../platform/convex/", "").replace(/\.ts$/, "");
+    const module = modulePath(path);
     for (const [name, value] of Object.entries((await load()) as Record<string, Registered>)) {
       if (!value?.isPublic || !value.exportArgs) continue;
       const kind = value.isQuery ? "query" : value.isMutation ? "mutation" : "action";

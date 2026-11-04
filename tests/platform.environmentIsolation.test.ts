@@ -14,6 +14,7 @@ import { routes } from "../packages/contracts/src/external";
 import { integrationScopes, releasedProductionScopes } from "../packages/contracts/src/projects";
 import { actor, fixture } from "./helpers/export-fixture";
 import { CAPTURE_TERMS_VERSION } from "../platform/convex/lib/fiscalCaptureRelease";
+import { sources } from "./helpers/convex-sources";
 
 /**
  * ADR 0007: the environment is resolved per request. The hosted sandbox serves production only to
@@ -698,16 +699,11 @@ describe("workers and exports", () => {
 });
 
 it("reads PRODUCT_ENV only in the deployment gates, never in an access check", () => {
-  const sources = import.meta.glob("../platform/convex/**/*.ts", {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }) as Record<string, string>;
   const readers = Object.entries(sources)
     .filter(
       ([path, text]) => !path.includes("/_generated/") && text.includes("process.env.PRODUCT_ENV"),
     )
-    .map(([path]) => path.replace("../platform/convex/", ""))
+    .map(([path]) => path.replace("../../platform/convex/", ""))
     .sort();
   // The #50 proof policy, the NFS-e restricted transport and a local proof; `environment.ts`
   // checks the profile by name. Access goes through `lib/environmentAccess.ts`.

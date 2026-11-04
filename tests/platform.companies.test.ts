@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "../platform/convex/schema";
@@ -6,7 +5,7 @@ import { api, components, internal } from "../platform/convex/_generated/api";
 import { register } from "../platform/test-setup";
 import type { Id } from "../platform/convex/_generated/dataModel";
 import type { MembershipRole } from "../packages/contracts/src/organizations";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 const contextKey = "company-proof",
   paginationOpts = { numItems: 50, cursor: null };
 const input = {

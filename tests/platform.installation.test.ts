@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
 import schema from "../platform/convex/schema";
@@ -6,8 +5,8 @@ import { internal } from "../platform/convex/_generated/api";
 import { requirePlatformEnvironment } from "../platform/convex/environment";
 import { proxyAuthentication } from "../apps/console/auth-proxy";
 import { signApiRequest, verifyAuthRequest } from "../platform/auth-transport";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 const origin = "https://console.operator.invalid";
 const site = "https://api.operator.invalid";
 const secret = "b".repeat(64);

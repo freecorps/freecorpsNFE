@@ -1,16 +1,15 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, vi } from "vite-plus/test";
 import schema from "../../platform/convex/schema";
 import { components, internal } from "../../platform/convex/_generated/api";
 import type { Doc, Id } from "../../platform/convex/_generated/dataModel";
 import { register } from "../../platform/test-setup";
+import { modules } from "./convex-modules";
 
 /**
  * Actors and scopes of the platform integration suites. Each helper grants only what its caller
  * names: role, company grant, scopes and environment stay explicit in every scenario.
  */
-const modules = import.meta.glob("../../platform/convex/**/*.ts");
 
 export type PlatformTest = ReturnType<typeof platformTest>;
 export type Role = Doc<"memberships">["role"];

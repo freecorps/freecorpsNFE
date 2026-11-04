@@ -1,5 +1,4 @@
 import { getFunctionName } from "convex/server";
-/// <reference types="vite/client" />
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { convexTest } from "convex-test";
@@ -13,7 +12,7 @@ import { runExport } from "../platform/convex/exportWorker";
 import { readBatch } from "../platform/convex/exportSource";
 import { fixture as xmlFixture } from "./helpers/nfe-corpus";
 import { keepInline, writeContent } from "./helpers/document-footprint";
-const modules = import.meta.glob("../platform/convex/**/*.ts");
+import { modules } from "./helpers/convex-modules";
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 beforeEach(() => {
   vi.useFakeTimers();

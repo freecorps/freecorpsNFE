@@ -1,12 +1,11 @@
-/// <reference types="vite/client" />
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
 import { register } from "../platform/test-setup";
 import schema from "../platform/convex/schema";
 import { internal } from "../platform/convex/_generated/api";
 import { requirePlatformEnvironment } from "../platform/convex/environment";
+import { modules } from "./helpers/convex-modules";
 
-const modules = import.meta.glob("../platform/convex/**/*.ts");
 // The throwaway preview of the pre-B5 read evaluation: no platform profile, only the marker.
 const preview = {
   FNFE_HOSTED_PROOF: "preview-642",
