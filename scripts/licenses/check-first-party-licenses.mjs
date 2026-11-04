@@ -5,7 +5,7 @@ import {
   firstPartyScope,
   packageLicenseText,
   assertDeclaredMitScope,
-} from "./lib/first-party-licenses.mjs";
+} from "../lib/first-party-licenses.mjs";
 
 const scope = firstPartyScope();
 assert.equal(scope.schema, 1);

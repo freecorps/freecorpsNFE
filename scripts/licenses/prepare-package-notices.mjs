@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { packageLicenseText } from "./lib/first-party-licenses.mjs";
+import { packageLicenseText } from "../lib/first-party-licenses.mjs";
 
 function installed(name, from) {
   for (let directory = from; ; directory = dirname(directory)) {

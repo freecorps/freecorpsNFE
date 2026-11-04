@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { bundleNotices } from "./lib/bundle-notices.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { bundleNotices } from "../lib/bundle-notices.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 const docs = createRequire(new URL("apps/docs/package.json", repoUrl));
 const consoleApp = createRequire(new URL("apps/console/package.json", repoUrl));

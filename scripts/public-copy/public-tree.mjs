@@ -711,7 +711,7 @@ export const findingAllowlist = [
     ],
     ["apps/console/src/privacy-policy.test.tsx", 1, "Teste que confere o encarregado na política"],
     [
-      "scripts/rights-relation.mjs",
+      "scripts/licenses/rights-relation.mjs",
       2,
       "Relação do gate rights: identifica os titulares dos direitos",
     ],

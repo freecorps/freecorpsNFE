@@ -1076,7 +1076,7 @@ termina antes deles.
 Em 21/10, com cerca de 2.360 testes, o job no x64 de 2 vCPUs variava de 3,6 a
 7,3 min. A suíte levava de 184 a 395 s porque disputava os dois núcleos com
 builds, checagens de tipos e provas de pacote, que rodam ao mesmo tempo no
-grafo. O arquivo mais lento era `scripts/license-inventory.test.ts` (38 a
+grafo. O arquivo mais lento era `scripts/licenses/license-inventory.test.ts` (38 a
 87 s): cada caso `runtime-*` rodava o `licenses:check` inteiro, quadrático no
 tamanho do lock (9 s localmente). Com o lock indexado uma vez, o check cai
 para 0,3 s e o arquivo para 3 s. `Validate` passou para o x64 de 4 vCPUs,

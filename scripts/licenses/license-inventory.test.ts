@@ -45,7 +45,7 @@ it.each([
     );
     const result = spawnSync(
       process.execPath,
-      [resolve("scripts/inventory-licenses.mjs"), "--check"],
+      [resolve("scripts/licenses/inventory-licenses.mjs"), "--check"],
       { cwd: temporary, encoding: "utf8", windowsHide: true },
     );
     expect(result.error).toBeUndefined();

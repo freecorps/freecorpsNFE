@@ -196,7 +196,7 @@ Com Bun 1.4.0 e dependências do lock:
 
 ```powershell
 bun run licenses:inventory
-node scripts/prepare-package-notices.mjs
+node scripts/licenses/prepare-package-notices.mjs
 bun run licenses:check
 bun run packages:build
 bun run sdk:prove

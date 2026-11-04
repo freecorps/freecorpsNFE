@@ -3,7 +3,7 @@ import {
   assertMitSources,
   assertSdkDeclarations,
   assertDeclaredMitScope,
-} from "./lib/first-party-licenses.mjs";
+} from "../lib/first-party-licenses.mjs";
 
 describe("fronteira MIT do cliente SDK", () => {
   it("recusa cabeçalho próprio MIT que ampliaria a concessão sem atualizar a lista", () => {

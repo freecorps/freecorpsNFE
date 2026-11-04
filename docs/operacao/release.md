@@ -111,7 +111,7 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
 1. No SHA escolhido, num checkout limpo, rode as provas do checklist. A
    `distribution:prove` grava os tarballs e `.ci-results/83/tarballs.json`.
 2. Gere a relação de `rights` desses bytes com
-   `node scripts/rights-relation.mjs <evidência>/rights.json`. Registre em
+   `node scripts/licenses/rights-relation.mjs <evidência>/rights.json`. Registre em
    `docs/v1.0/evidence/83/<data>/` o recibo, a relação e um `accepted.json`
    com `codeSha` e, por pacote, `name`, `version` e `sha256`.
    O lote pode listar só parte dos pacotes, como o SDK com o nome novo; os

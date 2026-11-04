@@ -1,7 +1,7 @@
 // Relation for the `rights` gate (docs/licenses/DISTRIBUTION.md): each file of each
 // accepted tarball, its source files at the proven revision, the commits that touched
 // them, their authors, origin and the concession that covers them.
-// Usage: node scripts/rights-relation.mjs <output.json>, after distribution:prove on a
+// Usage: node scripts/licenses/rights-relation.mjs <output.json>, after distribution:prove on a
 // clean checkout. Fails on an author or a file without classification.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -158,7 +158,7 @@ const artifacts = proof.artifacts
   });
 const relation = {
   codeSha: proof.codeSha,
-  generatedBy: "scripts/rights-relation.mjs",
+  generatedBy: "scripts/licenses/rights-relation.mjs",
   titular: "FREECORPS TECNOLOGIA DA INFORMACAO LTDA, CNPJ 63.113.119/0001-90",
   // Emails stay in the generator: the record identifies people by id and commits.
   contributors: contributors.map(({ emailSha256: _hashes, ...person }) => person),
