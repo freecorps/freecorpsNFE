@@ -32,7 +32,7 @@ const forceRerunTriggers = [
 // ainda não têm o que a execução anterior criou, e a tarefa nunca repetia.
 // Um padrão sem `/**` exclui só a listagem daquela pasta: o conteúdo de cada
 // arquivo lido continua entrada. A raiz não entra aqui (`!.` excluiria tudo):
-// `node scripts/ci.mjs identity` cria `.browser-results` antes do grafo.
+// `node scripts/ci/ci.mjs identity` cria `.browser-results` antes do grafo.
 // Medido em clones novos no mesmo caminho (docs/desenvolvimento/ci.md, Cache
 // do grafo).
 const generated = [
@@ -241,7 +241,7 @@ export default defineConfig({
         testProjects.map(({ name }) => [
           `ci:test:${name}`,
           {
-            command: `node scripts/ci.mjs test-area ${name}`,
+            command: `node scripts/ci/ci.mjs test-area ${name}`,
             dependsOn: ["ci:packages"],
             cache: {
               input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
@@ -252,10 +252,10 @@ export default defineConfig({
         ]),
       ),
       // Junta os recibos das áreas em .ci-results/tests.json, sob a revisão de
-      // `node scripts/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
+      // `node scripts/ci/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
       // revisão do checkout: nunca usa cache.
       "ci:tests": {
-        command: "node scripts/ci.mjs collect-tests",
+        command: "node scripts/ci/ci.mjs collect-tests",
         dependsOn: testProjects.map(({ name }) => `ci:test:${name}`),
         cache: false,
       },

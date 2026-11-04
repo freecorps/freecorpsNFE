@@ -7,8 +7,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { performance } from "node:perf_hooks";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const files = [
@@ -52,7 +52,7 @@ if (process.argv[2] === "--worker") {
   assert.equal(
     process.argv[2],
     "--base",
-    "Use: node scripts/bench-workflow-locks.mjs --base <ref>",
+    "Use: node scripts/ci/bench-workflow-locks.mjs --base <ref>",
   );
   assert.ok(process.argv[3] && process.argv.length === 4, "Informe exatamente uma base Git");
   const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();

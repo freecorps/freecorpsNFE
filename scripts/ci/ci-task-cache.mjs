@@ -3,7 +3,7 @@
 // quando não há) nos outputs e nunca reprova o job: sem o cache da PR, as
 // tarefas simplesmente executam.
 import { appendFileSync } from "node:fs";
-import { findPullRequestTaskCache } from "./lib/ci-task-cache.mjs";
+import { findPullRequestTaskCache } from "../lib/ci-task-cache.mjs";
 
 const { GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_OUTPUT, GITHUB_STEP_SUMMARY } =
   process.env;

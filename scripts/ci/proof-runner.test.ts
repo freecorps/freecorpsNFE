@@ -20,10 +20,10 @@ import {
   proofArguments,
   runLocalValidation,
   runProof,
-} from "./lib/proof-runner.mjs";
-import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "./lib/validation-lock.mjs";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/proof-runner.mjs";
+import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "../lib/validation-lock.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 // Só o teste de substituição recusada troca a implementação real.
 vi.mock("node:fs", async (importOriginal) => {
@@ -552,7 +552,7 @@ describe("local and candidate attempts", () => {
 // um processo que produz um relatório sintético, sem disparar a suíte inteira.
 function prepareCi() {
   for (const file of [
-    "scripts/ci.mjs",
+    "scripts/ci/ci.mjs",
     "scripts/lib/ci.mjs",
     "scripts/lib/repo-root.mjs",
     "scripts/lib/repository.mjs",
@@ -602,11 +602,11 @@ function prepareCi() {
      };
      syncBuiltinESMExports();`,
   );
-  return ["--import", pathToFileURL(preload).href, join(root, "scripts/ci.mjs")];
+  return ["--import", pathToFileURL(preload).href, join(root, "scripts/ci/ci.mjs")];
 }
 
 function rawCi(command: string, env: Record<string, string> = {}) {
-  return spawnSync(process.execPath, [join(root, "scripts/ci.mjs"), command], {
+  return spawnSync(process.execPath, [join(root, "scripts/ci/ci.mjs"), command], {
     cwd: root,
     env: { ...subprocessEnvironment(process.env), ...env },
     encoding: "utf8",
@@ -683,7 +683,7 @@ describe("shared CI writers", () => {
       env: { ...process.env, [VALIDATION_LOCK_TOKEN]: "forged" },
       steps: ["identity", "test"].map((command) => ({
         name: command,
-        command: ["node", "scripts/ci.mjs", command],
+        command: ["node", "scripts/ci/ci.mjs", command],
         env: { [VALIDATION_LOCK_TOKEN]: "stale" },
       })),
       spawn: (file, args, options) => {
@@ -779,7 +779,7 @@ describe("checkout exclusion", () => {
 
   it("leaves an interrupted subprocess attempt running and blocks another runner", async () => {
     prepareCi();
-    const moduleUrl = new URL("./lib/proof-runner.mjs", import.meta.url).href;
+    const moduleUrl = new URL("../lib/proof-runner.mjs", import.meta.url).href;
     const code = `import { runProof } from ${JSON.stringify(moduleUrl)};
       runProof({ root: ${JSON.stringify(root)}, proof: 'interrupted', runner: 'scripts/prove-x.mjs', output: 'out', uniqueAttempt: true,
         steps: [{ name: 'blocked', command: ['node', 'unused'] }],

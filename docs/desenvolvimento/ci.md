@@ -30,7 +30,7 @@ Em PR, o checkout padrão é o merge sintético. `revision.json` registra
 confere o commit realmente obtido por `git rev-parse HEAD` com `GITHUB_SHA`.
 Não descrever o head como testado quando o runner executou outro commit.
 
-`Validate` começa classificando a mudança (`scripts/ci-changes.mjs`). Numa PR
+`Validate` começa classificando a mudança (`scripts/ci/ci-changes.mjs`). Numa PR
 que só muda documentação, confere formatação, credenciais e os testes que leem
 toda a documentação e termina aprovado, sem `tested_sha`
 ([Mudança só de documentação](#mudança-só-de-documentação)). Nos demais casos,
@@ -100,8 +100,8 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    | não: índice do Git  |
 | `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
 | `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:test:<área>`    | `node scripts/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
-| `ci:tests`          | `node scripts/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
+| `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
+| `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
 | `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
 | `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
 | `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
@@ -155,7 +155,7 @@ execução no mesmo checkout repetisse todas. Por isso a constante `generated` d
 `vite.config.ts`, usada por toda tarefa com cache, tira das entradas as
 listagens dessas pastas e os caches das ferramentas; o conteúdo de cada arquivo
 lido nelas continua entrada. A raiz não pode sair assim (`!.` exclui a árvore
-inteira), e `node scripts/ci.mjs identity` cria `.browser-results` antes do
+inteira), e `node scripts/ci/ci.mjs identity` cria `.browser-results` antes do
 grafo.
 
 Medido em clones novos no mesmo caminho, um por execução, como no runner
@@ -173,7 +173,7 @@ os testes de fato rodaram). O recibo é a saída guardada no cache: uma repetiç
 o restaura para as mesmas entradas. Ele não lê `revision.json`, que muda a cada
 commit. `ci:tests` junta os recibos em `tests.json`, sob a revisão do checkout,
 e reprova se uma área falta, falhou ou contou outro número de arquivos que os
-dela no checkout. `node scripts/ci.mjs identity` apaga os recibos antes do
+dela no checkout. `node scripts/ci/ci.mjs identity` apaga os recibos antes do
 grafo, e o passo `approve` só emite `tested_sha` com todas as áreas aprovadas
 nesse `tests.json`. O resumo do job mostra, por área, se ela executou neste
 checkout ou repetiu o resultado de qual run.
@@ -558,10 +558,10 @@ ou a restrição de publicação, sim. Ausências, como `CLERK`, continuam
 conferidas no texto inteiro. `tests/ci.changes.test.ts` confere no `ci.yml` que
 aprovação, gate, grafo e fronteiras rodam sob a mesma condição, que o modo de
 documentação não emite SHA, a chave do cache e que o token só chega aos passos
-do push. `tests/ci.testProjects.test.ts` executa `scripts/ci.mjs test-area` de
+do push. `tests/ci.testProjects.test.ts` executa `scripts/ci/ci.mjs test-area` de
 cada área com o Vitest substituído e confere que, juntas, elas rodam cada
 projeto do Vitest uma vez, sem arquivo, `--changed` ou `--shard`, e que
-`scripts/ci.mjs test` roda a suíte toda.
+`scripts/ci/ci.mjs test` roda a suíte toda.
 
 ### Arquivos e dependências sem uso
 
@@ -861,7 +861,7 @@ e escreve `receipt.json` com revisão, base de contrato (ref e SHA), runtime,
 hashes do runner e das entradas, comandos, códigos de saída e duração. A
 primeira etapa que falha interrompe a sequência e gera um recibo `failed` com
 `failedStep` e o caminho do log; a prova também falha se o checkout mudar.
-`scripts/proof-runner.test.ts` cobre o executor com git e subprocessos
+`scripts/ci/proof-runner.test.ts` cobre o executor com git e subprocessos
 simulados.
 
 A validação geral não tem lista própria de comandos: reaproveita o grafo
@@ -869,7 +869,7 @@ A validação geral não tem lista própria de comandos: reaproveita o grafo
 `tests.json`. A base de contrato vem de `--base` (padrão `origin/main`) e a
 saída de `--output`.
 
-- **Recorrente:** `scripts/prove-acceptance.mjs`, a validação geral, com
+- **Recorrente:** `scripts/ci/prove-acceptance.mjs`, a validação geral, com
   alias `bun run ci:prove` e saída padrão `.ci-results/acceptance/<tentativa>`.
   `--input <arquivo>` (repetível)
   registra o hash de um schema ou corpus da entrega.

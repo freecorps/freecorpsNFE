@@ -91,7 +91,7 @@ export function proofArguments(argv, defaults) {
  */
 export function acceptanceSteps(base, { cache = false } = {}) {
   return [
-    { name: "identity", command: ["node", "scripts/ci.mjs", "identity"] },
+    { name: "identity", command: ["node", "scripts/ci/ci.mjs", "identity"] },
     {
       name: "validate",
       command: ["bun", "x", "vp", "run", ...(cache ? [] : ["--no-cache"]), "validate"],

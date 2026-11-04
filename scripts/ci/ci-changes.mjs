@@ -3,12 +3,12 @@
 // Vite Task (`cache=true|false`). Regras em scripts/lib/ci-changes.mjs. Não
 // precisa de `vp install`. Qualquer falha ao comparar roda o grafo.
 //
-//   node scripts/ci-changes.mjs          # no job: lê o evento e o checkout
-//   node scripts/ci-changes.mjs --tests  # os testes do modo docs, um por linha
+//   node scripts/ci/ci-changes.mjs          # no job: lê o evento e o checkout
+//   node scripts/ci/ci-changes.mjs --tests  # os testes do modo docs, um por linha
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
-import { cacheAllowed, changeMode, documentationTests } from "./lib/ci-changes.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { cacheAllowed, changeMode, documentationTests } from "../lib/ci-changes.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv[2] === "--tests") {
   console.log(documentationTests.join("\n"));

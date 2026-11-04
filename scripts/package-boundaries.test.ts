@@ -92,7 +92,7 @@ it("checks the real workspaces and connects the blocking command before CI appro
   const steps = workflow.jobs.validate!.steps!;
   const step = (run: string) => steps.findIndex((s) => s.run?.trim() === run);
   const command = step("vp run ci:boundaries");
-  const approve = step("node scripts/ci.mjs approve");
+  const approve = step("node scripts/ci/ci.mjs approve");
   expect(command).toBeGreaterThanOrEqual(0);
   expect(command).toBeLessThan(approve);
   expect(steps[command]!.if).toBe(steps[approve]!.if);

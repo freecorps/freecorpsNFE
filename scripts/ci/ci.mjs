@@ -19,10 +19,10 @@ import {
   sanitizeReport,
   testEnvironment,
   publicationSha,
-} from "./lib/ci.mjs";
-import { areaFiles, areaProjects, testProjects } from "./lib/test-projects.mjs";
-import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "./lib/validation-lock.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/ci.mjs";
+import { areaFiles, areaProjects, testProjects } from "../lib/test-projects.mjs";
+import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "../lib/validation-lock.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, ".ci-results");

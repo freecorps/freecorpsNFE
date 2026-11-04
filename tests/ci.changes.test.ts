@@ -233,7 +233,7 @@ const named = (name: string) => {
 
 it("issues a tested SHA only after the whole graph, never in documentation mode", () => {
   const graph = "steps.changes.outputs.mode=='graph'";
-  expect(named("Classify the change").run).toBe("node scripts/ci-changes.mjs");
+  expect(named("Classify the change").run).toBe("node scripts/ci/ci-changes.mjs");
   expect(named("Classify the change")).not.toHaveProperty("if");
   for (const name of [
     "Build, check and test",

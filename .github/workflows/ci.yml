@@ -78,9 +78,9 @@ jobs:
       # publications). Fails open: a diff it cannot resolve runs the graph.
       - name: Classify the change
         id: changes
-        run: node scripts/ci-changes.mjs
+        run: node scripts/ci/ci-changes.mjs
       - name: Record exact checkout and PR head
-        run: node scripts/ci.mjs identity
+        run: node scripts/ci/ci.mjs identity
       - name: Install locked dependencies
         run: vp install --frozen-lockfile
       # What in the graph reads documentation-only files, run directly:
@@ -116,7 +116,7 @@ jobs:
         if: steps.changes.outputs.cache == 'true' && github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/ci-task-cache.mjs
+        run: node scripts/ci/ci-task-cache.mjs
       - name: Download the merged pull request's task cache
         id: pr_cache_download
         if: steps.pr_cache.outputs.run-id != ''
@@ -188,7 +188,7 @@ jobs:
       - name: Approve the checked revision
         id: approve
         if: steps.changes.outputs.mode == 'graph'
-        run: node scripts/ci.mjs approve
+        run: node scripts/ci/ci.mjs approve
       # Pure comparison of the approved SHA with the workflow's, after every
       # check passed. It ran as a job of its own until #51; as a step it saves
       # a runner start, a checkout and a toolchain setup on every run.
@@ -197,7 +197,7 @@ jobs:
         if: steps.changes.outputs.mode == 'graph'
         env:
           CI_TESTED_SHA: ${{ steps.approve.outputs.tested_sha }}
-        run: node scripts/ci.mjs gate
+        run: node scripts/ci/ci.mjs gate
       # What a push on main replays. Only a successful run's upload is ever
       # used; a rerun of this run replaces the earlier attempt's.
       - name: Upload the task cache for main
@@ -225,7 +225,7 @@ jobs:
         if: always()
         env:
           CI_CHANGES_MODE: ${{ steps.changes.outputs.mode }}
-        run: node scripts/ci.mjs summary
+        run: node scripts/ci/ci.mjs summary
       - name: Upload sanitized validation report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
