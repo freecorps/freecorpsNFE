@@ -1270,19 +1270,26 @@ function useSituationAnnouncement(
 }
 
 /**
- * The stream as the panel shows it: from `termsDeadline` on, an active production stream waits
- * for the new terms (#428, `CAPTURE_TERMS_PENDING`). The server returns the deadline instead of
- * the code, because its query never reads the clock (#45); the console compares it with its own.
+ * The stream as the panel shows it, with the deadlines the server returns instead of comparing
+ * them, because its query never reads the clock (#45); the console compares them with its own.
+ * From `termsDeadline` on, an active production stream waits for the new terms (#428,
+ * `CAPTURE_TERMS_PENDING`). From `certificateExpiresAt` on, the A1 reads expired, even before
+ * `certificates.expire` records it.
  */
-function useTermsDeadline(stream: Stream | null | undefined): Stream | null | undefined {
+function useStreamClock(stream: Stream | null | undefined): Stream | null | undefined {
   const deadline = stream?.termsDeadline ?? null;
-  const now = useNow(deadline);
-  const pending = deadline !== null && now >= deadline;
+  const expiresAt = stream?.certificateState === "active" ? stream.certificateExpiresAt : null;
+  const termsNow = useNow(deadline),
+    certificateNow = useNow(expiresAt);
+  const pending = deadline !== null && termsNow >= deadline;
+  const expired = expiresAt !== null && certificateNow >= expiresAt;
   return useMemo(() => {
-    if (!stream || !pending) return stream;
-    const { notesQuota: _quota, ...rest } = stream;
+    if (!stream || (!pending && !expired)) return stream;
+    const shown = expired ? { ...stream, certificateState: "expired" } : stream;
+    if (!pending) return shown;
+    const { notesQuota: _quota, ...rest } = shown;
     return { ...rest, code: "CAPTURE_TERMS_PENDING", freecorpsCut: false };
-  }, [stream, pending]);
+  }, [stream, pending, expired]);
 }
 
 /**
@@ -1305,16 +1312,18 @@ export function Captures({ org, companyId }: { org: Organization; companyId: Id<
   const { environment: chosen, offered, choose } = useProductEnvironment();
   // A production deployment (#50) keeps its own page: there is no Produção beside it.
   const inProduction = deployment.environment !== "production" && chosen === "production";
-  const productionStream = useTermsDeadline(
+  const productionStream = useStreamClock(
     useQuery(
       api.captures.get,
       canRead && used && inProduction ? { ...ids, environment: "production" } : "skip",
     ),
   );
   // Each environment reads only its own stream.
-  const sandboxStream = useQuery(
-    api.captures.get,
-    canRead && !inProduction ? { ...ids, environment: "sandbox" } : "skip",
+  const sandboxStream = useStreamClock(
+    useQuery(
+      api.captures.get,
+      canRead && !inProduction ? { ...ids, environment: "sandbox" } : "skip",
+    ),
   );
   const message = useSituationAnnouncement([
     inProduction && production && (!used || productionStream !== undefined)

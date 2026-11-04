@@ -56,7 +56,10 @@ próprio relógio. Uma query interna recebe o `now` da action ou do script que a
 chama. Um helper compartilhado usa `clockOf(ctx)` (`lib/clock.ts`), que devolve
 `null` em query; com `null`, ele confia no estado que o job agendado do prazo
 grava (certificado, exportação, encerramento) ou na admissão REST, que já
-comparou a validade da chave. As queries do console devolvem o prazo, e a tela
+comparou a validade da chave. Enquanto o job não roda, a query mostra o estado
+anterior: o expurgo de um encerramento que espera um run do arquivo frio deixa a
+janela de exportação aberta nas leituras, mas ticket e download, que são
+mutations, já recusam. As queries do console devolvem o prazo, e a tela
 o compara com o relógio do navegador. Planos e cobrança recebem `asOf`,
 arredondado ao minuto. O relógio do cliente só decide o que a tela mostra e
 habilita; a mutation decide de novo.

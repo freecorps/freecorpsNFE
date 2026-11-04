@@ -51,12 +51,22 @@ export function useListPosition(listVisible: boolean) {
  * The current time, refreshed when `deadline` passes, so a button waiting for a server date
  * (next allowed consultation) enables itself without polling the server.
  */
-export function useNow(deadline: number | null) {
+export function useNow(deadline: number | null | undefined) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
-    if (deadline === null || deadline <= now) return;
+    if (deadline === null || deadline === undefined || deadline <= now) return;
+    // A deadline that arrives already past (the page was open before it) shows at once, not
+    // when a timer counted from the stale `now` fires.
+    const current = Date.now();
+    if (deadline <= current) {
+      setNow(current);
+      return;
+    }
     // setTimeout caps at ~24.8 days; a later deadline re-arms on the next render.
-    const timer = setTimeout(() => setNow(Date.now()), Math.min(deadline - now + 50, 2 ** 31 - 1));
+    const timer = setTimeout(
+      () => setNow(Date.now()),
+      Math.min(deadline - current + 50, 2 ** 31 - 1),
+    );
     return () => clearTimeout(timer);
   }, [deadline, now]);
   return now;
