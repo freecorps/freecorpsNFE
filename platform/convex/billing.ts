@@ -22,8 +22,8 @@ import { PLATFORM_PLANS, isCatalogTier, paidTier } from "./lib/planCatalog";
 import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from "./lib/planCore";
 import {
   activeTerm,
-  annualTermBlocks,
   rescindedSubscription,
+  termsEnd,
   subscriptionHasTerm,
   termMonth,
   termTierAt,
@@ -67,6 +67,7 @@ import {
   applyInvoice,
   openCheckout,
   periodStart,
+  pixPending,
   renews,
 } from "./lib/billingCore";
 
@@ -187,8 +188,8 @@ export const overview = query({
      */
     subscriptionTerm: v.boolean(),
     /**
-     * A term in force or scheduled refuses the annual Checkout, which starts next month
-     * (`annualTermBlocks`); only in a term's last month may the next one follow it.
+     * A term in force or scheduled refuses the annual Checkout, which starts next month, until
+     * the last one ends (`termsEnd`, ADR 0012, one paid plan at a time).
      */
     annualBlocked: v.boolean(),
   }),
@@ -209,20 +210,10 @@ export const overview = query({
       current && current.startsAt <= now && !planEnded(current, now)
         ? { tier: current.catalogTier ?? "custom", endsAt: current.endsAt }
         : null;
-    const pixPending = !!(await ctx.db
-      .query("platformPlanRequests")
-      .withIndex("by_organizationId_and_state", (q) =>
-        q.eq("organizationId", args.organizationId).eq("state", "awaiting_payment"),
-      )
-      .first());
+    const pixWaiting = await pixPending(ctx, args.organizationId, now);
     const annualOnSale = await annualEnabled(ctx);
     const pixOnSale = await pixEnabled(ctx);
-    const annualBlocked = await annualTermBlocks(
-      ctx,
-      args.organizationId,
-      nextUsagePeriodStart(now),
-      now,
-    );
+    const annualBlocked = (await termsEnd(ctx, args.organizationId, now)) !== null;
     if (!cfg)
       return {
         card: false,
@@ -230,7 +221,7 @@ export const overview = query({
         checkout: null,
         reviews: [],
         plan,
-        pixPending,
+        pixPending: pixWaiting,
         annualEnabled: annualOnSale,
         pixEnabled: pixOnSale,
         subscriptionTerm: false,
@@ -326,7 +317,7 @@ export const overview = query({
         ...refusals,
       ].sort((a, b) => b.createdAt - a.createdAt),
       plan,
-      pixPending,
+      pixPending: pixWaiting,
       annualEnabled: annualOnSale,
       pixEnabled: pixOnSale,
       subscriptionTerm,
@@ -431,21 +422,16 @@ export const prepareCheckout = internalMutation({
     const firstPeriod = annual && !upgrade ? nextUsagePeriodStart(now) : null;
     if (annual && !(await annualEnabled(ctx))) deny("ANNUAL_DISABLED");
     // As the annual Pix: no term over another, and one scheduled term at a time.
-    if (
-      firstPeriod !== null &&
-      (await annualTermBlocks(ctx, args.organizationId, firstPeriod, now))
-    )
-      deny("ANNUAL_TERM_ACTIVE");
+    // One paid plan at a time (ADR 0012): the card annual, which starts on the next 1st, is not
+    // sold while any term is in force or scheduled, its last month included; it would be a
+    // deferred start after a Pix term, or a second subscription beside a card one. A card term
+    // renews by its own subscription, at Stripe.
+    if (firstPeriod !== null) {
+      const busyUntil = await termsEnd(ctx, args.organizationId, now);
+      if (busyUntil !== null) deny("ANNUAL_TERM_ACTIVE", { availableAt: busyUntil });
+    }
     if (await openCheckout(ctx, args.organizationId, now)) deny("CHECKOUT_PENDING");
-    if (
-      await ctx.db
-        .query("platformPlanRequests")
-        .withIndex("by_organizationId_and_state", (q) =>
-          q.eq("organizationId", args.organizationId).eq("state", "awaiting_payment"),
-        )
-        .first()
-    )
-      deny("PLAN_REQUEST_PENDING");
+    if (await pixPending(ctx, args.organizationId, now)) deny("PLAN_REQUEST_PENDING");
     const plan = await planFor(ctx, args.organizationId);
     if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
     // The access a rescinded term left runs to the end of its term month, and the invoice would
@@ -777,15 +763,7 @@ export const prepareRenewal = internalMutation({
         (await rescindedSubscription(ctx, args.organizationId, subscription.id))
       )
         deny("ANNUAL_TERM_RESCINDED");
-      if (
-        args.change === "resume" &&
-        (await ctx.db
-          .query("platformPlanRequests")
-          .withIndex("by_organizationId_and_state", (q) =>
-            q.eq("organizationId", args.organizationId).eq("state", "awaiting_payment"),
-          )
-          .first())
-      )
+      if (args.change === "resume" && (await pixPending(ctx, args.organizationId, Date.now())))
         deny("PLAN_REQUEST_PENDING");
       return { subscriptionId: subscription.id };
     }

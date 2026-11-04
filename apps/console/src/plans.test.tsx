@@ -89,6 +89,7 @@ function pending(): NonNullable<PlansOverview["request"]> {
     periodStartsAt: Date.UTC(2026, 9, 1),
     periodEndsAt: Date.UTC(2026, 10, 1),
     payBy: Date.UTC(2026, 10, 1),
+    expired: false,
   };
 }
 beforeEach(() => {
@@ -502,6 +503,39 @@ it("the annual Pix request starts at the confirmation and sends the server only 
   expect(state.request).not.toHaveBeenCalled();
 });
 
+it("a request past its deadline no longer holds the plans, and one made before ADR 0012 keeps its 1st", () => {
+  state.data = {
+    ...annualOn(),
+    request: { ...pending(), expired: true },
+  };
+  const view = show();
+  expect(screen.getByText("Prazo encerrado")).toBeTruthy();
+  expect(
+    screen.getByText(/O prazo de pagamento terminou em 01\/11\/2026 às 00:00 UTC/),
+  ).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Cancelar pedido" })).toBeNull();
+  expect(
+    screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Intermediário" }).disabled,
+  ).toBe(false);
+  // A legacy `next` request starts on the 1st it named, not "at the end of the plan in force".
+  state.data = {
+    ...annualOn(),
+    request: {
+      ...pending(),
+      amountCents: 149000,
+      cycle: "annual",
+      start: "next",
+      firstPeriod: Date.UTC(2026, 10, 1),
+      periodStartsAt: Date.UTC(2026, 10, 1),
+      periodEndsAt: null,
+      payBy: Date.UTC(2026, 11, 1),
+    },
+  };
+  view.rerender(<Plans org={org} contextKey="entry-one" />);
+  expect(screen.getByText("01/11/2026 às 00:00 UTC")).toBeTruthy();
+  expect(screen.queryByText(/no fim do plano em vigor/)).toBeNull();
+});
+
 it("shows a pending annual request and a Pix upgrade as what they are, not a full-price plan", () => {
   state.data = {
     ...annualOn(),
@@ -720,7 +754,7 @@ it("only managers see the upgrade", () => {
 it.each([
   ["ANNUAL_DISABLED", "O plano anual não está à venda no momento"],
   ["ANNUAL_TERM_ACTIVE", "tem um plano anual em vigor ou agendado"],
-  ["ANNUAL_TERM_REQUIRED", "Não há plano anual em vigor neste mês"],
+  ["ANNUAL_TERM_REQUIRED", "Não há plano anual em vigor agora"],
   ["ANNUAL_TERM_SCHEDULED", "Há um plano anual agendado"],
   ["PAYMENT_METHOD_PIX", "foi pago por Pix"],
   ["PAYMENT_METHOD_CARD", "Esta organização paga por cartão"],

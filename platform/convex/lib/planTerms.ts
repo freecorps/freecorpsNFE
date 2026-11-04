@@ -88,6 +88,15 @@ export async function termsInForce(
 }
 
 /**
+ * The end of the last `scheduled` or `active` term not yet ended at `now`, or null. One paid plan
+ * at a time (ADR 0012): a sale that waits for the terms in force becomes available then.
+ */
+export async function termsEnd(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
+  const terms = await termsInForce(ctx, organizationId, now);
+  return terms.length ? Math.max(...terms.map((term) => term.endsAt)) : null;
+}
+
+/**
  * Why a new annual term starting at the instant `start` cannot be sold: a term already covers
  * that instant, or another term is scheduled and not yet ended at `now`. A renewal requested in an
  * active term's last month starts at its `endsAt`, which it no longer covers, so the renewal

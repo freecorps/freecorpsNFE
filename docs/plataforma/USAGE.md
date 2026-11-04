@@ -58,8 +58,9 @@ fatia Q da ADR implementou o modelo do período em
   truncada ao segundo. O anual pelo Pix começa na confirmação desde a fatia
   1b: confirmado em 13/10/2026 às 14:30:07, tem os períodos
   `2026-10-13T14:30:07.000Z`, `2026-11-13T14:30:07.000Z` e assim por
-  diante, e a renovação mantém a âncora, de modo que uma cadeia de 29/02
-  vira o mês no dia 29 nos anos seguintes também. O anual no cartão ainda
+  diante, e a renovação mantém a âncora: numa cadeia de 29/02/2028, o termo
+  renovado começa em 28/02/2029, porque fevereiro não tem dia 29, e o
+  período seguinte começa em 29/03/2029, não em 28/03. O anual no cartão ainda
   começa no dia 1 às 00:00 UTC, então as chaves dele continuam `AAAA-MM`
   ([BILLING.md](BILLING.md#plano-anual)). As ativações mensais, pelo
   Pix ou pelo cartão, ainda não têm âncora e seguem no mês civil até as

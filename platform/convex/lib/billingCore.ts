@@ -129,6 +129,20 @@ export async function cardBlocksPix(ctx: QueryCtx, organizationId: Id<"organizat
   return accounts.some(renews) || !!(await openCheckout(ctx, organizationId, Date.now()));
 }
 
+/**
+ * A Pix request awaiting payment within its deadline (`endsAt`, its `payBy`): it holds the card.
+ * One past the deadline can no longer be confirmed, and the next Pix request cancels it.
+ */
+export async function pixPending(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
+  const requests = await ctx.db
+    .query("platformPlanRequests")
+    .withIndex("by_organizationId_and_state", (q) =>
+      q.eq("organizationId", organizationId).eq("state", "awaiting_payment"),
+    )
+    .take(10);
+  return requests.some((request) => request.endsAt > now);
+}
+
 export const periodStart = (period: string) =>
   Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)) - 1, 1);
 

@@ -407,9 +407,13 @@ Só com o [interruptor do Pix](#interruptor-do-pix) ligado. O fluxo é o do Pix 
 
 1. **Pedido.** O owner ou admin escolhe o tier pago e `start`, que repete o
    que `plans:overview` oferece em `annualStart` (`pixAnnualStart`,
-   `plans.ts`). O servidor cobra `annualCents`, sem desconto do mês já
-   pago. Os papéis, a chave de idempotência e `allocateOffer` (estoque e
-   janela de admissão, sem reservar nada) são os do mensal.
+   `plans.ts`). O servidor cobra `annualCents` integral: o termo não se
+   sobrepõe a nenhum período já pago. Os papéis, a chave de idempotência e
+   `allocateOffer` (estoque e janela de admissão, sem reservar nada) são os
+   do mensal. Um pedido aguardando pagamento recusa o seguinte
+   (`PLAN_REQUEST_PENDING`) só até o prazo dele; vencido, o pedido seguinte
+   o cancela (`pendingRequest`), e o Checkout, o Gratuito e a retomada da
+   renovação no cartão deixam de recusar por ele.
    - `now`, sem plano pago em vigor (sem plano, Gratuito ou plano vencido):
      o termo começa na confirmação, com âncora nova.
    - `renewal`, no último mês do plano Pix em vigor: o termo começa no fim
@@ -626,8 +630,8 @@ seguinte e é cobrado nesse dia, e o mês corrente segue no plano em vigor
 (decisão do mantenedor de 30/10/2026). Quem quer começar na hora usa o
 [Pix](#venda-por-pix) com `start: "now"`. Papéis, membership, chave de
 idempotência, admissão (`allocateOffer`, conferida sem reservar) e a virada
-do mês (`PERIOD_CLOSING`) são os do mensal. O servidor cobra `annualCents`,
-sem desconto do mês já pago, como no Pix. A reserva vem na conclusão da
+do mês (`PERIOD_CLOSING`) são os do mensal. O servidor cobra `annualCents`
+integral, sem desconto do mês já pago. A reserva vem na conclusão da
 sessão ([Reserva na conclusão](#reserva-na-conclusão)).
 
 A sessão, em modo `subscription`, tem só o preço anual do tier, sem item
@@ -655,8 +659,12 @@ Recusas, todas antes de qualquer chamada ao Stripe:
 
 - `ANNUAL_DISABLED`: o interruptor está desligado. A repetição de uma
   sessão já aberta, pela mesma chave, continua respondendo;
-- `ANNUAL_TERM_ACTIVE`: um termo cobre o 1º mês ou outro termo está
-  agendado (`annualTermBlocks`), como no Pix;
+- `ANNUAL_TERM_ACTIVE`: há um termo em vigor ou agendado, de qualquer
+  forma de pagamento e mesmo no último mês dele, com `availableAt` no fim
+  do último (`termsEnd`). Pela regra de um plano pago por vez (ADR 0012),
+  o anual no cartão, que ainda começa no dia 1 seguinte, não é vendido
+  para começar depois de um termo Pix, e o termo do cartão renova pela
+  própria assinatura;
 - `PLAN_REQUEST_PENDING`: há pedido Pix aguardando pagamento;
 - `CHECKOUT_PENDING`: há outro Checkout aberto;
 - `SUBSCRIPTION_RENEWING`: uma assinatura por cartão, mensal ou anual,
@@ -1112,7 +1120,8 @@ que o pedido compra (nulo no anual `now`, que começa na confirmação),
 `periodEndsAt`, o fim do mês comprado, só no mensal, e `payBy`, o prazo de
 pagamento. `billing:overview` traz
 `annualEnabled`, `subscriptionTerm`, se a assinatura já comprou um termo em
-vigor ou agendado, `annualBlocked`, se um termo impede o anual no cartão, e,
+vigor ou agendado, `annualBlocked`, se um termo em vigor ou agendado impede
+o anual no cartão até o fim dele, e,
 no Checkout aberto, `periodStartsAt`, o início do 1º mês comprado. O console
 mostra esses instantes e não lê mais o `period` como `AAAA-MM`: pela
 [ADR 0012](../adr/0012-periodo-por-aniversario.md#consequências), o `period`
@@ -1137,8 +1146,15 @@ opcional nas funções do console, e só o console anterior a essa mudança o l�
 - **Termo em vigor.** Com um termo em vigor ou agendado, a compra anual fica
   desabilitada, pelo Pix e pelo cartão, com o motivo e, no Pix, a data em
   que a renovação abre. No último mês do termo, o Pix aceita só a
-  renovação, que começa no fim do termo, sem intervalo, e o cartão volta a
-  aceitar o anual.
+  renovação, que começa no fim do termo, sem intervalo; o anual no cartão
+  espera o fim do termo (`annualBlocked`), e as recusas do cartão também
+  mostram a data em que a venda fica disponível.
+- **Pedido vencido.** Passado `payBy`, o pedido aparece como "Prazo
+  encerrado" (`expired`), não segura mais a compra e é substituído pelo
+  pedido seguinte. Um pedido anual anterior à fatia 1b aparece com
+  `start` `now` ou `next` e o dia 1 em que o termo começa
+  (`startOf`); repetido pela mesma chave e confirmado, vale como foi
+  pedido.
 - **Termo.** Cada termo em vigor ou agendado, e o rescindido enquanto o
   acesso dura, mostra o tier, os upgrades (`segments`), a forma de
   pagamento, o início e o fim. `renews` diz se o termo do cartão ainda

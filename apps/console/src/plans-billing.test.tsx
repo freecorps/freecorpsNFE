@@ -430,12 +430,30 @@ it("shows an open annual upgrade Checkout as the upgrade it is", () => {
   expect(screen.queryByText(/nada agora|por 12 meses/)).toBeNull();
 });
 
-it("a term in force holds the annual card until its last month", () => {
+it("a term in force holds the annual card until it ends", () => {
   state.data = overview({ annualEnabled: true, annualBlocked: true });
   show();
   for (const name of ["Assinar Intermediário anual no cartão", "Assinar Grande anual no cartão"])
     expect(screen.getByRole<HTMLButtonElement>("button", { name }).disabled).toBe(true);
-  expect(screen.getByText(/só pode ser assinado no último mês dele/)).toBeTruthy();
+  expect(screen.getByText(/só pode ser assinado depois que ele terminar/)).toBeTruthy();
+});
+
+it("a sale that waits for the plan in force says when it becomes available", async () => {
+  state.data = overview();
+  state.results["billing:checkout"] = () =>
+    Promise.reject(
+      new ConvexError({ code: "PLAN_UNAVAILABLE", availableAt: Date.UTC(2027, 1, 10, 12) }),
+    );
+  show();
+  fireEvent.click(screen.getByRole("button", { name: "Assinar Intermediário no cartão" }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Ir para o Stripe" }));
+  });
+  expect(
+    screen.getByText(
+      "Esta mudança de plano está indisponível. Confira a situação atual. Disponível a partir de 10/02/2027 às 12:00 UTC.",
+    ),
+  ).toBeTruthy();
 });
 
 it("after the Checkout is abandoned, the next one is a new intention", async () => {

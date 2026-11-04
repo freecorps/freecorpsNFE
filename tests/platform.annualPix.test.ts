@@ -1662,6 +1662,85 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
   });
 });
 
+describe("pedidos anteriores à fatia 1b e pedidos vencidos", () => {
+  /** An annual request as written before slice 1b: a term from a 1st, without `anchor`. */
+  const legacy = (f: Fixture, firstPeriod: number, key: string, period: string, endsAt: number) =>
+    f.t.run((ctx) =>
+      ctx.db.insert("platformPlanRequests", {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        key,
+        cycle: "annual",
+        firstPeriod,
+        amountCents: 149000,
+        period,
+        startsAt: OCT,
+        endsAt,
+        expectedVersion: 0,
+        state: "awaiting_payment",
+        requestedBy: "synthetic",
+        createdAt: OCT,
+        updatedAt: OCT,
+      }),
+    );
+
+  it("um now ou next anterior à 1b é mostrado, repetido e confirmado como foi pedido", async () => {
+    const f = await fixture();
+    const now = await legacy(f, OCT_1, "legacy-now-key", "2026-10", NOV);
+    expect((await view(f)).request).toMatchObject({
+      id: now,
+      start: "now",
+      firstPeriod: OCT_1,
+      periodStartsAt: OCT_1,
+      expired: false,
+    });
+    expect(await requestAnnual(f.owner, f.organizationId, "now", "legacy-now-key")).toMatchObject({
+      id: now,
+    });
+    await confirm(f, now, "legacy-now-ref");
+    expect(await f.terms()).toMatchObject([
+      { state: "active", firstPeriod: OCT_1, endsAt: termEndsAt(OCT_1) },
+    ]);
+
+    const g = await fixture();
+    const next = await legacy(g, NOV, "legacy-next-key", "2026-11", DEC);
+    expect((await view(g)).request).toMatchObject({ id: next, start: "next", firstPeriod: NOV });
+    const replay = (key: string) =>
+      g.owner.mutation(api.plans.requestPaid, {
+        organizationId: g.organizationId,
+        tier: "intermediate",
+        key,
+        cycle: "annual",
+        start: "next",
+      });
+    expect(await replay("legacy-next-key")).toMatchObject({ id: next });
+    // Nothing new starts on the next 1st.
+    expect(await code(replay("brand-new-next"))).toBe("INVALID_REQUEST");
+    await confirm(g, next, "legacy-next-ref");
+    expect(await g.terms()).toMatchObject([{ state: "scheduled", firstPeriod: NOV }]);
+  });
+
+  it("um pedido vencido não segura a organização e o pedido seguinte o cancela", async () => {
+    const f = await fixture();
+    const stale = await requestAnnual(f.owner, f.organizationId, "now");
+    vi.setSystemTime(OCT + 7 * DAY);
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(await view(f)).toMatchObject({
+      request: { id: stale.id, payBy: OCT + 7 * DAY, expired: true },
+      availability: { canClaimFree: true },
+    });
+    const fresh = await requestAnnual(owner, f.organizationId, "now", "annual-fresh");
+    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", stale.id))).toMatchObject({
+      state: "cancelled",
+    });
+    expect((await view(f)).request).toMatchObject({ id: fresh.id, expired: false });
+    // Within its deadline, a request still holds the next one.
+    expect(await code(requestAnnual(owner, f.organizationId, "now", "annual-third"))).toBe(
+      "PLAN_REQUEST_PENDING",
+    );
+  });
+});
+
 describe("visão do anual no console (plans:overview)", () => {
   const FEB = Date.UTC(2027, 1, 11, 9);
   const FEB_10 = Date.UTC(2027, 1, 10, 12);
@@ -1680,6 +1759,35 @@ describe("visão do anual no console (plans:overview)", () => {
       ["intermediate", 149000],
       ["large", 499000],
     ]);
+  });
+
+  it("com um Checkout aberto, o anual por Pix não é oferecido, como o pedido o recusa", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.insert("billingCheckouts", {
+        organizationId: f.organizationId,
+        key: "open-card-checkout",
+        kind: "start",
+        tier: "intermediate",
+        period: "2026-10",
+        grantCents: 14900,
+        state: "open",
+        expiresAt: OCT + 3600_000,
+        requestedBy: "synthetic",
+        createdAt: OCT,
+        updatedAt: OCT,
+      }),
+    );
+    expect((await view(f)).annualStart).toEqual({
+      start: null,
+      startsAt: null,
+      endsAt: null,
+      code: "PAYMENT_METHOD_CARD",
+      availableAt: null,
+    });
+    expect(await refusal(requestAnnual(f.owner, f.organizationId, "now"))).toEqual({
+      code: "PAYMENT_METHOD_CARD",
+    });
   });
 
   it("mostra o pedido anual, o termo agendado sem upgrade e o termo em vigor com o preço do upgrade", async () => {

@@ -4084,20 +4084,23 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
     await sync(f);
     expect(await terms(f)).toMatchObject([{ state: "active", stripeSubscriptionId: sub.id }]);
-    // The term holds a new annual on the card until its last month.
+    // The term holds a new annual on the card until it ends, its last month included: its own
+    // subscription renews it (ADR 0012, one paid plan at a time).
     expect(await view()).toMatchObject({
       annualEnabled: true,
       subscriptionTerm: true,
       annualBlocked: true,
     });
     vi.setSystemTime(Date.UTC(2027, 9, 10, 12));
-    expect((await view()).annualBlocked).toBe(false);
+    expect((await view()).annualBlocked).toBe(true);
     await f.t.mutation(internal.plans.configureAnnual, {
       enabled: false,
       expectedVersion: 2,
       evidence: "synthetic-annual-off",
     });
     expect(await view()).toMatchObject({ annualEnabled: false, subscriptionTerm: true });
+    vi.setSystemTime(termEndsAt(NOV));
+    expect((await view()).annualBlocked).toBe(false);
   });
 
   it("à espera da âncora, o Pix e o encerramento pelo operador são recusados; o do dono cancela a assinatura", async () => {
@@ -4180,7 +4183,7 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     expect(await fallbackChecks(g)).toHaveLength(1);
   });
 
-  it("um termo Pix que termina na âncora não impede o anual no cartão, que o renova sem intervalo", async () => {
+  it("o anual no cartão espera o fim de um termo Pix, mesmo no último mês dele", async () => {
     const f = await fixture();
     const PIX_FIRST = Date.UTC(2025, 10, 1);
     await f.t.run((ctx) =>
@@ -4198,14 +4201,50 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       }),
     );
     expect(termEndsAt(PIX_FIRST)).toBe(NOV);
-    // A monthly card would renew into the term's months; the annual starts when it ends.
+    // A monthly card would renew into the term's months.
     expect(await code(startCard(f))).toBe("ANNUAL_TERM_ACTIVE");
-    const { customer, sub } = await soldAnnual(f);
-    vi.advanceTimersByTime(NOV + 3600_000 - Date.now());
-    const first = firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
-    vi.advanceTimersByTime(2 * 3600_000);
-    await f.t.finishInProgressScheduledFunctions();
-    expect(await grants(f)).toMatchObject([{ invoiceId: first.id, state: "applied" }]);
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: termEndsAt(NOV) });
+    // October is the Pix term's last month: an annual on the card, anchored on 01/11, would be a
+    // start deferred across payment methods (ADR 0012, one paid plan at a time). It waits.
+    await annualOn(f);
+    expect(await annualCheckout(f).catch((error: { data?: unknown }) => error.data)).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: NOV,
+    });
+    expect(sessions(f)).toEqual([]);
+    expect(
+      await (
+        await person(f.t, f.organizationId, "owner")
+      ).query(api.billing.overview, {
+        organizationId: f.organizationId,
+      }),
+    ).toMatchObject({ annualBlocked: true });
+  });
+
+  it("um termo Pix que termina no meio do mês segura o anual no cartão até o fim dele", async () => {
+    const f = await fixture();
+    // 15/10/2026 14:30 to 15/10/2027 14:30 UTC: on 02/10/2027 the card annual would anchor on
+    // 01/11/2027, after a gap, sold while the Pix term still runs.
+    const PIX_START = Date.UTC(2026, 9, 15, 14, 30);
+    await f.t.run((ctx) =>
+      insertTerm(ctx, {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        firstPeriod: PIX_START,
+        endsAt: termEndsAt(PIX_START),
+        source: "pix",
+        references: ["pix-annual-mid-month"],
+        paidCents: 149000,
+        purchasedAt: PIX_START,
+        segments: [],
+        state: "active",
+      }),
+    );
+    await annualOn(f);
+    vi.setSystemTime(Date.UTC(2027, 9, 2));
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(
+      await annualCheckout(f, { owner }).catch((error: { data?: unknown }) => error.data),
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: Date.UTC(2027, 9, 15, 14, 30) });
+    expect(sessions(f)).toEqual([]);
   });
 });

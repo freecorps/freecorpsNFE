@@ -59,9 +59,9 @@ const monthsLeft = (months: number) =>
 export const annualMessages: Record<string, string> = {
   ANNUAL_DISABLED: "O plano anual não está à venda no momento. Nada foi registrado.",
   ANNUAL_TERM_ACTIVE:
-    "Esta organização tem um plano anual em vigor ou agendado que coincide com este pedido. Pelo Pix, a renovação é pedida no último mês dele, e o mensal volta ao fim do período anual.",
+    "Esta organização tem um plano anual em vigor ou agendado que coincide com este pedido.",
   ANNUAL_TERM_REQUIRED:
-    "Não há plano anual em vigor neste mês para mudar de plano. Confira a situação atual.",
+    "Não há plano anual em vigor agora para mudar de plano. Confira a situação atual.",
   ANNUAL_TERM_SCHEDULED:
     "Há um plano anual agendado, ainda não começado ou já pago como renovação. A mudança para o Grande abre depois que ele começar.",
   ANNUAL_TERM_RESCINDED:
@@ -83,17 +83,22 @@ const annualWaits: Record<string, string> = {
  * A refused sale waits for the plan in force (ADR 0012, one paid plan at a time): the server
  * sends the instant it becomes available, which the message ends with.
  */
-export const availableFrom = (availableAt: unknown) =>
+const availableFrom = (availableAt: unknown) =>
   typeof availableAt === "number"
     ? ` Disponível a partir de ${formatUtcInstant(availableAt)}.`
     : "";
-function failure(error: unknown) {
+/** The code of a refusal and the date it ends with, shared with the billing card. */
+export function refusalOf(error: unknown) {
   const data: unknown = error instanceof ConvexError ? error.data : null;
   const code = data && typeof data === "object" && "code" in data ? data.code : null;
   const availableAt =
     data && typeof data === "object" && "availableAt" in data ? data.availableAt : null;
-  return typeof code === "string" && planMessages[code]
-    ? planMessages[code] + availableFrom(availableAt)
+  return { code: typeof code === "string" ? code : null, availability: availableFrom(availableAt) };
+}
+function failure(error: unknown) {
+  const { code, availability } = refusalOf(error);
+  return code && planMessages[code]
+    ? planMessages[code] + availability
     : "Não foi possível concluir. Confira a situação do plano e tente novamente.";
 }
 const planMessages: Record<string, string> = {
@@ -185,7 +190,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
     hadCheckout.current = data.checkout;
   }, [data.checkout]);
   const canManage = org.role === "owner" || org.role === "admin";
-  const pending = data.request?.state === "awaiting_payment";
+  // A request past its deadline no longer holds the organization; the next one replaces it.
+  const pending = data.request?.state === "awaiting_payment" && !data.request.expired;
   const offer = data.offers.find((item) => item.tier === selection);
   const activeTier = data.subscription?.tier;
   const archived = data.archive && !["notice", "hot"].includes(data.archive.state);
@@ -350,7 +356,9 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                 ? "Aguardando pagamento"
                 : request.state === "activated"
                   ? "Pagamento confirmado"
-                  : "Pedido cancelado"}
+                  : request.expired
+                    ? "Prazo encerrado"
+                    : "Pedido cancelado"}
             </StatusBadge>
           }
         >
@@ -386,7 +394,10 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                         value:
                           request.periodStartsAt === null
                             ? "Na confirmação do pagamento pela equipe"
-                            : `${formatUtcInstant(request.periodStartsAt)}, no fim do plano em vigor`,
+                            : requestStart === "renewal"
+                              ? `${formatUtcInstant(request.periodStartsAt)}, no fim do plano em vigor`
+                              : // A request made before ADR 0012: its term starts on that 1st.
+                                formatUtcInstant(request.periodStartsAt),
                       },
                     ]
                   : [
@@ -426,6 +437,11 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                 </Button>
               ) : null}
             </>
+          ) : request.expired ? (
+            <p>
+              O prazo de pagamento terminou em {formatUtcInstant(request.payBy)}, e o pedido não
+              será mais confirmado. Um novo pedido o substitui.
+            </p>
           ) : null}
         </Card>
       ) : null}
@@ -639,7 +655,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                   : "Esta mudança não está mais disponível. Confira o plano anual atualizado."
                 : annualChosen
                   ? offer?.annualCents !== undefined
-                    ? `${price(offer.annualCents)} por 12 meses, pagos de uma vez, sem desconto do mês já pago. Economia de ${price(12 * offer.monthlyCents - offer.annualCents)} sobre 12 mensalidades.`
+                    ? `${price(offer.annualCents)} por 12 meses, pagos de uma vez. Economia de ${price(12 * offer.monthlyCents - offer.annualCents)} sobre 12 mensalidades.`
                     : "O plano anual não está mais à venda. Confira os planos atualizados."
                   : `${price(selectedPrice)} pelo mês corrente em UTC, até o primeiro dia do próximo mês às 00:00 UTC. ${selectedPrice !== offer?.monthlyCents ? "Valor da diferença para o novo plano. " : ""}O valor é integral, sem desconto proporcional, inclusive no último dia do mês. Para usar um mês completo, faça o pedido no início do próximo mês.`
         }
