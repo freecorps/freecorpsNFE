@@ -140,6 +140,10 @@ export const importTables = {
     size: v.number(),
     source: v.union(v.literal("imported-xml"), v.literal("distribution-xml")),
     importedAt: v.number(),
+    // An accepted ABRASF NFS-e batch: no document of its own, since each of its notes has an
+    // entry artifact with one, and not a refusal. Absent on every other artifact, so the files
+    // without a recognized document are one index range (`lib/unclassifiedArtifacts.ts`, #44).
+    nfseBatch: v.optional(v.literal(true)),
   })
     .index("by_storageId", ["storageId"])
     .index("by_objectKey", ["objectKey"])
@@ -149,6 +153,13 @@ export const importTables = {
       "companyId",
       "environment",
       "documentId",
+      "importedAt",
+    ])
+    .index("by_companyId_environment_documentId_nfseBatch_importedAt", [
+      "companyId",
+      "environment",
+      "documentId",
+      "nfseBatch",
       "importedAt",
     ])
     .index("by_documentId", ["documentId"]),

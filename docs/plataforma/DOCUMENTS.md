@@ -555,8 +555,22 @@ lista, a barra fica presa ao pé da janela e oferece 20 ou 50 por página
 (`perPage` na URL). Os arquivos sem documento reconhecido ficam em "Arquivos
 recusados", na página de importação, com o motivo em palavras, o código e o
 original; a lista de documentos só mostra um aviso com o link quando
-`documents.unclassifiedCount` conta algum (até 20, depois "20+"). Num ambiente
-que a página de importação não lê (Produção da captura liberada), a seção fica
+`documents.unclassifiedCount` conta algum (até 20, depois "20+"). A contagem
+roda em toda página do console e lê só o índice dos artefatos sem documento,
+no máximo 21, sem abrir arquivo, operação ou versão (#44). Um lote NFS-e
+ABRASF aceito antes da retirada também fica sem documento próprio, mas não é
+recusa: ele leva `nfseBatch` e fica fora desse índice, da contagem e da lista.
+A marca segue a operação atual do arquivo: reprocessar uma nota do lote a
+tira enquanto o lote é relido, e o arquivo volta a contar como o que a nova
+operação disser. Os lotes importados antes da marca precisam de
+`unclassifiedMigration:markNfseBatches` com `{"cursor":null}` em cada
+deployment com dados, conferindo o alvo por
+[deploy-producao.md](../operacao/deploy-producao.md); o log mostra
+`nfse_batch_mark` até `isDone: true`. A migração pula as organizações sob
+custódia do arquivo econômico (`skipped`), e uma organização restaurada de um
+pacote anterior à marca volta sem ela: rode a migração de novo depois de cada
+restauração. Até lá, um lote sem marca entra na contagem, mas não na lista.
+Num ambiente que a página de importação não lê (Produção da captura liberada), a seção fica
 na aba Captura da empresa, e o aviso de Documentos aponta para lá; quem tem papel
 de desenvolvedor, sem essa aba, a vê no fim da própria lista. Abas consultam itens,
 eventos e histórico sob demanda. Mudanças de contexto desmontam componentes e
