@@ -25,6 +25,7 @@ import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { originalAvailable } from "./lib/documentOriginalRead";
+import { syncNfseBatch, unclassifiedOrigin } from "./lib/unclassifiedArtifacts";
 
 export type ListFilters = {
   status?: "unknown" | "authorized" | "cancelled" | "denied" | "conflict";
@@ -418,10 +419,14 @@ export async function reprocessDocument(
     idempotencyRequest: JSON.stringify({ documentId: args.documentId }),
     request: JSON.stringify({ artifactId: artifact._id, processorVersion: PROCESSOR_VERSION }),
   });
-  if (!result.reused && artifact.fileId && artifact.projectId === args.projectId)
+  if (!result.reused && artifact.fileId && artifact.projectId === args.projectId) {
     await ctx.db.patch("importFiles", artifact.fileId, {
       processingOperationId: result.operationId,
     });
+    // Reprocessing a note of an NFS-e batch rereads the batch: until it succeeds again, the file
+    // is no longer an accepted batch (`lib/unclassifiedArtifacts.ts`).
+    await syncNfseBatch(ctx, artifact._id);
+  }
   return result;
 }
 /** Console reprocessing: the operation and its idempotency key belong to the console project. */
@@ -520,27 +525,6 @@ export const files = query({
   returns: v.object({ page: v.array(fileValue), nextCursor: v.union(v.string(), v.null()) }),
   handler: (ctx, args) => documentFiles(ctx, args),
 });
-/**
- * What an artifact without a document came from: its import file, the operation that read it and
- * the version that operation wrote. A succeeded NFS-e batch is the batch file of documents that
- * were recognized one by one, not a refusal: it is not listed nor counted.
- */
-async function unclassifiedOrigin(ctx: QueryCtx, artifact: Doc<"documentArtifacts">) {
-  const file = artifact.fileId ? await ctx.db.get("importFiles", artifact.fileId) : null;
-  const operation =
-    file?.processingOperationId ?? file?.operationId ?? artifact.processingOperationId;
-  const op = operation ? await ctx.db.get("operations", operation) : null;
-  const version = operation
-    ? await ctx.db
-        .query("documentVersions")
-        .withIndex("by_operationId_entryIndex", (q) =>
-          q.eq("operationId", operation).eq("entryIndex", undefined),
-        )
-        .unique()
-    : null;
-  const listed = !(version?.code === "NFSE_BATCH_IMPORTED" && op?.state === "succeeded");
-  return { file, op, version, listed };
-}
 export async function unclassifiedArtifacts(
   ctx: QueryCtx,
   args: DocumentScope & { cursor: string | null; limit: number },
@@ -549,7 +533,8 @@ export async function unclassifiedArtifacts(
   await documentAccess(ctx, args, keyHash);
   if (!Number.isSafeInteger(args.limit) || args.limit < 1 || args.limit > 20)
     return deny("INVALID_PAGINATION");
-  const binding = `${args.companyId}:${args.environment}:unclassified`;
+  // `nfseBatch`: a cursor of the index read before #44 is refused, never resumed on this one.
+  const binding = `${args.companyId}:${args.environment}:unclassified:nfseBatch`;
   let cursor: string | null = null;
   if (args.cursor) {
     try {
@@ -562,17 +547,19 @@ export async function unclassifiedArtifacts(
   }
   const batch = await ctx.db
     .query("documentArtifacts")
-    .withIndex("by_companyId_environment_documentId_importedAt", (q) =>
+    .withIndex("by_companyId_environment_documentId_nfseBatch_importedAt", (q) =>
       q
         .eq("companyId", args.companyId)
         .eq("environment", args.environment)
-        .eq("documentId", undefined),
+        .eq("documentId", undefined)
+        .eq("nfseBatch", undefined),
     )
     .order("desc")
     .paginate({ cursor, numItems: args.limit, maximumRowsRead: 20, maximumBytesRead: 200_000 });
   const page = await Promise.all(
     batch.page.map(async (artifact) => {
       const { file, op, version, listed } = await unclassifiedOrigin(ctx, artifact);
+      // The index already leaves the batches out; a batch not yet marked stays out of the page.
       if (!listed) return null;
       return {
         id: String(artifact._id),
@@ -598,14 +585,15 @@ export async function unclassifiedArtifacts(
 }
 /** At most this many files without a document are counted; above it the console says "20+". */
 const UNCLASSIFIED_COUNTED = 20;
-/** Artifacts read at most: past it the count says there may be others. */
-const UNCLASSIFIED_SCANNED = 100;
 /**
  * Console: how many files of the company and environment were kept without a recognized
  * document, for the notice of the documents list, which points to them in the import page.
- * Counted up to `UNCLASSIFIED_COUNTED`, with the same rows `unclassified` lists; `more` says there
- * are others; `latestAt`, when the newest of them arrived, lets the console show its notice again
- * after the person closed it. The same access as the list.
+ * Counted up to `UNCLASSIFIED_COUNTED`, with the same index range `unclassified` lists; `more`
+ * says there are others; `latestAt`, when the newest of them arrived, lets the console show its
+ * notice again after the person closed it. The same access as the list.
+ *
+ * It runs on every console page, so it reads only the index: at most 21 artifacts and nothing
+ * they point to, and it reruns only when an artifact enters or leaves that range (#44).
  */
 export const unclassifiedCount = query({
   args: companyScopeFields,
@@ -616,27 +604,23 @@ export const unclassifiedCount = query({
   }),
   handler: async (ctx, args) => {
     await documentAccess(ctx, args);
-    const rows = ctx.db
+    const rows = await ctx.db
       .query("documentArtifacts")
-      .withIndex("by_companyId_environment_documentId_importedAt", (q) =>
+      .withIndex("by_companyId_environment_documentId_nfseBatch_importedAt", (q) =>
         q
           .eq("companyId", args.companyId)
           .eq("environment", args.environment)
-          .eq("documentId", undefined),
+          .eq("documentId", undefined)
+          .eq("nfseBatch", undefined),
       )
-      .order("desc");
-    let count = 0,
-      scanned = 0,
-      latestAt: number | null = null;
-    for await (const artifact of rows) {
-      if (++scanned > UNCLASSIFIED_SCANNED) return { count, more: true, latestAt };
-      if (!(await unclassifiedOrigin(ctx, artifact)).listed) continue;
-      // Newest first: the first one counted is the latest arrival.
-      latestAt ??= artifact.importedAt;
-      if (++count > UNCLASSIFIED_COUNTED)
-        return { count: UNCLASSIFIED_COUNTED, more: true, latestAt };
-    }
-    return { count, more: false, latestAt };
+      .order("desc")
+      .take(UNCLASSIFIED_COUNTED + 1);
+    return {
+      count: Math.min(rows.length, UNCLASSIFIED_COUNTED),
+      more: rows.length > UNCLASSIFIED_COUNTED,
+      // Newest first: the first row is the latest arrival.
+      latestAt: rows[0]?.importedAt ?? null,
+    };
   },
 });
 export const unclassified = query({

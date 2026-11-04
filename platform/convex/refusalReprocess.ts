@@ -1,4 +1,5 @@
 import { ConvexError, v, type Infer } from "convex/values";
+import { syncNfseBatch } from "./lib/unclassifiedArtifacts";
 import { internalAction, internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -229,8 +230,10 @@ async function reprocessRefusal(
     false,
   );
   // The import panel follows the file's current operation, of the batch's own project only.
-  if (artifact.fileId && artifact.projectId === op.projectId)
+  if (artifact.fileId && artifact.projectId === op.projectId) {
     await ctx.db.patch("importFiles", artifact.fileId, { processingOperationId: child });
+    await syncNfseBatch(ctx, artifact._id);
+  }
   await upsertRecord(ctx, op, `${firstId(op)}:${firstId(artifact)}`, child);
   await upsertRecord(ctx, op, `latest:${firstId(artifact)}`, child);
 }

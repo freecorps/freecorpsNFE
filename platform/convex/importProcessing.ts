@@ -28,6 +28,7 @@ import { documentEvent, completeImport } from "./lib/webhookOutbox";
 import { recordUsage } from "./lib/usageCore";
 import { releaseBatchNotes, releasePendingNote } from "./lib/importCore";
 import { firstId } from "./lib/coldArchiveOrigin";
+import { syncNfseBatch } from "./lib/unclassifiedArtifacts";
 import { encodeDocumentContent, type DocumentContentError } from "./lib/documentContent";
 import {
   attachVersionContent,
@@ -286,6 +287,9 @@ export const published = internalMutation({
       }),
     });
     const artifact = (await ctx.db.get("documentArtifacts", version.artifactId))!;
+    // An accepted NFS-e batch stays without a document: marked, it leaves the files without a
+    // recognized document (`lib/unclassifiedArtifacts.ts`).
+    await syncNfseBatch(ctx, artifact._id);
     if (artifact.fileId) {
       const file = (await ctx.db.get("importFiles", artifact.fileId))!;
       // The published versions above counted the file's real notes; the provisional one ends, and
@@ -345,8 +349,11 @@ export async function reprocessArtifact(
     },
   );
   // The batch shows only work of its own project: an integration never sees a console operation.
-  if (!result.reused && projectId === batch.projectId)
+  if (!result.reused && projectId === batch.projectId) {
     await ctx.db.patch("importFiles", file._id, { processingOperationId: result.operationId });
+    // A moved pointer can take a batch out of its accepted outcome (`lib/unclassifiedArtifacts`).
+    await syncNfseBatch(ctx, artifact._id);
+  }
   return result;
 }
 export const reprocess = mutation({
