@@ -54,6 +54,7 @@ const reviewNames: Record<string, string> = {
   SUBSCRIPTION_REQUIRED: "Mudança de plano anual paga sem a assinatura anual do plano",
   AMOUNT_MISMATCH: "Pagamento com valor diferente do cobrado",
   PRICE_UNKNOWN: "Pagamento por um preço que não confere com o catálogo",
+  INVOICE_UNEXPECTED: "Pagamento por um período que não confere com a assinatura",
 };
 /** Why an annual start was refused before its anchor (`source: "checkout"`), nothing charged. */
 const annualRefusals: Record<string, string> = {
@@ -75,8 +76,8 @@ function reviewName(item: { source: string; code: string }) {
 const ended = ["canceled", "incomplete_expired"];
 
 /**
- * The plan in force and its end, the UTC instant it was bought until: a Pix plan ends on an
- * anniversary of its confirmation (ADR 0012), the card still on a 1st at 00:00 UTC.
+ * The plan in force and its end, the UTC instant it was bought until: a monthly plan ends on an
+ * anniversary of its signing or confirmation (ADR 0012), by card or Pix.
  */
 const planUntil = (plan: { tier: string; endsAt: number | null }) =>
   `${tierNames[plan.tier] ?? plan.tier}${plan.endsAt ? `, até ${formatUtcInstant(plan.endsAt)}` : ", sem vencimento"}`;
@@ -99,7 +100,10 @@ function failure(error: unknown) {
     PAYMENT_METHOD_PIX:
       "Há um plano pago por Pix em vigor ou uma renovação dele já paga. O cartão espera o fim dele.",
     CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
-    PERIOD_CLOSING: "O mês está terminando. Contrate depois de 00:00 UTC do dia 1.",
+    // The monthly upgrade closes 45 minutes before the renewal, with the date it reopens; the
+    // annual, which still starts on the 1st, 45 minutes before the month turns.
+    PERIOD_CLOSING:
+      "O período pago está terminando. Pelo cartão, a mudança de plano fecha 45 minutos antes da renovação, e o anual, 45 minutos antes de 00:00 UTC do dia 1.",
     SUBSCRIPTION_REQUIRED: "Não há assinatura por cartão nesta organização.",
     SUBSCRIPTION_CANCELLING:
       "A renovação está cancelada. Retome a renovação antes de mudar o plano.",
@@ -253,8 +257,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
       title="Cobrança"
       description={
         data.pixEnabled
-          ? "Cartão com renovação automática no dia 1 de cada mês, em UTC, ou Pix assistido. Uma forma de pagamento por vez."
-          : "Cartão com renovação automática no dia 1 de cada mês, em UTC."
+          ? "Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC, ou Pix assistido. Uma forma de pagamento por vez."
+          : "Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC."
       }
       actions={
         live ? (
@@ -287,11 +291,11 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
               renewing && live?.periodEnd && renewal
                 ? live.annual
                   ? `${price(annual[renewal])} em ${utcDate(live.periodEnd)} (${tierNames[renewal]} anual, 12 meses)`
-                  : `${price(monthly[renewal])} em ${utcDate(live.periodEnd)} (${tierNames[renewal]})`
+                  : `${price(monthly[renewal])} em ${formatUtcInstant(live.periodEnd)} (${tierNames[renewal]})`
                 : live?.cancelAtPeriodEnd && live.periodEnd
                   ? unpaidAnnual
                     ? "Nenhuma. A assinatura anual não será cobrada."
-                    : `Nenhuma. O plano termina em ${utcDate(live.periodEnd)}`
+                    : `Nenhuma. O plano termina em ${live.annual ? utcDate(live.periodEnd) : formatUtcInstant(live.periodEnd)}`
                   : "Nenhuma",
           },
           {
@@ -353,12 +357,12 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
         >
           {data.checkout.cycle === "annual" && data.checkout.kind === "upgrade"
             ? `${price(data.checkout.grantCents)} agora, pela mudança para o ${tierNames[data.checkout.tier]} anual até o fim do plano anual`
-            : data.checkout.cycle === "annual"
+            : data.checkout.cycle === "annual" && data.checkout.periodStartsAt !== null
               ? `${tierNames[data.checkout.tier]} anual: nada agora, ${price(data.checkout.grantCents)} em ${utcDate(data.checkout.periodStartsAt)} por 12 meses`
               : `${tierNames[data.checkout.tier]}: ${price(data.checkout.grantCents)} agora${
                   data.checkout.kind === "start"
-                    ? `, depois ${price(monthly[data.checkout.tier])} por mês`
-                    : " pela diferença do mês"
+                    ? `, depois ${price(monthly[data.checkout.tier])} por mês, no dia e horário do pagamento`
+                    : " pela diferença do mês do plano"
                 }`}
           . O link vale até {utcDateTime(data.checkout.expiresAt)}.
         </Callout>
@@ -489,8 +493,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
             ? `Nada é cobrado agora. Você será levado ao Stripe, e ${price(annual[pending.tier])} são cobrados em ${utcDate(nextMonth)}, início dos 12 meses. Até lá, o mês corrente segue no plano atual. Depois, a renovação é anual, na mesma data.${data.pixEnabled ? " Para começar agora, peça o anual por Pix em Escolha seu plano." : ""}`
             : pending?.kind === "checkout"
               ? live
-                ? "Você será levado ao Stripe para pagar a diferença integral do mês corrente. O plano muda quando o Stripe confirmar o pagamento, e a renovação passa a ser pelo novo plano."
-                : `Você será levado ao Stripe. O valor do mês corrente aparece antes da confirmação, integral e sem pró-rata. Depois, ${price(monthly[pending.tier])} por mês, cobrados no dia 1 às 00:00 UTC.`
+                ? `Você será levado ao Stripe para pagar a diferença integral do mês do plano${data.plan?.endsAt ? `, que termina em ${formatUtcInstant(data.plan.endsAt)}` : ""}. O plano muda quando o Stripe confirmar o pagamento, até essa mesma data, e a renovação passa a ser pelo novo plano.`
+                : `Você será levado ao Stripe. ${price(monthly[pending.tier])} são cobrados no pagamento, integrais e sem pró-rata, e o mês vai até o mesmo dia e horário do mês seguinte, em UTC. Depois, ${price(monthly[pending.tier])} por mês, cobrados nesse dia e horário.`
               : pending?.kind === "abandon"
                 ? "O link de pagamento deixa de valer. Se o pagamento já tiver sido feito, ele continua valendo."
                 : pending?.kind === "renewal" && pending.change === "cancel"
@@ -502,7 +506,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
                   : pending?.kind === "renewal" && pending.change === "resume"
                     ? live?.annual
                       ? "A assinatura volta a renovar pelo anual no fim do período."
-                      : "A assinatura volta a renovar no dia 1 de cada mês."
+                      : "A assinatura volta a renovar todo mês, no dia e horário da contratação."
                     : "Vale a partir da próxima renovação, se o uso atual couber no plano. O mês pago não muda."
         }
         confirmLabel={pending?.kind === "checkout" ? "Ir para o Stripe" : "Confirmar"}

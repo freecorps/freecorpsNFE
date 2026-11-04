@@ -13,9 +13,10 @@ import {
   readSubscriptions,
   type CatalogPrices,
 } from "../platform/convex/lib/billingStripe";
-import { termEndsAt } from "../platform/convex/lib/annualTerms";
+import { addMonths, termEndsAt } from "../platform/convex/lib/annualTerms";
 import { activateCatalogPlan } from "../platform/convex/lib/planCore";
 import { insertTerm } from "../platform/convex/lib/planTerms";
+import { reserveUsage } from "../platform/convex/lib/usageCore";
 
 /**
  * Card subscriptions through Stripe (#556), proven against a synthetic Stripe API answered by a
@@ -25,6 +26,10 @@ const OCT = Date.UTC(2026, 9, 10, 12);
 const NOV = Date.UTC(2026, 10, 1);
 const DEC = Date.UTC(2026, 11, 1);
 const JAN = Date.UTC(2027, 0, 1);
+/** Anniversaries of a monthly card signed at `OCT`, 10/10 at 12:00 UTC (ADR 0012, slice 2a). */
+const NOV_10 = Date.UTC(2026, 10, 10, 12);
+const DEC_10 = Date.UTC(2026, 11, 10, 12);
+const JAN_10 = Date.UTC(2027, 0, 10, 12);
 const WEBHOOK_SECRET = "whsec_synthetic_billing_only";
 const s = (ms: number) => Math.floor(ms / 1000);
 usePlatformEnvironment({
@@ -65,7 +70,6 @@ function fakeStripe() {
     calls: [] as { method: string; path: string; params: URLSearchParams; key: string | null }[],
     customers: 0,
     sessions: new Map<string, Json>(),
-    coupons: new Map<string, Json>(),
     loseResponseOnce: "",
     portalSessionOverrides: {} as Json,
     portalConfiguration: {
@@ -108,16 +112,6 @@ function fakeStripe() {
     const path = url.pathname;
     if (path === "/v1/prices") return reply({ data: state.prices });
     if (path === "/v1/customers") return reply({ id: `cus_${++state.customers}` });
-    if (path === "/v1/coupons" && method === "POST") {
-      const key = headers.get("idempotency-key")!;
-      const coupon = state.coupons.get(key) ?? { id: `coupon_${state.coupons.size + 1}` };
-      state.coupons.set(key, coupon);
-      if (state.loseResponseOnce === path) {
-        state.loseResponseOnce = "";
-        throw new TypeError("synthetic lost response");
-      }
-      return reply(coupon);
-    }
     if (path === "/v1/checkout/sessions" && method === "POST") {
       if (
         params.get("subscription_data[proration_behavior]") === "none" &&
@@ -186,8 +180,17 @@ function fakeStripe() {
     state,
     sent: (path: string, method = "POST") =>
       state.calls.filter((call) => call.path === path && call.method === method),
-    /** Paying the open Checkout creates the subscription; the session is then complete. */
-    subscribe(customer: string, tier: "intermediate" | "large", periodEnd: number) {
+    /**
+     * Paying the open Checkout creates the subscription; the session is then complete. Without
+     * an anchor, as the monthly Checkout since slice 2a of ADR 0012, Stripe anchors it at the
+     * signing, truncated to the second, and its first period ends a month later.
+     */
+    subscribe(
+      customer: string,
+      tier: "intermediate" | "large",
+      periodEnd?: number,
+      anchor = s(Date.now()) * 1000,
+    ) {
       const id = `sub_${state.subscriptions.length + 1}`;
       for (const session of state.sessions.values())
         if (session.status === "open")
@@ -197,13 +200,14 @@ function fakeStripe() {
         customer,
         status: "active",
         created: s(Date.now()),
+        billing_cycle_anchor: s(anchor),
         cancel_at_period_end: false,
         items: {
           data: [
             {
               id: "si_1",
               price: tier === "large" ? "price_large" : "price_int",
-              current_period_end: s(periodEnd),
+              current_period_end: s(periodEnd ?? addMonths(anchor, 1)),
             },
           ],
         },
@@ -225,12 +229,18 @@ function fakeStripe() {
     },
   };
 }
+/**
+ * The first invoice of a monthly Checkout (ADR 0012, slice 2a): the whole month charged at the
+ * signing, the recurring line from `start`, the subscription's anchor, to the same day and time
+ * next month. The marks carry no period: the month starts when it is paid.
+ */
 const startInvoice = (
   customer: string,
   subscription: string,
   organizationId: string,
   amount: number,
   tier = "intermediate",
+  start = s(Date.now()) * 1000,
 ) => ({
   customer,
   amount_paid: amount,
@@ -240,21 +250,32 @@ const startInvoice = (
     type: "subscription_details",
     subscription_details: {
       subscription,
-      metadata: {
-        organizationId,
-        kind: "start",
-        tier,
-        period: "2026-10",
-        grantCents: String(amount),
-      },
+      metadata: { organizationId, kind: "start", tier, grantCents: String(amount) },
     },
   },
+  lines: {
+    data: [
+      {
+        amount,
+        period: { start: s(start), end: s(addMonths(start, 1)) },
+        pricing: {
+          type: "price_details",
+          price_details: {
+            price: tier === "large" ? "price_large" : "price_int",
+            product: tier === "large" ? "prod_large" : "prod_int",
+          },
+        },
+      },
+    ],
+  },
 });
+/** A monthly renewal: the line runs from `start` to `end`, by default the next anniversary. */
 const cycleInvoice = (
   customer: string,
   subscription: string,
   start: number,
   fields: Json = {},
+  end = addMonths(start, 1),
 ) => ({
   customer,
   amount_paid: 14900,
@@ -265,7 +286,7 @@ const cycleInvoice = (
     data: [
       {
         amount: 14900,
-        period: { start: s(start), end: s(start) + 1 },
+        period: { start: s(start), end: s(end) },
         pricing: {
           type: "price_details",
           price_details: { price: "price_int", product: "prod_int" },
@@ -401,56 +422,120 @@ describe("leitura do Stripe", () => {
 
   it("concede só o que o servidor precificou e manda o resto para revisão", () => {
     const org = "org_1";
+    // Signed on 31/01 at 10:00:07 UTC: Stripe anchors the subscription there (ADR 0012).
+    const JAN_31 = Date.UTC(2027, 0, 31, 10, 0, 7);
+    const FEB_28 = Date.UTC(2027, 1, 28, 10, 0, 7);
+    const MAR_31 = Date.UTC(2027, 2, 31, 10, 0, 7);
+    const anchors: Record<string, number> = { sub_1: JAN_31 };
+    const grant = (invoice: Parameters<typeof invoiceGrant>[0], to = org, at = anchors) =>
+      invoiceGrant(invoice, PRICES, to, {}, [], at);
     const start = readInvoice({
       id: "in_1",
-      ...startInvoice("cus_1", "sub_1", org, 14900),
+      ...startInvoice("cus_1", "sub_1", org, 14900, "intermediate", JAN_31),
       status: "paid",
       currency: "brl",
     })!;
-    expect(invoiceGrant(start, PRICES, org)).toEqual({
+    expect(grant(start)).toEqual({
       kind: "grant",
       tier: "intermediate",
-      period: "2026-10",
+      startsAt: JAN_31,
+      endsAt: FEB_28,
+      anchor: JAN_31,
     });
-    expect(invoiceGrant({ ...start, amountPaid: 100 }, PRICES, org)).toEqual({
+    expect(grant({ ...start, amountPaid: 100 })).toEqual({
       kind: "review",
       code: "AMOUNT_MISMATCH",
     });
-    expect(invoiceGrant(start, PRICES, "org_2")).toEqual({
-      kind: "review",
-      code: "ORGANIZATION_MISMATCH",
-    });
-    expect(invoiceGrant({ ...start, status: "open" }, PRICES, org)).toEqual({
-      kind: "none",
-      code: "NOT_PAID",
-    });
-    expect(invoiceGrant({ ...start, currency: "usd" }, PRICES, org)).toEqual({
+    expect(grant(start, "org_2")).toEqual({ kind: "review", code: "ORGANIZATION_MISMATCH" });
+    expect(grant({ ...start, status: "open" })).toEqual({ kind: "none", code: "NOT_PAID" });
+    expect(grant({ ...start, currency: "usd" })).toEqual({
       kind: "review",
       code: "CURRENCY_MISMATCH",
     });
+    // Invariant 6: without the subscription's anchor, or with a line that is not one month of it.
+    expect(grant(start, org, {})).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    expect(grant(start, org, { sub_1: JAN_31 - 1000 })).toEqual({
+      kind: "review",
+      code: "INVOICE_UNEXPECTED",
+    });
+    expect(grant({ ...start, lines: [] })).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    // The first invoice of a Checkout before slice 2a: a one-off item and a recurring line from
+    // the signing to the 1st it anchored on. It is no month of that anchor.
+    const legacyStart = { ...start, lines: [{ ...start.lines[0]!, periodEnd: NOV }] };
+    expect(grant(legacyStart, org, { sub_1: NOV })).toEqual({
+      kind: "review",
+      code: "INVOICE_UNEXPECTED",
+    });
     const cycle = readInvoice({
       id: "in_2",
+      ...cycleInvoice("cus_1", "sub_1", FEB_28, {}, MAR_31),
+      status: "paid",
+      currency: "brl",
+    })!;
+    // Counted from the anchor, never from the previous anniversary: 28/02 to 31/03, no drift.
+    expect(grant(cycle)).toEqual({
+      kind: "grant",
+      tier: "intermediate",
+      startsAt: FEB_28,
+      endsAt: MAR_31,
+      anchor: JAN_31,
+    });
+    const drifted = { ...cycle, lines: [{ ...cycle.lines[0]!, periodEnd: addMonths(FEB_28, 1) }] };
+    expect(grant(drifted)).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    const offAnniversary = {
+      ...cycle,
+      lines: [{ ...cycle.lines[0]!, periodStart: FEB_28 + 3600_000 }],
+    };
+    expect(grant(offAnniversary)).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    // A subscription anchored on a 1st at 00:00 UTC, as before slice 2a: its months are civil.
+    const legacy = readInvoice({
+      id: "in_3",
       ...cycleInvoice("cus_1", "sub_1", NOV),
       status: "paid",
       currency: "brl",
     })!;
-    expect(invoiceGrant(cycle, PRICES, org)).toEqual({
+    expect(grant(legacy, org, { sub_1: Date.UTC(2026, 9, 1) })).toEqual({
       kind: "grant",
       tier: "intermediate",
-      period: "2026-11",
+      startsAt: NOV,
+      endsAt: DEC,
+      anchor: Date.UTC(2026, 9, 1),
     });
-    expect(invoiceGrant({ ...cycle, amountPaid: 49900 }, PRICES, org)).toEqual({
+    expect(grant({ ...cycle, amountPaid: 49900 })).toEqual({
       kind: "review",
       code: "AMOUNT_MISMATCH",
     });
-    expect(invoiceGrant({ ...cycle, lines: [] }, PRICES, org)).toEqual({
-      kind: "review",
-      code: "PRICE_UNKNOWN",
-    });
-    expect(invoiceGrant({ ...cycle, billingReason: "subscription_update" }, PRICES, org)).toEqual({
+    expect(grant({ ...cycle, lines: [] })).toEqual({ kind: "review", code: "PRICE_UNKNOWN" });
+    expect(grant({ ...cycle, billingReason: "subscription_update" })).toEqual({
       kind: "review",
       code: "INVOICE_UNEXPECTED",
     });
+    // A monthly upgrade names the quota period it was priced on, by its canonical key.
+    const upgrade = readInvoice({
+      id: "in_4",
+      customer: "cus_1",
+      status: "paid",
+      currency: "brl",
+      amount_paid: 35000,
+      billing_reason: "manual",
+      metadata: {
+        organizationId: org,
+        kind: "upgrade",
+        tier: "large",
+        period: "2027-02-28T10:00:07.000Z",
+        grantCents: "35000",
+      },
+    })!;
+    expect(grant(upgrade)).toEqual({
+      kind: "upgrade",
+      tier: "large",
+      period: "2027-02-28T10:00:07.000Z",
+    });
+    for (const period of ["2027-02-28T10:00:07Z", "2027-02-01T00:00:00.000Z", undefined])
+      expect(grant({ ...upgrade, metadata: { ...upgrade.metadata, period } })).toEqual({
+        kind: "review",
+        code: "AMOUNT_MISMATCH",
+      });
   });
 
   it("aceita só o preço anual exato, por tier, sem afetar o mensal", () => {
@@ -499,7 +584,7 @@ describe("leitura do Stripe", () => {
     const annualStart = {
       ...start,
       subscriptionMetadata: { ...start.subscriptionMetadata, cycle: "annual", period: "2026-11" },
-      lines: [{ priceId: "price_int_year", periodStart: OCT, amount: 0 }],
+      lines: [{ priceId: "price_int_year", periodStart: OCT, periodEnd: OCT, amount: 0 }],
     };
     expect(start.paidAt).toBe(OCT);
     expect(invoiceGrant(annualStart, PRICES, org, ANNUAL)).toEqual({
@@ -529,7 +614,7 @@ describe("leitura do Stripe", () => {
       ),
     ).toEqual({ kind: "review", code: "AMOUNT_MISMATCH" });
     // The subscription renews at what its recurring line charges: it must be the cycle bought.
-    const line = (priceId: string) => [{ priceId, periodStart: NOV, amount: 0 }];
+    const line = (priceId: string) => [{ priceId, periodStart: NOV, periodEnd: DEC, amount: 0 }];
     expect(invoiceGrant({ ...annualStart, lines: line("price_int") }, PRICES, org, ANNUAL)).toEqual(
       { kind: "review", code: "INVOICE_UNEXPECTED" },
     );
@@ -539,7 +624,11 @@ describe("leitura do Stripe", () => {
       status: "paid",
       currency: "brl",
     })!;
-    expect(invoiceGrant(monthlyStart, PRICES, org, ANNUAL)).toMatchObject({ kind: "grant" });
+    expect(
+      invoiceGrant(monthlyStart, PRICES, org, ANNUAL, [], {
+        sub_1: monthlyStart.lines[0]!.periodStart,
+      }),
+    ).toMatchObject({ kind: "grant" });
     expect(
       invoiceGrant({ ...monthlyStart, lines: line("price_int_year") }, PRICES, org, ANNUAL),
     ).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
@@ -624,7 +713,7 @@ describe("leitura do Stripe", () => {
         org,
         LARGE,
       ),
-    ).toEqual({ kind: "grant", tier: "large", period: "2027-02" });
+    ).toEqual({ kind: "upgrade", tier: "large", period: "2027-02" });
   });
 
   it("lê do evento só seletores e marca reembolso e contestação para revisão", () => {
@@ -877,32 +966,26 @@ describe("permissões e isolamento", () => {
 });
 
 describe("ciclo da assinatura", () => {
-  it.each(["/v1/coupons", "/v1/checkout/sessions"])(
-    "recupera resposta perdida em %s sem duplicar cupom ou sessão",
-    async (path) => {
-      const f = await fixture();
-      const args = {
-        organizationId: f.organizationId,
-        tier: "intermediate" as const,
-        key: "retry-monthly",
-      };
-      f.fake.state.loseResponseOnce = path;
-      expect(await code(f.owner.action(api.billing.checkout, args))).toBe("BILLING_UNAVAILABLE");
-      expect(await f.t.run((ctx) => ctx.db.query("billingCheckouts").first())).toMatchObject({
-        state: "creating",
-      });
-      const result = await f.owner.action(api.billing.checkout, args);
-      expect(result.url).toContain("checkout.stripe.com");
-      expect(f.fake.state.coupons.size).toBe(1);
-      expect(f.fake.state.sessions.size).toBe(1);
-      for (const endpoint of ["/v1/coupons", "/v1/checkout/sessions"]) {
-        const calls = f.fake.sent(endpoint);
-        expect(new Set(calls.map((call) => call.key)).size).toBe(1);
-        expect(new Set(calls.map((call) => call.params.toString())).size).toBe(1);
-      }
-      expect(await f.plan()).toBeNull();
-    },
-  );
+  it("recupera resposta perdida na criação da sessão sem duplicar a sessão", async () => {
+    const f = await fixture();
+    const args = {
+      organizationId: f.organizationId,
+      tier: "intermediate" as const,
+      key: "retry-monthly",
+    };
+    f.fake.state.loseResponseOnce = "/v1/checkout/sessions";
+    expect(await code(f.owner.action(api.billing.checkout, args))).toBe("BILLING_UNAVAILABLE");
+    expect(await f.t.run((ctx) => ctx.db.query("billingCheckouts").first())).toMatchObject({
+      state: "creating",
+    });
+    const result = await f.owner.action(api.billing.checkout, args);
+    expect(result.url).toContain("checkout.stripe.com");
+    expect(f.fake.state.sessions.size).toBe(1);
+    const calls = f.fake.sent("/v1/checkout/sessions");
+    expect(new Set(calls.map((call) => call.key)).size).toBe(1);
+    expect(new Set(calls.map((call) => call.params.toString())).size).toBe(1);
+    expect(await f.plan()).toBeNull();
+  });
 
   it("o Stripe simulado recusa a combinação original da #668", async () => {
     fakeStripe();
@@ -949,13 +1032,14 @@ describe("ciclo da assinatura", () => {
       tier: "large",
       key: "large-after-pix",
     });
-    expect(Object.fromEntries(f.fake.sent("/v1/checkout/sessions")[0]!.params)).toMatchObject({
+    // The whole month at the recurring price, charged at the signing (ADR 0012, slice 2a).
+    const sent = f.fake.sent("/v1/checkout/sessions")[0]!.params;
+    expect(Object.fromEntries(sent)).toMatchObject({
+      mode: "subscription",
       "line_items[0][price]": "price_large",
-      "line_items[1][price_data][unit_amount]": "49900",
-      "subscription_data[proration_behavior]": "create_prorations",
-      "subscription_data[billing_cycle_anchor]": String(s(DEC)),
+      "subscription_data[metadata][grantCents]": "49900",
     });
-    expect(f.fake.sent("/v1/coupons")[0]!.params.get("applies_to[products][0]")).toBe("prod_large");
+    expect(sent.has("line_items[1][price_data][unit_amount]")).toBe(false);
     expect(await f.plan()).toMatchObject({ catalogTier: "intermediate" });
   });
 
@@ -964,24 +1048,30 @@ describe("ciclo da assinatura", () => {
     const { url, customer } = await startCard(f);
     expect(url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
     const [created] = f.fake.sent("/v1/checkout/sessions");
-    expect(Object.fromEntries(created!.params)).toMatchObject({
+    // ADR 0012, slice 2a: the recurring price alone, charged at the signing, which Stripe takes
+    // as the anchor. No anchor on the 1st, one-off item, coupon or proration; the marks carry no
+    // period, since the month starts when it is paid. The link lasts a day.
+    expect(Object.fromEntries(created!.params)).toEqual({
       mode: "subscription",
       customer,
-      "line_items[0][price]": "price_int",
-      "line_items[1][price_data][unit_amount]": "14900",
-      "subscription_data[billing_cycle_anchor]": String(s(NOV)),
-      "subscription_data[proration_behavior]": "create_prorations",
-      "discounts[0][coupon]": "coupon_1",
-      "subscription_data[metadata][grantCents]": "14900",
+      client_reference_id: f.organizationId,
+      locale: "pt-BR",
       "payment_method_types[0]": "card",
+      success_url: expect.stringContaining("cobranca=retorno"),
+      cancel_url: expect.stringContaining("cobranca=cancelado"),
+      expires_at: String(s(OCT + 24 * 3600_000)),
+      "line_items[0][price]": "price_int",
+      "line_items[0][quantity]": "1",
+      "metadata[organizationId]": f.organizationId,
+      "metadata[kind]": "start",
+      "metadata[tier]": "intermediate",
+      "metadata[grantCents]": "14900",
+      "subscription_data[metadata][organizationId]": f.organizationId,
+      "subscription_data[metadata][kind]": "start",
+      "subscription_data[metadata][tier]": "intermediate",
+      "subscription_data[metadata][grantCents]": "14900",
     });
-    expect(Object.fromEntries(f.fake.sent("/v1/coupons")[0]!.params)).toMatchObject({
-      duration: "once",
-      percent_off: "100",
-      "applies_to[products][0]": "prod_int",
-      max_redemptions: "1",
-      redeem_by: created!.params.get("expires_at"),
-    });
+    expect(f.fake.state.calls.some((call) => call.path === "/v1/coupons")).toBe(false);
     // Same intention after an uncertain answer: same session, one Stripe creation.
     expect(
       await f.owner.action(api.billing.checkout, {
@@ -1013,7 +1103,7 @@ describe("ciclo da assinatura", () => {
     // The browser coming back proves nothing.
     await f.owner.action(api.billing.refresh, { organizationId: f.organizationId });
     expect(await f.plan()).toBeNull();
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     f.fake.state.sessions.get(
       `cs_${(await f.t.run((ctx) => ctx.db.query("billingCheckouts").first()))!._id}`,
@@ -1032,39 +1122,46 @@ describe("ciclo da assinatura", () => {
       ).toBe(200);
     await processEvents(f);
     await f.owner.action(api.billing.refresh, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV, version: 1 });
+    // From the signing, 10/10 at 12:00 UTC, to the same day and time next month, with that anchor.
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "intermediate",
+      startsAt: OCT,
+      endsAt: NOV_10,
+      periodAnchor: OCT,
+      version: 1,
+    });
     expect(await f.t.run((ctx) => ctx.db.query("billingEvents").collect())).toHaveLength(1);
     expect(await f.t.run((ctx) => ctx.db.query("billingGrants").collect())).toMatchObject([
-      { state: "applied", invoiceId: "in_1" },
+      { state: "applied", invoiceId: "in_1", period: "2026-10-10T12:00:00.000Z" },
     ]);
     expect(await f.billing()).toMatchObject({
       checkout: null,
       account: {
         renewalTier: "intermediate",
-        subscription: { tier: "intermediate", periodEnd: NOV, cancelAtPeriodEnd: false },
+        subscription: { tier: "intermediate", periodEnd: NOV_10, cancelAtPeriodEnd: false },
       },
     });
   });
 
-  it("renova no dia 1, ignora fatura antiga atrasada, e sem carência vence até o pagamento ser recuperado", async () => {
+  it("renova no aniversário, ignora fatura antiga atrasada, e sem carência vence até o pagamento ser recuperado", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    vi.setSystemTime(NOV + 3600_000);
-    f.fake.invoice(cycleInvoice(customer, sub.id, NOV));
-    (sub.items.data[0] as Json).current_period_end = s(DEC);
+    vi.setSystemTime(NOV_10 + 3600_000);
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    (sub.items.data[0] as Json).current_period_end = s(DEC_10);
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ endsAt: DEC, version: 2 });
+    expect(await f.plan()).toMatchObject({ endsAt: DEC_10, periodAnchor: OCT, version: 2 });
     // A late, repeated event for October's invoice changes nothing.
     await deliver(f, { type: "invoice.paid", data: { object: { id: "in_1", customer } } });
     await processEvents(f);
-    expect(await f.plan()).toMatchObject({ endsAt: DEC, version: 2 });
-    // December's charge is declined: the plan ends with November, the documents stay.
-    vi.setSystemTime(DEC + 3600_000);
+    expect(await f.plan()).toMatchObject({ endsAt: DEC_10, version: 2 });
+    // December's charge is declined: the plan ends with the month paid, the documents stay.
+    vi.setSystemTime(DEC_10 + 3600_000);
     const declined = f.fake.invoice(
-      cycleInvoice(customer, sub.id, DEC, {
+      cycleInvoice(customer, sub.id, DEC_10, {
         status: "open",
         amount_paid: 0,
         hosted_invoice_url: "https://invoice.stripe.com/i/synthetic",
@@ -1076,7 +1173,7 @@ describe("ciclo da assinatura", () => {
       data: { object: { id: declined.id, customer } },
     });
     await processEvents(f);
-    expect(await f.plan()).toMatchObject({ endsAt: DEC });
+    expect(await f.plan()).toMatchObject({ endsAt: DEC_10 });
     // Months later the console session has expired; read the account directly.
     const account = () => f.t.run((ctx) => ctx.db.query("billingAccounts").first());
     expect(await account()).toMatchObject({
@@ -1087,33 +1184,37 @@ describe("ciclo da assinatura", () => {
         url: "https://invoice.stripe.com/i/synthetic",
       },
     });
-    // Recovered on day 5: the whole month, as Pix.
-    vi.setSystemTime(DEC + 4 * 86400_000);
+    // Recovered 4 days later: the whole month, as Pix, still on the anchor's anniversaries.
+    vi.setSystemTime(DEC_10 + 4 * 86400_000);
     Object.assign(declined, { status: "paid", amount_paid: 14900 });
     sub.status = "active";
-    (sub.items.data[0] as Json).current_period_end = s(JAN);
+    (sub.items.data[0] as Json).current_period_end = s(JAN_10);
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ endsAt: JAN, version: 3 });
+    expect(await f.plan()).toMatchObject({ endsAt: JAN_10, periodAnchor: OCT, version: 3 });
     expect((await account())?.openInvoice).toBeUndefined();
   });
 
   it("fechada a janela de admissão, quem já tem o plano renova; plano novo e upgrade são recusados (#549)", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
-    // The window closes before the renewal on day 1.
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV_10 });
+    // The window closes before the renewal on the anniversary.
     await f.t.run(async (ctx) => {
       const settings = await ctx.db.query("platformPlanSettings").first();
       await ctx.db.patch("platformPlanSettings", settings!._id, { admissionsUntil: NOV - 1 });
     });
-    vi.setSystemTime(NOV + 3600_000);
-    f.fake.invoice(cycleInvoice(customer, sub.id, NOV));
-    (sub.items.data[0] as Json).current_period_end = s(DEC);
+    vi.setSystemTime(NOV_10 + 3600_000);
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    (sub.items.data[0] as Json).current_period_end = s(DEC_10);
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: DEC, version: 2 });
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "intermediate",
+      endsAt: DEC_10,
+      version: 2,
+    });
     expect(
       (await f.t.run((ctx) => ctx.db.query("billingGrants").collect())).map((g) => g.state),
     ).toEqual(["applied", "applied"]);
@@ -1146,10 +1247,13 @@ describe("ciclo da assinatura", () => {
   it("upgrade cobra a diferença integral, downgrade e cancelamento valem só na renovação", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    await f.owner.action(api.billing.checkout, {
+    // Mid-period: the full difference now, for the same period, which keeps its anchor and end.
+    vi.setSystemTime(Date.UTC(2026, 9, 25, 9));
+    const owner = await person(f.t, f.organizationId, "owner");
+    await owner.action(api.billing.checkout, {
       organizationId: f.organizationId,
       tier: "large",
       key: "upgrade-large-1",
@@ -1160,6 +1264,15 @@ describe("ciclo da assinatura", () => {
       "line_items[0][price_data][unit_amount]": "35000",
       "invoice_creation[enabled]": "true",
       "invoice_creation[invoice_data][metadata][kind]": "upgrade",
+      "invoice_creation[invoice_data][metadata][period]": "2026-10-10T12:00:00.000Z",
+      expires_at: String(s(Date.UTC(2026, 9, 26, 9))),
+    });
+    expect(
+      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).checkout,
+    ).toMatchObject({
+      kind: "upgrade",
+      periodStartsAt: OCT,
+      grantCents: 35000,
     });
     f.fake.invoice({
       customer,
@@ -1170,46 +1283,129 @@ describe("ciclo da assinatura", () => {
         organizationId: f.organizationId,
         kind: "upgrade",
         tier: "large",
-        period: "2026-10",
+        period: "2026-10-10T12:00:00.000Z",
         grantCents: "35000",
       },
     });
+    for (const session of f.fake.state.sessions.values()) session.status = "complete";
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV, version: 2 });
-    // The subscription now renews at Grande, without proration.
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      endsAt: NOV_10,
+      periodAnchor: OCT,
+      version: 2,
+    });
+    // The subscription now renews at Grande, without proration, on the same anniversary.
     expect(Object.fromEntries(f.fake.sent("/v1/subscriptions/sub_1").at(-1)!.params)).toEqual({
       "items[0][id]": "si_1",
       "items[0][price]": "price_large",
       proration_behavior: "none",
+      billing_cycle_anchor: "unchanged",
     });
-    // Downgrade: next renewal at Intermediário, October keeps Grande.
+    // Downgrade: next renewal at Intermediário, the period paid keeps Grande.
     expect(
       await code(
-        f.owner.action(api.billing.changeRenewal, {
+        owner.action(api.billing.changeRenewal, {
           organizationId: f.organizationId,
           change: "large",
         }),
       ),
     ).toBe("PLAN_UNAVAILABLE");
-    await f.owner.action(api.billing.changeRenewal, {
+    await owner.action(api.billing.changeRenewal, {
       organizationId: f.organizationId,
       change: "intermediate",
     });
     expect((sub.items.data[0] as Json).price).toBe("price_int");
     expect(await f.plan()).toMatchObject({ catalogTier: "large", version: 2 });
     // Cancel: no renewal, the paid period stays; Pix becomes possible again.
-    await f.owner.action(api.billing.changeRenewal, {
+    await owner.action(api.billing.changeRenewal, {
       organizationId: f.organizationId,
       change: "cancel",
     });
     expect(sub.cancel_at_period_end).toBe(true);
-    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV });
-    expect((await f.billing()).account?.subscription?.cancelAtPeriodEnd).toBe(true);
-    await f.owner.action(api.billing.changeRenewal, {
+    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV_10 });
+    expect(
+      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).account
+        ?.subscription?.cancelAtPeriodEnd,
+    ).toBe(true);
+    // One paid plan at a time: a new subscription beside the card plan in force waits for its
+    // end, with the date; the renewal is "Retomar renovação".
+    expect(
+      await refusal(
+        owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "intermediate",
+          key: "start-while-cancelling",
+        }),
+      ),
+    ).toEqual({ code: "PLAN_UNAVAILABLE", availableAt: NOV_10 });
+    await owner.action(api.billing.changeRenewal, {
       organizationId: f.organizationId,
       change: "resume",
     });
     expect(sub.cancel_at_period_end).toBe(false);
+  });
+
+  it("o upgrade fecha 45 minutos antes do aniversário e reabre depois da renovação", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    const sub = f.fake.subscribe(customer, "intermediate");
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
+    const upgrade = (key: string, owner = f.owner) =>
+      owner.action(api.billing.checkout, { organizationId: f.organizationId, tier: "large", key });
+    vi.setSystemTime(NOV_10 - 44 * 60_000);
+    const late = await person(f.t, f.organizationId, "owner");
+    expect(await refusal(upgrade("upgrade-at-the-end", late))).toEqual({
+      code: "PERIOD_CLOSING",
+      availableAt: NOV_10,
+    });
+    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(1);
+    // Just before the margin, the session expires before the period ends.
+    vi.setSystemTime(NOV_10 - 46 * 60_000);
+    await upgrade("upgrade-before-the-end", late);
+    expect(f.fake.sent("/v1/checkout/sessions").at(-1)!.params.get("expires_at")).toBe(
+      String(s(NOV_10 - 5 * 60_000)),
+    );
+    await late.action(api.billing.abandonCheckout, { organizationId: f.organizationId });
+    // A difference paid after the period turned no longer matches it: a person looks.
+    vi.setSystemTime(NOV_10 + 3600_000);
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    f.fake.invoice({
+      customer,
+      amount_paid: 35000,
+      amount_due: 35000,
+      billing_reason: "manual",
+      metadata: {
+        organizationId: f.organizationId,
+        kind: "upgrade",
+        tier: "large",
+        period: "2026-10-10T12:00:00.000Z",
+        grantCents: "35000",
+      },
+    });
+    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: DEC_10 });
+    expect(
+      (await f.t.run((ctx) => ctx.db.query("billingGrants").collect())).map((grant) => [
+        grant.state,
+        grant.code ?? null,
+        grant.period,
+      ]),
+    ).toEqual([
+      ["applied", null, "2026-10-10T12:00:00.000Z"],
+      ["applied", null, "2026-11-10T12:00:00.000Z"],
+      ["blocked", "LATE_PAYMENT", "2026-10-10T12:00:00.000Z"],
+    ]);
+    // In the next period, the upgrade is sold again, priced on it.
+    const next = await person(f.t, f.organizationId, "owner");
+    await upgrade("upgrade-next-period", next);
+    expect(
+      f.fake
+        .sent("/v1/checkout/sessions")
+        .at(-1)!
+        .params.get("invoice_creation[invoice_data][metadata][period]"),
+    ).toBe("2026-11-10T12:00:00.000Z");
   });
 
   it("o mês pago por Pix não abre o cartão: pedido aguardando e plano em vigor recusam o Checkout", async () => {
@@ -1371,6 +1567,223 @@ describe("ciclo da assinatura", () => {
   });
 });
 
+describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
+  const JAN_31 = Date.UTC(2027, 0, 31, 10, 0, 7);
+  const FEB_28 = Date.UTC(2027, 1, 28, 10, 0, 7);
+  const MAR_31 = Date.UTC(2027, 2, 31, 10, 0, 7);
+  const APR_30 = Date.UTC(2027, 3, 30, 10, 0, 7);
+  const OCT_1 = Date.UTC(2026, 9, 1);
+  const sync = (f: Fixture) =>
+    f.t.action(internal.billing.sync, { organizationId: f.organizationId });
+  const grants = (f: Fixture) =>
+    f.t
+      .run((ctx) => ctx.db.query("billingGrants").collect())
+      .then((rows) => rows.map((row) => [row.state, row.code ?? null, row.period]));
+  const measure = (f: Fixture, key: string) =>
+    f.t
+      .run((ctx) => reserveUsage(ctx, f.organizationId, "sandbox", "attempts", key, 1, true))
+      .then((event) => event.period);
+
+  it("assinado em 31/01 às 10:00:07, renova em 28/02 e 31/03 sem deriva, e as cotas viram nos aniversários", async () => {
+    const f = await fixture();
+    vi.setSystemTime(JAN_31 + 250);
+    const owner = await person(f.t, f.organizationId, "owner");
+    await owner.action(api.billing.checkout, {
+      organizationId: f.organizationId,
+      tier: "intermediate",
+      key: "start-on-the-31st",
+    });
+    const customer = (await f.t.run((ctx) => ctx.db.query("billingAccounts").first()))!.customerId;
+    // Stripe anchors the subscription at the signing, in whole seconds, and charges at once.
+    const sub = f.fake.subscribe(customer, "intermediate");
+    expect(sub.billing_cycle_anchor).toBe(s(JAN_31));
+    const first = f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await sync(f);
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "intermediate",
+      startsAt: JAN_31 + 250,
+      endsAt: FEB_28,
+      periodAnchor: JAN_31,
+      version: 1,
+    });
+    expect(await measure(f, "january")).toBe("2027-01-31T10:00:07.000Z");
+    // Replayed by Stripe, by another event or by the reconciliation: nothing new.
+    for (let i = 0; i < 2; i++)
+      await deliver(f, { type: "invoice.paid", data: { object: { id: first.id, customer } } });
+    await processEvents(f);
+    await sync(f);
+    expect(await f.plan()).toMatchObject({ version: 1 });
+    // 28/02, the 31st clamped to February's last day, at the same time.
+    vi.setSystemTime(FEB_28);
+    expect(await measure(f, "february-before-renewal")).toBe("2027-02-28T10:00:07.000Z");
+    vi.setSystemTime(FEB_28 + 3600_000);
+    f.fake.invoice(cycleInvoice(customer, sub.id, FEB_28, {}, MAR_31));
+    (sub.items.data[0] as Json).current_period_end = s(MAR_31);
+    await sync(f);
+    // Counted from the anchor, never from 28/02: the next month ends on 31/03, not 28/03.
+    expect(await f.plan()).toMatchObject({ endsAt: MAR_31, periodAnchor: JAN_31, version: 2 });
+    vi.setSystemTime(MAR_31 + 3600_000);
+    f.fake.invoice(cycleInvoice(customer, sub.id, MAR_31, {}, APR_30));
+    (sub.items.data[0] as Json).current_period_end = s(APR_30);
+    await sync(f);
+    expect(await f.plan()).toMatchObject({ endsAt: APR_30, periodAnchor: JAN_31, version: 3 });
+    expect(await measure(f, "march")).toBe("2027-03-31T10:00:07.000Z");
+    expect(await grants(f)).toEqual([
+      ["applied", null, "2027-01-31T10:00:07.000Z"],
+      ["applied", null, "2027-02-28T10:00:07.000Z"],
+      ["applied", null, "2027-03-31T10:00:07.000Z"],
+    ]);
+    expect(await f.t.run((ctx) => ctx.db.query("billingEvents").collect())).toHaveLength(2);
+  });
+
+  it("uma fatura cujo período não é um mês da âncora vai para uma pessoa, sem mexer no plano", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    const sub = f.fake.subscribe(customer, "intermediate");
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await sync(f);
+    vi.setSystemTime(NOV_10 + 3600_000);
+    // A renewal counted from a drifted day, and one whose subscription lost its anchor.
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10, {}, NOV_10 + 29 * 86400_000));
+    await sync(f);
+    expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
+    delete (sub as Partial<typeof sub>).billing_cycle_anchor;
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    await sync(f);
+    expect(await grants(f)).toEqual([
+      ["applied", null, "2026-10-10T12:00:00.000Z"],
+      ["blocked", "INVOICE_UNEXPECTED", null],
+      ["blocked", "INVOICE_UNEXPECTED", null],
+    ]);
+    expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(
+      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).reviews,
+    ).toMatchObject([{ code: "INVOICE_UNEXPECTED" }, { code: "INVOICE_UNEXPECTED" }]);
+  });
+
+  it("uma assinatura anterior à fatia 2a, ancorada no dia 1, continua concedendo e sobe de plano", async () => {
+    const f = await fixture();
+    const CUSTOMER = "cus_legacy_day_one";
+    // A card month granted before slice 2a: civil, without anchor, until the next 1st.
+    await f.t.run(async (ctx) => {
+      await ctx.db.insert("billingAccounts", {
+        organizationId: f.organizationId,
+        customerId: CUSTOMER,
+        livemode: false,
+        renewalTier: "intermediate",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      await activateCatalogPlan(ctx, f.organizationId, "intermediate", OCT, NOV, 0, "op", "Antes");
+      await ctx.db.insert("billingGrants", {
+        organizationId: f.organizationId,
+        invoiceId: "in_legacy_october",
+        tier: "intermediate",
+        period: "2026-10",
+        amountCents: 14900,
+        state: "applied",
+        planVersion: 1,
+        createdAt: Date.now(),
+      });
+    });
+    const sub = f.fake.subscribe(CUSTOMER, "intermediate", NOV, OCT_1);
+    await sync(f);
+    expect(await f.plan()).not.toHaveProperty("periodAnchor");
+    // The upgrade is priced on the civil month in force and anchors it on that 1st: the same
+    // `AAAA-MM` periods, now with an anchor (invariant 4).
+    await f.owner.action(api.billing.checkout, {
+      organizationId: f.organizationId,
+      tier: "large",
+      key: "legacy-upgrade",
+    });
+    const sent = f.fake.sent("/v1/checkout/sessions").at(-1)!.params;
+    expect(sent.get("invoice_creation[invoice_data][metadata][period]")).toBe("2026-10");
+    expect(sent.get("line_items[0][price_data][unit_amount]")).toBe("35000");
+    f.fake.invoice({
+      customer: CUSTOMER,
+      amount_paid: 35000,
+      amount_due: 35000,
+      billing_reason: "manual",
+      metadata: {
+        organizationId: f.organizationId,
+        kind: "upgrade",
+        tier: "large",
+        period: "2026-10",
+        grantCents: "35000",
+      },
+    });
+    for (const session of f.fake.state.sessions.values()) session.status = "complete";
+    await sync(f);
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      endsAt: NOV,
+      periodAnchor: OCT_1,
+      version: 2,
+    });
+    expect(await measure(f, "october")).toBe("2026-10");
+    // Its renewal on the 1st is a month of its anchor on 01/10: still granted, civil keys.
+    vi.setSystemTime(NOV + 3600_000);
+    f.fake.invoice(
+      cycleInvoice(CUSTOMER, sub.id, NOV, {
+        amount_paid: 49900,
+        amount_due: 49900,
+        lines: {
+          data: [
+            {
+              amount: 49900,
+              period: { start: s(NOV), end: s(DEC) },
+              pricing: { type: "price_details", price_details: { price: "price_large" } },
+            },
+          ],
+        },
+      }),
+    );
+    (sub.items.data[0] as Json).current_period_end = s(DEC);
+    await sync(f);
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      endsAt: DEC,
+      periodAnchor: OCT_1,
+      version: 3,
+    });
+    expect(await measure(f, "november")).toBe("2026-11");
+    expect(await grants(f)).toEqual([
+      ["applied", null, "2026-10"],
+      ["applied", null, "2026-10"],
+      ["applied", null, "2026-11"],
+    ]);
+  });
+
+  it("com um termo anual em vigor, o mensal no cartão espera o fim dele, com a data", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      insertTerm(ctx, {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        firstPeriod: OCT,
+        endsAt: termEndsAt(OCT),
+        source: "pix",
+        references: ["pix-annual-term-2a"],
+        paidCents: 149000,
+        purchasedAt: OCT,
+        segments: [],
+        state: "active",
+      }),
+    );
+    expect(
+      await refusal(
+        f.owner.action(api.billing.checkout, {
+          organizationId: f.organizationId,
+          tier: "large",
+          key: "monthly-under-term",
+        }),
+      ),
+    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: termEndsAt(OCT) });
+    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
+  });
+});
+
 describe("plano anual (ADR 0010, decisão 9)", () => {
   const OCT_1 = Date.UTC(2026, 9, 1);
   type TermState = "scheduled" | "active" | "rescinded" | "expired";
@@ -1514,17 +1927,32 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     expect(await grants(f)).toHaveLength(1);
   });
 
-  it("um anual agendado para o mês seguinte recusa um novo Checkout, mas a fatura do mês corrente vale", async () => {
+  it("um anual agendado para depois recusa um novo Checkout até o fim dele, mas o mês pago antes dele vale", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
-    await annual(f, f.organizationId, "scheduled", { firstPeriod: NOV });
-    expect(await code(checkoutLarge(f, "card-before-scheduled"))).toBe("ANNUAL_TERM_ACTIVE");
-    // A Stripe retry that pays October, before the term, still grants October.
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    await annual(f, f.organizationId, "scheduled", { firstPeriod: DEC });
+    // No deferred start on the card: the monthly waits for the end of the term, with the date.
+    expect(await refusal(checkoutLarge(f, "card-before-scheduled"))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: termEndsAt(DEC),
+    });
+    // A Stripe retry that pays a month ending before the term still grants it.
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
     expect(await grants(f)).toMatchObject([{ state: "applied" }]);
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV_10 });
+  });
+
+  it("um anual agendado dentro do mês pago bloqueia a fatura que ele encurtaria", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    await annual(f, f.organizationId, "scheduled", { firstPeriod: NOV });
+    const sub = f.fake.subscribe(customer, "intermediate");
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
+    expect(await grants(f)).toMatchObject([{ state: "blocked", code: "ANNUAL_TERM_ACTIVE" }]);
+    expect(await f.plan()).toBeNull();
   });
 
   it("não retoma a renovação mensal cancelada com um anual em vigor", async () => {
@@ -1627,7 +2055,8 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     async (_, { state, firstPeriod }) => {
       const f = await fixture();
       const { customer } = await startCard(f);
-      const sub = f.fake.subscribe(customer, "intermediate", NOV);
+      // A subscription signed before slice 2a, anchored on 01/10 at 00:00 UTC: civil months.
+      const sub = f.fake.subscribe(customer, "intermediate", NOV, Date.UTC(2026, 9, 1));
       await annual(f, f.organizationId, state, { firstPeriod });
       f.fake.invoice(cycleInvoice(customer, sub.id, NOV));
       await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
@@ -1661,7 +2090,7 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     const annualPix = (start: "now" | "renewal") => code(request(start));
     const { customer } = await startCard(f);
     expect(await annualPix("now")).toBe("PAYMENT_METHOD_CARD");
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
     // While the card renews, no date is promised.
@@ -1674,9 +2103,12 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
       organizationId: f.organizationId,
       change: "cancel",
     });
-    expect(await refusal("renewal")).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: NOV });
-    expect(await refusal("now")).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: NOV });
-    vi.setSystemTime(NOV);
+    expect(await refusal("renewal")).toEqual({
+      code: "PAYMENT_METHOD_CARD",
+      availableAt: NOV_10,
+    });
+    expect(await refusal("now")).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: NOV_10 });
+    vi.setSystemTime(NOV_10);
     expect(await code(request("now", await person(f.t, f.organizationId, "owner")))).toBe("OK");
   });
 
@@ -2059,7 +2491,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       ["blocked", "PRICE_UNKNOWN"],
     ]);
     expect((await grants(f))[1]).toMatchObject({ invoiceId: annual.id });
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV_10 });
     expect(await terms(f)).toEqual([]);
   });
 
@@ -2143,7 +2575,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     const sub = await annualCard(f);
     annualStart(f, sub.id);
     await sync(f);
-    const monthly = f.fake.invoice({ ...cycleInvoice(CUSTOMER, sub.id, NOV), id: invoiceId() });
+    const monthly = f.fake.invoice({ ...cycleInvoice(CUSTOMER, sub.id, NOV_10), id: invoiceId() });
     await sync(f);
     expect(await grants(f)).toMatchObject([
       { state: "applied" },
