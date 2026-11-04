@@ -767,7 +767,11 @@ async function lookupFixture() {
   const transport = vi
     .fn<typeof fetch>()
     .mockImplementation(async (url) =>
-      Response.json(provider(String(url).split("/").pop()!.split("?")[0]!)),
+      Response.json(
+        provider(
+          (url instanceof Request ? url.url : url.toString()).split("/").pop()!.split("?")[0]!,
+        ),
+      ),
     );
   vi.stubGlobal("fetch", transport);
   const organizationId = f.scope.organizationId;

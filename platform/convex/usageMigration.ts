@@ -261,7 +261,7 @@ export const foldLanes = internalMutation({
       // Re-read: an earlier lane of this page may have merged into this row.
       const row = await ctx.db.get("usageTotals", listed._id);
       if (!row || (row.lane === undefined && row.allowance === undefined && !row.grant)) continue;
-      const { _id, _creationTime, lane, allowance, grant, ...fields } = row;
+      const { _id, _creationTime, lane, allowance: _allowance, grant: _grant, ...fields } = row;
       changed++;
       if (!lane) {
         await ctx.db.replace("usageTotals", _id, fields);
@@ -276,7 +276,7 @@ export const foldLanes = internalMutation({
         undefined,
       );
       if (base) {
-        const { _id: baseId, _creationTime: baseTime, allowance: a, grant: g, ...rest } = base;
+        const { _id: baseId, _creationTime: _baseTime, allowance: _a, grant: _g, ...rest } = base;
         await ctx.db.replace("usageTotals", baseId, {
           ...rest,
           committed: base.committed + row.committed,
@@ -308,7 +308,7 @@ export const foldLaneEvents = internalMutation({
     let changed = 0;
     for (const event of page.page) {
       if (event.lane === undefined) continue;
-      const { _id, _creationTime, lane, ...fields } = event;
+      const { _id, _creationTime, lane: _lane, ...fields } = event;
       await ctx.db.replace("usageEvents", _id, fields);
       changed++;
     }
