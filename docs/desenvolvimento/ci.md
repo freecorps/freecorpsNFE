@@ -98,6 +98,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
 | `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    | não: índice do Git  |
+| `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
 | `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:test:<área>`    | `node scripts/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
 | `ci:tests`          | `node scripts/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
@@ -112,7 +113,8 @@ As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
 registro npm, que o Vite Task não registra como entrada, e as provas do SDK e da
 distribuição carimbam no recibo o commit e o estado do checkout, lidos do Git;
 `ci:auth-worker` também carimba. `ci:secrets` varre a lista do índice do Git: um
-arquivo novo não estaria entre as entradas da execução anterior. `ci:tests` lê
+arquivo novo não estaria entre as entradas da execução anterior; `ci:knip`
+lê os manifests e o `node_modules`, que também ficam fora das entradas. `ci:tests` lê
 a revisão do checkout. Somadas, levam cerca de 15 a 20 s no runner, lado a lado
 com as demais. `ci:contracts` usa cache com `CONTRACT_BASE` na chave e lê o
 objeto da base pelo Git; o Vite Task não registrou nada dentro de `.git` nos
@@ -560,6 +562,31 @@ do push. `tests/ci.testProjects.test.ts` executa `scripts/ci.mjs test-area` de
 cada área com o Vitest substituído e confere que, juntas, elas rodam cada
 projeto do Vitest uma vez, sem arquivo, `--changed` ou `--shard`, e que
 `scripts/ci.mjs test` roda a suíte toda.
+
+### Arquivos e dependências sem uso
+
+`ci:knip` (`bun run knip:check`) roda o knip com `--include files,dependencies`
+sobre os workspaces do `package.json`, com a configuração de `knip.jsonc`.
+Reprova arquivo que nenhuma entrada alcança e dependência declarada num
+manifest sem import no workspace. A checagem de `exports` fica de fora.
+
+O knip lê os comandos do `package.json` e dos workflows e as configurações das
+ferramentas que reconhece. O que ele não enxerga entra em `knip.jsonc` com o
+motivo: os comandos das tarefas de `vite.config.ts`, os consumidores de
+`scripts/lib/*-consumer.mjs` que as provas de distribuição copiam e executam,
+as fixtures que os testes de CI leem pelo caminho, os exemplos de
+`apps/console/public/developer/`, servidos como arquivo estático, e as
+dependências carregadas sem import (`oxfmt`, `oxlint` e `oxlint-tsgolint`, na
+versão que o Vite+ exige, e `contracts` e `zod` do SDK, empacotados por caminho
+relativo).
+
+Um helper órfão de `platform/convex/lib/` não aparece: o plugin Convex do knip
+toma `convex/**` como entrada, porque o Convex publica todo módulo da pasta, e
+os testes da plataforma carregam a pasta inteira por `import.meta.glob`.
+
+Quando a tarefa reprova, remova o arquivo ou a dependência órfã. Se o uso for
+real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o motivo,
+em vez de ignorar o achado.
 
 ### Segredos no repositório
 
