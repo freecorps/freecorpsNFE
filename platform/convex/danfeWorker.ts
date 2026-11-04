@@ -21,7 +21,7 @@ export const render = internalAction({
   returns: v.union(v.null(), v.literal("ORIGINAL_UNAVAILABLE")),
   handler: async (ctx, { sources }) => {
     // The cache is keyed by the platform's copy; a package that disagrees must not render.
-    // Fails loudly; the test pinning the copy (`platform.danfe.test.ts`) catches it first.
+    // Fails loudly; the test pinning the copy (`platform/convex/danfe.test.ts`) catches it first.
     if ((DANFE_GENERATOR_VERSION as string) !== DANFE_VERSION)
       throw new Error("DANFE_VERSION_MISMATCH: lib/danfeValues.ts differs from the package");
     // A cold original (ADR 0010, decision 8) is checked by `readOriginal` and throws when its

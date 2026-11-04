@@ -298,11 +298,12 @@ proteção: um padrão errado imprime o segredo inteiro.
   projetos e empresas.
 - Os testes ficam em projetos do Vitest por área, definidos em
   `scripts/lib/test-projects.mjs` e montados por `vite.config.ts`:
-  `platform` (`tests/platform.*`, `tests/sdk.*` e `platform/`), `packages`,
+  `platform` (`platform/` e os Workers de `apps/console/`), `packages`,
   `console` (`apps/*/src/`), `tooling` (scripts, `tooling/`, worktree, validação e CI),
-  `repository` (os três testes que leem a árvore inteira) e `benchmark`. Os
-  poucos testes de `tests/` fora desses prefixos são
-  nomeados no projeto da área; um arquivo novo sem dono reprova
+  `repository` (os três testes que leem a árvore inteira) e `benchmark`. Cada
+  teste fica ao lado do módulo que exercita; `tests/` guarda só os
+  transversais ([organização](docs/desenvolvimento/ci.md#testes)). Os
+  poucos de `tests/` são nomeados no projeto da área; um arquivo novo sem dono reprova
   `tests/ci.testProjects.test.ts`. Durante o desenvolvimento, rode só a área
   alterada:
 
@@ -343,8 +344,9 @@ proteção: um padrão errado imprime o segredo inteiro.
   todos ou em dois. Um caminho novo de teste entra num único projeto em
   `scripts/lib/test-projects.mjs`, que define também a suíte do relatório do
   CI.
-- Integração da plataforma fica em `tests/platform.*.test.ts`, com o schema de
-  `platform/convex`, módulos carregados por `import.meta.glob` e componentes
+- Integração da plataforma fica em `platform/convex/<módulo>.test.ts`, ao lado
+  do módulo, com o schema de `platform/convex`, os módulos de
+  `tests/helpers/convex-modules.ts` e componentes
   registrados por `platform/test-setup.ts`. Sessões Better Auth são simuladas
   com `t.withIdentity`.
 - Parsing e validação de NF-e têm testes em `packages/fiscal-nfe`
@@ -394,8 +396,9 @@ Mapa para navegar:
 - `platform/convex/lib/`: validação, autorização, estados e políticas
   compartilhadas.
 - `packages/`: contratos REST, núcleo fiscal, NF-e e SDK.
-- `tests/` e `apps/console/e2e/`: testes de domínio, integração, pacotes e
-  jornadas no navegador.
+- `*.test.ts` ao lado de cada módulo; `tests/` guarda só os transversais
+  (CI, worktree, validação, corpus), os helpers e as fixtures, e
+  `apps/console/e2e/` as jornadas no navegador.
 - `scripts/<domínio>/`: scripts por domínio, com o teste ao lado; helpers
   compartilhados em `scripts/lib/` e a raiz do repositório por
   `scripts/lib/repo-root.mjs`

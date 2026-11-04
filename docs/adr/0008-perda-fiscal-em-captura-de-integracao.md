@@ -21,7 +21,7 @@ e uma chave de API não tem nem uma coisa nem outra.
 
 Uma captura ativada por integração (`POST /v1/connections/nfe` com a chave do
 projeto) que cai nessa lacuna fica sem saída. A reprodução está em
-`tests/platform.captureGap.test.ts`, bloco "captura de integração em lacuna
+`platform/convex/lib/captureGap.test.ts`, bloco "captura de integração em lacuna
 irrecuperável (#442)", e o resultado antes da correção em
 evidence/442:
 

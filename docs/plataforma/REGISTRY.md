@@ -122,8 +122,8 @@ permanece com a empresa; não é cache descartável.
 
 ## Provas
 
-`tests/platform.registry.test.ts` e, para a consulta antes do cadastro,
-`tests/platform.companies.test.ts` simulam o transporte. O runner
+`platform/convex/registry.test.ts` e, para a consulta antes do cadastro,
+`platform/convex/companies.test.ts` simulam o transporte. O runner
 `node --experimental-strip-types apps/console/e2e/registry.mjs` exige worktree
 platform ativo, usa dados sintéticos e exercita operação nativa com cache hit.
 Não chama provedor. `bun scripts/fiscal/prove-registry-provider.mjs` é prova online

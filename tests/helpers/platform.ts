@@ -1,16 +1,15 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, vi } from "vite-plus/test";
 import schema from "../../platform/convex/schema";
 import { components, internal } from "../../platform/convex/_generated/api";
 import type { Doc, Id } from "../../platform/convex/_generated/dataModel";
 import { register } from "../../platform/test-setup";
+import { modules } from "./convex-modules";
 
 /**
  * Actors and scopes of the platform integration suites. Each helper grants only what its caller
  * names: role, company grant, scopes and environment stay explicit in every scenario.
  */
-const modules = import.meta.glob("../../platform/convex/**/*.ts");
 
 export type PlatformTest = ReturnType<typeof platformTest>;
 export type Role = Doc<"memberships">["role"];
@@ -66,7 +65,7 @@ export function usePlatformEnvironment(env: {
 /**
  * An explicit plan with finite `captures` and `bytes` quotas, which every production capture
  * requires (#429). Suites that run that capture assign it in their fixture; the refusals
- * without it are proved in `platform.siteCapture.test.ts`. Synthetic limits, far above a test.
+ * without it are proved in `platform/convex/lib/siteCapture.test.ts`. Synthetic limits, far above a test.
  */
 export function capturePlan(
   t: Pick<PlatformTest, "mutation">,

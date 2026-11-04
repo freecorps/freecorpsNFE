@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { createHash } from "node:crypto";
 import { convexTest } from "convex-test";
 import { expect } from "vite-plus/test";
@@ -9,7 +8,7 @@ import { register } from "../../platform/test-setup";
 import { fixture as xmlFixture } from "./nfe-corpus";
 import { processNfe } from "../../packages/fiscal-nfe/src/index";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
-const modules = import.meta.glob("../../platform/convex/**/*.ts");
+import { modules } from "./convex-modules";
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 export async function fixture(overrides: typeof modules = {}) {
   const t = convexTest(schema, { ...modules, ...overrides });

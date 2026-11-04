@@ -83,7 +83,7 @@ it("publishes counts and revision only, including failed and pending suites", ()
       success: false,
       testResults: [
         {
-          name: "/repo/tests/platform.example.test.ts",
+          name: "/repo/platform/convex/example.test.ts",
           message: "private XML",
           assertionResults: [
             { status: "passed", fullName: "private identity" },
@@ -125,7 +125,7 @@ it("records an area receipt from counts only, never the revision", () => {
     success: true,
     testResults: [
       {
-        name: "/repo/tests/platform.example.test.ts",
+        name: "/repo/platform/convex/example.test.ts",
         assertionResults: [
           { status: "passed", fullName: "private identity" },
           { status: "skipped" },

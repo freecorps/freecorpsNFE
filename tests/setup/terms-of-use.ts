@@ -5,7 +5,7 @@ import { vi } from "vite-plus/test";
  * suítes nascem por inserção direta ou pelos `testing/*Proof`, sem o aceite que
  * `organizations.create` grava (#586), e o corte da seção 11 recusaria os comandos delas assim que
  * o relógio, real ou simulado, passasse da vigência da versão publicada. O aceite, o aviso e o
- * corte são provados em `platform.termsOfUse.test.ts` e `platform.termsOfUseNotice.test.ts`, que
+ * corte são provados em `platform/convex/termsOfUse.test.ts` e `platform/convex/termsOfUseNotice.test.ts`, que
  * trocam este módulo pelo próprio, e o arquivo publicado, em
  * `apps/console/src/terms-of-use.test.tsx`.
  */

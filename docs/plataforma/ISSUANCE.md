@@ -1569,7 +1569,7 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   do arquivo do download pelo console têm só teste de componente.
 - REST, SDK e webhooks de emissão, inclusive o download do DANFSe pela REST e
   pelo SDK, foram provados com `convex-test`, transporte simulado e destinos
-  sintéticos (`tests/platform.issuanceRest.test.ts`, `tests/sdk.test.ts`);
+  sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`);
   nenhuma chamada passou pelo Worker hospedado nem entregou webhook de emissão
   a um receptor real.
 - O gate de produção diante de um chamador com acesso: nenhum deployment é

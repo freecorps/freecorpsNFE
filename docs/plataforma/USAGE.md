@@ -114,7 +114,7 @@ faixa. Em qualquer momento, o consumo contado mais as parcelas válidas não
 passa do limite, então nenhuma faixa admite além dele. Um plano novo, outra
 versão ou outro limite anula as parcelas anteriores. Unidades só medidas nunca
 são recusadas e gastam primeiro as parcelas, para que nenhuma sobra admita
-além do limite. A prova está em `tests/platform.usageLanes.test.ts`.
+além do limite. A prova está em `platform/convex/usageLanes.test.ts`.
 
 Os campos novos são opcionais, mas o schema anterior às faixas não os
 declara: depois que um documento os grava, publicar o código anterior falha na
@@ -475,7 +475,7 @@ nesse deployment. A validação `modest-seal-118` foi migrada em 28/10.
 A importação reserva arquivos e bytes antes de emitir tickets. Cancelamento
 ou expiração do upload libera a reserva. O console cancela só lotes criados
 no console; a reserva de uma integração é liberada pela expiração do upload
-(`tests/platform.usage.test.ts`). Confirmar novamente não aumenta uso.
+(`platform/convex/usage.test.ts`). Confirmar novamente não aumenta uso.
 O REST repete a mutation de admissão no máximo uma vez após erro técnico,
 conservando chave e corpo. A transação pode ter concluído antes da perda da
 resposta; nesse caso devolve a reserva existente. Erros de domínio não são
@@ -788,19 +788,19 @@ assumiu operação e fiscal/privacidade; aplicação e aceite
 público final continuam pendentes. A retenção dos
 contadores e do layout de partições está em [RETENTION.md](RETENTION.md).
 
-`tests/platform.usage.test.ts` cobre cotas, reversão, expiração, vigência,
+`platform/convex/usage.test.ts` cobre cotas, reversão, expiração, vigência,
 auditoria, separação entre organizações, permissões e leases. Da #429, cobre
 saldos separados por ambiente pelo REST e pelo núcleo, a conservação do ambiente
 do evento, o total sem ambiente contado nos dois, a atribuição dos registros
 antigos e sua repetição sem efeito, a leitura por papel e por organização.
-`tests/platform.quotaPeriod.test.ts` prova o [período de cota](#período-de-cota):
+`platform/convex/lib/quotaPeriod.test.ts` prova o [período de cota](#período-de-cota):
 as chaves canônicas e a recusa das outras escritas, `quotaPeriod` nas viradas
 ao milissegundo, no dia 31 e no 29/02, o plano ancorado que vira no
 aniversário com a liquidação no período da reserva, o Gratuito no mês civil,
 a capacidade no período ancorado e o estoque em `stock`, a âncora das linhas
 dos termos anuais, as regras de `usage:assignPlan` com a política ligada e
 desligada e `usage:overview` com e sem `period` e `asOf`.
-`tests/platform.siteCapture.test.ts` prova que a captura de um plano ancorado,
+`platform/convex/lib/siteCapture.test.ts` prova que a captura de um plano ancorado,
 parada pela cota, retoma no aniversário da âncora, e que a cota esgotada no sandbox não
 pausa a captura em produção e que a esgotada em produção não bloqueia o sandbox.
 Na cota de notas do Gratuito, prova que a consulta sai com 99 notas, pausa com
@@ -810,7 +810,7 @@ A conclusão do processamento entregue de novo não conta nota, e `captures.get`
 devolve `countsNotes` e, só quando as notas do mês da pausa chegaram ao
 limite, `notesQuota`; o Início (`consoleHome.summary`) devolve `notesQuota` no
 item `capture-attention`. Uma pausa do Gratuito por `bytes` não leva `notesQuota`.
-`tests/platform.freeNotes.test.ts` prova o mesmo na importação em Produção,
+`platform/convex/freeNotes.test.ts` prova o mesmo na importação em Produção,
 além da mesma chave em duas empresas, do reenvio e do reprocessamento sem nova
 nota, das notas pendentes (reservas sem envio
 recusadas ao passar de 100, lote recusado inteiro, vaga devolvida na expiração,
@@ -820,7 +820,7 @@ do isolamento entre organizações e da virada do mês UTC.
 Também cobre ausência de plano, cotas não definidas, vigência, isolamento de
 organizações, pausa e retomada por atribuição, reconciliação sem nova cobrança
 e recusa antes do envio quando o plano muda depois da reserva.
-`tests/platform.usageMigration.test.ts` cobre várias páginas, repetição,
+`platform/convex/usageMigration.test.ts` cobre várias páginas, repetição,
 resíduos, tráfego durante o backfill e o limite da leitura sem snapshot.
 `scripts/billing/usage-migration-status.test.ts` confere seleção explícita do alvo,
 agregação sem arredondamento e saída sanitizada, inclusive nos erros.
@@ -842,7 +842,7 @@ de p95 são critérios de ensaio, não SLA comercial. O ensaio hospedado de
 identifica contenção e compara a candidata. Mantém as metas de 800 ms para
 leitura e 1 s para admissão; o baseline não recebeu aceite.
 
-`tests/platform.keys.test.ts` reproduz as 130 chamadas da #126: 60 sucessos,
+`platform/convex/keys.test.ts` reproduz as 130 chamadas da #126: 60 sucessos,
 70 recusas, 60 recibos e 61 registros HTTP, sendo um diagnóstico amostrado.
 Cobre chamadas concorrentes no `convex-test`, orçamento compartilhado entre
 projetos, isolamento de organizações, reposição, erros, revogação, plano

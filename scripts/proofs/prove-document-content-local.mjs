@@ -9,7 +9,7 @@ import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(
-    "bun run content:prove-local <porta-local> [--read <fixtures.json> | --read-node <fixtures.json>]\nSomente backend do worktree preparado e iniciado por dev. --read-node acrescenta amostras Node e preserva recibos existentes; --read avalia retorno completo pré-B5; fixtures saem de platform.documentReadProof.test.ts com FNFE_READ_FIXTURES. Grava recibo agregado em docs/v1.0/evidence/642; preserva dados sintéticos no banco.",
+    "bun run content:prove-local <porta-local> [--read <fixtures.json> | --read-node <fixtures.json>]\nSomente backend do worktree preparado e iniciado por dev. --read-node acrescenta amostras Node e preserva recibos existentes; --read avalia retorno completo pré-B5; fixtures saem de platform/convex/testing/documentReadProof.test.ts com FNFE_READ_FIXTURES. Grava recibo agregado em docs/v1.0/evidence/642; preserva dados sintéticos no banco.",
   );
   process.exit(0);
 }
@@ -192,7 +192,7 @@ report.codeHashes = Object.fromEntries(
             "platform/convex/testing/documentReadProof.ts",
             ...(node ? ["platform/convex/testing/documentReadNodeProof.ts"] : []),
             "scripts/lib/document-read-proof.mjs",
-            "tests/platform.documentReadProof.test.ts",
+            "platform/convex/testing/documentReadProof.test.ts",
           ]
         : []),
     ].map(async (path) => [path, hash(await readFile(join(root, path)))]),

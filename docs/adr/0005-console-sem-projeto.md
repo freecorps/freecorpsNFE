@@ -149,4 +149,4 @@ Contratos e provas: [PROJECTS.md](../plataforma/PROJECTS.md#console-sem-projeto)
 [OPERATIONS.md](../plataforma/OPERATIONS.md#identidade-e-autorização),
 [ISSUANCE.md](../plataforma/ISSUANCE.md#console),
 [frontend.md](../desenvolvimento/frontend.md#contexto-de-empresa) e
-`tests/platform.consoleAccess.test.ts`.
+`platform/convex/consoleAccess.test.ts`.

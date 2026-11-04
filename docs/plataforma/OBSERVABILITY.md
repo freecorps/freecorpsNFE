@@ -77,7 +77,7 @@ pedida: membro (`membership:`, `member:`, id puro), usuário (`user:`, pela
 associação na organização) e chave (`key:`). Referência de outra organização
 ou inexistente fica fora da resposta, e a tela usa um rótulo genérico ("Membro
 da organização", "Chave de API", "Sistema (automático)"). O isolamento está
-em `tests/platform.observability.test.ts`. Monitores mostram empresa, projeto
+em `platform/convex/observability.test.ts`. Monitores mostram empresa, projeto
 e responsável pelo nome; os ids ficam em "Referências para suporte".
 
 ## Monitores e alertas

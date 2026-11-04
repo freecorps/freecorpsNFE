@@ -46,7 +46,7 @@ chave de API fictícia, no projeto do console. Registra membership e versão de
 acesso à empresa. Execução confere papel com escrita, membership e essa versão,
 além da época do projeto. `recordOutcome` revalida acesso antes de aceitar o resultado;
 revogação após `beginEffect` pausa o trabalho. As provas de ambas as entradas
-estão em `tests/platform.imports.test.ts` e no recorte importação XML.
+estão em `platform/convex/imports.test.ts` e no recorte importação XML.
 
 Pessoas usam Better Auth e `humanAccess`/`memberAccess`, sem concessão de
 projeto. Consultam operações de qualquer projeto da empresa, mas só pausam e
@@ -197,7 +197,7 @@ revalidação do executor e para developers em `operations.get` e
 
 ## Provas e integração dos módulos
 
-`tests/platform.operations.test.ts` exercita transações, tokens, permissões,
+`platform/convex/operations.test.ts` exercita transações, tokens, permissões,
 estados e recuperação. `node scripts/proofs/prove-operations.mjs` exige este worktree
 com `bun run dev`, usa fonte HTTP loopback e inspeciona o banco real.
 `testing/operationProof` e `testing/operationTransport` são funções internas

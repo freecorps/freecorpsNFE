@@ -134,7 +134,7 @@ coleta em `scripts/` e persistência no Convex. Nenhum deles exige um pacote
 distribuível com payloads oficiais. Uma extração futura depende de consumo
 independente demonstrado e da revisão de distribuição.
 
-`tests/platform.references.test.ts` cobre domínio, HTTP, SDK, concorrência,
+`platform/convex/references.test.ts` cobre domínio, HTTP, SDK, concorrência,
 rollback e autorização. `tests/referenceCorpus.test.ts` verifica os hashes e
 resultados do corpus. `apps/console/e2e/references.mjs` exercita Convex nativo,
 datasets completos, API/SDK, navegação direta, pesquisa, paginação e mobile.

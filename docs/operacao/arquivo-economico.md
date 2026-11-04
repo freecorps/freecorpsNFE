@@ -203,7 +203,7 @@ usa estas peças:
   `usageEvents.key`) usam o primeiro ID; os demais, como o outbox, as chaves
   de uso da captura, a auditoria operacional e o JSON de `operations`, mantêm
   o ID antigo e são resolvidos pelo mapa. O teste
-  `tests/platform.coldArchiveReferences.test.ts` falha se um `v.id` desses
+  `platform/convex/lib/coldArchiveReferences.test.ts` falha se um `v.id` desses
   ficar sem classe, se a classe citar campo que o schema não tem, se uma
   referência à cerca não for mantida, ou se um campo de texto com nome de ID
   (`*Id`, `*Key`, `key`, `body`, `request`, `response`, `target` e outros),
@@ -1019,7 +1019,7 @@ e só sela depois de reler as regras ([lock da camada fria](camada-fria.md#lock)
 
 ## Provas e limites da entrega
 
-`tests/platform.coldArchive.test.ts` cobre autorização, isolamento, versão,
+`platform/convex/coldArchive.test.ts` cobre autorização, isolamento, versão,
 aviso, operações incertas, proibição de excluir antes da prova, retenção
 legal, prova vencida, arquivos compartilhados e remoção idempotente. Cobre
 também a cerca: as linhas e a cópia da varredura no pacote mesmo depois de
@@ -1030,12 +1030,12 @@ antes de `archived` e antes do registro, versão antiga, manifesto
 divergente ou trocado, lotes retomáveis até `compacted` com a cerca quente,
 contagem a mais ou a menos, retenção legal e os diagnósticos antigos
 recusados num run compactado.
-`tests/platform.archiveNotice.test.ts` cobre a elegibilidade das organizações
+`platform/convex/archiveNotice.test.ts` cobre a elegibilidade das organizações
 abertas, o e-mail único a owners e admins e sua retomada pelo operador, "manter ativa" com os papéis
 recusados e outra organização, o fim do aviso na renovação, o congelamento
 só depois dos 30 dias do aviso e a leitura fiscal no console durante o aviso,
 que faz o congelamento recusar (`ARCHIVE_FREE_ACTIVE`).
-`tests/platform.coldArchiveRehydration.test.ts` roda o executor de
+`platform/convex/coldArchiveRehydration.test.ts` roda o executor de
 `scripts/lib/cold-archive.mjs` contra as funções reais em `convex-test`, com
 o R2 em memória e o age trocado por cópia: arquiva uma organização aberta
 (congelamento, varredura, selo, prova, remoção e compactação) e a reidrata,
@@ -1072,7 +1072,7 @@ bucket que falha uma vez ou sempre, cada passo enviado duas vezes e a
 conferência que para quando a versão fria diverge do que a passagem gravou.
 `scripts/cold-tier/cold-archive.test.ts` confere o plano do executor contra a regra do
 servidor e a ordem dos lotes.
-`tests/platform.coldArchiveIds.test.ts` importa um documento pelas rotas e
+`platform/convex/lib/coldArchiveIds.test.ts` importa um documento pelas rotas e
 simula no banco um ou dois ciclos como a reidratação os deixa: cobre o ID
 anterior resolvido nas rotas de documento, versão, original, importação e
 operação, com `originalId` presente só depois da reidratação, a cadeia de
@@ -1080,7 +1080,7 @@ dois ciclos a partir do primeiro ID e do intermediário, o ID anterior de
 outra organização recusado com `NOT_FOUND`, a repetição idempotente do
 reprocessamento com o ID antigo e a exportação pelo ID antigo, e
 `resource.originalId` no webhook, aceito por `verifyWebhook`.
-`tests/platform.assistedExport.test.ts` cobre a exportação assistida. Gera a
+`platform/convex/assistedExport.test.ts` cobre a exportação assistida. Gera a
 exportação da organização no mesmo banco depois de apagar toda tabela fora da
 classe `fiscal`, como o destino a recebe, e confere que as partes têm os
 mesmos bytes e hashes da exportação normal da organização ainda quente, que só
@@ -1097,7 +1097,7 @@ recomeço depois de um destino perdido. Em `scripts/cold-tier/cold-archive.test.
 executor recusa o pedido antes de restaurar, para numa parte que mudou entre
 o destino e a origem, não gera de novo uma exportação publicada e recomeça a
 da origem com um destino novo.
-`tests/platform.sandboxClosure.test.ts` cobre o encerramento de organização
+`platform/convex/sandboxClosure.test.ts` cobre o encerramento de organização
 só com Sandbox: a elegibilidade com as recusas, o aviso idempotente e seu
 e-mail único, "manter ativa" com os papéis recusados e outra organização, o
 encerramento recusado antes do prazo, feito uma vez depois dele e seguido do

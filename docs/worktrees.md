@@ -147,7 +147,7 @@ a análise dos componentes e das variáveis de `convex.config.ts` roda no
 backend. Se o worktree aparecer com `_generated/` alterado logo após o setup,
 a `main` estava desatualizada; commite a regeneração na PR que mudou a fonte.
 Não edite `_generated/` à mão para contornar um push que falhou.
-`tests/platform.generated.test.ts` falha quando o tipo `Env` de `server.d.ts`
+`platform/convex/generated.test.ts` falha quando o tipo `Env` de `server.d.ts`
 diverge das variáveis declaradas em `convex.config.ts`.
 
 Se o push recusar com `DeploymentNotConfiguredForNodeActions` ("Node.js v22 or

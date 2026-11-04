@@ -12,9 +12,10 @@ const tooling = [
   "tooling/**/*.test.ts",
   "apps/console/e2e/**/*.test.ts",
   "lib/worktree*.test.ts",
-  "tests/{worktree,validation,consoleTarget,ci.,fixtureCorpus,docsOutput}*.test.ts",
+  "apps/docs/scripts/**/*.test.ts",
+  "tests/{worktree,validation,ci.,fixtureCorpus}*.test.ts",
 ];
-const benchmarks = ["tests/**/*.benchmark.test.ts"];
+const benchmarks = ["platform/**/*.benchmark.test.ts", "tests/**/*.benchmark.test.ts"];
 // Testes que leem a árvore inteira: os identificadores de todo Markdown, a
 // classificação de todo arquivo versionado para a cópia pública e o guarda da
 // lista de documentação, que lê todo código-fonte. Numa área própria, a
@@ -25,11 +26,14 @@ const repository = [
   "scripts/public-copy/{public-identifiers,public-tree}.test.ts",
   "tests/ci.changes.test.ts",
 ];
+// Os testes da plataforma ficam ao lado do módulo (platform/convex/, inclusive lib/ e
+// testing/) e dos Workers de apps/console/; em tests/ ficam só os transversais.
 const platform = [
-  "tests/{platform,sdk}.*test.ts",
-  "tests/{apiKeyCrypto,publicSite,referenceCorpus,webhookTransport}.test.ts",
+  "platform/**/*.test.ts",
+  "apps/console/*.test.ts",
+  "tests/{publicSite,referenceCorpus}.test.ts",
 ];
-const packages = ["packages/**/*.test.ts", "tests/{documentContracts,webhookContract}.test.ts"];
+const packages = ["packages/**/*.test.ts"];
 
 /**
  * `timeout` é o limite por teste em ms antes dos ajustes de ambiente;
@@ -39,7 +43,7 @@ const packages = ["packages/**/*.test.ts", "tests/{documentContracts,webhookCont
 export const testProjects = [
   {
     name: "platform",
-    include: [...platform, "platform/**/*.test.ts"],
+    include: platform,
     exclude: benchmarks,
     timeout: 20_000,
     report: "platform",

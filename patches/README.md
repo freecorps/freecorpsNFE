@@ -90,7 +90,7 @@ por `convex codegen --component-dir .../src/component --typecheck disable`,
 sem publicar funções, e compilados com TypeScript 6.0.3. Bun aplica o patch
 fixado no lockfile. Não editar as saídas geradas do aplicativo para usá-lo.
 
-`tests/platform.rate-limits.test.ts` verifica atomicidade, migração de saldo parcial,
+`platform/convex/rate-limits.test.ts` verifica atomicidade, migração de saldo parcial,
 reposição, coexistência de chamadas antigas e rejeição de orçamentos repetidos.
 `scripts/proofs/prove-hosted-rate-limits.mjs <credencial> <sha-publicado>` repete a
 migração e 100 chamadas concorrentes em contadores sintéticos, removidos ao final.
@@ -118,12 +118,12 @@ perguntava se alguma função segurava a trava, e não se quem gravava era uma
 mutation. Uma action que guardava um arquivo enquanto outra função rodava
 gravava na transação dessa outra função; se ela terminasse antes do hash do
 arquivo, a gravação falhava com `Write outside of transaction`. Duas entregas
-concorrentes de `tests/platform.privacyMail.test.ts` caíram nisso no CI.
+concorrentes de `platform/convex/privacyMail.test.ts` caíram nisso no CI.
 
 O patch troca a pergunta em `writeToDatabase`, de `dist/index.js`: fora de uma
 query ou mutation, a gravação abre a própria transação e espera a trava. Só os
 testes usam o pacote; o runtime do Convex não muda.
-`tests/platform.convexTestStorage.test.ts` segura a trava com uma mutation
+`platform/convex/convexTestStorage.test.ts` segura a trava com uma mutation
 enquanto uma action guarda um arquivo e falha sem o patch com o mesmo erro do
 CI. A 0.0.67, a mais recente em 03/11/2026, ainda tem o defeito. Remover o
 patch quando uma versão publicada decidir pelo contexto de quem grava, depois
@@ -137,12 +137,12 @@ amarra cada patch à versão exata em `patchedDependencies`; subir a versão de 
 desses pacotes exige portar o patch, retirá-lo com equivalente comprovado ou
 manter a versão.
 
-| Pacote                     | Por que permanece                                                                   | Próxima revisão                                                  | Prova antes de retirar ou portar                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `@convex-dev/better-auth`  | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza      | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso                |
-| `@convex-dev/rate-limiter` | Consumo conjunto atômico e partições com saldo migrado                              | Versão publicada com operação conjunta equivalente               | `tests/platform.rate-limits.test.ts`, testes de chaves e uso e `scripts/proofs/prove-hosted-rate-limits.mjs` |
-| `@convex-dev/workpool`     | O `shared.ts` publicado declara uma local não usada, acusada pela checagem de tipos | Versão publicada sem a local `_` em `src/component/shared.ts`    | `bun run platform:check` e os testes de operações                                                            |
-| `convex-test`              | O arquivo guardado por uma action entra na transação de outra função concorrente    | Versão publicada que decida pelo contexto de quem grava          | `tests/platform.convexTestStorage.test.ts` sem o patch e `vp run test:platform`                              |
+| Pacote                     | Por que permanece                                                                   | Próxima revisão                                                  | Prova antes de retirar ou portar                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `@convex-dev/better-auth`  | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza      | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso                 |
+| `@convex-dev/rate-limiter` | Consumo conjunto atômico e partições com saldo migrado                              | Versão publicada com operação conjunta equivalente               | `platform/convex/rate-limits.test.ts`, testes de chaves e uso e `scripts/proofs/prove-hosted-rate-limits.mjs` |
+| `@convex-dev/workpool`     | O `shared.ts` publicado declara uma local não usada, acusada pela checagem de tipos | Versão publicada sem a local `_` em `src/component/shared.ts`    | `bun run platform:check` e os testes de operações                                                             |
+| `convex-test`              | O arquivo guardado por uma action entra na transação de outra função concorrente    | Versão publicada que decida pelo contexto de quem grava          | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`                              |
 
 O índice `lastRequest` não tem equivalente no Better Auth publicado. Retirar a
 correção de tipos não retira o patch: ele só sai quando o componente trouxer o
