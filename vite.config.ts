@@ -55,7 +55,8 @@ const generated = [
   "!tests/fixtures/file-isolation/node_modules",
   // ci:distribution compila packages/contracts/dist ao lado das outras tarefas;
   // os exports do pacote apontam para src/, e só a própria distribuição, sem
-  // cache, lê esse dist.
+  // cache, lê esse dist. Pelo mesmo motivo, tsconfig.json o exclui do programa
+  // de ci:typecheck e ci:check.
   "!packages/contracts/dist",
   "!packages/contracts/dist/**",
 ];
