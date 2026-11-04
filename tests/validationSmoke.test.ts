@@ -6,7 +6,7 @@ import {
   sanitizeSmokeDiagnostic,
   smokeRequestId,
 } from "../scripts/lib/smoke-diagnostic.mjs";
-import { proveSmokeDiagnostics, proveSmokeSummary } from "../scripts/prove-smoke-diagnostics.mjs";
+import { proveSmokeDiagnostics, proveSmokeSummary } from "../scripts/validation/prove-smoke-diagnostics.mjs";
 
 it("distinguishes controlled failures through the real smoke and publication paths", async () => {
   const results = await proveSmokeDiagnostics();

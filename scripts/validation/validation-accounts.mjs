@@ -2,14 +2,14 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { validateBackupDirectory } from "./lib/validation-backup.mjs";
+import { validateBackupDirectory } from "../lib/validation-backup.mjs";
 import {
   backendRequest,
   requireIntegrationWriter,
   validateTarget,
   verifyRemoteEnvironment,
-} from "./lib/validation.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/validation.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 try {
   if (process.argv.slice(2).join(" ") !== "--bootstrap")

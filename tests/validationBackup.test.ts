@@ -66,7 +66,7 @@ it("fails closed on a dangling link without creating its target", () => {
 it("rejects an inside path in the actual backup command before network or filesystem writes", () => {
   const root = fileURLToPath(new URL("..", import.meta.url));
   const target = join(root, "backup-must-not-be-created");
-  const child = spawnSync(process.execPath, [join(root, "scripts/validation.mjs"), "backup"], {
+  const child = spawnSync(process.execPath, [join(root, "scripts/validation/validation.mjs"), "backup"], {
     env: {
       ...process.env,
       VALIDATION_CONVEX_DEPLOY_KEY: "dev:modest-seal-118|synthetic-test-key",

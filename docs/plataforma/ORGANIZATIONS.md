@@ -300,7 +300,7 @@ têm até 04/12/2026, meia-noite de Brasília, para aceitar.
   `termsOfUseNotice.start` depois que a revisão serve: o sandbox hospedado
   (`scripts/deploy/deploy-platform.mjs`, release, revisão sem mudança e bootstrap),
   a produção fiscal da emissão (`scripts/deploy/deploy-issuance-production.mjs`), a
-  validação (`scripts/deploy-validation.mjs`) e a instalação própria local
+  validação (`scripts/validation/deploy-validation.mjs`) e a instalação própria local
   (`scripts/selfhost.mjs up`). No worktree e na instalação hospedada
   independente, que usa o mesmo perfil `APP_ENV=installation` do sandbox
   hospedado e da produção fiscal, mas que nenhum script publica, o operador

@@ -178,7 +178,7 @@ status e requestId para correlacionar a ocorrência nos serviços, sem acrescent
 conteúdo privado ao recibo. Comparar os SHAs e seguir a recuperação abaixo.
 Um diagnóstico mais específico não aprova o deploy nem reinicia a publicação.
 
-O ensaio `node scripts/prove-smoke-diagnostics.mjs` exercita o smoke e o registro
+O ensaio `node scripts/validation/prove-smoke-diagnostics.mjs` exercita o smoke e o registro
 de publicação com transporte controlado e gera
 `.validation-results/smoke-diagnostics.json`. Não publica, não usa credenciais
 reais e não provoca falha no ambiente compartilhado. As
@@ -213,11 +213,11 @@ O ensaio pressupõe que não haverá merge habilitando o escritor durante sua
 execução. O modo registrado é `operator-rehearsal`, não uma publicação aprovada.
 
 ```powershell
-node scripts/deploy-validation.mjs --rehearsal --fail-after-backend
-node scripts/deploy-validation.mjs summary
+node scripts/validation/deploy-validation.mjs --rehearsal --fail-after-backend
+node scripts/validation/deploy-validation.mjs summary
 # Preservar o recibo parcial antes da próxima execução.
-node scripts/deploy-validation.mjs --rehearsal
-node scripts/deploy-validation.mjs summary
+node scripts/validation/deploy-validation.mjs --rehearsal
+node scripts/validation/deploy-validation.mjs summary
 ```
 
 A primeira execução falha deliberadamente antes de publicar o frontend. A
@@ -241,7 +241,7 @@ e [Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/).
 
 O build usa o ambiente reduzido de `subprocess-environment.mjs`. Credenciais
 Cloudflare e Convex não chegam ao TypeScript, Vite ou build dos pacotes.
-`scripts/deploy-validation.mjs` prepara o console antes da publicação e chama
+`scripts/validation/deploy-validation.mjs` prepara o console antes da publicação e chama
 `node scripts/console.mjs publish` para publicar o artefato já produzido.
 Esse comando exige `dist/build.json` com o mesmo SHA e ambiente `validation`,
 revalida o site público e mantém as restrições de alvo, escritor e checkout limpo.

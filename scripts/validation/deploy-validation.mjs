@@ -8,22 +8,22 @@ import {
   rmSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
-import { validateTarget, verifyRemoteEnvironment, backendRequest } from "./lib/validation.mjs";
-import { checkConsoleWorker, consoleEnvironment } from "./lib/console.mjs";
+import { validateTarget, verifyRemoteEnvironment, backendRequest } from "../lib/validation.mjs";
+import { checkConsoleWorker, consoleEnvironment } from "../lib/console.mjs";
 import {
   checkPublication,
   obsoleteMessage,
   publishRevision,
   withRehearsalLock,
   requireRehearsalWindow,
-} from "./lib/validation-deploy.mjs";
-import { smokeCredentials, smokeValidation } from "./lib/validation-smoke.mjs";
-import { smokeDiagnosticText } from "./lib/smoke-diagnostic.mjs";
-import { buildPlatformPackages } from "./lib/platform-build.mjs";
-import { projectRepository } from "./lib/repository.mjs";
-import { publicationEnvironment } from "./lib/subprocess-environment.mjs";
-import { startTermsOfUseNotice } from "./lib/terms-notice.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/validation-deploy.mjs";
+import { smokeCredentials, smokeValidation } from "../lib/validation-smoke.mjs";
+import { smokeDiagnosticText } from "../lib/smoke-diagnostic.mjs";
+import { buildPlatformPackages } from "../lib/platform-build.mjs";
+import { projectRepository } from "../lib/repository.mjs";
+import { publicationEnvironment } from "../lib/subprocess-environment.mjs";
+import { startTermsOfUseNotice } from "../lib/terms-notice.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, ".validation-results");
@@ -144,7 +144,7 @@ async function main() {
               buildFile,
               `export const buildSha: string | null = ${JSON.stringify(sha)};\n`,
             );
-            run("scripts/validation.mjs", ["deploy", ...writerFlags], backendEnv);
+            run("scripts/validation/validation.mjs", ["deploy", ...writerFlags], backendEnv);
           } finally {
             writeFileSync(buildFile, original);
           }

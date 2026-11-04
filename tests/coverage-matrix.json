@@ -31,7 +31,7 @@
         "tests/validationBackup.test.ts",
         "tests/validationDeploy.test.ts",
         "tests/validationSmoke.test.ts",
-        "scripts/prove-smoke-diagnostics.mjs",
+        "scripts/validation/prove-smoke-diagnostics.mjs",
         "docs/v1.0/evidence/65/README.md",
         "tests/consoleTarget.test.ts",
         "tests/ci.contract.test.ts",

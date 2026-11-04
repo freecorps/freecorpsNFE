@@ -4,16 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { validateBackupDirectory } from "./lib/validation-backup.mjs";
-import { buildPlatformPackages } from "./lib/platform-build.mjs";
+import { validateBackupDirectory } from "../lib/validation-backup.mjs";
+import { buildPlatformPackages } from "../lib/platform-build.mjs";
 import {
   backendRequest,
   requireIntegrationWriter,
   validateTarget,
   validationChildEnv,
   verifyRemoteEnvironment,
-} from "./lib/validation.mjs";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/validation.mjs";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 function runConvex(context, args) {
   const temporary = mkdtempSync(join(tmpdir(), "fnfe-validation-"));

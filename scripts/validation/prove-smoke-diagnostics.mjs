@@ -13,9 +13,9 @@ import {
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
-import { smokeValidation } from "./lib/validation-smoke.mjs";
-import { publishRevision } from "./lib/validation-deploy.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { smokeValidation } from "../lib/validation-smoke.mjs";
+import { publishRevision } from "../lib/validation-deploy.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 const sha = "a".repeat(40);
 const otherSha = "b".repeat(40);
@@ -378,7 +378,7 @@ export function proveSmokeSummary(receipt) {
   // Copy the real CLI and its imports into a disposable directory, with no env or dependencies.
   const directory = mkdtempSync(join(tmpdir(), "fnfe-smoke-summary-"));
   const files = [
-    "scripts/deploy-validation.mjs",
+    "scripts/validation/deploy-validation.mjs",
     "scripts/lib/validation.mjs",
     "scripts/lib/console.mjs",
     "scripts/lib/validation-deploy.mjs",
@@ -408,7 +408,7 @@ export function proveSmokeSummary(receipt) {
     const run = (stepFile) =>
       execFileSync(
         process.execPath,
-        [join(directory, "scripts/deploy-validation.mjs"), "summary"],
+        [join(directory, "scripts/validation/deploy-validation.mjs"), "summary"],
         {
           cwd: directory,
           encoding: "utf8",
@@ -468,7 +468,14 @@ export function proveSmokeSummary(receipt) {
         cleanupErrors.push(error);
       }
     }
-    for (const path of ["scripts/lib", "scripts", "platform", ".validation-results", ""]) {
+    for (const path of [
+      "scripts/lib",
+      "scripts/validation",
+      "scripts",
+      "platform",
+      ".validation-results",
+      "",
+    ]) {
       try {
         if (existsSync(join(directory, path))) rmdirSync(join(directory, path));
       } catch (error) {
@@ -503,7 +510,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         environment: "controlled-transport",
         dataset: "synthetic-only",
         remoteWrites: false,
-        command: "node scripts/prove-smoke-diagnostics.mjs",
+        command: "node scripts/validation/prove-smoke-diagnostics.mjs",
         results,
         summaryProof,
       },

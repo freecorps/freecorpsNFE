@@ -21,7 +21,7 @@ it.each([
 ])(
   "rejects the wrong credential in the real deploy command before network I/O: %s",
   (credential) => {
-    const script = fileURLToPath(new URL("../scripts/validation.mjs", import.meta.url));
+    const script = fileURLToPath(new URL("../scripts/validation/validation.mjs", import.meta.url));
     const child = spawnSync(process.execPath, [script, "deploy", "--bootstrap"], {
       env: { ...process.env, VALIDATION_CONVEX_DEPLOY_KEY: credential },
       encoding: "utf8",
