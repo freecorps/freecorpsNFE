@@ -300,6 +300,11 @@ it("keys the task cache by runner and run, and passes the token only to push ste
   expect(named("Download the merged pull request's task cache").with!.name).toBe(
     TASK_CACHE_ARTIFACT,
   );
+  // Actions treats '' as false: with '' as the truthy branch the graph would
+  // always run --no-cache, as the first run of #87 did.
+  expect(expression(named("Build, check and test").env!.TASK_CACHE)).toBe(
+    "steps.changes.outputs.cache!='true'&&'--no-cache'||''",
+  );
   expect(workflow.jobs.validate!.permissions).toEqual({
     contents: "read",
     actions: "read",
