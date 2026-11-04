@@ -89,10 +89,31 @@ export const planTables = {
     key: v.string(),
     amountCents: v.number(),
     /**
-     * Monthly only: the civil UTC month bought, `AAAA-MM`. Annual requests written before ADR 0012
-     * have it too; the newer ones do not, as a term does not run by civil months.
+     * The civil UTC month bought, `AAAA-MM`, on monthly requests made before slice 1c of ADR 0012,
+     * which still buy it when confirmed. Annual requests written before ADR 0012 have it too. The
+     * newer requests do not: their plans run from anniversary to anniversary.
      */
     period: v.optional(v.string()),
+    /**
+     * Monthly requests from slice 1c (ADR 0012): `now`, a month from the confirmation, with a new
+     * anchor; `renewal`, from `firstPeriod`, the end of the Pix plan in force, keeping its anchor
+     * (`anchor`); `upgrade`, the plan in force raised now, with the same period and anchor. Missing
+     * on a monthly request made before 1c, which buys the civil month `period`, and on annual
+     * requests, whose start is read from the other fields (`startOf` in `plans.ts`).
+     */
+    start: v.optional(v.union(v.literal("now"), v.literal("renewal"), v.literal("upgrade"))),
+    /**
+     * A monthly `renewal` paid before its `firstPeriod`: confirmed (`activated`) and waiting for
+     * `plans:activatePixRenewal` at that instant, which clears it. `blockedCode` records why that
+     * activation was refused; the operator resolves it and runs the activation again.
+     */
+    scheduled: v.optional(v.boolean()),
+    blockedCode: v.optional(v.string()),
+    /**
+     * A monthly request: the `usagePlans` version its grant wrote, so the row in force is known to
+     * be paid by Pix (`pixMonthlyUntil`). Missing on requests confirmed before it was recorded.
+     */
+    planVersion: v.optional(v.number()),
     startsAt: v.number(),
     endsAt: v.number(),
     expectedVersion: v.number(),
@@ -104,13 +125,18 @@ export const planTables = {
     /** Missing is monthly. An annual request is paid in full (`annualCents`) and grants a term. */
     cycle: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
     /**
-     * Annual renewal (`start: "renewal"`): the instant the term starts, the end of the plan it
-     * renews. Missing on an annual `now`, which starts at the confirmation (ADR 0012). `endsAt` is
-     * the payment deadline (`payBy`): 7 days after the request for `now`, the end of the term's
-     * first month for a renewal, the end of the current term month for an upgrade.
+     * A renewal, annual or monthly: the instant it starts, the end of the plan it renews. Missing
+     * on a `now`, which starts at the confirmation (ADR 0012). From ADR 0012, `endsAt` is the
+     * payment deadline (`payBy`): 7 days after the request for `now`; the end of the first month
+     * it buys for a renewal (the whole month, for a monthly one); the end of the current term
+     * month for an annual upgrade and the end of the plan in force for a monthly one. On a monthly
+     * request made before slice 1c, `endsAt` is the end of the civil month bought.
      */
     firstPeriod: v.optional(v.number()),
-    /** Annual renewal only: the anchor of the chain the term continues (`platformPlanTerms.anchor`). */
+    /**
+     * A renewal only: the anchor of the chain it continues (`platformPlanTerms.anchor`, or the
+     * `usagePlans.periodAnchor` of the monthly plan it grants).
+     */
     anchor: v.optional(v.number()),
     /**
      * An annual upgrade (`start: "upgrade"`): the term it raises. `firstPeriod` is then the start
@@ -120,6 +146,11 @@ export const planTables = {
   })
     .index("by_organizationId_and_key", ["organizationId", "key"])
     .index("by_organizationId_and_state", ["organizationId", "state"])
+    .index("by_organizationId_and_scheduled_and_firstPeriod", [
+      "organizationId",
+      "scheduled",
+      "firstPeriod",
+    ])
     .index("by_paymentReference", ["paymentReference"]),
   /**
    * One annual term (ADR 0010, decisions 4.2 and 9, and ADR 0012). Times are UTC instants in ms:

@@ -62,9 +62,16 @@ fatia Q da ADR implementou o modelo do período em
   renovado começa em 28/02/2029, porque fevereiro não tem dia 29, e o
   período seguinte começa em 29/03/2029, não em 28/03. O anual no cartão ainda
   começa no dia 1 às 00:00 UTC, então as chaves dele continuam `AAAA-MM`
-  ([BILLING.md](BILLING.md#plano-anual)). As ativações mensais, pelo
-  Pix ou pelo cartão, ainda não têm âncora e seguem no mês civil até as
-  fatias 1c e 2a. O Gratuito nunca tem. O Personalizado segue
+  ([BILLING.md](BILLING.md#plano-anual)). O mensal pelo Pix tem âncora
+  desde a fatia 1c: a confirmação de um mês novo, truncada ao segundo, e a
+  renovação e o upgrade mantêm a da cadeia, inclusive entre o mensal e o
+  anual ([BILLING.md](BILLING.md#mensal-por-pix)). Confirmado em 31/01/2027
+  às 10:00:07 UTC e renovado, ele tem os períodos
+  `2027-01-31T10:00:07.000Z`, `2027-02-28T10:00:07.000Z` e
+  `2027-03-31T10:00:07.000Z`. As
+  ativações mensais do cartão, e as do Pix pedidas antes da 1c, ainda não têm
+  âncora e seguem no mês civil; o cartão, até a fatia 2a. O Gratuito nunca
+  tem. O Personalizado segue
   [Plano e autorização](#plano-e-autorização). Uma linha que substitui outra
   não herda a âncora dela; os contadores já gravados ficam na chave antiga.
 
@@ -228,13 +235,16 @@ vale com o [interruptor do Pix](BILLING.md#interruptor-do-pix) ligado, e
 desligado ele responde `PIX_DISABLED`. Não há atribuição automática no cadastro.
 
 O pedido pago mantém o plano atual e não reserva o orçamento global. O servidor
-confere disponibilidade, preço integral do mês UTC e diferença de upgrade.
+confere disponibilidade, a mensalidade integral e a diferença de upgrade; o
+mês pelo Pix corre de aniversário a aniversário
+([BILLING.md](BILLING.md#mensal-por-pix)).
 A equipe verifica novamente capacidade e caixa antes de instruir o Pix; a
 confirmação interna confere referência, valor e versão e reserva os recursos
 na mesma transação da ativação. Se o orçamento se esgotar, a ativação recusa;
 pagamento recebido exige conciliação ou devolução pelo atendimento. Nenhuma
 chamada pública confirma pagamento. Cancelar pedido não muda plano nem cotas.
-A renovação é manual após vencimento, sem débito automático. Personalizado
+Pelo Pix, a renovação é um novo pedido, feito com o plano em vigor, que
+começa no fim dele, sem débito automático. Personalizado
 usa `usage:assignPlan`, com cotas finitas e condições comerciais auditadas.
 
 Cada ativação de plano de catálogo (`activateCatalogPlan`, em

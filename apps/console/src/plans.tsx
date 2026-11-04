@@ -79,6 +79,15 @@ const annualWaits: Record<string, string> = {
     "Esta organização paga por cartão. O anual por Pix espera o fim do período pago pelo cartão.",
   PLAN_UNAVAILABLE: "Há um plano pago em vigor. O anual por Pix espera o fim dele.",
 };
+/** Why a new monthly by Pix waits (`monthlyStart[tier].code`), before anything is asked. */
+const monthlyWaits: Record<string, string> = {
+  ANNUAL_TERM_ACTIVE:
+    "Há um plano anual em vigor ou agendado. Pelo Pix, o mensal é a renovação dele, pedida no último mês.",
+  PAYMENT_METHOD_CARD:
+    "Esta organização paga por cartão. O mensal por Pix espera o fim do período pago pelo cartão.",
+  PLAN_UNAVAILABLE:
+    "Há um plano em vigor ou uma renovação já paga. O mensal por Pix espera por ele.",
+};
 /**
  * A refused sale waits for the plan in force (ADR 0012, one paid plan at a time): the server
  * sends the instant it becomes available, which the message ends with.
@@ -205,8 +214,20 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
   const annualStart = data.annualStart;
   const cardUpgradeClosed =
     typeof upgradable?.upgrade?.cardUntil === "number" && now >= upgradable.upgrade.cardUntil;
+  // How a new monthly by Pix starts, as the server sells it by tier: never a client choice.
+  const chosenMonthly = offer && offer.tier !== "free" ? data.monthlyStart[offer.tier] : null;
   const selectedPrice =
-    offer && offer.tier !== "free" ? (data.pricesCents?.[offer.tier] ?? offer.monthlyCents) : 0;
+    offer && offer.tier !== "free" ? (chosenMonthly?.amountCents ?? offer.monthlyCents) : 0;
+  const monthlyHint = (tier: PaidTier) => {
+    const start = data.monthlyStart[tier];
+    return start.start === null
+      ? `${(start.code && monthlyWaits[start.code]) || "O mensal por Pix não está disponível agora."}${availableFrom(start.availableAt)}`
+      : start.start === "renewal" && start.startsAt !== null
+        ? `Renovação do plano em vigor: começa em ${formatUtcInstant(start.startsAt)}, quando ele termina.`
+        : start.start === "upgrade" && start.endsAt !== null
+          ? `Mudança na confirmação, pela diferença, até ${formatUtcInstant(start.endsAt)}, o fim do plano em vigor.`
+          : "";
+  };
   async function confirm() {
     if (!canManage) return failure(new ConvexError({ code: "ACCESS_DENIED" }));
     setMessage("");
@@ -275,6 +296,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
   }
   const request = data.request;
   const requestStart = request?.start ?? null;
+  const scheduledRenewal = data.scheduledRenewal;
   const annualPrice = (item: Offer) => (annualView ? item.annualCents : undefined);
   // One paid plan at a time: while one is in force, the annual by Pix is only its renewal, asked
   // in its last month. A card term that renews bills its own next year beside it.
@@ -364,7 +386,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
         >
           <DescriptionList
             items={
-              requestStart === "upgrade"
+              request.cycle === "annual" && requestStart === "upgrade"
                 ? [
                     {
                       term: "Mudança solicitada",
@@ -400,30 +422,52 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                                 formatUtcInstant(request.periodStartsAt),
                       },
                     ]
-                  : [
-                      { term: "Plano solicitado", value: tierNames[request.tier] },
-                      { term: "Valor integral", value: price(request.amountCents) },
-                      {
-                        term: "Período",
-                        value:
-                          request.periodStartsAt === null
-                            ? "—"
-                            : request.periodEndsAt === null
-                              ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
-                              : `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
-                      },
-                    ]
+                  : requestStart === "upgrade"
+                    ? [
+                        { term: "Mudança solicitada", value: `Para ${tierNames[request.tier]}` },
+                        {
+                          term: "Valor da mudança",
+                          value: `${price(request.amountCents)}, pela diferença integral`,
+                        },
+                        {
+                          term: "Período",
+                          value:
+                            request.periodEndsAt === null
+                              ? "Da confirmação do pagamento pela equipe ao fim do plano em vigor"
+                              : `Da confirmação do pagamento pela equipe a ${formatUtcInstant(request.periodEndsAt)}, o fim do plano em vigor`,
+                        },
+                      ]
+                    : [
+                        { term: "Plano solicitado", value: tierNames[request.tier] },
+                        { term: "Valor integral", value: price(request.amountCents) },
+                        {
+                          term: "Período",
+                          value:
+                            requestStart === "now"
+                              ? "Um mês, da confirmação do pagamento pela equipe ao mesmo dia e horário do mês seguinte"
+                              : request.periodStartsAt === null
+                                ? "—"
+                                : request.periodEndsAt === null
+                                  ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
+                                  : requestStart === "renewal"
+                                    ? `De ${formatUtcInstant(request.periodStartsAt)}, no fim do plano em vigor, a ${formatUtcInstant(request.periodEndsAt)}`
+                                    : // A monthly request made before ADR 0012: the civil month.
+                                      `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
+                        },
+                      ]
             }
           />
           {pending ? (
             <>
               <p>{pendingMessage}</p>
               <p>
-                {requestStart === "upgrade"
+                {request.cycle === "annual" && requestStart === "upgrade"
                   ? `O plano anual continua durante a espera. A mudança só vale após a confirmação do pagamento pela equipe, até ${formatUtcInstant(request.payBy)}.`
                   : request.cycle === "annual"
                     ? `O plano atual continua durante a espera. O plano anual só começa após a confirmação do pagamento pela equipe, até ${formatUtcInstant(request.payBy)}.`
-                    : "O plano atual continua durante a espera. O novo plano só será ativado após a confirmação do pagamento pela equipe."}
+                    : requestStart === null
+                      ? "O plano atual continua durante a espera. O novo plano só será ativado após a confirmação do pagamento pela equipe."
+                      : `O plano atual continua durante a espera. O novo plano só vale após a confirmação do pagamento pela equipe, até ${formatUtcInstant(request.payBy)}.`}
               </p>
               {canManage ? (
                 <Button
@@ -443,6 +487,35 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               será mais confirmado. Um novo pedido o substitui.
             </p>
           ) : null}
+        </Card>
+      ) : null}
+      {scheduledRenewal ? (
+        <Card
+          title="Renovação mensal paga"
+          actions={
+            <StatusBadge tone={scheduledRenewal.blocked ? "warning" : "info"}>
+              {scheduledRenewal.blocked ? "Início pendente" : "Agendada"}
+            </StatusBadge>
+          }
+        >
+          <DescriptionList
+            items={[
+              { term: "Plano", value: tierNames[scheduledRenewal.tier] },
+              { term: "Forma de pagamento", value: "Pix assistido" },
+              {
+                term: "Período",
+                value: `De ${formatUtcInstant(scheduledRenewal.startsAt)} a ${formatUtcInstant(scheduledRenewal.endsAt)}`,
+              },
+            ]}
+          />
+          {scheduledRenewal.blocked ? (
+            <Callout tone="warning">
+              O pagamento foi recebido, e o início da renovação aguarda a equipe da Freecorps. Nada
+              é cobrado de novo.
+            </Callout>
+          ) : (
+            <p>O plano atual continua até o início da renovação.</p>
+          )}
         </Card>
       ) : null}
       {data.terms.map((term) => (
@@ -476,7 +549,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
       ))}
       <Card
         title="Escolha seu plano"
-        description="Comece sem taxa de configuração. As cotas de uso renovam a cada mês, em UTC."
+        description="Comece sem taxa de configuração. As cotas de uso renovam a cada mês do plano, em UTC."
         flush
       >
         {!canManage || data.annualEnabled ? (
@@ -574,7 +647,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                   (free && !data.availability.canClaimFree) ||
                   (yearly
                     ? item.annualCents === undefined || annualClosed
-                    : !free && data.pricesCents?.[item.tier as PaidTier] === null);
+                    : !free && data.monthlyStart[item.tier as PaidTier].start === null);
+                const hint = free || yearly ? "" : monthlyHint(item.tier as PaidTier);
                 return (
                   <>
                     <Button
@@ -602,6 +676,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       <p className="gestao-help">Aguarde ou cancele o pedido pendente.</p>
                     ) : yearly && annualHint ? (
                       <p className="gestao-help">{annualHint}</p>
+                    ) : hint && canManage ? (
+                      <p className="gestao-help">{hint}</p>
                     ) : null}
                   </>
                 );
@@ -657,7 +733,17 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                   ? offer?.annualCents !== undefined
                     ? `${price(offer.annualCents)} por 12 meses, pagos de uma vez. Economia de ${price(12 * offer.monthlyCents - offer.annualCents)} sobre 12 mensalidades.`
                     : "O plano anual não está mais à venda. Confira os planos atualizados."
-                  : `${price(selectedPrice)} pelo mês corrente em UTC, até o primeiro dia do próximo mês às 00:00 UTC. ${selectedPrice !== offer?.monthlyCents ? "Valor da diferença para o novo plano. " : ""}O valor é integral, sem desconto proporcional, inclusive no último dia do mês. Para usar um mês completo, faça o pedido no início do próximo mês.`
+                  : chosenMonthly?.start === "renewal" &&
+                      chosenMonthly.startsAt !== null &&
+                      chosenMonthly.endsAt !== null
+                    ? `${price(selectedPrice)} pela renovação do plano em vigor: começa em ${formatUtcInstant(chosenMonthly.startsAt)}, quando ele termina, e vai até ${formatUtcInstant(chosenMonthly.endsAt)}. O plano atual continua até lá.`
+                    : chosenMonthly?.start === "upgrade" && chosenMonthly.endsAt !== null
+                      ? `${price(selectedPrice)}, a diferença integral para o novo plano, sem desconto proporcional. Ele vale da confirmação do pagamento até ${formatUtcInstant(chosenMonthly.endsAt)}, o fim do plano em vigor, que não muda.`
+                      : chosenMonthly?.start === "now"
+                        ? `${price(selectedPrice)} por um mês, da confirmação do pagamento pela equipe ao mesmo dia e horário do mês seguinte, em UTC. O pedido vale por 7 dias.`
+                        : offer && offer.tier !== "free"
+                          ? monthlyHint(offer.tier)
+                          : ""
         }
         confirmLabel={
           selection === "cancel"
@@ -691,7 +777,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
             (pending ||
               !offer ||
               (selection === "free" && !data.availability.canClaimFree) ||
-              (annualChosen && (offer.annualCents === undefined || !startAllowed))))
+              (annualChosen && (offer.annualCents === undefined || !startAllowed)) ||
+              (!annualChosen && selection !== "free" && chosenMonthly?.start === null)))
         }
       >
         {selection === "upgrade" ? (
@@ -720,7 +807,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
         ) : selection !== "cancel" && selection !== "free" ? (
           <p>
             O pagamento por Pix é assistido. Aguarde as instruções pelo canal de atendimento. O
-            plano atual continua até a confirmação do pagamento.
+            plano atual continua até a confirmação do pagamento. Pelo Pix, o plano renova por um
+            novo pedido, feito antes do fim dele.
           </p>
         ) : null}
       </ConfirmDialog>

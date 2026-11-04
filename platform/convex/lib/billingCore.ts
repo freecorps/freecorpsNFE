@@ -143,6 +143,129 @@ export async function pixPending(ctx: QueryCtx, organizationId: Id<"organization
   return requests.some((request) => request.endsAt > now);
 }
 
+/**
+ * Whether a card invoice granted this plan row. The row records no payment method, so this relies
+ * on `applyInvoice`: every card grant that writes the row records, in `billingGrants`, the version
+ * it wrote (`planVersion`), and any later write (a Pix confirmation, an operator's assignment)
+ * raises the row's version past it. The last 20 grants are enough: only the newest applied one can
+ * match the row in force.
+ */
+export async function paidByCard(ctx: QueryCtx, plan: Doc<"usagePlans">) {
+  const grants = await ctx.db
+    .query("billingGrants")
+    .withIndex("by_organizationId", (q) => q.eq("organizationId", plan.organizationId))
+    .order("desc")
+    .take(20);
+  return grants.some((grant) => grant.state === "applied" && grant.planVersion === plan.version);
+}
+
+/** The end of a monthly Pix renewal starting at `firstPeriod`: the next anniversary of `anchor`. */
+export const renewalEnd = (request: { firstPeriod: number; anchor: number }) =>
+  termMonthStart(request.firstPeriod, 1, request.anchor);
+
+/** A month is at most 31 days: a renewal that started before this window has already ended. */
+const RENEWAL_WINDOW = 31 * 24 * 60 * 60 * 1000;
+/** The scheduled activation runs at the start; this long after it, the renewal is `overdue`. */
+const RENEWAL_OVERDUE = 10 * 60 * 1000;
+
+/**
+ * A monthly Pix renewal paid before its start and not yet granted (`scheduled`, ADR 0012): it
+ * holds the organization as a plan in force would, from now to the end of the month it bought. A
+ * refused activation (`blockedCode`) waits for the team and no longer holds after that end. Only
+ * renewals starting in the last 31 days are read, so ended rows that keep `scheduled` never crowd
+ * out the current one. `availableAt` is when what it holds opens: its start, or, refused, its end.
+ * `overdue`: its start passed 10 minutes ago and it was neither granted nor refused (an
+ * activation that failed unexpectedly), so it needs the team as a refused one does.
+ */
+export async function scheduledPixRenewal(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+) {
+  const rows = await ctx.db
+    .query("platformPlanRequests")
+    .withIndex("by_organizationId_and_scheduled_and_firstPeriod", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("scheduled", true)
+        .gt("firstPeriod", now - RENEWAL_WINDOW),
+    )
+    .take(5);
+  for (const request of rows) {
+    if (
+      request.state !== "activated" ||
+      request.firstPeriod === undefined ||
+      request.anchor === undefined
+    )
+      continue;
+    const span = { firstPeriod: request.firstPeriod, anchor: request.anchor };
+    const endsAt = renewalEnd(span);
+    if (endsAt <= now) continue;
+    const blocked = request.blockedCode !== undefined;
+    const overdue = !blocked && request.firstPeriod + RENEWAL_OVERDUE <= now;
+    return {
+      request,
+      startsAt: request.firstPeriod,
+      endsAt,
+      blocked,
+      overdue,
+      // Blocked or overdue, it still holds the organization until its end: never a past date.
+      availableAt: blocked || overdue ? endsAt : request.firstPeriod,
+    };
+  }
+  return null;
+}
+
+/**
+ * Whether a monthly Pix confirmation wrote this plan row: the activated monthly request that
+ * recorded its version (`planVersion`). A positive signal, unlike `paidByCard`: a row assigned by
+ * an operator, or granted before the version was recorded, is not taken for Pix. Only the newest
+ * activated requests can match the row in force.
+ */
+export async function paidByPix(ctx: QueryCtx, plan: Doc<"usagePlans">) {
+  const requests = await ctx.db
+    .query("platformPlanRequests")
+    .withIndex("by_organizationId_and_state", (q) =>
+      q.eq("organizationId", plan.organizationId).eq("state", "activated"),
+    )
+    .order("desc")
+    .take(20);
+  return requests.some((request) => request.planVersion === plan.version);
+}
+
+/**
+ * When the monthly Pix plan in force, with any renewal of it already paid, ends; null without
+ * one. A monthly plan row of a catalog tier without a term, written by a Pix confirmation
+ * (`paidByPix`), is a Pix plan. One paid plan at a time (ADR 0012): the monthly card Checkout
+ * waits until then.
+ */
+export async function pixMonthlyUntil(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+) {
+  const renewal = await scheduledPixRenewal(ctx, organizationId, now);
+  const plan = await planFor(ctx, organizationId);
+  // A card that renews holds the plan in force; the Pix waits for it (`cardBlocksPix`).
+  const accounts = await ctx.db
+    .query("billingAccounts")
+    .withIndex("by_organizationId_and_livemode", (q) => q.eq("organizationId", organizationId))
+    .take(2);
+  const inForce =
+    !accounts.some(renews) &&
+    plan &&
+    plan.startsAt <= now &&
+    !planEnded(plan, now) &&
+    plan.endsAt !== null &&
+    !plan.termId &&
+    (plan.catalogTier === "intermediate" || plan.catalogTier === "large") &&
+    (await paidByPix(ctx, plan))
+      ? plan.endsAt
+      : null;
+  if (renewal) return Math.max(renewal.endsAt, inForce ?? 0);
+  return inForce;
+}
+
 export const periodStart = (period: string) =>
   Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)) - 1, 1);
 

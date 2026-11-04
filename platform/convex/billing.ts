@@ -67,8 +67,10 @@ import {
   applyInvoice,
   openCheckout,
   periodStart,
+  pixMonthlyUntil,
   pixPending,
   renews,
+  scheduledPixRenewal,
 } from "./lib/billingCore";
 
 /**
@@ -438,6 +440,16 @@ export const prepareCheckout = internalMutation({
     // be blocked over it (`applyInvoice`): the monthly waits for it (ADR 0012).
     if (!annual && plan?.termId && plan.startsAt <= now && !planEnded(plan, now))
       deny("PLAN_UNAVAILABLE", { availableAt: plan.endsAt });
+    // One paid plan at a time (ADR 0012): the monthly card waits for the monthly Pix plan in
+    // force, and for a renewal of it already paid, to end. A paid renewal not yet started also
+    // holds the annual, which would replace it on the next 1st before it is used.
+    if (!annual) {
+      const pixUntil = await pixMonthlyUntil(ctx, args.organizationId, now);
+      if (pixUntil !== null) deny("PAYMENT_METHOD_PIX", { availableAt: pixUntil });
+    } else if (!upgrade) {
+      const renewal = await scheduledPixRenewal(ctx, args.organizationId, now);
+      if (renewal) deny("PAYMENT_METHOD_PIX", { availableAt: renewal.availableAt });
+    }
     const anchor = nextUsagePeriodStart(now);
     // Stripe needs the anchor in the future when the customer finishes paying.
     if (anchor - now < 45 * 60_000) deny("PERIOD_CLOSING");
@@ -488,7 +500,8 @@ export const prepareCheckout = internalMutation({
       grantCents = offer.monthlyCents - current.monthlyCents;
     } else {
       kind = "start";
-      // A month already paid (Pix) is credited; a lower tier only starts at the next renewal.
+      // A civil month already paid is credited: a card month whose renewal was cancelled (a Pix
+      // plan in force waits, above). A lower tier only starts at the next renewal.
       const paidThisMonth = current && current.monthlyCents > 0 && plan!.endsAt === anchor;
       grantCents = paidThisMonth
         ? Math.max(0, offer.monthlyCents - current.monthlyCents)

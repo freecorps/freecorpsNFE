@@ -12,7 +12,7 @@ import { requirePlatformEnvironment } from "./environment";
 import { FREECORPS_OPERATOR, operatorAndReason } from "./lib/issuanceGate";
 import { planFor } from "./lib/usageCore";
 import { planEnded } from "./lib/usageValues";
-import { cardBlocksPix } from "./lib/billingCore";
+import { cardBlocksPix, scheduledPixRenewal } from "./lib/billingCore";
 import { activeTerm } from "./lib/planTerms";
 import { archiveStatus } from "./lib/coldArchiveCore";
 
@@ -132,8 +132,8 @@ export const close = mutation({
 /**
  * A plan the organization is still paying for: a plan not yet ended whose tier is not `free`
  * (paid, `custom` or without tier, from the older assisted assignment), a plan request awaiting
- * payment, an annual term not yet ended, or a renewing card subscription or open Checkout.
- * Freecorps never closes it on its own.
+ * payment, a monthly Pix renewal paid and not yet started, an annual term not yet ended, or a
+ * renewing card subscription or open Checkout. Freecorps never closes it on its own.
  */
 export async function paidPlanInForce(ctx: MutationCtx, organizationId: Id<"organizations">) {
   const plan = await planFor(ctx, organizationId);
@@ -145,6 +145,7 @@ export async function paidPlanInForce(ctx: MutationCtx, organizationId: Id<"orga
         q.eq("organizationId", organizationId).eq("state", "awaiting_payment"),
       )
       .first()) ||
+    (await scheduledPixRenewal(ctx, organizationId, Date.now())) ||
     (await activeTerm(ctx, organizationId, Date.now())) ||
     (await cardBlocksPix(ctx, organizationId))
   );

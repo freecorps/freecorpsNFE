@@ -21,6 +21,7 @@ import {
 } from "./planTerms";
 import { assertTermShape, isTermReference, withinWithdrawal } from "./annualTerms";
 import { planEnded } from "./usageValues";
+import { isPeriodAnchor, quotaPeriod } from "./quotaPeriod";
 import { isOperatorLogin, operatorAndReason } from "./issuanceGate";
 
 export const planSettings = (ctx: QueryCtx) =>
@@ -172,10 +173,12 @@ const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor
 
 /**
  * Without `termId`, a monthly activation: refused when an annual term overlaps it from `startsAt`
- * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. It has no `periodAnchor` yet
- * (ADR 0012, slice Q): its quotas count by the civil UTC month. With it, the plan row records the
- * term it grants and the anchor of the term's chain as `periodAnchor` (`termAnchor`), and the
- * grant must match the term
+ * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. With `monthlyAnchor`, a monthly
+ * Pix grant from slice 1c of ADR 0012, the row's quotas count by that anchor's months
+ * (`periodAnchor`): it is truncated to the second, not after `startsAt`, and `endsAt` is one of its
+ * monthly anniversaries (`INVALID_REQUEST` otherwise). Without it, as the card monthly until slice
+ * 2a, by the civil UTC month. With `termId`, the plan row records the term it grants and the
+ * anchor of the term's chain as `periodAnchor` (`termAnchor`), and the grant must match the term
  * (`INVALID_REQUEST` otherwise): same organization, `scheduled` or `active`, the tier in force at
  * `startsAt`, `startsAt` within the term and `endsAt` equal to the term's.
  */
@@ -189,11 +192,22 @@ export async function activateCatalogPlan(
   actor: string,
   reason: string,
   termId?: Id<"platformPlanTerms">,
+  monthlyAnchor?: number,
 ) {
   let periodAnchor: number | undefined;
   if (termId === undefined) {
+    if (
+      monthlyAnchor !== undefined &&
+      (!isPeriodAnchor(monthlyAnchor) ||
+        monthlyAnchor > startsAt ||
+        endsAt === null ||
+        endsAt <= monthlyAnchor ||
+        quotaPeriod({ periodAnchor: monthlyAnchor }, endsAt).startsAt !== endsAt)
+    )
+      deny("INVALID_REQUEST");
     if (await monthlyBlockedByTerm(ctx, organizationId, startsAt, endsAt))
       deny("ANNUAL_TERM_ACTIVE");
+    periodAnchor = monthlyAnchor;
   } else {
     const term = await ctx.db.get("platformPlanTerms", termId);
     if (
