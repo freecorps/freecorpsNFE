@@ -3,7 +3,8 @@ import { internalMutation, internalQuery, query } from "./_generated/server";
 import { requireMembership, requireManager, deny } from "./lib/organizationAccess";
 import { planFields, metrics, reportedMetric } from "./lib/usageValues";
 import { countedIn, periodTotals, planFor, sumTotals } from "./lib/usageCore";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
 import { requirePlatformEnvironment } from "./environment";
 import { authenticateKey } from "./lib/operationAccess";
 import { recordRestRefusal } from "./lib/restLimits";
@@ -13,7 +14,13 @@ import { capacityPolicy, reserveCapacity, commitCapacity } from "./lib/capacityC
 import { assertOrganizationHot, assertPlanChangeable } from "./lib/coldArchiveCore";
 import { allocateOffer } from "./lib/planCore";
 import { termCovering } from "./lib/planTerms";
-import { nextUsagePeriodStart } from "./lib/usageValues";
+import {
+  isPeriodAnchor,
+  isPeriodInstant,
+  keyPeriod,
+  periodKeyStart,
+  quotaPeriod,
+} from "./lib/quotaPeriod";
 import { internal } from "./_generated/api";
 
 const restBudget = v.object({ organizationId: v.id("organizations"), actor: v.string() });
@@ -129,7 +136,15 @@ export const restRefusal = internalMutation({
   },
 });
 
-/** Only a deployment administrator can assign a negotiated plan. Customer roles cannot grant quota. */
+/**
+ * Only a deployment administrator can assign a negotiated plan. Customer roles cannot grant quota.
+ *
+ * `periodAnchor` (ADR 0012, section 4): with the catalog off, none by default, and the operator
+ * may pass one up to `startsAt`. With it on, the Personalizado always has one, `startsAt` by
+ * default, and `endsAt` is the anniversary of it that ends the anchored month under way: a
+ * prefunded month at a time. The free tier never has one, and the new row never inherits the
+ * anchor of the row it replaces.
+ */
 export const assignPlan = internalMutation({
   args: {
     organizationId: v.id("organizations"),
@@ -183,7 +198,15 @@ export const assignPlan = internalMutation({
         args.startsAt > Date.now() ||
         args.endsAt === null ||
         args.endsAt <= Date.now() ||
-        args.endsAt > nextUsagePeriodStart(Date.now())
+        // Checked again below for every plan; here, before the default anchor is taken from it.
+        !Number.isSafeInteger(args.startsAt) ||
+        args.startsAt < 0 ||
+        (args.periodAnchor !== undefined && !isPeriodAnchor(args.periodAnchor)) ||
+        args.endsAt !==
+          quotaPeriod(
+            { periodAnchor: args.periodAnchor ?? Math.floor(args.startsAt / 1000) * 1000 },
+            Date.now(),
+          ).endsAt
       )
         deny("INVALID_REQUEST");
       if (
@@ -219,13 +242,25 @@ export const assignPlan = internalMutation({
       args.concurrency > 32 ||
       Object.values(args.limits).some(
         (n) => n !== null && (!Number.isSafeInteger(n) || n < 0 || n > 1e12),
-      )
+      ) ||
+      (args.periodAnchor !== undefined &&
+        (args.catalogTier === "free" ||
+          !isPeriodAnchor(args.periodAnchor) ||
+          args.periodAnchor > args.startsAt))
     )
       deny("INVALID_REQUEST");
     const before = await planFor(ctx, args.organizationId);
     if ((before?.version ?? 0) !== args.expectedVersion) deny("OPERATION_CONFLICT");
-    const { actor, reason, expectedVersion, commercial, ...fields } = args;
-    const after = { ...fields, version: expectedVersion + 1, updatedAt: Date.now() };
+    const { actor, reason, expectedVersion, commercial, periodAnchor, ...fields } = args;
+    const anchor = commercialMode
+      ? (periodAnchor ?? Math.floor(args.startsAt / 1000) * 1000)
+      : periodAnchor;
+    const after = {
+      ...fields,
+      ...(anchor !== undefined ? { periodAnchor: anchor } : {}),
+      version: expectedVersion + 1,
+      updatedAt: Date.now(),
+    };
     if (before) await ctx.db.replace("usagePlans", before._id, after);
     else await ctx.db.insert("usagePlans", after);
     if (commercialMode && commercial) {
@@ -254,6 +289,39 @@ export const assignPlan = internalMutation({
     return after.version;
   },
 });
+const periodValue = v.object({
+  key: v.string(),
+  startsAt: v.number(),
+  /** Null for an anchored key of an anchor the plan no longer records (`keyPeriod`). */
+  endsAt: v.union(v.number(), v.null()),
+});
+/** How many periods `usage:overview` lists in `recent`. */
+const RECENT_PERIODS = 12;
+/**
+ * The latest distinct period keys counted for the organization, newest first: canonical keys sort
+ * as their starts (ADR 0012, section 4). One indexed read per distinct key, at most
+ * `2 × RECENT_PERIODS` reads whatever the stored keys are, non-canonical ones skipped.
+ */
+async function countedKeys(ctx: QueryCtx, organizationId: Id<"organizations">) {
+  const keys: string[] = [];
+  let below: string | null = null;
+  for (let read = 0; read < 2 * RECENT_PERIODS && keys.length < RECENT_PERIODS; read++) {
+    const bound: string | null = below;
+    const row: Doc<"usageTotals"> | null = await ctx.db
+      .query("usageTotals")
+      .withIndex("by_organizationId_and_period_and_metric_and_environment", (q) =>
+        bound === null
+          ? q.eq("organizationId", organizationId)
+          : q.eq("organizationId", organizationId).lt("period", bound),
+      )
+      .order("desc")
+      .first();
+    if (!row) break;
+    if (periodKeyStart(row.period) !== null) keys.push(row.period);
+    below = row.period;
+  }
+  return keys;
+}
 const usageRow = v.object({
   metric: reportedMetric,
   committed: v.number(),
@@ -262,16 +330,30 @@ const usageRow = v.object({
   startedAt: v.union(v.number(), v.null()),
 });
 /**
- * The organization's plan and its usage in the period, per environment (#429): each environment
- * has its own balance under the same plan limits. A total not yet attributed by the backfill
- * counts in both, as the quota counts it, and `unattributed` says so. `rows` sums every total of
- * the period, as before #429, only for a console published before it; remove it with the
- * required `environment`.
+ * The organization's plan and its usage in a quota period, per environment (#429): each
+ * environment has its own balance under the same plan limits. A total not yet attributed by the
+ * backfill counts in both, as the quota counts it, and `unattributed` says so. `rows` sums every
+ * total of the period, as before #429, only for a console published before it; remove it with
+ * the required `environment`.
+ *
+ * The period is `period`, a canonical key (ADR 0012, section 4), or else the plan's quota period
+ * holding `asOf`; one of them is required, since a query does not read the clock. The answer
+ * names the period, with its start and end, and `recent`, the latest periods with usage, newest
+ * first, with the one holding `asOf` and the one asked.
  */
 export const overview = query({
-  args: { organizationId: v.id("organizations"), period: v.string(), contextKey: v.string() },
+  args: {
+    organizationId: v.id("organizations"),
+    period: v.optional(v.string()),
+    asOf: v.optional(v.number()),
+    contextKey: v.string(),
+  },
   returns: v.object({
     plan: v.union(v.object({ ...planFields, version: v.number() }), v.null()),
+    period: periodValue,
+    /** The period holding `asOf`; null without it. */
+    current: v.union(periodValue, v.null()),
+    recent: v.array(periodValue),
     environments: v.object({ sandbox: v.array(usageRow), production: v.array(usageRow) }),
     unattributed: v.boolean(),
     rows: v.array(usageRow),
@@ -281,12 +363,30 @@ export const overview = query({
       archived: "allowed",
     });
     requireManager(membership); // Aggregate usage can reveal activity in companies outside a member's grant.
-    if (!/^20\d\d-(0[1-9]|1[0-2])$/.test(args.period)) deny("INVALID_REQUEST");
+    const asOf = args.asOf;
+    if (
+      (asOf !== undefined && !isPeriodInstant(asOf)) ||
+      (args.period !== undefined && periodKeyStart(args.period) === null) ||
+      (args.period === undefined && asOf === undefined)
+    )
+      deny("INVALID_REQUEST");
     const plan = await planFor(ctx, args.organizationId);
+    const current = asOf === undefined ? null : quotaPeriod(plan, asOf);
+    const period = args.period === undefined ? current! : keyPeriod(plan, args.period)!;
+    const keys = new Set([
+      ...(await countedKeys(ctx, args.organizationId)),
+      period.key,
+      ...(current ? [current.key] : []),
+    ]);
+    const recent = [...keys]
+      .sort()
+      .reverse()
+      .slice(0, RECENT_PERIODS)
+      .map((key) => keyPeriod(plan, key)!);
     const totals = await Promise.all(
       metrics.map(async (metric) => ({
         metric,
-        rows: await periodTotals(ctx, args.organizationId, args.period, metric),
+        rows: await periodTotals(ctx, args.organizationId, period.key, metric),
       })),
     );
     const view = (counted: (row: Doc<"usageTotals">) => boolean) =>
@@ -299,9 +399,13 @@ export const overview = query({
             endsAt: plan.endsAt,
             limits: plan.limits,
             concurrency: plan.concurrency,
+            ...(plan.periodAnchor !== undefined ? { periodAnchor: plan.periodAnchor } : {}),
             version: plan.version,
           }
         : null,
+      period,
+      current,
+      recent,
       environments: {
         sandbox: view(countedIn("sandbox")),
         production: view(countedIn("production")),

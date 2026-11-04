@@ -22,18 +22,52 @@ e cobrada no ambiente em que aconteceu, `sandbox` ou `production`
 | Tentativa  | Claim de operação, retomada ou tentativa de webhook.                                                                                        | Informativo                  |
 | Emissão    | Uma NFS-e autorizada pela plataforma (`issuances`), contada no checkpoint da autorização; reconciliação e repetição não somam.              | Informativo, só medida       |
 
-O período é o mês UTC da reserva. Uma reserva de setembro concluída em outubro
-continua em setembro. Os inteiros representam unidades e bytes, sem conversão
-para dinheiro. Repetir outra intenção de importação pode consumir outro arquivo
-e outros bytes, mas nunca outro documento único da mesma identidade.
+O período é o período de cota do plano no instante da reserva. Uma reserva
+de setembro concluída em outubro continua em setembro. Os inteiros
+representam unidades e bytes, sem conversão para dinheiro. Repetir outra
+intenção de importação pode consumir outro arquivo e outros bytes, mas nunca
+outro documento único da mesma identidade.
+
+### Período de cota
 
 Em 03/11/2026 o dono decidiu que o período dos planos pagos passa a ser o mês
 da assinatura, a partir do instante da contratação, e que o Gratuito continua
 no mês civil UTC ([ADR 0012](../adr/0012-periodo-por-aniversario.md)). A
-decisão ainda não está implementada: hoje todo plano usa o mês UTC.
+fatia Q da ADR implementou o modelo do período em
+`platform/convex/lib/quotaPeriod.ts`:
+
+- **Âncora.** `usagePlans.periodAnchor`, opcional, é o instante, em
+  milissegundos truncados ao segundo, cujos aniversários mensais abrem os
+  períodos. Sem âncora, ou num instante anterior a ela, o período é o mês
+  civil UTC. Com ela, `quotaPeriod(plano, instante)` devolve o mês da âncora
+  que contém o instante, de um aniversário ao seguinte, calculados por
+  `addMonths` a partir da âncora original: 31/01 10:00 UTC dá 28/02 10:00 e
+  depois 31/03 10:00.
+- **Chave.** Um período que começa no dia 1 às 00:00:00.000 UTC tem a chave
+  `AAAA-MM`, como as linhas atuais; qualquer outro, o instante exato de
+  `toISOString()`, como `2026-11-15T14:30:00.000Z`. Só essas duas formas são
+  aceitas, e a ordem alfabética das chaves é a cronológica. `stock`, a chave
+  fixa do estoque em `capacityTotals` e `capacityEvents`, é a única exceção.
+- **Reserva.** `reserveUsage` e `reserveCapacity` resolvem o período uma
+  vez, pela linha de `usagePlans` lida na mesma transação, em vigor ou não.
+  Confirmação, liberação e estorno usam o período gravado no evento. Vale
+  para todas as unidades de `usageTotals` e para as de capacidade por período
+  (leituras REST, downloads, exportações e bytes de exportação).
+- **Quem tem âncora.** As linhas concedidas por um termo anual levam o início
+  do termo como âncora; os termos vendidos até aqui começam no dia 1 às
+  00:00 UTC, então as chaves continuam `AAAA-MM`. As ativações mensais, pelo
+  Pix ou pelo cartão, ainda não têm âncora e seguem no mês civil até as
+  fatias 1c e 2a. O Gratuito nunca tem. O Personalizado segue
+  [Plano e autorização](#plano-e-autorização). Uma linha que substitui outra
+  não herda a âncora dela; os contadores já gravados ficam na chave antiga.
+
+A retomada automática da captura parada por cota espera o fim do período de
+cota do plano (`quotaPeriod`, em `captureProcessing.ts`): o próximo dia 1 no
+mês civil, ou o aniversário seguinte da âncora. Retomar no console ou
+atribuir um plano continua liberando na hora.
 
 `usageEvents` conserva a chave idempotente, o ambiente e o estado reservado,
-confirmado ou liberado. `usageTotals` agrega por organização, mês, unidade e
+confirmado ou liberado. `usageTotals` agrega por organização, período, unidade e
 ambiente na mesma transação do evento e da escrita do domínio. Não existe
 contador global compartilhado entre clientes. A disputa pela última unidade de
 uma organização é serializada pelo controle transacional do Convex, inclusive
@@ -305,8 +339,8 @@ uma marca por organização a cada dia (`archiveNotice.markFiscalRead`, #641).
 Um plano sem vencimento usa `endsAt: null`. Ele começa em `startsAt` e
 continua sujeito às cotas mensais, sem expirar depois de um período de teste.
 O saldo não utilizado não acumula. Ao atingir uma cota, novas operações
-daquela unidade são recusadas e podem ser reenviadas no próximo mês UTC ou
-após a atribuição de um plano com mais capacidade. A captura volta a conferir
+daquela unidade são recusadas e podem ser reenviadas no próximo período de
+cota ou após a atribuição de um plano com mais capacidade. A captura volta a conferir
 a cota no próximo período. O histórico e os
 documentos guardados continuam disponíveis, sem cobrança automática de
 excedentes ou obrigação de migrar para o pago.
@@ -519,6 +553,24 @@ casa decimal ("9,6 KiB de 1 MiB"), calculado com inteiros
 `environments.production` e `unattributed`, e mantém `rows`, a soma dos
 ambientes, para o console publicado antes da #429.
 
+O console não calcula a chave do período. `usage:overview` recebe `period`,
+uma chave canônica, ou `asOf`, um instante em milissegundos, e exige ao menos
+um deles, porque a query não lê o relógio. Sem `period`, o servidor usa o
+período de cota do plano que contém `asOf`. A resposta traz `period`, com
+`key`, `startsAt` e `endsAt`, e `recent`, até 12 períodos do mais novo ao mais
+antigo: os que têm consumo gravado, o que contém `asOf` e o pedido. `endsAt` é
+`null` numa chave ancorada cuja âncora o plano atual não guarda mais, como a
+de uma linha substituída. Uma chave fora das duas formas canônicas, ou um
+`asOf` que não é instante até o fim de 9999, responde `INVALID_REQUEST`. A
+resposta traz também `current`, o período que contém `asOf`, ou `null` sem
+ele. A tela pede `asOf` na hora cheia, a mesma do pré-carregamento da rota, e
+o adianta quando um instante entre ele e o relógio muda o período: o fim do
+período corrente, ou a âncora ou o início do plano. Um período anterior é
+pedido pela chave listada em `recent`, e escolher o `current` volta a seguir
+o período corrente. Diferente do campo de mês de antes, a lista só alcança
+esses 12 períodos; um mais antigo continua acessível pela chave, chamando a
+função diretamente.
+
 ## Proteção das requisições REST
 
 O wrapper das rotas `/v1/*` autenticadas por API key admite até 60 requisições
@@ -583,6 +635,23 @@ ser epoch em milissegundos, com fim exclusivo, ou `null`, sem vencimento.
 Não use uma data distante para simular a ausência de vencimento. O valor
 `null` de uma cota significa ausência de limite; o `null` de `endsAt`
 significa ausência de prazo e não remove nenhuma cota.
+
+`periodAnchor` é opcional e segue a
+[ADR 0012](../adr/0012-periodo-por-aniversario.md#4-modelo-do-período-de-cota):
+um instante em milissegundos, no segundo inteiro, até `startsAt`; senão, a
+atribuição responde `INVALID_REQUEST`. Uma linha do Gratuito
+(`catalogTier: "free"`) não aceita âncora.
+
+- **Política desligada.** Sem `periodAnchor`, a linha não tem âncora e conta
+  pelo mês civil UTC. O operador pode passar uma.
+- **Política ligada.** O Personalizado sempre tem âncora: a passada ou, por
+  padrão, `startsAt` truncado ao segundo. `endsAt` precisa ser o aniversário
+  da âncora que fecha o mês da âncora em andamento, um mês pago por vez. Essa
+  regra substitui a recusa de um `endsAt` depois do próximo dia 1. Para
+  manter o mês civil, passe a âncora no dia 1 à meia-noite UTC; `endsAt` é
+  então o dia 1 seguinte.
+
+A linha nova nunca herda a âncora da linha que substitui.
 
 A operação compara a versão, valida inteiros e grava antes/depois em
 `usagePlanAudit`. Alterar plano não zera uso nem desfaz trabalho admitido.
@@ -694,7 +763,15 @@ auditoria, separação entre organizações, permissões e leases. Da #429, cobr
 saldos separados por ambiente pelo REST e pelo núcleo, a conservação do ambiente
 do evento, o total sem ambiente contado nos dois, a atribuição dos registros
 antigos e sua repetição sem efeito, a leitura por papel e por organização.
-`tests/platform.siteCapture.test.ts` prova que a cota esgotada no sandbox não
+`tests/platform.quotaPeriod.test.ts` prova o [período de cota](#período-de-cota):
+as chaves canônicas e a recusa das outras escritas, `quotaPeriod` nas viradas
+ao milissegundo, no dia 31 e no 29/02, o plano ancorado que vira no
+aniversário com a liquidação no período da reserva, o Gratuito no mês civil,
+a capacidade no período ancorado e o estoque em `stock`, a âncora das linhas
+dos termos anuais, as regras de `usage:assignPlan` com a política ligada e
+desligada e `usage:overview` com e sem `period` e `asOf`.
+`tests/platform.siteCapture.test.ts` prova que a captura de um plano ancorado,
+parada pela cota, retoma no aniversário da âncora, e que a cota esgotada no sandbox não
 pausa a captura em produção e que a esgotada em produção não bloqueia o sandbox.
 Na cota de notas do Gratuito, prova que a consulta sai com 99 notas, pausa com
 100 e volta no mês seguinte, e que uma consulta admitida com 99 notas entra

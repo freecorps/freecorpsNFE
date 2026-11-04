@@ -83,7 +83,8 @@ export function noteLimit(
 }
 /**
  * `endsAt: null` is a plan without an end (#429: a permanent free tier); `startsAt` stays required,
- * so a plan not yet started is not in force. Quotas stay monthly in UTC (`usagePeriod`) either way.
+ * so a plan not yet started is not in force. Quotas are monthly either way, in the plan's quota
+ * period (`quotaPeriod`).
  */
 export const planFields = {
   catalogTier: v.optional(assignedTier),
@@ -93,15 +94,22 @@ export const planFields = {
   endsAt: v.union(v.number(), v.null()),
   limits: planLimits,
   concurrency: v.number(),
+  /**
+   * The instant, in ms truncated to the whole second, whose monthly anniversaries open the quota
+   * periods (ADR 0012, section 4). Missing is the civil UTC month; the free tier never has one. A
+   * row replacing another does not inherit it.
+   */
+  periodAnchor: v.optional(v.number()),
 };
 /** Whether the plan's term has ended at `now`; a plan without `endsAt` never ends. */
 export function planEnded(plan: { endsAt: number | null }, now: number) {
   return plan.endsAt !== null && plan.endsAt <= now;
 }
+/** The civil UTC month of `now`, `AAAA-MM`: billing months. Quotas use `quotaPeriod`. */
 export function usagePeriod(now: number) {
   return new Date(now).toISOString().slice(0, 7);
 }
-/** First instant of the period after the one of `now` (UTC month, as `usagePeriod`). */
+/** First instant of the civil UTC month after the one of `now` (as `usagePeriod`). */
 export function nextUsagePeriodStart(now: number) {
   const date = new Date(now);
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);

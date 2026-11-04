@@ -159,9 +159,15 @@ export const overview = query({
       v.object({
         kind: checkoutKind,
         tier: paidTier,
-        /** An annual one charges nothing now and `grantCents` on the 1st of `period`. */
+        /** An annual one charges nothing now and `grantCents` at `periodStartsAt`. */
         cycle: v.union(v.literal("monthly"), v.literal("annual")),
-        period: v.string(),
+        /**
+         * The first month bought, `AAAA-MM`, for consoles published before ADR 0012; optional, as
+         * the anniversary periods will not have it. Read `periodStartsAt` instead.
+         */
+        period: v.optional(v.string()),
+        /** When the first month bought starts: for an annual one, its first charge. */
+        periodStartsAt: v.number(),
         grantCents: v.number(),
         url: v.union(v.string(), v.null()),
         expiresAt: v.number(),
@@ -274,6 +280,7 @@ export const overview = query({
             tier: checkout.tier,
             cycle: checkout.cycle ?? ("monthly" as const),
             period: checkout.period,
+            periodStartsAt: periodStart(checkout.period),
             grantCents: checkout.grantCents,
             url: checkout.state === "open" ? (checkout.url ?? null) : null,
             expiresAt: checkout.expiresAt,

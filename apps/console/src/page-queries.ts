@@ -66,11 +66,19 @@ export const companyScope = (
   environment,
 });
 
-/** The usage period opens on the current month, in UTC. */
-export const currentUsagePeriod = (now = Date.now()) => new Date(now).toISOString().slice(0, 7);
-export const usageArgs = ({ org, contextKey }: Scope, period: string) => ({
+const HOUR = 3_600_000;
+/**
+ * The usage page opens on the quota period holding `asOf`, which the server resolves from the
+ * plan (ADR 0012): the console no longer computes the period key. `asOf` moves by the hour, so the
+ * route's prewarm and the page share one subscription; the page moves it to the period's end
+ * when that end passes.
+ */
+export const usageAsOf = (now = Date.now()) => now - (now % HOUR);
+/** A past period is asked by its key, as the server listed it in `recent`. */
+export const usageArgs = ({ org, contextKey }: Scope, asOf: number, period?: string) => ({
   organizationId: org.id,
-  period,
+  ...(period === undefined ? {} : { period }),
+  asOf,
   contextKey,
 });
 
@@ -79,7 +87,6 @@ export const operationsOverviewArgs = ({ org, contextKey }: Scope) => ({
   contextKey,
 });
 
-const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 export type AuditFilters = { actor: string; action: string; from: number; until: number };
 export const AUDIT_PAGE_SIZE = 20;

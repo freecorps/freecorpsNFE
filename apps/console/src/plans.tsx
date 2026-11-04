@@ -7,7 +7,7 @@ import type { Organization } from "./organizations";
 import { useQuery } from "./convex-query";
 import { useAsyncAction } from "./async-action";
 import { ErrorBoundary } from "./route-errors";
-import { formatBRL } from "./format";
+import { formatBRL, formatUtcInstant } from "./format";
 import { formatBytes } from "./usage-format";
 import { Button } from "./ui/button";
 import { RadioCard } from "./ui/choice";
@@ -357,13 +357,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       term: "Valor da mudança",
                       value: `${price(request.amountCents)}, pela diferença dos meses restantes`,
                     },
-                    {
-                      term: "A partir de",
-                      value:
-                        request.firstPeriod === null
-                          ? request.period
-                          : utcDate(request.firstPeriod),
-                    },
+                    { term: "A partir de", value: utcDate(request.periodStartsAt) },
                   ]
                 : request.cycle === "annual"
                   ? [
@@ -372,18 +366,18 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                         term: "Valor integral",
                         value: `${price(request.amountCents)} por 12 meses`,
                       },
-                      {
-                        term: "Início",
-                        value:
-                          request.firstPeriod === null
-                            ? request.period
-                            : utcDate(request.firstPeriod),
-                      },
+                      { term: "Início", value: utcDate(request.periodStartsAt) },
                     ]
                   : [
                       { term: "Plano solicitado", value: tierNames[request.tier] },
                       { term: "Valor integral", value: price(request.amountCents) },
-                      { term: "Período, em UTC", value: request.period },
+                      {
+                        term: "Período",
+                        value:
+                          request.periodEndsAt === null
+                            ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
+                            : `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
+                      },
                     ]
             }
           />

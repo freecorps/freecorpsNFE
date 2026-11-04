@@ -1738,12 +1738,14 @@ describe("continuidade da captura em Produção", () => {
     captures: number,
     expectedVersion: number,
     endsAt: number | null = Date.UTC(2027, 11, 31),
+    periodAnchor?: number,
   ) =>
     f.t.mutation(internal.usage.assignPlan, {
       organizationId: f.scope.organizationId,
       name: "Plano sintético",
       startsAt: Date.UTC(2026, 0, 1),
       endsAt,
+      ...(periodAnchor === undefined ? {} : { periodAnchor }),
       limits: { imports: null, bytes: 1e12, captures, registry: null, deliveries: null },
       concurrency: 2,
       actor: "test",
@@ -1751,10 +1753,10 @@ describe("continuidade da captura em Produção", () => {
       expectedVersion,
     });
   /** A quota of one capture, spent by the first query: the second pauses in attention. */
-  async function exhausted(endsAt?: number | null) {
+  async function exhausted(endsAt?: number | null, periodAnchor?: number) {
     vi.setSystemTime(Date.UTC(2026, 9, 23, 12));
     const f = await siteFixture();
-    await plan(f, 1, 1, endsAt);
+    await plan(f, 1, 1, endsAt, periodAnchor);
     const { streamId, operationId } = await consoleStart(f);
     const next = await cycle(f, streamId, operationId);
     const token = await claimAt(f, next);
@@ -1786,6 +1788,22 @@ describe("continuidade da captura em Produção", () => {
     await f.t.mutation(internal.captureProcessing.resumeEligible, resume.args);
     expect((await streamOf(f, streamId)).operationId).toBe(stream.operationId);
     expect(await attentionEvents(f)).toHaveLength(1);
+  });
+
+  // ADR 0012: an anchored plan's quota resets on its anniversary, not on the civil 1st.
+  it("plano ancorado: cota esgotada retoma no aniversário da âncora", async () => {
+    const anchor = Date.UTC(2025, 11, 15, 14, 30);
+    const { f, streamId, paused } = await exhausted(undefined, anchor);
+    const resume = (await scheduledResume(f))!;
+    expect(resume.at).toBe(Date.UTC(2026, 10, 15, 14, 30));
+    vi.setSystemTime(Date.UTC(2026, 10, 1));
+    await f.t.mutation(internal.captureProcessing.resumeEligible, resume.args);
+    expect(await streamOf(f, streamId)).toMatchObject({ state: "attention" });
+    vi.setSystemTime(resume.at);
+    await f.t.mutation(internal.captureProcessing.resumeEligible, resume.args);
+    const stream = await streamOf(f, streamId);
+    expect(stream).toMatchObject({ state: "active" });
+    expect(stream.operationId).not.toBe(paused);
   });
 
   // #429: a plan without an end (the permanent free tier) keeps the monthly quota: a capture

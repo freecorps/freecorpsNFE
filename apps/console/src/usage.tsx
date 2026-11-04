@@ -3,10 +3,11 @@ import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "./convex-query";
 import { api } from "../../../platform/convex/_generated/api";
 import type { Organization } from "./organizations";
-import { currentUsagePeriod, usageArgs } from "./page-queries";
+import { usageArgs, usageAsOf } from "./page-queries";
+import { formatUtcInstant } from "./format";
 import { environmentNames, type ProductEnvironment } from "./deployment";
 import { useProductEnvironment } from "./product-environment";
-import { FormField, Input } from "./ui/form";
+import { FormField, Select } from "./ui/form";
 import { Icon } from "./ui/icons";
 import { counted, formatBytes, usedPercent } from "./usage-format";
 import { planEnded, planLimit } from "../../../platform/convex/lib/usageValues";
@@ -78,6 +79,26 @@ const integer = new Intl.NumberFormat("pt-BR");
 const date = (time: number) => new Date(time).toLocaleString("pt-BR");
 type Overview = FunctionReturnType<typeof api.usage.overview>;
 type Row = Overview["rows"][number];
+type Period = Overview["period"];
+/**
+ * A quota period as the server named it (ADR 0012): civil month or the plan's anniversaries. The
+ * end is the instant the next period starts, so it reads as the renewal, never as a last day.
+ */
+const periodLabel = (period: Period) =>
+  period.endsAt === null
+    ? `Desde ${formatUtcInstant(period.startsAt)}`
+    : `Desde ${formatUtcInstant(period.startsAt)}, renova em ${formatUtcInstant(period.endsAt)}`;
+/**
+ * Where `asOf` moves so the current period follows the plan: the latest instant between `asOf`
+ * and `now` that changes it, the current period's end or the plan's anchor or start (a plan
+ * assigned after `asOf`). Null when none passed.
+ */
+function followAsOf(data: Overview, asOf: number, now: number) {
+  const marks = [data.current?.endsAt, data.plan?.periodAnchor, data.plan?.startsAt].filter(
+    (mark): mark is number => typeof mark === "number" && mark > asOf && mark <= now,
+  );
+  return marks.length ? Math.max(...marks) : null;
+}
 /** Whether the plan limits Production by new notes instead of imports and captures. */
 const byNotes = (plan: Overview["plan"], environment: ProductEnvironment) =>
   environment === "production" && plan?.limits.notes !== undefined;
@@ -96,14 +117,24 @@ const reached = (plan: Overview["plan"], environment: ProductEnvironment, rows: 
 const environments: ProductEnvironment[] = ["sandbox", "production"];
 export function Usage({ org, contextKey }: { org: Organization; contextKey: string }) {
   const [clock, setClock] = useState(Date.now);
-  const [period, setPeriod] = useState(() => currentUsagePeriod());
+  const [asOf, setAsOf] = useState(() => usageAsOf());
+  /** A past period chosen in the list, by its key; null follows the current one. */
+  const [chosen, setChosen] = useState<string | null>(null);
   const { environment } = useProductEnvironment();
   // Only advances presentation of calendar/vigency. Usage itself comes from a subscription.
   useEffect(() => {
     const id = setInterval(() => setClock(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
-  const data = useQuery(api.usage.overview, usageArgs({ org, contextKey }, period));
+  const data = useQuery(
+    api.usage.overview,
+    usageArgs({ org, contextKey }, asOf, chosen ?? undefined),
+  );
+  // The current period ended, or a plan started or was anchored after `asOf`: ask at that instant.
+  const follow = data ? followAsOf(data, asOf, Math.max(clock, Date.now())) : null;
+  useEffect(() => {
+    if (follow !== null) setAsOf(follow);
+  }, [follow]);
   const header = (
     <PageHeader
       eyebrow="Consumo da organização"
@@ -112,18 +143,22 @@ export function Usage({ org, contextKey }: { org: Organization; contextKey: stri
       actions={
         <div className="gestao-period">
           <FormField id="usage-period" label="Período de consumo, em UTC">
-            <Input
+            <Select
               id="usage-period"
-              type="month"
-              min="2000-01"
-              max="2099-12"
-              required
-              value={period}
+              disabled={!data}
+              value={data?.period.key ?? ""}
               onChange={(event) => {
-                if (/^20\d\d-(0[1-9]|1[0-2])$/.test(event.target.value))
-                  setPeriod(event.target.value);
+                const key = event.target.value;
+                // The period holding `asOf` follows the clock; any other stays as chosen.
+                setChosen(key === data?.current?.key ? null : key);
               }}
-            />
+            >
+              {(data?.recent ?? []).map((period) => (
+                <option key={period.key} value={period.key}>
+                  {periodLabel(period)}
+                </option>
+              ))}
+            </Select>
           </FormField>
         </div>
       }

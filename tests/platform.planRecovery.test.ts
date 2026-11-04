@@ -45,6 +45,9 @@ function assignment(organizationId: Id<"organizations">): Assignment {
     name: "Contrato comercial sintético",
     startsAt: NOW,
     endsAt: MONTH_END,
+    // A Personalizado whose anchor is the 1st keeps the civil months (ADR 0012): it ends on the
+    // anchor's anniversary that closes the month under way.
+    periodAnchor: Date.UTC(2026, 9, 1),
     limits: { ...PLATFORM_PLANS.free.limits },
     capacity: { ...PLATFORM_PLANS.free.capacity },
     concurrency: 2,

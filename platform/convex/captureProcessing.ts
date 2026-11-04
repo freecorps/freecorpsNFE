@@ -51,7 +51,8 @@ import {
   requireCapturePlan,
   type UsageEnvironment,
 } from "./lib/usageCore";
-import { nextUsagePeriodStart, planEnded } from "./lib/usageValues";
+import { planEnded } from "./lib/usageValues";
+import { quotaPeriod } from "./lib/quotaPeriod";
 import { pauseOperation } from "./lib/operationCore";
 import {
   RESUMABLE_PAUSES,
@@ -885,7 +886,8 @@ async function usageEligibleAt(
     return now;
   } catch (error) {
     if (!usageError(error)) throw error;
-    return nextUsagePeriodStart(now);
+    // The quota resets when the plan's quota period ends: the civil month, or its anchor's month.
+    return quotaPeriod(plan, now).endsAt;
   }
 }
 

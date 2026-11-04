@@ -3,7 +3,8 @@ import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { components } from "../_generated/api";
-import { noteLimit, planEnded, planLimit, usagePeriod, type UsageMetric } from "./usageValues";
+import { noteLimit, planEnded, planLimit, type UsageMetric } from "./usageValues";
+import { quotaPeriod } from "./quotaPeriod";
 import type { environment } from "./projectValues";
 import { deny } from "./organizationAccess";
 
@@ -173,16 +174,13 @@ export async function notesQuotaStop(
   code: string | null | undefined,
 ) {
   if (code !== "QUOTA_EXCEEDED") return false;
-  const limit = noteLimit(
-    await planFor(ctx, stream.organizationId),
-    "captures",
-    stream.environment,
-  );
+  const plan = await planFor(ctx, stream.organizationId);
+  const limit = noteLimit(plan, "captures", stream.environment);
   if (limit === null) return false;
   const op = stream.operationId ? await ctx.db.get("operations", stream.operationId) : null;
   const at = op?.updatedAt ?? stream.lastAttemptAt ?? stream.createdAt;
   const total = sumTotals(
-    (await periodTotals(ctx, stream.organizationId, usagePeriod(at), "documents")).filter(
+    (await periodTotals(ctx, stream.organizationId, quotaPeriod(plan, at).key, "documents")).filter(
       countedIn("production"),
     ),
   );
@@ -242,7 +240,7 @@ export async function requireQuota(
   quantity = 1,
 ) {
   const plan = await requireActivePlan(ctx, organizationId);
-  const period = usagePeriod(Date.now());
+  const period = quotaPeriod(plan, Date.now()).key;
   const notes = noteLimit(plan, metric, environment);
   if (notes !== null) await requireNotes(ctx, organizationId, period, notes);
   const limit = planLimit(plan, metric, environment);
@@ -510,6 +508,8 @@ export async function moveTotal(
 /**
  * Reservation and domain admission must commit in the same mutation. No counter shared across
  * organizations; within one, the reservation writes one lane of the balance (`reserveLane`).
+ * The event's period is resolved here, once, from the plan row read in this transaction, in force
+ * or not (ADR 0012, invariant 1); commit, release and refund use the stored period.
  */
 export async function reserveUsage(
   ctx: MutationCtx,
@@ -531,7 +531,7 @@ export async function reserveUsage(
       deny("OPERATION_CONFLICT");
     return existing;
   }
-  const period = usagePeriod(Date.now());
+  const period = quotaPeriod(await planFor(ctx, organizationId), Date.now()).key;
   const used = await reserveLane(
     ctx,
     organizationId,

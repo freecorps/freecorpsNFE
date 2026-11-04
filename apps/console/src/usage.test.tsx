@@ -2,14 +2,16 @@
 // Uso e limites (#429, review of #471): the balance of the environment chosen in the shell, a
 // reached limit of the other one said above it, bytes in binary units with the exact number in "Critério técnico", plurals in
 // pt-BR, the number and the bar counting the same units, and an empty bar at zero.
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vite-plus/test";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { getFunctionName } from "convex/server";
 import type { Organization } from "./organizations";
 import { Usage } from "./usage";
 
 const state = vi.hoisted(() => ({
   queries: {} as Record<string, unknown>,
+  /** The arguments of each overview subscription, in order. */
+  args: [] as unknown[],
   /** The environment chosen in the shell. */
   environment: "sandbox" as "sandbox" | "production",
 }));
@@ -21,11 +23,15 @@ vi.mock("./product-environment", () => ({
   }),
 }));
 vi.mock("./convex-query", () => ({
-  useQuery: (fn: Parameters<typeof getFunctionName>[0]) => state.queries[getFunctionName(fn)],
+  useQuery: (fn: Parameters<typeof getFunctionName>[0], args: unknown) => {
+    if (getFunctionName(fn) === "usage:overview") state.args.push(args);
+    return state.queries[getFunctionName(fn)];
+  },
 }));
 afterEach(() => {
   cleanup();
   state.queries = {};
+  state.args = [];
   state.environment = "sandbox";
 });
 /** The same overview, seen from the other environment of the shell. */
@@ -70,13 +76,25 @@ const plan = {
   concurrency: 2,
   version: 1,
 };
+const october = { key: "2026-10", startsAt: Date.UTC(2026, 9, 1), endsAt: Date.UTC(2026, 10, 1) };
+const september = { key: "2026-09", startsAt: Date.UTC(2026, 8, 1), endsAt: Date.UTC(2026, 9, 1) };
+type Period = { key: string; startsAt: number; endsAt: number | null };
 function overview(
   sandbox: Totals,
   production: Totals,
-  options: { plan?: typeof plan | null; unattributed?: boolean } = {},
+  options: {
+    plan?: (typeof plan & { periodAnchor?: number }) | null;
+    unattributed?: boolean;
+    period?: Period;
+    current?: Period | null;
+    recent?: Period[];
+  } = {},
 ) {
   state.queries["usage:overview"] = {
     plan: options.plan === undefined ? plan : options.plan,
+    period: options.period ?? october,
+    current: options.current === undefined ? (options.period ?? october) : options.current,
+    recent: options.recent ?? [october, september],
     environments: { sandbox: rows(sandbox), production: rows(production) },
     unattributed: options.unattributed ?? false,
     rows: rows(sandbox),
@@ -252,4 +270,76 @@ it("a plan without an end reads Sem vencimento and stays in force", () => {
   ).toBeTruthy();
   expect(screen.getByText("Plano vigente")).toBeTruthy();
   expect(screen.queryByText("Plano fora da vigência.")).toBeNull();
+});
+
+describe("período de consumo", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.UTC(2026, 10, 20, 9, 40));
+  });
+  afterEach(() => vi.useRealTimers());
+  const anchored = {
+    key: "2026-11-15T14:30:00.000Z",
+    startsAt: Date.UTC(2026, 10, 15, 14, 30),
+    endsAt: Date.UTC(2026, 11, 15, 14, 30),
+  };
+  const november = {
+    key: "2026-11",
+    startsAt: Date.UTC(2026, 10, 1),
+    endsAt: Date.UTC(2026, 11, 1),
+  };
+
+  it("lists the periods the server named, with the end as the renewal, and asks a past one by its key", () => {
+    const replaced = {
+      key: "2026-08-20T09:00:29.000Z",
+      startsAt: Date.UTC(2026, 7, 20, 9, 0, 29),
+      endsAt: null,
+    };
+    overview({}, {}, { period: anchored, recent: [anchored, october, replaced] });
+    const select = screen.getByLabelText<HTMLSelectElement>("Período de consumo, em UTC");
+    expect(select.value).toBe(anchored.key);
+    expect([...select.options].map((option) => option.textContent)).toEqual([
+      "Desde 15/11/2026 às 14:30 UTC, renova em 15/12/2026 às 14:30 UTC",
+      "Desde 01/10/2026 às 00:00 UTC, renova em 01/11/2026 às 00:00 UTC",
+      "Desde 20/08/2026 às 09:00:29 UTC",
+    ]);
+    // The page opened on the period holding `asOf`, the hour, without a key of its own.
+    expect(state.args).toEqual([
+      { organizationId: "org", asOf: Date.UTC(2026, 10, 20, 9), contextKey: "test" },
+    ]);
+    fireEvent.change(select, { target: { value: "2026-10" } });
+    expect(state.args.at(-1)).toMatchObject({ period: "2026-10" });
+  });
+
+  it("choosing the current period by its key follows the clock again, wherever it is listed", () => {
+    // The current period is not the first one listed: a newer key exists.
+    overview({}, {}, { period: october, current: anchored, recent: [november, anchored, october] });
+    const select = screen.getByLabelText<HTMLSelectElement>("Período de consumo, em UTC");
+    fireEvent.change(select, { target: { value: november.key } });
+    expect(state.args.at(-1)).toMatchObject({ period: november.key });
+    fireEvent.change(select, { target: { value: anchored.key } });
+    expect((state.args.at(-1) as { period?: string }).period).toBeUndefined();
+  });
+
+  it("moves to the next period when the current one ends, asking at its end", () => {
+    // Asked at 14:00; the anchored period renewed at 14:30 and the clock reads 14:40.
+    vi.setSystemTime(Date.UTC(2026, 11, 15, 14, 40));
+    overview({}, {}, { period: anchored });
+    expect(state.args[0]).toMatchObject({ asOf: Date.UTC(2026, 11, 15, 14) });
+    expect(state.args.at(-1)).toMatchObject({ asOf: anchored.endsAt });
+  });
+
+  it("follows a plan anchored after the hour it asked, instead of the civil month", () => {
+    // A Personalizado assigned at 09:17:23 to a Free organization; the page asked at 09:00.
+    const anchor = Date.UTC(2026, 10, 20, 9, 17, 23);
+    overview(
+      {},
+      {},
+      {
+        period: november,
+        plan: { ...plan, startsAt: anchor, periodAnchor: anchor },
+      },
+    );
+    expect(state.args.at(-1)).toMatchObject({ asOf: anchor });
+  });
 });

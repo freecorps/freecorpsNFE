@@ -188,7 +188,13 @@ it("mostra o Checkout aberto pelo ciclo: o mensal cobra agora, o anual só no di
     expiresAt: Date.UTC(2026, 9, 11, 12),
   };
   state.data = overview({
-    checkout: { ...open, cycle: "monthly", period: "2026-10", grantCents: 14900 },
+    checkout: {
+      ...open,
+      cycle: "monthly",
+      period: "2026-10",
+      periodStartsAt: Date.UTC(2026, 9, 1),
+      grantCents: 14900,
+    },
   });
   show();
   expect(
@@ -196,7 +202,14 @@ it("mostra o Checkout aberto pelo ciclo: o mensal cobra agora, o anual só no di
   ).toBeTruthy();
   cleanup();
   state.data = overview({
-    checkout: { ...open, tier: "large", cycle: "annual", period: "2026-11", grantCents: 499000 },
+    checkout: {
+      ...open,
+      tier: "large",
+      cycle: "annual",
+      period: "2026-11",
+      periodStartsAt: Date.UTC(2026, 10, 1),
+      grantCents: 499000,
+    },
   });
   show();
   expect(
@@ -402,6 +415,7 @@ it("shows an open annual upgrade Checkout as the upgrade it is", () => {
       tier: "large",
       cycle: "annual",
       period: "2027-02",
+      periodStartsAt: Date.UTC(2027, 1, 1),
       grantCents: 233333,
       url: "https://checkout.stripe.com/c/pay/cs_up",
       expiresAt: Date.UTC(2027, 1, 11, 12),
@@ -449,6 +463,7 @@ it("after the Checkout is abandoned, the next one is a new intention", async () 
       tier: "intermediate",
       cycle: "monthly",
       period: "2026-10",
+      periodStartsAt: Date.UTC(2026, 9, 1),
       grantCents: 14900,
       url: null,
       expiresAt: Date.UTC(2026, 9, 11, 12),

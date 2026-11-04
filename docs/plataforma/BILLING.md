@@ -162,7 +162,13 @@ Pix começa na confirmação ou, na renovação pedida no último mês, no fim d
 plano em vigor. Isso substitui o mês civil UTC das políticas mensais da
 #556, a renovação no dia 1 e o anual que começa no dia 1 do mês seguinte.
 **A decisão ainda não está implementada:** o código faz o que este documento
-descreve, e cada fatia da ADR atualiza a seção correspondente. Até a
+descreve, e cada fatia da ADR atualiza a seção correspondente. Da fatia Q,
+já existe o modelo do período de cota, em
+[USAGE.md](USAGE.md#período-de-cota): `usagePlans.periodAnchor`, as chaves
+canônicas e `quotaPeriod`. A linha que um termo anual concede leva o início
+do termo como âncora, e as concessões mensais, pelo Pix e pelo cartão, ainda
+não têm âncora e seguem no mês civil. Como os termos vendidos até aqui
+começam no dia 1, nenhuma cota mudou. Até a
 implementação e uma versão nova dos termos de uso entrar no console, o
 catálogo e o anual não são ligados. A
 [prova hospedada da #35](#prova-hospedada-e-ativação-do-anual-35) precisa ser
@@ -400,7 +406,11 @@ Só com o [interruptor do Pix](#interruptor-do-pix) ligado. O fluxo é o do Pix 
    referência, que é o recibo, como no mensal; o termo faz o operador não
    encerrar a organização. Repetir a confirmação não cria outro termo.
    - Com `firstPeriod` já chegado, o termo fica `active` e o plano é
-     concedido até o fim do termo; as cotas continuam mensais. Como no
+     concedido até o fim do termo; as cotas continuam mensais, nos meses do
+     termo: a linha do plano leva `periodAnchor` igual a `firstPeriod`
+     ([USAGE.md](USAGE.md#período-de-cota)), e um termo do dia 1 dá os meses
+     civis. Upgrade, desfazimento e rescisão reescrevem a linha com a mesma
+     âncora. Como no
      mensal, um plano alterado depois do pedido é recusado
      (`OPERATION_CONFLICT`).
    - Com `firstPeriod` no futuro, o termo fica `scheduled`, o estoque do
@@ -1024,9 +1034,15 @@ servidor calcula: `plans:overview` traz `annualEnabled`, o `annualCents` de
 cada tier pago (só com o anual à venda), `annualStarts` (se um termo impede
 um anual novo começando agora ou no mês seguinte, por `annualTermBlocks`),
 `checkout` (há Checkout aberto), os termos (`terms`) e, no pedido, `cycle`,
-`start` e `firstPeriod`. `billing:overview` traz `annualEnabled`,
-`subscriptionTerm`, se a assinatura já comprou um termo em vigor ou agendado,
-e `annualBlocked`, se um termo impede o anual no cartão.
+`start`, `firstPeriod`, `periodStartsAt`, o início do que o pedido compra, e
+`periodEndsAt`, o fim do mês comprado, só no mensal. `billing:overview` traz
+`annualEnabled`, `subscriptionTerm`, se a assinatura já comprou um termo em
+vigor ou agendado, `annualBlocked`, se um termo impede o anual no cartão, e,
+no Checkout aberto, `periodStartsAt`, o início do 1º mês comprado. O console
+mostra esses instantes e não lê mais o `period` como `AAAA-MM`: pela
+[ADR 0012](../adr/0012-periodo-por-aniversario.md#consequências), o `period`
+do pedido Pix, da resposta de `plans:requestPaid` e do Checkout passou a ser
+opcional nas funções do console, e só o console anterior a essa mudança o lê.
 
 - **Interruptor.** Com o anual desligado, a tela não mostra o seletor, o
   preço anual nem os botões do anual no cartão. Um termo que já exista
