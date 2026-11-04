@@ -35,9 +35,11 @@ Ligar a oferta continua sujeito aos termos e às provas da modalidade na issue
 da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md): a prova
 hospedada e a ativação do anual ficam na #35
 ([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
-Desde 03/11/2026, ligar o catálogo ou o anual também espera uma versão nova
-dos termos de uso; a [ADR 0012](../adr/0012-periodo-por-aniversario.md) está
-implementada no código
+Desde 03/11/2026, ligar o catálogo ou o anual também esperava uma versão nova
+dos termos de uso e a implementação da
+[ADR 0012](../adr/0012-periodo-por-aniversario.md): a ADR está implementada
+no código, e a versão 1.2 dos termos, com o período por aniversário, entrou
+no console em 04/11/2026
 ([Período por aniversário](#período-por-aniversário-decidido-em-03112026)).
 
 Não confundir com a [conexão Stripe](STRIPE.md) (ADR 0006): ela recebe os
@@ -253,11 +255,13 @@ avulso, e cada fatura mensal concede só um mês exato da âncora da assinatura
 ([Contratação e ciclo](#contratação-e-ciclo)). Da fatia 2b, o anual no
 cartão é cobrado e começa na contratação, sem âncora no dia 1, e cada fatura
 anual concede só um ano exato da âncora da assinatura, que o termo guarda
-como a da cadeia ([Checkout anual](#checkout-anual)). Até uma versão nova dos
-termos de uso entrar no console, o catálogo e o anual não são ligados. A
+como a da cadeia ([Checkout anual](#checkout-anual)). A seção 5A dos
+[termos de uso 1.2](../termos/arquivo/termos-de-uso-2026-11-04.md), no
+console desde 04/11/2026, descreve este modelo, só por cartão. O catálogo e o
+anual continuam desligados até a
 [prova hospedada da #35](#prova-hospedada-e-ativação-do-anual-35), reescrita
-para este modelo, ainda não rodou, e as provas já feitas no Stripe de teste,
-com renovação ancorada no dia 1, precisam ser refeitas
+para este modelo e ainda não executada; as provas já feitas no Stripe de
+teste, com renovação ancorada no dia 1, precisam ser refeitas
 ([Prova do mensal](#prova-do-mensal-no-stripe-de-teste-668)).
 
 ## Mensal por Pix
@@ -571,8 +575,9 @@ com o interruptor ligado.
   arrependimento de 7 dias e reembolso depois deles. O mantenedor aprovou a
   redação sem revisão jurídica (#428, [decisões de 01/11](../v1.0/TERMS-DRAFT.md#decisões-de-01112026)).
   Desde a fatia 2b da ADR 0012, o código cobra e começa o anual no cartão na
-  contratação e conta os meses da assinatura; a versão nova dos termos que
-  diz isso ainda não existe, e o anual não é ligado antes dela.
+  contratação e conta os meses da assinatura, como diz a seção 5A dos
+  [termos de uso 1.2](../termos/arquivo/termos-de-uso-2026-11-04.md), de
+  04/11/2026.
 
 ### Venda por Pix
 
@@ -901,9 +906,9 @@ uma reserva nova): a fatura fica `blocked` com o código, a assinatura é
 cancelada antes de cobrar de novo
 ([Primeira fatura bloqueada](#fatura-anual-do-cartão)), e o reembolso é
 manual, pelo painel do Stripe. Os termos de uso 1.0 e 1.1 dizem que a
-contratação recusada antes do início é cancelada sem cobrança; a versão nova
-dos termos precisa dizer isso antes de o anual ser ligado (ADR 0012,
-Consequências).
+contratação recusada antes do início é cancelada sem cobrança; a 1.2, de
+04/11/2026, não promete mais isso, e a cobrança que não vira plano entra no
+reembolso de cobrança indevida da seção 5A (ADR 0012, Consequências).
 
 **Antes de ligar o anual, confira todos os itens abaixo.** A matriz de
 sandbox, refeita com relógios de teste
@@ -1799,8 +1804,8 @@ item avulso, período de teste nem cupom.
 
 A renovação anual na jornada hospedada não pode ser antecipada, porque o
 Customer do console não tem relógio: ela fica provada pela parte A e pelos
-testes com Stripe simulado. A ativação abaixo também espera uma versão nova
-dos termos de uso no console (ADR 0012, Consequências).
+testes com Stripe simulado. Os termos de uso 1.2, que a ativação abaixo
+esperava, estão no console desde 04/11/2026 (ADR 0012, Consequências).
 
 Depois da prova, a ativação em produção segue esta ordem:
 `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave

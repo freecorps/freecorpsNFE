@@ -1,8 +1,10 @@
-> **Versão 1.1 publicada em 02/11/2026 (#142).** O texto em vigor é o arquivo
+> **Versão 1.2 publicada em 04/11/2026.** O texto em vigor é o arquivo
+> [`termos-de-uso-2026-11-04.md`](../termos/arquivo/termos-de-uso-2026-11-04.md),
+> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. A 1.1,
 > [`termos-de-uso-2026-11-02.md`](../termos/arquivo/termos-de-uso-2026-11-02.md),
-> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. A 1.0,
+> foi publicada em 02/11/2026 (#142), e a 1.0,
 > [`termos-de-uso-2026-11-01.md`](../termos/arquivo/termos-de-uso-2026-11-01.md),
-> foi publicada em 01/11/2026 (#428). Cada arquivo é a única cópia do seu
+> em 01/11/2026 (#428). Cada arquivo é a única cópia do seu
 > texto: o console mostra a versão em vigor no aceite e nas páginas públicas
 > `/termos` e `/termos/uso/<versão>`, e o servidor guarda o SHA-256 em
 > `TERMS_OF_USE_ARCHIVE`. Versões, hash e o que acontece com quem não aceita
@@ -92,3 +94,29 @@ download e exportação
 ([IMPORTS.md](../plataforma/IMPORTS.md#lotes-nfs-e-abrasf-retirados)). A
 publicação segue a seção 11: aviso por e-mail e no console, e 30 dias para o
 aceite, até 02/12/2026.
+
+## Decisão de 03/11/2026
+
+O dono aprovou em 03/11/2026, sem revisão jurídica, o texto da versão 1.2:
+o primeiro parágrafo da seção 5 e a seção 5A inteira. O resto do texto é o
+da 1.1. A fonte é a [ADR 0012](../adr/0012-periodo-por-aniversario.md), que
+leva toda assinatura paga e as cotas dela ao aniversário da contratação e
+pedia uma versão nova dos termos
+([Consequências](../adr/0012-periodo-por-aniversario.md#consequências)).
+
+- **Seção 5, primeiro parágrafo.** As cotas do Gratuito seguem o mês civil
+  UTC; as dos planos pagos, o mês da assinatura.
+- **Seção 5A.** Os planos pagos são só por cartão, pela Stripe; o Pix
+  assistido está desligado desde 03/11/2026, e a escolha do meio de pagamento
+  sai. Cada mês da assinatura vai da data e hora da contratação ao mesmo dia
+  e hora do mês seguinte, no horário UTC, com o ajuste ao último dia num mês
+  mais curto. O mensal e o anual são cobrados na contratação e renovam no
+  aniversário; o anual deixa de esperar o dia 1 seguinte, e a contratação
+  recusada antes do início sai. O upgrade não muda a data de renovação. Na
+  rescisão do anual fora dos 7 dias, os meses contados e o acesso seguem o
+  mês da assinatura, com os mesmos valores. A falha de pagamento, quitada no
+  primeiro mês da assinatura do novo período, devolve o plano até o fim desse
+  período sem mudar a data de renovação.
+
+A versão 1.2 entrou no console em 04/11/2026, com o aviso e os 30 dias da
+seção 11: as organizações aceitam até 04/12/2026.

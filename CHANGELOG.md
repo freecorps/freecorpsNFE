@@ -21,6 +21,12 @@
   fica num repositório arquivado e privado. Guias, landing e documentação
   deixam de dizer que o repositório é privado; `tests/publicSite.test.ts`
   recusa essa frase e o `Callout` de acesso nos guias.
+- Termos de uso 1.2 (`termos-de-uso-2026-11-04`): o primeiro parágrafo da
+  seção 5 e a seção 5A levam os planos pagos ao período por aniversário
+  (ADR 0012). As cotas do Gratuito seguem o mês civil UTC, e as dos planos
+  pagos, o mês da assinatura; os planos pagos são só por cartão, cobrados na
+  contratação e renovados no aniversário dela. As organizações recebem o
+  aviso da seção 11 e aceitam a 1.2 até 04/12/2026.
 - Termos de uso 1.1 (`termos-de-uso-2026-11-02`): a seção 1 deixa de oferecer
   a importação de lotes NFS-e ABRASF, retirada na #142, e diz que as NFS-e já
   importadas continuam para leitura, download e exportação. As organizações
