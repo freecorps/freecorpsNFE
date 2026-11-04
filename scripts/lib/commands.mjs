@@ -104,6 +104,11 @@ export const commands = {
     "local",
     "Só os testes alcançados pelas mudanças desde origin/main",
   ],
+  "check:changed": [
+    "repositório",
+    "local",
+    "Antes do push: formatação, lint, typecheck afetado e testes alcançados desde origin/main (--base, --dry-run)",
+  ],
   "xml:check": ["pacotes", "nenhum", "Tipos de fiscal-nfe"],
   "xml:test": ["pacotes", "local", "Testes de fiscal-nfe"],
   "nfse:test": ["pacotes", "local", "Testes de fiscal-nfse"],

@@ -835,6 +835,40 @@ exatamente o passado em `CONTRACT_BASE`. O padrão comum é `origin/main`;
 isso substitui o fallback `HEAD^` do antigo encadeamento de `ci:local`.
 Em uma stack, informe a base apropriada. CI usa checkout e base do evento.
 
+### Conferir só o que mudou
+
+`bun run check:changed` é a conferência antes de cada push. Compara o
+merge-base entre `origin/main` (ou `--base <ref>`) e `HEAD` com a árvore de
+trabalho, inclusive o que está no índice, fora dele e os arquivos novos, e roda
+só o que essa mudança pede. As etapas rodam mesmo quando uma anterior falha, e o
+comando sai com 1 se alguma falhou:
+
+| Etapa                  | O que roda                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| Formatação             | `vp fmt --check` nos arquivos alterados que existem                                 |
+| Pacotes fiscais        | `vp run ci:packages`, do cache quando nada deles mudou                              |
+| Lint                   | `vp lint --deny-warnings` nos JS e TS alterados: um aviso novo reprova              |
+| Typecheck              | `scripts/build/typecheck.mjs` em cada projeto que contém um arquivo alterado        |
+| Fronteiras dos pacotes | `check-package-boundaries.mjs`, quando muda um pacote, manifest ou `bun.lock`       |
+| Testes alcançados      | `vp test run --changed <merge-base>`, pelo grafo de imports, nos projetos do Vitest |
+
+O projeto de typecheck entra pelo programa real de cada `tsconfig`
+(`tsc --listFilesOnly`) e não só pelo grafo de pacotes: o console importa
+`platform/convex` por caminho relativo, sem declarar a dependência. Uma mudança
+em `tsconfig*.json`, `package.json` ou `bun.lock`, ou um arquivo de código
+apagado, checa os cinco projetos. O resumo também lista os pacotes de
+`scripts/build/package-boundaries.json` alterados e os que dependem deles. Uma
+mudança só de documentação, pela mesma regra do job Validate, roda a formatação
+e os testes que leem toda a documentação. `--dry-run` mostra arquivos, projetos
+e comandos sem executar.
+
+`check:changed` não substitui `ci:local`: não roda as provas de consumidor,
+distribuição, contratos, Workers, varredura de credenciais nem os testes que
+o grafo de imports não alcança. Antes de abrir a PR, `ci:local` ou `ci:prove`
+continuam valendo. Ele também não entra no hook pre-push, que segue só com a
+varredura pública: typecheck e testes deixariam cada push um ou dois minutos
+mais lento.
+
 O Vite Task já faz aqui o papel do Turborepo usado em outros projetos da Freecorps: registra os
 arquivos efetivamente lidos, inclusive fixtures, sem `inputs` declarados à
 mão, e `vp test run --changed` escolhe arquivos de teste, mais fino que o
