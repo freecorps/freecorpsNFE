@@ -25,6 +25,14 @@ todas as assinaturas pagas e às cotas delas. Esta ADR registra o resultado.
 
 ## Decisão
 
+O dono decidiu três coisas: toda assinatura paga vai de aniversário a
+aniversário a partir da contratação, o anual no cartão começa e é cobrado na
+contratação, e as cotas dos planos pagos seguem o mês da assinatura, com o
+Gratuito no mês civil. O resto desta seção, inclusive as transições, o modelo
+da seção 4 e o limite do 29/02 em [Consequências](#consequências), foi
+adotado no desenho para cumprir essas decisões, sem decisão própria do dono;
+uma mudança nesses pontos não reabre as três decisões.
+
 ### 1. Assinaturas por aniversário
 
 Toda assinatura paga, mensal ou anual, começa no instante da contratação e
@@ -167,6 +175,8 @@ Não implementada. A ordem das fatias:
 Cada fatia atualiza BILLING.md e USAGE.md na mesma PR.
 
 ## Alternativas recusadas pelo dono
+
+O dono escolheu entre estas e as decisões acima em 03/11/2026.
 
 - Só o anual por aniversário, com o mensal e as cotas no mês civil, como na
   primeira decisão do dia. Com a cota no mês civil, um pagamento em 20/11
