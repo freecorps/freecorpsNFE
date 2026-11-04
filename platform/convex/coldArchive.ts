@@ -659,17 +659,13 @@ export const renewRetention = internalMutation({
     const run = await fenced(ctx, args.runId, args.version, false);
     assertRenewable(run);
     if (args.retainUntil === run.retainUntil) return null;
+    const now = Date.now();
     if (
       args.retainUntil < run.retainUntil ||
       args.retainUntil >
-        (await retentionTarget(
-          ctx,
-          run,
-          Math.max(Date.now(), Math.min(args.now, Date.now() + HOUR)),
-        ))
+        (await retentionTarget(ctx, run, Math.max(now, Math.min(args.now, now + HOUR))))
     )
       throw new ConvexError({ code: "ARCHIVE_RETENTION_MISMATCH" });
-    const now = Date.now();
     await ctx.db.patch("coldArchiveRuns", run._id, {
       retainUntil: args.retainUntil,
       retentionRenewedAt: now,
