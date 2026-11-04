@@ -4,16 +4,16 @@ import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { inspectTarball } from "./lib/distribution.mjs";
-import { sdkTarballPath } from "./lib/sdk-artifact.mjs";
-import { signWebhook } from "../packages/contracts/src/webhooks.ts";
+import { inspectTarball } from "../lib/distribution.mjs";
+import { sdkTarballPath } from "../lib/sdk-artifact.mjs";
+import { signWebhook } from "../../packages/contracts/src/webhooks.ts";
 
 if (!process.versions.bun) throw new Error("Execute com Bun fixado");
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
 const codeSha = git("rev-parse", "HEAD");
 const dirty = !!git("status", "--porcelain");
 // Never certify an existing tarball by stamping the current checkout's SHA on it.
-execFileSync(process.execPath, ["scripts/build-sdk.mjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["scripts/contracts/build-sdk.mjs"], { stdio: "inherit" });
 const consumer = mkdtempSync(join(tmpdir(), "freecorps-sdk-consumer-"));
 const tarball = resolve(sdkTarballPath());
 inspectTarball(tarball, "@freecorps/freecorpsnfe-sdk");

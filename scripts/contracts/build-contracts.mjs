@@ -1,7 +1,7 @@
 import { copyFileSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
-import { firstPartyScope } from "./lib/first-party-licenses.mjs";
+import { firstPartyScope } from "../lib/first-party-licenses.mjs";
 
 // The workspace keeps exporting the sources; the published package is the
 // compiled copy in packages/contracts/dist, with its own manifest, as the SDK.

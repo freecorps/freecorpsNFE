@@ -93,7 +93,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | ------------------- | --------------------------------------------------------------- | ---------------------------------- | ------------------- |
 | `ci:packages`       | `node scripts/build-fiscal-packages.mjs`                        |                                    | sim                 |
 | `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
-| `ci:contracts`      | `bun scripts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
+| `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
 | `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
 | `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
 | `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
@@ -425,13 +425,13 @@ sockets ou executáveis hostis.
   configuração ou dependências SaaS, incluindo o verificador de webhook do SDK
   (`ci:sdk`) e os pacotes fiscais (`ci:xml-prove`).
 - Origem canônica dos contratos com geração/verificação determinística de
-  OpenAPI, SDK e referência de documentação. `scripts/contract-drift.test.ts`
+  OpenAPI, SDK e referência de documentação. `scripts/contracts/contract-drift.test.ts`
   roda essa prova em toda execução do CI: altera as rotas que a geração lê
   (escopo de uma rota existente e rota nova), exige que a mesma comparação de
   `contracts:check` aponte OpenAPI, referência REST e cópia pública como
   desatualizados e aceite os artefatos regenerados numa pasta temporária.
   Também recusa cópia pública editada à mão ou ausente. Nenhum arquivo do
-  checkout é alterado; `scripts/prove-contract-drift.mjs` continua como prova
+  checkout é alterado; `scripts/contracts/prove-contract-drift.mjs` continua como prova
   manual do comando completo.
 - Corpus compartilhado com versão, hash, procedência e resultado esperado por
   etapa ([corpus versionado](../../tests/fixtures/fiscal-v1/README.md), com

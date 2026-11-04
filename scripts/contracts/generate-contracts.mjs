@@ -2,8 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { openApi, contractGateFailures, publishedBaseline } from "./lib/external-contract.mjs";
-import { renderContractArtifacts, staleContractArtifacts } from "./lib/contract-artifacts.mjs";
+import { openApi, contractGateFailures, publishedBaseline } from "../lib/external-contract.mjs";
+import { renderContractArtifacts, staleContractArtifacts } from "../lib/contract-artifacts.mjs";
 
 const document = openApi();
 const artifacts = await renderContractArtifacts(document);

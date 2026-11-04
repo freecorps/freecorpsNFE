@@ -1,8 +1,8 @@
 ﻿import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { signWebhook } from "../packages/contracts/src/webhooks.ts";
-import { createWebhookReceiver } from "../examples/webhook-receiver.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { signWebhook } from "../../packages/contracts/src/webhooks.ts";
+import { createWebhookReceiver } from "../../examples/webhook-receiver.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 const vectors = JSON.parse(
   readFileSync(new URL("packages/contracts/fixtures/webhooks.json", repoUrl), "utf8"),
 );

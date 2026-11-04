@@ -10,9 +10,9 @@
       "id": "VAL04-canonical-contract-generation-and-shared-corpus",
       "status": "delivered",
       "evidence": [
-        "scripts/generate-contracts.mjs",
-        "scripts/prove-contract-drift.mjs",
-        "scripts/contract-drift.test.ts",
+        "scripts/contracts/generate-contracts.mjs",
+        "scripts/contracts/prove-contract-drift.mjs",
+        "scripts/contracts/contract-drift.test.ts",
         "tests/fixtureCorpus.test.ts",
         "packages/fiscal-nfe/pipeline.test.ts",
         "docs/v1.0/evidence/47-51/README.md"
@@ -206,7 +206,7 @@
         "tests/webhookContract.test.ts",
         "tests/webhookTransport.test.ts",
         "packages/contracts/fixtures/webhooks.json",
-        "scripts/prove-webhook-contract.mjs",
+        "scripts/contracts/prove-webhook-contract.mjs",
         "scripts/proofs/prove-webhooks.mjs",
         "docs/v1.0/evidence/73/README.md"
       ]
@@ -227,9 +227,9 @@
       "status": "delivered",
       "evidence": [
         "tests/sdk.test.ts",
-        "scripts/sdk-proof.test.ts",
-        "scripts/prove-sdk-package.mjs",
-        "scripts/prove-contract-drift.mjs",
+        "scripts/contracts/sdk-proof.test.ts",
+        "scripts/contracts/prove-sdk-package.mjs",
+        "scripts/contracts/prove-contract-drift.mjs",
         "docs/v1.0/evidence/74/README.md",
         "docs/v1.0/evidence/130/README.md"
       ]

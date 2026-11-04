@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
-import { assertMitSources, assertSdkDeclarations } from "./lib/first-party-licenses.mjs";
+import { assertMitSources, assertSdkDeclarations } from "../lib/first-party-licenses.mjs";
 
 if (!process.versions.bun) throw new Error("Execute com bun run sdk:build usando a versão fixada.");
 // Only remove generated output inside this checkout; reject a linked package directory.

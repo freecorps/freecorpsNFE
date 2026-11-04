@@ -196,7 +196,7 @@ export default defineConfig({
       // o define e ci:local/ci:prove passam o SHA resolvido de origin/main
       // (ou --base). A task isolada conserva o fallback HEAD^ do script.
       "ci:contracts": {
-        command: "bun scripts/check-contracts-ci.mjs",
+        command: "bun scripts/contracts/check-contracts-ci.mjs",
         dependsOn: ["ci:packages"],
         cache: { input: [{ auto: true }, ...generated], env: ["CONTRACT_BASE"] },
       },

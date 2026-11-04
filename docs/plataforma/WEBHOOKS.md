@@ -347,7 +347,7 @@ a `resource.id`, e um verificador anterior ignora o campo.
 
 ```powershell
 bun run -- vp test run tests/platform.webhooks.test.ts tests/webhookContract.test.ts tests/webhookTransport.test.ts
-node --experimental-strip-types scripts/prove-webhook-contract.mjs
+node --experimental-strip-types scripts/contracts/prove-webhook-contract.mjs
 node --experimental-strip-types scripts/proofs/prove-webhooks.mjs
 ```
 

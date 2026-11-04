@@ -2,10 +2,10 @@ import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it } from "vite-plus/test";
-import { routes } from "../packages/contracts/src/external";
-import { renderContractArtifacts, staleContractArtifacts } from "./lib/contract-artifacts.mjs";
-import { openApi } from "./lib/external-contract.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { routes } from "../../packages/contracts/src/external";
+import { renderContractArtifacts, staleContractArtifacts } from "../lib/contract-artifacts.mjs";
+import { openApi } from "../lib/external-contract.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 // Prova no CI que `contracts:check` recusa uma mudança de contrato sem os
 // artefatos derivados regenerados e que a regeneração restaura a concordância.

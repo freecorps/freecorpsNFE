@@ -11,7 +11,7 @@ const base =
     : execFileSync("git", ["rev-parse", "HEAD^"], { encoding: "utf8" }).trim();
 const result = spawnSync(
   process.execPath,
-  ["scripts/generate-contracts.mjs", "--check", "--base", base],
+  ["scripts/contracts/generate-contracts.mjs", "--check", "--base", base],
   { stdio: "inherit" },
 );
 process.exitCode = result.status ?? 1;

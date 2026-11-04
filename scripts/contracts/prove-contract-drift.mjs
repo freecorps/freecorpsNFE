@@ -6,7 +6,7 @@ if (!process.versions.bun) throw new Error("Execute com Bun fixado");
 const path = "docs/v1.0/openapi.json";
 const original = readFileSync(path);
 const check = () =>
-  spawnSync(process.execPath, ["scripts/generate-contracts.mjs", "--check"], { encoding: "utf8" });
+  spawnSync(process.execPath, ["scripts/contracts/generate-contracts.mjs", "--check"], { encoding: "utf8" });
 assert.equal(check().status, 0, "Start with current artifacts");
 let rejected;
 try {
@@ -26,7 +26,7 @@ writeFileSync(
   JSON.stringify(
     {
       codeSha: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-      command: "bun scripts/prove-contract-drift.mjs",
+      command: "bun scripts/contracts/prove-contract-drift.mjs",
       staleArtifactExit: rejected.status,
       restoredExit: restored.status,
       result: "passed",
