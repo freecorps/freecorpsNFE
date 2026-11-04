@@ -906,9 +906,9 @@ uma reserva nova): a fatura fica `blocked` com o código, a assinatura é
 cancelada antes de cobrar de novo
 ([Primeira fatura bloqueada](#fatura-anual-do-cartão)), e o reembolso é
 manual, pelo painel do Stripe. Os termos de uso 1.0 e 1.1 dizem que a
-contratação recusada antes do início é cancelada sem cobrança; a versão nova
-dos termos precisa dizer isso antes de o anual ser ligado (ADR 0012,
-Consequências).
+contratação recusada antes do início é cancelada sem cobrança; a 1.2, de
+04/11/2026, não promete mais isso, e a cobrança que não vira plano entra no
+reembolso de cobrança indevida da seção 5A (ADR 0012, Consequências).
 
 **Antes de ligar o anual, confira todos os itens abaixo.** A matriz de
 sandbox, refeita com relógios de teste
@@ -1804,8 +1804,8 @@ item avulso, período de teste nem cupom.
 
 A renovação anual na jornada hospedada não pode ser antecipada, porque o
 Customer do console não tem relógio: ela fica provada pela parte A e pelos
-testes com Stripe simulado. A ativação abaixo também espera uma versão nova
-dos termos de uso no console (ADR 0012, Consequências).
+testes com Stripe simulado. Os termos de uso 1.2, que a ativação abaixo
+esperava, estão no console desde 04/11/2026 (ADR 0012, Consequências).
 
 Depois da prova, a ativação em produção segue esta ordem:
 `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave
