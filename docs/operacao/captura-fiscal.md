@@ -204,7 +204,7 @@ O caminho depende de como a captura foi desligada. Confira antes no
    pular nem repetir nada; se a consulta em voo ficou incerta, ela confere
    antes o que a Receita respondeu.
 
-Esse comportamento está em `tests/platform.siteCapture.test.ts`, bloco
+Esse comportamento está em `platform/convex/lib/siteCapture.test.ts`, bloco
 "corte geral por variável e religar (#425)".
 
 ## Captura em atenção
@@ -402,7 +402,7 @@ metade do teto, 3 consultas pontuais por hora (`recovery_backoff` em
    resolver e o 656 se repetir, a Freecorps pode suspender a captura dela
    pela [emergência](#desligar-só-uma-empresa) até a conversa terminar.
 
-Esse comportamento está em `tests/platform.siteCapture.test.ts`, nos testes
+Esse comportamento está em `platform/convex/lib/siteCapture.test.ts`, nos testes
 de 656 de "agenda, 656 e retirada".
 
 **Streams de antes da #421.** Até a #421, um 656 com `ultNSU` acima do
@@ -471,9 +471,9 @@ validada: a empresa fica sem A1, e a próxima consulta para em atenção.
 `CERTIFICATE_UNAVAILABLE`, a empresa continua sem A1 próprio válido; com
 `ACCESS_REVOKED`, retome como acima.
 
-Esse comportamento está em `tests/platform.siteCapture.test.ts`, bloco
+Esse comportamento está em `platform/convex/lib/siteCapture.test.ts`, bloco
 "continuidade da captura em Produção", e em
-`tests/platform.certificates.test.ts`.
+`platform/convex/certificates.test.ts`.
 
 ## Lacuna na captura (#419)
 

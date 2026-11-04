@@ -112,7 +112,7 @@ já confere o acesso também reprova, para que a lista de exceções não envelh
 
 Limites: a regra segue a ordem do código-fonte, não os desvios de fluxo, e não
 atravessa arquivos. Uma exceção `delegada` confia que o destino confere; o
-teste de cada domínio e `tests/platform.publicSurface.test.ts` continuam
+teste de cada domínio e `platform/convex/publicSurface.test.ts` continuam
 provando o comportamento.
 
 ## no-wall-clock-in-tests

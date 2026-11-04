@@ -27,7 +27,7 @@ const serving = (shas: Record<string, string>) =>
 
 it("publishes everything a build reads and skips only tests, CI, agents and internal docs", () => {
   for (const file of [
-    "tests/platform.keys.test.ts",
+    "platform/convex/keys.test.ts",
     "apps/console/src/navigation.test.tsx",
     "scripts/deploy/platform-unchanged.test.ts",
     "apps/console/e2e/m0.mjs",

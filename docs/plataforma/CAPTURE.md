@@ -456,7 +456,7 @@ Desenvolvedor recebe `null`). A situação é a de `captureView`: em atenção
 também quando o stream segue ativo com a operação parada. Cada empresa custa
 uma leitura sem a captura fiscal e três com ela (liberação, stream e
 operação), mais a parada geral no site, dentro da página de até 50 empresas;
-a medição está em `tests/platform.companiesList.benchmark.test.ts`.
+a medição está em `platform/convex/companiesList.benchmark.test.ts`.
 
 O padrão continua `FISCAL_ENV=disabled`. Para a prova autorizada da validação fiscal real,
 preparar deployment com `FISCAL_ENV=homologation`,
@@ -1394,7 +1394,7 @@ do que a fonte devolver.
 
 ### Cobertura com transporte controlado
 
-`tests/platform.captures.test.ts` cobre, sem chamada fiscal, os desfechos que
+`platform/convex/captures.test.ts` cobre, sem chamada fiscal, os desfechos que
 a prova real não deve provocar de propósito: crash antes e depois do bruto,
 lease antiga, lote parcial, lacuna, NSU repetido, 589, 656, ativação
 concorrente, transferência durante IO incerto e revogação do certificado com
@@ -1402,14 +1402,14 @@ consulta reservada. Também confere que sync, pausa/retomada, retry genérico e
 negação da política antes do IO preservam a janela da fonte; que o orçamento é
 consumido mesmo em falha; e que SHA, deployment, CNPJ, escopo, certificado,
 fingerprint, janela e limite divergentes negam o transporte.
-`tests/platform.siteCapture.test.ts` cobre, com o cofre e a requisição mTLS
+`platform/convex/lib/siteCapture.test.ts` cobre, com o cofre e a requisição mTLS
 simulados, o 656 com `ultNSU` acima do checkpoint (cursor e modo intactos),
 cada recusa do cofre entre o `prepare` e a requisição (teto por hora, parada
 geral, A1 renovado ou vencido, empresa retirada: nenhuma requisição, nenhuma
 reconciliação, cota e janela devolvidas), a falha depois do envio, que
 continua incerta, a retomada dentro da janela sem falha nem tentativa gasta e
 o limiar do monitor de cursor com intervalo de 1 h e de 24 h.
-`tests/platform.captureGap.test.ts` (#419) cobre, com uma fonte simulada atrás
+`platform/convex/lib/captureGap.test.ts` (#419) cobre, com uma fonte simulada atrás
 do worker, do cofre e da requisição mTLS reais: lacuna recuperável em lote no
 orçamento por hora e sob o teto do site, lacuna expirada (137, limite, aceitar
 a perda, `distNSU` depois, `history_limited`), lacuna mista, stream parado

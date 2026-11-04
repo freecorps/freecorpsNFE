@@ -160,7 +160,7 @@ de produção, outro dev, projeto e preview. Ele termina antes de anunciar um al
 ou iniciar chamadas de rede. Nunca usar uma chave real de produção nesse teste.
 
 ```powershell
-bun run -- vp test run tests/validationTarget.test.ts tests/platform.validation.test.ts
+bun run -- vp test run tests/validationTarget.test.ts platform/convex/validation.test.ts
 ```
 
 Os [scripts de worktree](../worktrees.md) continuam administrando o banco local
@@ -360,7 +360,7 @@ Para reproduzir a validação manual: entrar como operador, abrir Diagnóstico,
 recarregar essa rota, sair e tentar acessá-la novamente. Repetir como leitura e
 sem concessão, conferindo também as respostas da API. Verificar login a 390px,
 navegação por teclado, mensagens de erro e o SHA da faixa superior. Os testes
-`platform.access.test.ts` cobrem papéis, ausência de identidade, revogação,
+`platform/convex/access.test.ts` cobrem papéis, ausência de identidade, revogação,
 expiração com identidade ainda autenticada, signup bloqueado e CORS no router.
 
 O [runner progressivo da validação no navegador](../desenvolvimento/navegador.md) usa essas contas em revisão manual e

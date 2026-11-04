@@ -24,7 +24,7 @@
     {
       "id": "M0-auth-validation",
       "status": "delivered",
-      "evidence": ["tests/platform.access.test.ts", "tests/platform.validation.test.ts"]
+      "evidence": ["platform/convex/access.test.ts", "platform/convex/validation.test.ts"]
     },
     {
       "id": "M0-environment-and-ci",
@@ -36,7 +36,7 @@
         "tests/validationSmoke.test.ts",
         "scripts/validation/prove-smoke-diagnostics.mjs",
         "docs/v1.0/evidence/65/README.md",
-        "tests/consoleTarget.test.ts",
+        "scripts/console/console-target.test.ts",
         "tests/ci.contract.test.ts",
         "tests/fixtureCorpus.test.ts"
       ]
@@ -45,8 +45,8 @@
       "id": "B00-B01-F00-local-foundation",
       "status": "delivered",
       "evidence": [
-        "tests/platform.account.test.ts",
-        "tests/platform.mail.test.ts",
+        "platform/convex/account.test.ts",
+        "platform/convex/lib/accountMail.test.ts",
         "tests/worktreeSafety.test.ts",
         "packages/fiscal-nfe/index.test.ts",
         "packages/contracts/index.test.ts",
@@ -57,9 +57,9 @@
       "id": "M0-controlled-account-protocol",
       "status": "delivered",
       "evidence": [
-        "tests/platform.hostedAuth.test.ts",
-        "tests/platform.authProxy.test.ts",
-        "tests/platform.mail.test.ts",
+        "platform/convex/hostedAuth.test.ts",
+        "apps/console/auth-proxy.test.ts",
+        "platform/convex/lib/accountMail.test.ts",
         "scripts/proofs/prove-auth-worker.mjs"
       ]
     },
@@ -90,8 +90,8 @@
       "id": "B02-F01-organizations-members-invitations",
       "status": "delivered",
       "evidence": [
-        "tests/platform.organizations.test.ts",
-        "tests/platform.mail.test.ts",
+        "platform/convex/organizations.test.ts",
+        "platform/convex/lib/accountMail.test.ts",
         "packages/contracts/index.test.ts",
         "apps/console/e2e/organizations.mjs",
         "docs/v1.0/evidence/66/README.md"
@@ -101,7 +101,7 @@
       "id": "B02-F02-companies-grants-onboarding",
       "status": "delivered",
       "evidence": [
-        "tests/platform.companies.test.ts",
+        "platform/convex/companies.test.ts",
         "packages/contracts/companies.test.ts",
         "packages/contracts/fixtures/cnpj.json",
         "apps/console/e2e/companies.mjs",
@@ -112,7 +112,7 @@
       "id": "B02-tenant-project-company-environment",
       "status": "delivered",
       "evidence": [
-        "tests/platform.keys.test.ts",
+        "platform/convex/keys.test.ts",
         "apps/console/src/secret-once.test.tsx",
         "apps/console/e2e/keys.mjs",
         "docs/v1.0/evidence/68/README.md"
@@ -122,8 +122,8 @@
       "id": "B03-revoked-keys-and-direct-api",
       "status": "delivered",
       "evidence": [
-        "tests/platform.keys.test.ts",
-        "tests/platform.publicSurface.test.ts",
+        "platform/convex/keys.test.ts",
+        "platform/convex/publicSurface.test.ts",
         "apps/console/src/secret-once.test.tsx",
         "apps/console/e2e/keys.mjs",
         "docs/v1.0/evidence/68/README.md"
@@ -133,8 +133,8 @@
       "id": "B03-B05-issued-key-import-operation",
       "status": "delivered",
       "evidence": [
-        "tests/platform.keys.test.ts",
-        "tests/platform.operations.test.ts",
+        "platform/convex/keys.test.ts",
+        "platform/convex/operations.test.ts",
         "docs/v1.0/evidence/68/revalidation/README.md"
       ]
     },
@@ -144,12 +144,12 @@
       "evidence": [
         "packages/fiscal-core/index.test.ts",
         "packages/fiscal-nfe/pipeline.test.ts",
-        "tests/platform.xml.test.ts",
+        "platform/convex/xml.test.ts",
         "packages/contracts/index.test.ts",
         "scripts/build/package-boundaries.test.ts",
         "scripts/fiscal/prove-nfe-runtime.mjs",
         "scripts/fiscal/prove-excluded-events.mjs",
-        "tests/platform.documents.test.ts",
+        "platform/convex/documents.test.ts",
         "docs/v1.0/evidence/69/README.md"
       ]
     },
@@ -157,7 +157,7 @@
       "id": "B04-B05-private-files-and-idempotency",
       "status": "delivered",
       "evidence": [
-        "tests/platform.imports.test.ts",
+        "platform/convex/imports.test.ts",
         "apps/console/e2e/imports.mjs",
         "docs/plataforma/IMPORTS.md",
         "docs/v1.0/evidence/71/README.md"
@@ -167,8 +167,8 @@
       "id": "B05-operations-fencing-and-recovery",
       "status": "delivered",
       "evidence": [
-        "tests/platform.operations.test.ts",
-        "tests/platform.imports.test.ts",
+        "platform/convex/operations.test.ts",
+        "platform/convex/imports.test.ts",
         "scripts/proofs/prove-operations.mjs",
         "docs/v1.0/evidence/70/README.md"
       ]
@@ -177,7 +177,7 @@
       "id": "B05-B06-claims-lease-cursor-recovery",
       "status": "delivered",
       "evidence": [
-        "tests/platform.captures.test.ts",
+        "platform/convex/captures.test.ts",
         "packages/fiscal-nfe/distribution.test.ts",
         "apps/console/e2e/captures.mjs",
         "docs/v1.0/evidence/78/review-browser.json",
@@ -188,8 +188,8 @@
       "id": "B06-F07-certificates-controlled-mtls",
       "status": "delivered",
       "evidence": [
-        "tests/platform.certificateCrypto.test.ts",
-        "tests/platform.certificates.test.ts",
+        "platform/convex/lib/certificateCrypto.test.ts",
+        "platform/convex/certificates.test.ts",
         "scripts/fiscal/prove-certificate-transport.ts",
         "docs/v1.0/evidence/77/hosted.json",
         "docs/v1.0/evidence/77/browser.json",
@@ -205,9 +205,9 @@
       "id": "B07-outbox-duplicates-event-order",
       "status": "delivered",
       "evidence": [
-        "tests/platform.webhooks.test.ts",
-        "tests/webhookContract.test.ts",
-        "tests/webhookTransport.test.ts",
+        "platform/convex/webhooks.test.ts",
+        "packages/contracts/webhooks.test.ts",
+        "platform/convex/lib/webhookNetwork.test.ts",
         "packages/contracts/fixtures/webhooks.json",
         "scripts/contracts/prove-webhook-contract.mjs",
         "scripts/proofs/prove-webhooks.mjs",
@@ -219,8 +219,8 @@
       "status": "delivered",
       "evidence": [
         "packages/fiscal-core/index.test.ts",
-        "tests/platform.registry.test.ts",
-        "tests/platform.references.test.ts",
+        "platform/convex/registry.test.ts",
+        "platform/convex/references.test.ts",
         "tests/referenceCorpus.test.ts",
         "docs/v1.0/evidence/75-76/README.md"
       ]
@@ -229,7 +229,7 @@
       "id": "B07-contract-openapi-sdk-equivalence",
       "status": "delivered",
       "evidence": [
-        "tests/sdk.test.ts",
+        "packages/sdk/index.test.ts",
         "scripts/contracts/sdk-proof.test.ts",
         "scripts/contracts/prove-sdk-package.mjs",
         "scripts/contracts/prove-contract-drift.mjs",
@@ -241,15 +241,15 @@
       "id": "B09-F08-M5-USAGE",
       "status": "delivered",
       "evidence": [
-        "tests/platform.usage.test.ts",
-        "tests/platform.captures.test.ts",
-        "tests/platform.registry.test.ts",
-        "tests/platform.webhooks.test.ts",
+        "platform/convex/usage.test.ts",
+        "platform/convex/captures.test.ts",
+        "platform/convex/registry.test.ts",
+        "platform/convex/webhooks.test.ts",
         "apps/console/e2e/usage.mjs",
         "scripts/proofs/prove-usage-load.mjs",
         "docs/v1.0/evidence/79/README.md",
         "scripts/proofs/hosted-proof.test.ts",
-        "tests/platform.observability.test.ts",
+        "platform/convex/observability.test.ts",
         "scripts/proofs/prove-hosted-operations.mjs",
         "docs/v1.0/evidence/79-80/README.md"
       ]
@@ -263,8 +263,8 @@
       "id": "B10-export-restore-installation-technical",
       "status": "delivered",
       "evidence": [
-        "tests/platform.exports.test.ts",
-        "tests/platform.installation.test.ts",
+        "platform/convex/exports.test.ts",
+        "platform/convex/installation.test.ts",
         "docs/v1.0/evidence/81/README.md",
         "docs/v1.0/evidence/82/README.md"
       ]
@@ -284,8 +284,8 @@
         "scripts/build/package-boundaries.test.ts",
         "scripts/lib/nfse-consumer.mjs",
         "scripts/distribution/prove-xml-package.mjs",
-        "tests/platform.issuance.test.ts",
-        "tests/platform.issuanceRest.test.ts",
+        "platform/convex/issuance.test.ts",
+        "platform/convex/issuanceRest.test.ts",
         "docs/plataforma/ISSUANCE.md"
       ]
     },
@@ -312,7 +312,7 @@
       "id": "B08-F06-versioned-references",
       "status": "delivered",
       "evidence": [
-        "tests/platform.references.test.ts",
+        "platform/convex/references.test.ts",
         "tests/referenceCorpus.test.ts",
         "apps/console/e2e/references.mjs",
         "docs/v1.0/evidence/75/README.md"

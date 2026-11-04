@@ -93,7 +93,7 @@ de reabrir consultas, conforme o procedimento D05.
 
 ## Prova e publicação
 
-`tests/platform.registry.test.ts` usa transporte e cadastros sintéticos para
+`platform/convex/registry.test.ts` usa transporte e cadastros sintéticos para
 verificar cache compartilhado, permissões, fila, resposta em trânsito,
 liberação, repetição e expurgo limitado à empresa. A caixa e seu ensaio externo
 existente estão no roteiro vinculado acima. A resposta aceita pelo provedor

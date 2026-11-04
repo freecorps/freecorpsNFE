@@ -184,12 +184,12 @@ O scanner de storage reconhece o MIME privado da exportação e apaga blobs
 
 ## Validação
 
-`tests/platform.exports.test.ts` cobre bytes/hashes, idempotência, chaves e
+`platform/convex/exports.test.ts` cobre bytes/hashes, idempotência, chaves e
 concessões revogadas, isolamento, membro removido, permissão de gestor,
 expiração, revogação explícita e perda de acesso antes da publicação.
 Também cobre os limites do lote, versões e originais posteriores ao pedido,
 eventos, respostas perdidas e originais ausentes ou corrompidos.
-`tests/platform.exports.benchmark.test.ts` compara o worker completo com
+`platform/convex/exports.benchmark.test.ts` compara o worker completo com
 paginação nativa e em lotes sobre a mesma massa e exige igualdade de todos
 os hashes das partes. O relógio é congelado somente no teste em memória.
 `node scripts/proofs/prove-export-batches.mjs`, com o worktree `platform` em execução,

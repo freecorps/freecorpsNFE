@@ -169,7 +169,7 @@ das três famílias. O que o fluxo faz com a versão em vigor está em
 
 Nos testes da plataforma nenhuma versão vigora (`tests/setup/terms-of-use.ts`):
 as organizações das suítes nascem sem o aceite que `organizations.create`
-grava. `platform.termsOfUse.test.ts` e `platform.termsOfUseNotice.test.ts`
+grava. `platform/convex/termsOfUse.test.ts` e `platform/convex/termsOfUseNotice.test.ts`
 provam o aceite, o aviso e o corte com versões próprias.
 
 Para publicar uma versão nova:

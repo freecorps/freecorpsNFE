@@ -77,7 +77,7 @@ export const rules = [
   // Opção (a) de 03/11/2026: os três recibos que o plano de release exige
   // (deploy/platform-release.json), em cópias sanitizadas; os originais ficam no arquivo.
   // Entradas de teste: medições sintéticas em convex-test que
-  // tests/platform.documentFootprint*.test.ts comparam, sem dado real.
+  // platform/convex/documentFootprint*.test.ts comparam, sem dado real.
   ...[
     "docs/v1.0/evidence/642/document-footprint.json",
     "docs/v1.0/evidence/642/document-footprint-after.json",
@@ -748,10 +748,10 @@ export const gitleaksAllowlist = [
     1,
     "Chave sintética da fixture de assinatura NF-e, gerada para os testes",
   ],
-  ["tests/platform.billing.test.ts", "stripe-access-token", 3, "rk_test/rk_live sintéticos"],
-  ["tests/platform.captureGap.test.ts", "generic-api-key", 1, "Segredo de webhook sintético"],
-  ["tests/platform.issuanceRest.test.ts", "generic-api-key", 1, "Chave de idempotência do teste"],
-  ["tests/sdk.test.ts", "generic-api-key", 1, "SHA-256 do OpenAPI publicado"],
+  ["platform/convex/billing.test.ts", "stripe-access-token", 3, "rk_test/rk_live sintéticos"],
+  ["platform/convex/lib/captureGap.test.ts", "generic-api-key", 1, "Segredo de webhook sintético"],
+  ["platform/convex/issuanceRest.test.ts", "generic-api-key", 1, "Chave de idempotência do teste"],
+  ["packages/sdk/index.test.ts", "generic-api-key", 1, "SHA-256 do OpenAPI publicado"],
 ].map(([path, rule, count, reason]) => ({ path, rule, count, reason }));
 
 /**

@@ -116,7 +116,7 @@ referência de módulo ao objeto `env` gerado pode preservar valores anteriores
 ## Reprodução
 
 ```powershell
-bun x vp test run tests/platform.certificateCrypto.test.ts tests/platform.certificates.test.ts
+bun x vp test run platform/convex/lib/certificateCrypto.test.ts platform/convex/certificates.test.ts
 bun build scripts/fiscal/prove-certificate-transport.ts --target node --outfile .ci-results/77/local-tls.mjs
 node .ci-results/77/local-tls.mjs
 node --experimental-strip-types apps/console/e2e/certificates.mjs

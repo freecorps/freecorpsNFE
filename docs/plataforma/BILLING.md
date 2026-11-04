@@ -1513,7 +1513,7 @@ mesmo expurgo de `purgePlanRecords`.
 
 ## O que está provado e o que não está
 
-Provado em `tests/platform.billing.test.ts` e
+Provado em `platform/convex/billing.test.ts` e
 `apps/console/src/plans-billing.test.tsx`, com API do Stripe simulada por
 `fetch` e eventos sintéticos assinados: contratação, renovação, recusa e
 recuperação, upgrade, downgrade, cancelamento e retomada, o cartão que espera
@@ -1549,7 +1549,7 @@ papel, membership, organização, interruptor, preço anual ausente, termo em
 vigor ou agendado com a data, acesso de um termo rescindido com a data, Pix
 aguardando, cartão mensal ou anual que renova, Checkout aberto, plano
 personalizado e admissão. Do upgrade do anual, em
-`tests/platform.annualPix.test.ts` e `tests/platform.billing.test.ts`: o
+`platform/convex/annualPix.test.ts` e `platform/convex/billing.test.ts`: o
 preço pelos meses do termo restantes, contados da âncora, no 1º mês e no
 último, o segmento desde o início do mês do termo ou a troca de `tier`, o
 fim do termo mantido, a reserva dos R$ 172 de custódia, a confirmação e a
@@ -1563,8 +1563,8 @@ do fim do mês do termo, com a data, e nas últimas 72 horas do termo no
 cartão, paga depois do mês do termo (`LATE_PAYMENT`), com um `period` que
 não é início de mês do termo, com assinatura de outro Customer, com valor
 diferente e com a admissão recusada sem mexer no termo. Da rescisão, em
-`tests/platform.annualTerms.test.ts`, `tests/platform.annualPix.test.ts`,
-`tests/platform.billing.test.ts` e `tests/platform.closure.test.ts`: os
+`platform/convex/lib/annualTerms.test.ts`, `platform/convex/annualPix.test.ts`,
+`platform/convex/billing.test.ts` e `platform/convex/closure.test.ts`: os
 exemplos de R$ 894 no 4º mês, com o acesso até o fim do mês do termo
 contado da âncora, de R$ 1.231,33 com o upgrade no 5º mês e rescisão no 8º,
 e do zero a partir do 10º mês; o reembolso integral nos 7 dias da compra e
@@ -1592,10 +1592,10 @@ anual aberto, a próxima cobrança anual e o fim do plano como instantes UTC,
 o aviso de substituição do mensal e a recusa com a data, o termo em vigor,
 agendado, pendente e rescindido, o upgrade pelo Pix e pelo cartão, fechado
 nas últimas 72 horas, as pendências e as mensagens de cada código; a
-leitura do servidor, em `tests/platform.annualPix.test.ts` e
-`tests/platform.billing.test.ts`.
+leitura do servidor, em `platform/convex/annualPix.test.ts` e
+`platform/convex/billing.test.ts`.
 
-Do mensal por Pix nos aniversários, em `tests/platform.monthlyPix.test.ts`,
+Do mensal por Pix nos aniversários, em `platform/convex/monthlyPix.test.ts`,
 com o Pix ligado só pelo teste: a confirmação de 31/01 às 10:00:07 que
 ancora a cadeia e renova em 28/02 e 31/03, sem deriva, com as cotas virando
 no aniversário; a renovação paga antes, agendada, e paga depois do início,
@@ -1610,7 +1610,7 @@ e confirmado no mês civil; e `PIX_DISABLED`. A tela, em
 com a data e a renovação paga à espera.
 
 Do mensal no cartão nos aniversários (fatia 2a), em
-`tests/platform.billing.test.ts`, com Stripe simulado: o Checkout só com o
+`platform/convex/billing.test.ts`, com Stripe simulado: o Checkout só com o
 preço recorrente, sem âncora, item avulso nem cupom; a assinatura de 31/01 às
 10:00:07 concedida até 28/02 e renovada até 31/03 e 30/04 no mesmo horário,
 sem deriva, com as cotas virando nos aniversários e as faturas reenviadas
@@ -1669,7 +1669,7 @@ Em 31/10/2026, usando a API `2025-03-31.basil` e recursos sintéticos:
 O pagamento no Checkout e a renovação pela API foram exercitados separadamente;
 seus eventos não foram entregues ao backend hospedado. Concessão, isolamento,
 eventos repetidos e recuperação de resposta perdida são cobertos por
-`tests/platform.billing.test.ts`, com Stripe simulado. O simulador agora recusa
+`platform/convex/billing.test.ts`, com Stripe simulado. O simulador agora recusa
 a combinação original; o anual e o mês já pago por Pix também são verificados.
 
 Sem prova, dependendo de validação operacional:

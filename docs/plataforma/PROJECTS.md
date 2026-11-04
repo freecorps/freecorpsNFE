@@ -234,7 +234,7 @@ gerar outra chave), o foco vai ao título do passo seguinte ou ao primeiro
 campo. Uma mudança que vem de fora, como uma chave que expira ou outra aba,
 só é anunciada numa região discreta, sem mover o foco. O teste
 `apps/console/src/connect-system.test.tsx` cobre esses caminhos, e
-`tests/platform.environmentIsolation.test.ts` cobre `projects.grantCandidates`
+`platform/convex/environmentIsolation.test.ts` cobre `projects.grantCandidates`
 (papéis, outra organização, demonstração e empresa declarada, liberação e
 versão de concessão removida).
 
@@ -334,7 +334,7 @@ Projetos, concessões e geração de chaves são a base de autorização da impo
 Owner/admin podem conceder `documents:import` para uma empresa e ambiente;
 developer não pode ampliar seus escopos para essa escrita. A gestão de operações consome a
 mesma credencial em `operations.reserve` e na consulta REST de operações.
-O teste em `tests/platform.keys.test.ts` cria a chave pelas funções públicas,
+O teste em `platform/convex/keys.test.ts` cria a chave pelas funções públicas,
 reserva uma operação sintética, recusa uma chave apenas de leitura e verifica
 rotação sem duplicar a intenção e revogação do acesso REST.
 
@@ -348,7 +348,7 @@ da operação nem contorna a revalidação de execução da gestão de operaçõ
 
 ## Provas de execução
 
-`tests/platform.keys.test.ts` cobre REST e funções diretas, concessões,
+`platform/convex/keys.test.ts` cobre REST e funções diretas, concessões,
 concorrência e tempo. `apps/console/src/secret-once.test.tsx` cobre respostas
 atrasadas. `apps/console/e2e/keys.mjs` exercita UI e HTTP no Convex local.
 Resultados e limitações ficam no recibo da gestão de projetos e chaves.
@@ -413,4 +413,4 @@ captura criados pelo console, porque pertencem ao projeto do console; os
 documentos resultantes continuam disponíveis a qualquer chave com
 `documents:read` da empresa. Revogar a concessão de uma integração não tira o
 acesso das pessoas. A matriz por domínio está em
-`tests/platform.consoleAccess.test.ts`.
+`platform/convex/consoleAccess.test.ts`.

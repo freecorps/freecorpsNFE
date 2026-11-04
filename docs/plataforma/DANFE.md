@@ -65,7 +65,7 @@ em [DOCUMENTS.md](DOCUMENTS.md#danfe). Em resumo:
   `platform/convex/lib/danfeValues.ts` é presa ao pacote por teste;
 - o original não muda; o PDF é refeito dele quando a chave muda.
 
-A prova da entrega está em `tests/platform.danfe.test.ts`, com o corpus
+A prova da entrega está em `platform/convex/danfe.test.ts`, com o corpus
 sintético: PDF autorizado, cache, cancelamento importado depois, troca de
 versão, nota sem autorização, recusa do gerador gravada e respondida sem gerar
 de novo, original ausente, geração antiga descartada, as três corridas que

@@ -174,7 +174,7 @@ organização desativa as conexões e, ao fim da janela, apaga conexões e event
 ## O que não está provado
 
 - Nenhum evento real do Stripe chegou à plataforma; os testes usam eventos
-  sintéticos assinados (`tests/platform.stripe.test.ts`).
+  sintéticos assinados (`platform/convex/stripe.test.ts`).
 - O formato de `invoice.paid` muda com a versão da API do endpoint; a leitura
   aceita `payment_intent` e `payments`.
 - Um evento perdido (endpoint fora do ar por mais de 3 dias) não é buscado no
