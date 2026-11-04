@@ -3,7 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import { scanPlan, stepExit } from "./public-scan.mjs";
 import { GITLEAKS_VERSION } from "./public-tree.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 describe("varredura pública no CI", () => {
   it("monta a cópia no arquivo privado e varre o checkout no público", () => {
@@ -60,7 +60,7 @@ describe("varredura pública no CI", () => {
     expect(install.env?.GITLEAKS_VERSION).toBe(GITLEAKS_VERSION);
     expect(install.env?.GITLEAKS_SHA256).toMatch(/^[0-9a-f]{64}$/);
     expect(install.run).toContain("sha256sum -c -");
-    const scan = steps.find((step) => step.run?.includes("scripts/public-scan.mjs"))!;
+    const scan = steps.find((step) => step.run?.includes("scripts/public-copy/public-scan.mjs"))!;
     expect(scan.env?.FNFE_PUBLIC_DENYLIST).toBe("${{ secrets.FNFE_PUBLIC_DENYLIST }}");
     // Since phase 1e of #267, a blocked scan fails the check.
     expect(scan.env?.PUBLIC_SCAN_ENFORCE).toBe("true");

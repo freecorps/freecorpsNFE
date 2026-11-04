@@ -1,1 +1,1 @@
-node scripts/pre-push.mjs
+node scripts/public-copy/pre-push.mjs

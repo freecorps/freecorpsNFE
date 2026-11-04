@@ -3,13 +3,13 @@
 // path, line and rule, never the value. Binary files (images included) are
 // skipped: a secret inside a screenshot is not visible to this check
 // (docs/desenvolvimento/ci.md, Segredos no repositório).
-//   node scripts/check-secrets.mjs
+//   node scripts/public-copy/check-secrets.mjs
 import { execFileSync } from "node:child_process";
 import { lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { repositoryCredentialRules } from "./lib/credentials.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repositoryCredentialRules } from "../lib/credentials.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 /**
  * Known non-secret matches, one entry per file and rule, each with the exact
@@ -126,7 +126,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.error(`${path}:${line}  ${rule}  (valor omitido)`);
   for (const { path, rule, count } of stale)
     console.error(
-      `${path}  ${rule}  menos de ${count} ocorrência(s); ajuste a exceção em scripts/check-secrets.mjs`,
+      `${path}  ${rule}  menos de ${count} ocorrência(s); ajuste a exceção em scripts/public-copy/check-secrets.mjs`,
     );
   if (blocked.length || stale.length) {
     console.error(

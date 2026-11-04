@@ -284,7 +284,7 @@ proteção: um padrão errado imprime o segredo inteiro.
   issue, comentário e mensagem de commit ficam fora do hook e do
   `Public scan`; o secret scanning do GitHub só reconhece tokens de
   provedores. Antes de publicar, grave-os em arquivo, rode
-  `node scripts/scan-public-text.mjs <arquivos>`, que aplica as mesmas
+  `node scripts/public-copy/scan-public-text.mjs <arquivos>`, que aplica as mesmas
   regras sem os nomes restritos, e releia: neles vale a mesma regra de dado
   real.
 - **Se vazar, diga.** Avise o dono do projeto no mesmo turno, com o que vazou

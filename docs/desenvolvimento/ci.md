@@ -97,7 +97,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:xml-prove`      | `node scripts/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
 | `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
 | `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:secrets`        | `node scripts/check-secrets.mjs`                                |                                    | não: índice do Git  |
+| `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                                |                                    | não: índice do Git  |
 | `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
 | `ci:typecheck`      | `node scripts/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
 | `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
@@ -205,9 +205,9 @@ execução limpa de uma revisão, dispare o CI manualmente.
 `scripts/lib/ci-changes.mjs` compara o merge sintético da PR com o primeiro pai
 (a base). Se todo arquivo mudado é documentação que só a formatação e a
 varredura leem, o job instala as dependências, roda `vp fmt --check`,
-`node scripts/check-secrets.mjs` e os testes que leem toda a documentação
-versionada (`scripts/public-identifiers.test.ts` e
-`scripts/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
+`node scripts/public-copy/check-secrets.mjs` e os testes que leem toda a documentação
+versionada (`scripts/public-copy/public-identifiers.test.ts` e
+`scripts/public-copy/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
 emitir `tested_sha`. O check obrigatório continua sendo o mesmo `Validate`:
 `paths-ignore` deixaria o check ausente.
 
@@ -291,7 +291,7 @@ código que exercitam (por exemplo, `tests/webhookContract.test.ts` em
 o restante: um arquivo novo sem projeto reprova `tests/ci.testProjects.test.ts`.
 
 `repository` reúne os testes cujas entradas são quase todo o repositório:
-`scripts/public-identifiers.test.ts` (todo Markdown), `scripts/public-tree.test.ts`
+`scripts/public-copy/public-identifiers.test.ts` (todo Markdown), `scripts/public-copy/public-tree.test.ts`
 (a lista do Git, para classificar cada arquivo da cópia pública) e
 `tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
 documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
@@ -594,7 +594,7 @@ Duas barreiras evitam que uma credencial entre por acidente. O `.gitignore`
 recusa variantes privadas de configuração (`.env.*`, `.dev.vars.*`) e
 certificados ou chaves (`*.pfx`, `*.p12`, `*.key`, `*.pem`), com exceção
 explícita para as fixtures sintéticas de `tests/fixtures/nfe/4.00/`. `ci:secrets` (`bun run secrets:check`) roda
-`scripts/check-secrets.mjs` sobre todo arquivo de texto de `git ls-files` e
+`scripts/public-copy/check-secrets.mjs` sobre todo arquivo de texto de `git ls-files` e
 falha com arquivo, linha e regra, sem imprimir o valor. As regras ficam em
 `scripts/lib/credentials.mjs`, as mesmas que a checagem dos tarballs usa:
 cabeçalho de chave privada PEM, tokens de serviço com prefixo conhecido
@@ -606,7 +606,7 @@ script, por arquivo e regra, cada um com o número exato de ocorrências que
 cobre e o motivo. Uma ocorrência a mais da mesma regra naquele arquivo
 bloqueia o grupo inteiro, para que uma credencial real não passe atrás de uma
 exceção; uma a menos faz a exceção falhar como obsoleta.
-`scripts/check-secrets.test.ts` prova a detecção de um canário sintético
+`scripts/public-copy/check-secrets.test.ts` prova a detecção de um canário sintético
 montado em tempo de execução, a exceção restrita ao arquivo, à regra e à
 contagem, o bloqueio de uma ocorrência extra e o binário ignorado.
 
@@ -654,14 +654,14 @@ do evento a associação e o tipo do autor e a descrição, por `env:`.
 
 O workflow `Public scan` (`.github/workflows/public-scan.yml`) roda em todo
 PR, em todo push na `main` e por disparo manual. Ele confere o que é, ou vai
-ser, público com `scripts/public-tree.mjs`: as regras de
-`scripts/check-secrets.mjs`, o Gitleaks 8.21.2, baixado com o SHA-256 fixado,
+ser, público com `scripts/public-copy/public-tree.mjs`: as regras de
+`scripts/public-copy/check-secrets.mjs`, o Gitleaks 8.21.2, baixado com o SHA-256 fixado,
 CNPJ, CPF (com e sem máscara) e chave de acesso reais, e-mail externo, caminho
 local, deployment Convex desconhecido e os nomes restritos. O relatório
 `varredura.json` fica no artefato `public-scan`, com caminho, linha e tipo de
 cada achado, sem o valor.
 
-`scripts/public-scan.mjs` escolhe o modo pelo checkout:
+`scripts/public-copy/public-scan.mjs` escolhe o modo pelo checkout:
 
 - **No repositório arquivado**, onde a lista em custódia existe, ele monta a
   cópia pública do commit, com seleção e edições, e a varre. Um drift de
@@ -675,7 +675,7 @@ cada achado, sem o valor.
 Desde a fase 1e da #267, uma varredura bloqueada reprova o check
 (`PUBLIC_SCAN_ENFORCE: "true"`), assim como um erro de uso, como Gitleaks
 ausente. Com `"false"`, ela só avisaria. Para rodar localmente, com o Gitleaks 8.21.2 no PATH ou em
-`GITLEAKS_BIN`: `node scripts/public-scan.mjs <pasta vazia fora do repositório>`.
+`GITLEAKS_BIN`: `node scripts/public-copy/public-scan.mjs <pasta vazia fora do repositório>`.
 
 Sem a lista de nomes restritos, os nomes não são procurados e as exceções
 deles (`mantenedor`, `cliente`, `deployment-teste`, `produto-freecorps`) não
@@ -684,8 +684,8 @@ são julgadas obsoletas; com a lista, uma exceção sem a ocorrência bloqueia.
 ### Hook pre-push
 
 O `Public scan` roda depois do push, quando a branch já está pública. O hook
-`.vite-hooks/pre-push` chama `scripts/pre-push.mjs`, que varre cada commit
-enviado com `scripts/public-tree.mjs --checkout` antes de ele sair da
+`.vite-hooks/pre-push` chama `scripts/public-copy/pre-push.mjs`, que varre cada commit
+enviado com `scripts/public-copy/public-tree.mjs --checkout` antes de ele sair da
 máquina, em cerca de 2 segundos. Um achado que bloqueia recusa o push e
 mostra caminho, linha e tipo, sem o valor; o relatório fica numa pasta
 temporária, sem a cópia da árvore.
@@ -699,7 +699,7 @@ envia sem varrer. `vp hooks status` mostra o estado.
 Limites:
 
 - Sem o Gitleaks 8.21.2 no PATH ou em `GITLEAKS_BIN`, o hook passa
-  `--sem-gitleaks` e avisa; as regras de `scripts/check-secrets.mjs` e os
+  `--sem-gitleaks` e avisa; as regras de `scripts/public-copy/check-secrets.mjs` e os
   identificadores continuam. Os nomes restritos, que vêm do secret do CI,
   nunca são conferidos no hook.
 - Ele varre o commit na ponta de cada ref enviada, como o CI. Um dado
@@ -707,7 +707,7 @@ Limites:
   e fica no histórico público.
 - Título e corpo de PR, issue, comentário e mensagem de commit não são
   arquivos e ficam fora do hook e do `Public scan`. Quem escreve passa o
-  texto, gravado em arquivo, por `node scripts/scan-public-text.mjs`, que
+  texto, gravado em arquivo, por `node scripts/public-copy/scan-public-text.mjs`, que
   aplica as regras de credenciais e identificadores, sem Gitleaks nem nomes
   restritos.
 - `git push --no-verify` e `VP_GIT_HOOKS=0` pulam o hook. Agentes não usam

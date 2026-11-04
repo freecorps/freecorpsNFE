@@ -119,10 +119,10 @@ it("classifies a new test file from the shared list", () => {
   expect(owners("tests/webhookContract.test.ts")).toEqual(["packages"]);
   expect(owners("tests/docsOutput.test.ts")).toEqual(["tooling"]);
   // Os testes que leem a árvore inteira ficam fora de tooling.
-  expect(owners("scripts/public-tree.test.ts")).toEqual(["repository"]);
-  expect(owners("scripts/public-identifiers.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-copy/public-tree.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-copy/public-identifiers.test.ts")).toEqual(["repository"]);
   expect(owners("tests/ci.changes.test.ts")).toEqual(["repository"]);
-  expect(owners("scripts/public-scan.test.ts")).toEqual(["tooling"]);
+  expect(owners("scripts/public-copy/public-scan.test.ts")).toEqual(["tooling"]);
   // Nenhum projeto recolhe o restante: um teste novo sem dono reprova.
   expect(() => suiteFor("tests/novo.test.ts")).toThrow("no project");
   expect(() => suiteFor("lib/novo.test.ts")).toThrow("no project");

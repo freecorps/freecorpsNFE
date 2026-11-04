@@ -80,9 +80,9 @@
     "licenses:inventory": "node scripts/inventory-licenses.mjs",
     "licenses:check": "node scripts/inventory-licenses.mjs --check && node scripts/check-first-party-licenses.mjs && node scripts/prepare-package-notices.mjs --check",
     "distribution:prove": "bun scripts/prove-distribution.mjs",
-    "secrets:check": "node scripts/check-secrets.mjs",
+    "secrets:check": "node scripts/public-copy/check-secrets.mjs",
     "knip:check": "knip --include files,dependencies --no-progress",
-    "public:tree": "node scripts/public-tree.mjs",
+    "public:tree": "node scripts/public-copy/public-tree.mjs",
     "xml:build": "node scripts/commands.mjs renamed xml:build",
     "xml:boundaries": "node scripts/commands.mjs renamed xml:boundaries",
     "console:deploy": "node scripts/commands.mjs renamed console:deploy"

@@ -2,7 +2,7 @@
 // novo (#267, decisão 6 de docs/v1.0/ACCEPTANCE.md) e varre os bytes que
 // sairiam. Não publica, não cria repositório e não escreve no checkout.
 //
-//   node scripts/public-tree.mjs --sha <rev> --out <pasta fora do repositório>
+//   node scripts/public-copy/public-tree.mjs --sha <rev> --out <pasta fora do repositório>
 //     [--denylist <arquivo>] [--edits <arquivo>]
 //
 // A seleção é a classificação da auditoria de 25/10
@@ -49,7 +49,7 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, posix, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { allowlist as secretAllowlist, scan as scanSecrets } from "./check-secrets.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 export const AUDIT_SHA = "bfb2a9407ae6079d5d13348fc065022ce3c218ed";
 export const DEFAULT_DENYLIST = "docs/v1.0/evidence/267/nomes-restritos.json";
@@ -597,7 +597,7 @@ export const syntheticDeployments = new Set([
 
 /**
  * Achados conhecidos que não são dado real, um por arquivo e tipo, com o
- * número exato de ocorrências, como em scripts/check-secrets.mjs: uma a mais
+ * número exato de ocorrências, como em scripts/public-copy/check-secrets.mjs: uma a mais
  * bloqueia o grupo inteiro; uma a menos marca a exceção como obsoleta.
  */
 export const findingAllowlist = [
@@ -661,13 +661,13 @@ export const findingAllowlist = [
     reason: "Destino SSH do túnel público pinggy, não é e-mail",
   },
   {
-    path: "scripts/public-identifiers.test.ts",
+    path: "scripts/public-copy/public-identifiers.test.ts",
     kind: "cnpj-nao-sintetico",
     count: 3,
     reason: "CNPJ fictício que o próprio teste usa para provar a detecção",
   },
   {
-    path: "scripts/public-identifiers.test.ts",
+    path: "scripts/public-copy/public-identifiers.test.ts",
     kind: "chave-de-acesso",
     count: 1,
     reason: "Chave fictícia que o próprio teste usa para provar a detecção",
@@ -1471,8 +1471,8 @@ function parseArgs(argv) {
   return args.sha && args.out ? args : null;
 }
 
-const usage = `uso: node scripts/public-tree.mjs --sha <rev> --out <pasta fora do repositório> [--denylist <arquivo>] [--edits <arquivo>] [--gitleaks <binário>]
-     node scripts/public-tree.mjs --checkout --sha <rev> --out <pasta> [--denylist <arquivo>] [--gitleaks <binário> | --sem-gitleaks]
+const usage = `uso: node scripts/public-copy/public-tree.mjs --sha <rev> --out <pasta fora do repositório> [--denylist <arquivo>] [--edits <arquivo>] [--gitleaks <binário>]
+     node scripts/public-copy/public-tree.mjs --checkout --sha <rev> --out <pasta> [--denylist <arquivo>] [--gitleaks <binário> | --sem-gitleaks]
 
 O Gitleaks ${GITLEAKS_VERSION} varre a cópia montada: --gitleaks, GITLEAKS_BIN ou
 gitleaks no PATH. Roda só no repositório privado, salvo com --checkout: precisa do commit

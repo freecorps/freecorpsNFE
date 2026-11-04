@@ -218,10 +218,10 @@ export default defineConfig({
         dependsOn: ["ci:packages", "ci:sdk"],
         cache: { input: [{ auto: true }, ...generated], output: [] },
       },
-      // Credenciais nos arquivos de texto versionados (scripts/check-secrets.mjs).
+      // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
       // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
       // entre as entradas registradas.
-      "ci:secrets": { command: "node scripts/check-secrets.mjs", cache: false },
+      "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
       // Arquivos e dependências sem uso (knip.jsonc). Lê manifests e node_modules,
       // que o Vite Task não rastreia como entrada.
       "ci:knip": { command: "bun run knip:check", cache: false },

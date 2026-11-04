@@ -100,7 +100,7 @@ Grave título e corpo em arquivos UTF-8 separados, no destino local de
 `EXTERNAS.md` (`.ci-results/<assunto>/`), e rode:
 
 ```bash
-node scripts/scan-public-text.mjs <titulo.txt> <corpo.md>
+node scripts/public-copy/scan-public-text.mjs <titulo.txt> <corpo.md>
 ```
 
 O script aplica as regras do `Public scan` e mostra arquivo, linha e tipo de

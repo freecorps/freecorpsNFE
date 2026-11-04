@@ -54,8 +54,8 @@ export const documentationOnly = (file) =>
  * arquivo versionado para a cópia pública.
  */
 export const documentationTests = [
-  "scripts/public-identifiers.test.ts",
-  "scripts/public-tree.test.ts",
+  "scripts/public-copy/public-identifiers.test.ts",
+  "scripts/public-copy/public-tree.test.ts",
 ];
 
 /**

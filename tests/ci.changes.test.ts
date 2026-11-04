@@ -248,7 +248,7 @@ it("issues a tested SHA only after the whole graph, never in documentation mode"
   expect(expression(docs.if)).toBe("steps.changes.outputs.mode=='docs'");
   expect(docs.run!.trim().split("\n")).toEqual([
     "vp fmt --check",
-    "node scripts/check-secrets.mjs",
+    "node scripts/public-copy/check-secrets.mjs",
     `vp test run ${documentationTests.join(" ")}`,
   ]);
   for (const file of documentationTests) expect(existsSync(file), file).toBe(true);
@@ -325,15 +325,15 @@ const mentions: Record<string, string> = {
   // Synthetic paths in classifiers' unit tests.
   "scripts/platform-unchanged.test.ts -> docs/README.md": "synthetic",
   "scripts/platform-unchanged.test.ts -> docs/desenvolvimento/ci.md": "synthetic",
-  "scripts/public-tree.test.ts -> docs/operacao/backup.md": "synthetic",
+  "scripts/public-copy/public-tree.test.ts -> docs/operacao/backup.md": "synthetic",
   // tests/fixtureCorpus.test.ts checks that evidence exists; deleting a document
   // runs the graph.
   "tests/coverage-matrix.json -> docs/plataforma/IMPORTS.md": "existence",
   "tests/coverage-matrix.json -> docs/plataforma/ISSUANCE.md": "existence",
 };
-// scripts/public-tree.mjs names every file the public copy keeps or edits; its
+// scripts/public-copy/public-tree.mjs names every file the public copy keeps or edits; its
 // test runs in documentation mode (documentationTests).
-const classifier = "scripts/public-tree.mjs";
+const classifier = "scripts/public-copy/public-tree.mjs";
 
 it("never lets a documentation-only change skip a test or build that reads it", () => {
   // Every tracked documentation-only file, checked against every other source:

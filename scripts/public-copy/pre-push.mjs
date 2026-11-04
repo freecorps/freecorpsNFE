@@ -1,5 +1,5 @@
 // Hook pre-push (.vite-hooks/pre-push): varre cada commit enviado com as regras
-// do Public scan (scripts/public-tree.mjs --checkout) antes que ele fique
+// do Public scan (scripts/public-copy/public-tree.mjs --checkout) antes que ele fique
 // público. O workflow Public scan roda depois do push, quando a branch já está
 // exposta; este hook é a barreira de antes.
 //
@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { findingKinds, GITLEAKS_VERSION } from "./public-tree.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const ZERO = /^0+$/;
 
@@ -63,7 +63,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     const out = join(mkdtempSync(join(tmpdir(), "fnfe-pre-push-")), "saida");
     const run = spawnSync(
       process.execPath,
-      [join(root, "scripts/public-tree.mjs"), ...scanArgs(sha, out, withGitleaks)],
+      [join(root, "scripts/public-copy/public-tree.mjs"), ...scanArgs(sha, out, withGitleaks)],
       { cwd: root, encoding: "utf8", windowsHide: true },
     );
     const short = sha.slice(0, 7);

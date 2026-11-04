@@ -97,7 +97,7 @@ describe("hook pre-push", () => {
           `100644,${git(["hash-object", "-w", "--stdin"], text)},${path}`,
         ]);
       const commit = git(["commit-tree", git(["write-tree"]), "-p", "HEAD", "-m", "teste"]);
-      const result = spawnSync(process.execPath, ["scripts/pre-push.mjs"], {
+      const result = spawnSync(process.execPath, ["scripts/public-copy/pre-push.mjs"], {
         encoding: "utf8",
         env,
         input: `refs/heads/t ${commit} refs/heads/t ${zero}\n`,

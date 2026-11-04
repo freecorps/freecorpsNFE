@@ -5,7 +5,7 @@ import { SignedXml } from "xml-crypto";
 /**
  * NF-e sintéticas para o DANFE, válidas no XSD do pacote e assinadas com a chave sintética do
  * corpus (`tests/fixtures/nfe/4.00/synthetic-*.pem`, que não é ICP-Brasil). CNPJs fictícios da
- * lista de scripts/public-identifiers.test.ts e o alfanumérico do manual da RFB; chaves com
+ * lista de scripts/public-copy/public-identifiers.test.ts e o alfanumérico do manual da RFB; chaves com
  * dígito calculado. Nada aqui foi autorizado: protocolo e eventos são evidência sintética.
  */
 const NS = "http://www.portalfiscal.inf.br/nfe";

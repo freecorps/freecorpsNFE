@@ -4,10 +4,10 @@
 // (docs/desenvolvimento/ci.md, Hook pre-push), então este é o único filtro
 // automático desse texto.
 //
-//   node scripts/scan-public-text.mjs <arquivo>...
+//   node scripts/public-copy/scan-public-text.mjs <arquivo>...
 //
-// Aplica as regras de credenciais de scripts/check-secrets.mjs e os
-// identificadores de scripts/public-tree.mjs: CNPJ, CPF e chave de acesso
+// Aplica as regras de credenciais de scripts/public-copy/check-secrets.mjs e os
+// identificadores de scripts/public-copy/public-tree.mjs: CNPJ, CPF e chave de acesso
 // reais, e-mail externo ou pessoal, caminho local e deployment Convex
 // desconhecido. Os nomes restritos e o Gitleaks ficam de fora; quem escreve
 // ainda relê o texto. Mostra arquivo, linha e tipo de cada achado, nunca o
@@ -35,7 +35,7 @@ export function scanPublicText(path, text) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const files = process.argv.slice(2);
   if (!files.length) {
-    console.error("uso: node scripts/scan-public-text.mjs <arquivo>...");
+    console.error("uso: node scripts/public-copy/scan-public-text.mjs <arquivo>...");
     process.exit(2);
   }
   const findings = [];
