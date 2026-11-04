@@ -12,20 +12,81 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { revision, sanitizeReport, testEnvironment, publicationSha } from "./lib/ci.mjs";
+import {
+  approvedTests,
+  areaReceipt,
+  collectTests,
+  revision,
+  sanitizeReport,
+  testEnvironment,
+  publicationSha,
+} from "./lib/ci.mjs";
+import { areaFiles, areaProjects, testProjects } from "./lib/test-projects.mjs";
 import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "./lib/validation-lock.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const output = join(root, ".ci-results");
+// Um recibo por área de testes, gravado por `test-area` e guardado no cache
+// do Vite Task como saída da tarefa ci:test:<área>.
+const areaOutput = join(output, "tests");
 const requestedCommand = process.argv[2];
+const usage =
+  "Usage: ci.mjs identity|test|identity-test|test-area <área>|collect-tests|summary|approve|gate";
 let release;
 let retainLock = false;
+
+/**
+ * `vp test run` com relatório JSON numa pasta temporária. Devolve o JSON bruto
+ * e o código de saída; o bruto nunca vai para `.ci-results`.
+ */
+function runVitest(args) {
+  const temporary = mkdtempSync(join(tmpdir(), "fnfe-ci-"));
+  const rawFile = join(temporary, "vitest.json");
+  try {
+    retainLock = true;
+    const result = spawnSync(
+      process.execPath,
+      [
+        join(root, "node_modules/vite-plus/bin/vp"),
+        "test",
+        "run",
+        ...args,
+        "--testTimeout=60000",
+        "--reporter=default",
+        "--reporter=json",
+        `--outputFile.json=${rawFile}`,
+      ],
+      { cwd: root, env: testEnvironment(process.env), stdio: "inherit" },
+    );
+    retainLock = Boolean(result.signal || result.error || result.status === null);
+    const raw = existsSync(rawFile) ? JSON.parse(readFileSync(rawFile, "utf8")) : {};
+    return { raw, status: result.status ?? 1 };
+  } finally {
+    rmSync(rawFile, { force: true });
+    rmdirSync(temporary);
+  }
+}
+
 try {
   if (
-    !["identity", "test", "identity-test", "summary", "approve", "gate"].includes(requestedCommand)
+    ![
+      "identity",
+      "test",
+      "identity-test",
+      "test-area",
+      "collect-tests",
+      "summary",
+      "approve",
+      "gate",
+    ].includes(requestedCommand)
   )
-    throw new Error("Usage: ci.mjs identity|test|identity-test|summary|approve|gate");
-  if (["identity", "test", "identity-test", "summary"].includes(requestedCommand))
+    throw new Error(usage);
+  if (["identity", "test", "identity-test", "collect-tests", "summary"].includes(requestedCommand))
+    release = acquireValidationLock(root, process.env[VALIDATION_LOCK_TOKEN]);
+  // As áreas rodam lado a lado no grafo: nenhuma toma a trava para si, e só
+  // participam da posse de quem já a tem (ci:local e ci:prove passam o token).
+  // ci:tests, que junta os recibos, a toma como a suíte inteira tomava.
+  if (requestedCommand === "test-area" && process.env[VALIDATION_LOCK_TOKEN] !== undefined)
     release = acquireValidationLock(root, process.env[VALIDATION_LOCK_TOKEN]);
   mkdirSync(output, { recursive: true });
   // ci:test mantém identidade e testes sob a mesma posse, sem intervalo entre
@@ -43,7 +104,14 @@ try {
           : "No validation publication revision issued",
       );
     } else if (command === "identity") {
+      // Nada de uma validação anterior conta para esta: só o grafo que vem
+      // depois grava (ou restaura do cache) os recibos das áreas.
       rmSync(join(output, "tests.json"), { force: true });
+      rmSync(areaOutput, { recursive: true, force: true });
+      // As provas dos Workers gravam em .browser-results durante o grafo, e o
+      // Vite Task registra a listagem da raiz: criada antes, a pasta já está
+      // nela em todo checkout novo, e a tarefa que lista a raiz repete o cache.
+      mkdirSync(join(root, ".browser-results"), { recursive: true });
       const checked = execFileSync("git", ["rev-parse", "HEAD"], {
         cwd: root,
         encoding: "utf8",
@@ -65,38 +133,51 @@ try {
       writeFileSync(join(output, "revision.json"), `${JSON.stringify(data, null, 2)}\n`);
       console.log(JSON.stringify(data));
     } else if (command === "test") {
+      // A suíte inteira num processo (`bun run ci:test`); o grafo usa test-area.
       const metadata = JSON.parse(readFileSync(join(output, "revision.json"), "utf8"));
-      const temporary = mkdtempSync(join(tmpdir(), "fnfe-ci-"));
-      const rawFile = join(temporary, "vitest.json");
-      try {
-        retainLock = true;
-        const result = spawnSync(
-          process.execPath,
-          [
-            join(root, "node_modules/vite-plus/bin/vp"),
-            "test",
-            "run",
-            "--maxWorkers=3",
-            "--testTimeout=60000",
-            "--reporter=default",
-            "--reporter=json",
-            `--outputFile.json=${rawFile}`,
-          ],
-          { cwd: root, env: testEnvironment(process.env), stdio: "inherit" },
-        );
-        retainLock = Boolean(result.signal || result.error || result.status === null);
-        const raw = existsSync(rawFile) ? JSON.parse(readFileSync(rawFile, "utf8")) : {};
-        const report = sanitizeReport(raw, root, metadata, result.status ?? 1);
-        writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
-        if (report.result !== "passed") process.exitCode = 1;
-      } finally {
-        rmSync(rawFile, { force: true });
-        rmdirSync(temporary);
+      const { raw, status } = runVitest(["--maxWorkers=3"]);
+      const report = sanitizeReport(raw, root, metadata, status);
+      writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
+      if (report.result !== "passed") process.exitCode = 1;
+    } else if (command === "test-area") {
+      const area = process.argv[3];
+      if (!testProjects.some(({ name }) => name === area)) throw new Error(usage);
+      const receipt = join(areaOutput, `${area}.json`);
+      // Um recibo antigo nunca sobrevive a uma execução interrompida.
+      rmSync(receipt, { force: true });
+      const workers = process.env.VITEST_MAX_WORKERS?.trim() || "3";
+      const { raw, status } = runVitest([
+        ...areaProjects(area).flatMap((name) => ["--project", name]),
+        `--maxWorkers=${workers}`,
+      ]);
+      const report = areaReceipt(raw, root, area, status, process.env);
+      mkdirSync(areaOutput, { recursive: true });
+      writeFileSync(receipt, `${JSON.stringify(report, null, 2)}\n`);
+      if (report.result !== "passed") process.exitCode = 1;
+    } else if (command === "collect-tests") {
+      const metadata = JSON.parse(readFileSync(join(output, "revision.json"), "utf8"));
+      const receipts = {};
+      const expected = {};
+      for (const { name } of testProjects) {
+        const file = join(areaOutput, `${name}.json`);
+        if (existsSync(file)) receipts[name] = JSON.parse(readFileSync(file, "utf8"));
+        expected[name] = areaFiles(name).length;
       }
+      const report = collectTests(metadata, receipts, expected);
+      writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
+      for (const [name, area] of Object.entries(report.areas))
+        console.log(
+          `${name}: ${area.result}` +
+            (area.result === "missing" ? "" : `, ${area.files} arquivos, ${area.passed} testes`) +
+            (area.ranOn?.sha && area.ranOn.sha !== metadata.checkedSha
+              ? ` (repetido do run ${area.ranOn.runId}, que testou ${area.ranOn.sha.slice(0, 12)})`
+              : ""),
+        );
+      if (report.result !== "passed") process.exitCode = 1;
     } else if (command === "approve") {
       const data = JSON.parse(readFileSync(join(output, "revision.json"), "utf8"));
       const report = JSON.parse(readFileSync(join(output, "tests.json"), "utf8"));
-      if (report.result !== "passed" || data.checkedSha !== report.revision.checkedSha)
+      if (!approvedTests(data, report))
         throw new Error("No successful test receipt for this checkout");
       if (process.env.GITHUB_OUTPUT)
         appendFileSync(process.env.GITHUB_OUTPUT, `tested_sha=${data.checkedSha}\n`);
@@ -115,6 +196,22 @@ try {
       let summary = `# Validação da revisão\n\n${revisionLabel}: \`${data?.checkedSha ?? "não identificado"}\`\n\n${localNote}Head do PR: \`${data?.headSha ?? "não identificado"}\`\n\nTipo: ${data?.kind ?? "não identificado"}; Draft: ${data?.draft ?? false}\n\nTestes: ${report?.result ?? "não executados"}. Builds e checks: consultar os steps do job.\n\n| Suíte | Arquivos | Passaram | Falharam | Pendentes |\n| --- | --- | --- | --- | --- |\n`;
       for (const [name, counts] of Object.entries(report?.suites ?? {}))
         summary += `| ${name} | ${counts.files} | ${counts.passed} | ${counts.failed} | ${counts.pending} |\n`;
+      if (report?.areas) {
+        summary += `\n| Área | Resultado | Arquivos | Testes | Origem |\n| --- | --- | --- | --- | --- |\n`;
+        for (const [name, area] of Object.entries(report.areas)) {
+          const origin =
+            area.result === "missing"
+              ? "sem recibo"
+              : !area.ranOn
+                ? "fora do Actions"
+                : area.ranOn.sha === data?.checkedSha
+                  ? "executada neste checkout"
+                  : `repetida do cache: run ${area.ranOn.runId}, \`${area.ranOn.sha.slice(0, 12)}\``;
+          summary += `| ${name} | ${area.result} | ${area.files ?? 0} | ${area.passed ?? 0} | ${origin} |\n`;
+        }
+      }
+      if (process.env.CI_CHANGES_MODE === "docs")
+        summary += `\nSó documentação mudou: o job conferiu formatação e credenciais e não executou o grafo \`validate\`; nenhum \`tested_sha\` foi emitido.\n`;
       summary += `\n## Cobertura progressiva da 1.0\n\n${matrix.modules.map((m) => `- ${m.id}: ${m.status}`).join("\n")}\n\nTestes remotos e fiscais reais não fazem parte deste CI.\n`;
       writeFileSync(join(output, "summary.md"), summary);
       if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

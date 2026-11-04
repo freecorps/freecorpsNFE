@@ -48,6 +48,13 @@ jobs:
     needs: plan
     if: github.ref == 'refs/heads/main' && inputs.approved_sha == github.sha
     uses: ./.github/workflows/ci.yml
+    # What ci.yml's Validate job declares; a called workflow cannot ask for
+    # more than its caller grants. Read only, and here unused: under
+    # workflow_call the graph runs without the task cache.
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
 
   publish:
     name: Publish the fiscal production

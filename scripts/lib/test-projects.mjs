@@ -15,6 +15,13 @@ const tooling = [
   "tests/{worktree,validation,consoleTarget,ci.,fixtureCorpus,docsOutput}*.test.ts",
 ];
 const benchmarks = ["tests/**/*.benchmark.test.ts"];
+// Testes que leem a árvore inteira: os identificadores de todo Markdown, a
+// classificação de todo arquivo versionado para a cópia pública e o guarda da
+// lista de documentação, que lê todo código-fonte. Numa área própria, a
+// `tooling` só repete a execução quando muda o que ela lê, não a cada arquivo
+// do repositório. Os dois primeiros são também os testes do modo de
+// documentação do CI (`documentationTests` em scripts/lib/ci-changes.mjs).
+const repository = ["scripts/{public-identifiers,public-tree}.test.ts", "tests/ci.changes.test.ts"];
 const platform = [
   "tests/{platform,sdk}.*test.ts",
   "tests/{apiKeyCrypto,publicSite,referenceCorpus,webhookTransport}.test.ts",
@@ -45,10 +52,11 @@ export const testProjects = [
   {
     name: "tooling",
     include: tooling,
-    exclude: benchmarks,
+    exclude: [...benchmarks, ...repository],
     timeout: 60_000,
     report: "infrastructure",
   },
+  { name: "repository", include: repository, timeout: 60_000, report: "infrastructure" },
   { name: "benchmark", include: benchmarks, timeout: 120_000, report: "platform" },
 ];
 
@@ -79,16 +87,34 @@ const mocking = /\bvi\.(mock|doMock)\(/;
 // `from "./x"`, `import "./x"` e `import("./x")`, com caminho relativo.
 const localImport = /(?:\bfrom|\bimport)\s*\(?\s*["'](\.\.?\/[^"']+)["']/g;
 
-/** Arquivos de teste de um projeto, relativos à raiz e com `/`. */
+/**
+ * Arquivos de teste de um projeto, relativos à raiz e com `/`. A caminhada é
+ * manual: pula `node_modules` e pastas com ponto e nunca segue symlink (o
+ * `Dirent` de um symlink não é diretório nem arquivo). O `recursive` do
+ * `readdirSync` descia pelos links de `node_modules` até o `dist` que outra
+ * tarefa do grafo recria ao mesmo tempo e falhava com ENOENT. Uma subpasta que
+ * some durante a caminhada não tinha teste a contar.
+ */
 function filesOf({ include, exclude }) {
   const files = [];
-  for (const dir of new Set(include.map((pattern) => pattern.split("/")[0])))
-    for (const entry of readdirSync(root + dir, { recursive: true, withFileTypes: true })) {
-      const file = posix.relative(root, `${entry.parentPath.replaceAll("\\", "/")}/${entry.name}`);
-      if (entry.isFile() && !/(^|\/)(node_modules|\.[^/]+)\//.test(file))
-        if (matches(file, include) && !matches(file, exclude)) files.push(file);
+  const walk = (dir, top) => {
+    let entries;
+    try {
+      entries = readdirSync(root + dir, { withFileTypes: true });
+    } catch (error) {
+      if (!top && (error.code === "ENOENT" || error.code === "ENOTDIR")) return;
+      throw error;
     }
-  return files.sort();
+    for (const entry of entries) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules" && !entry.name.startsWith(".")) walk(path, false);
+      } else if (entry.isFile() && matches(path, include) && !matches(path, exclude))
+        files.push(path);
+    }
+  };
+  for (const dir of new Set(include.map((pattern) => pattern.split("/")[0]))) walk(dir, true);
+  return files.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 /**
@@ -132,11 +158,23 @@ export function vitestProjects() {
   });
 }
 
+/**
+ * Arquivos de teste que a área roda, somados os projetos dela, relativos à
+ * raiz e com `/`. O CI confere que o recibo de cada área contou exatamente
+ * esses arquivos (`collectTests` em scripts/lib/ci.mjs).
+ */
+export function areaFiles(area) {
+  const project = testProjects.find(({ name }) => name === area);
+  if (!project) throw new Error(`Unknown test area: ${area}`);
+  return filesOf(project);
+}
+
 /** `vp test run` com todos os projetos do Vitest de uma área. */
 export const areaCommand = (area) =>
-  [
-    "vp test run",
-    ...vitestProjects()
-      .filter((project) => project.area === area)
-      .map(({ name }) => `--project ${name}`),
-  ].join(" ");
+  ["vp test run", ...areaProjects(area).map((name) => `--project ${name}`)].join(" ");
+
+/** Nomes dos projetos do Vitest da área, na ordem de `vitestProjects`. */
+export const areaProjects = (area) =>
+  vitestProjects()
+    .filter((project) => project.area === area)
+    .map(({ name }) => name);

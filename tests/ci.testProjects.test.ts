@@ -33,7 +33,10 @@ type Project = {
   setupFiles?: string[];
 };
 const projects = (config.test!.projects as Array<{ test: Project }>).map(({ test }) => test);
-const tasks = config.run!.tasks! as Record<string, { command?: string; cache?: boolean }>;
+const tasks = config.run!.tasks! as Record<
+  string,
+  { command?: string; cache?: unknown; dependsOn?: string[] }
+>;
 const testFiles = execFileSync(
   "git",
   ["ls-files", "--cached", "--others", "--exclude-standard", "*.test.ts", "*.test.tsx"],
@@ -115,6 +118,11 @@ it("classifies a new test file from the shared list", () => {
   expect(owners("tests/apiKeyCrypto.test.ts")).toEqual(["platform"]);
   expect(owners("tests/webhookContract.test.ts")).toEqual(["packages"]);
   expect(owners("tests/docsOutput.test.ts")).toEqual(["tooling"]);
+  // Os testes que leem a árvore inteira ficam fora de tooling.
+  expect(owners("scripts/public-tree.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-identifiers.test.ts")).toEqual(["repository"]);
+  expect(owners("tests/ci.changes.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/public-scan.test.ts")).toEqual(["tooling"]);
   // Nenhum projeto recolhe o restante: um teste novo sem dono reprova.
   expect(() => suiteFor("tests/novo.test.ts")).toThrow("no project");
   expect(() => suiteFor("lib/novo.test.ts")).toThrow("no project");
@@ -136,8 +144,86 @@ it("gives every project a local task and runs all of them in CI", () => {
     "vp test run --project platform --project platform-isolated",
   );
   expect(tasks["test:packages"]?.command).toBe("vp test run --project packages");
-  // ci:tests runs the whole suite, every project, without cache.
-  expect(tasks["ci:tests"]).toMatchObject({ command: "node scripts/ci.mjs test", cache: false });
+  // The CI graph has one cached task per area, each writing only its receipt,
+  // and ci:tests, never cached, collects every area's receipt.
+  for (const { name } of testProjects)
+    expect(tasks[`ci:test:${name}`]).toMatchObject({
+      command: `node scripts/ci.mjs test-area ${name}`,
+      cache: { output: [`.ci-results/tests/${name}.json`] },
+    });
+  expect(tasks["ci:tests"]).toMatchObject({
+    command: "node scripts/ci.mjs collect-tests",
+    cache: false,
+    dependsOn: testProjects.map(({ name }) => `ci:test:${name}`),
+  });
+  expect(tasks.validate?.dependsOn).toContain("ci:tests");
+});
+
+/**
+ * Runs the real `scripts/ci.mjs <command>` with Vitest and the .ci-results
+ * writes replaced, and returns the Vitest commands it would start.
+ */
+function vitestCalls(...command: string[]) {
+  const root = mkdtempSync(join(tmpdir(), "fnfe-ci-runner-"));
+  try {
+    const log = join(root, "calls.json"),
+      preload = join(root, "preload.mjs");
+    writeFileSync(
+      preload,
+      `
+import cp from "node:child_process";
+import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+const calls = [], write = fs.writeFileSync, spawn = cp.spawnSync;
+const results = (file) => String(file).replaceAll("\\\\", "/").includes("/.ci-results");
+cp.spawnSync = (_file, args) => {
+  if (args[1] !== "test" || args[2] !== "run") return spawn(_file, args, { encoding: "utf8", windowsHide: true });
+  calls.push(args);
+  write(${JSON.stringify(log)}, JSON.stringify(calls));
+  return { status: 0 };
+};
+fs.mkdirSync = ((mkdir) => (file, ...args) => results(file) ? undefined : mkdir(file, ...args))(fs.mkdirSync);
+fs.writeFileSync = (file, ...args) => results(file) ? undefined : write(file, ...args);
+fs.rmSync = ((rm) => (file, ...args) => results(file) ? undefined : rm(file, ...args))(fs.rmSync);
+syncBuiltinESMExports();
+`,
+    );
+    const result = spawnSync(
+      process.execPath,
+      ["--import", pathToFileURL(preload).href, resolve("scripts/ci.mjs"), ...command],
+      { cwd: resolve("."), env: subprocessEnvironment(process.env), encoding: "utf8" },
+    );
+    expect(existsSync(log), result.stderr).toBe(true);
+    return JSON.parse(readFileSync(log, "utf8")) as string[][];
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+it("runs exactly the area's projects from each CI area task, and every project in one area", () => {
+  const ran: string[] = [];
+  for (const { name } of testProjects) {
+    const [args, ...others] = vitestCalls("test-area", name);
+    expect(others).toEqual([]);
+    expect(args!.slice(1, 3)).toEqual(["test", "run"]);
+    const options = args!.slice(3);
+    // No file filter, changed set or shard: the area's projects and options only.
+    expect(options.filter((arg) => /^--(changed|shard)\b/.test(arg))).toEqual([]);
+    const projectNames = options.filter((_, index) => options[index - 1] === "--project");
+    expect(options.filter((arg) => !arg.startsWith("--"))).toEqual(projectNames);
+    expect(projectNames).toEqual(
+      vitestProjects()
+        .filter((project) => project.area === name)
+        .map((project) => project.name),
+    );
+    ran.push(...projectNames);
+  }
+  // Together the area tasks run every Vitest project, each once.
+  expect(ran.sort()).toEqual(
+    vitestProjects()
+      .map(({ name }) => name)
+      .sort(),
+  );
 });
 
 it("runs the whole suite from the CI test command, without a filter", () => {
