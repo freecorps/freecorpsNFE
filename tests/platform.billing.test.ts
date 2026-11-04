@@ -92,6 +92,8 @@ function fakeStripe() {
     failNext: 0,
     /** Paths that time out on every call, whatever the method. */
     failPaths: [] as string[],
+    /** Subscriptions the list leaves out, as one created while it is read; found by id. */
+    unlisted: [] as string[],
   };
   const reply = (body: unknown, status = 200) => Response.json(body, { status });
   vi.stubGlobal("fetch", async (input: string | URL, init: RequestInit = {}) => {
@@ -142,11 +144,14 @@ function fakeStripe() {
     }
     if (path === "/v1/subscriptions")
       return reply({
-        data: state.subscriptions.filter((x) => x.customer === params.get("customer")),
+        data: state.subscriptions.filter(
+          (x) => x.customer === params.get("customer") && !state.unlisted.includes(String(x.id)),
+        ),
       });
     const sub = /^\/v1\/subscriptions\/([^/]+)$/.exec(path);
     if (sub) {
-      const found = state.subscriptions.find((x) => x.id === sub[1])!;
+      const found = state.subscriptions.find((x) => x.id === sub[1]);
+      if (!found) return reply({ error: { code: "resource_missing" } }, 404);
       if (method === "DELETE") found.status = "canceled";
       if (params.has("cancel_at_period_end"))
         found.cancel_at_period_end = params.get("cancel_at_period_end") === "true";
@@ -452,8 +457,9 @@ describe("leitura do Stripe", () => {
       kind: "review",
       code: "CURRENCY_MISMATCH",
     });
-    // Invariant 6: without the subscription's anchor, or with a line that is not one month of it.
-    expect(grant(start, org, {})).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    // Invariant 6: a line that is not one month of the anchor goes to a person. An anchor not
+    // read yet decides nothing: the invoice waits for the next reconciliation.
+    expect(grant(start, org, {})).toEqual({ kind: "none", code: "ANCHOR_UNKNOWN" });
     expect(grant(start, org, { sub_1: JAN_31 - 1000 })).toEqual({
       kind: "review",
       code: "INVOICE_UNEXPECTED",
@@ -1643,23 +1649,99 @@ describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await sync(f);
     vi.setSystemTime(NOV_10 + 3600_000);
-    // A renewal counted from a drifted day, and one whose subscription lost its anchor.
+    // A renewal counted from a drifted day: one day short of the anchor's month.
     f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10, {}, NOV_10 + 29 * 86400_000));
-    await sync(f);
-    expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
-    delete (sub as Partial<typeof sub>).billing_cycle_anchor;
-    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
     await sync(f);
     expect(await grants(f)).toEqual([
       ["applied", null, "2026-10-10T12:00:00.000Z"],
-      ["blocked", "INVOICE_UNEXPECTED", null],
       ["blocked", "INVOICE_UNEXPECTED", null],
     ]);
     expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
     const owner = await person(f.t, f.organizationId, "owner");
     expect(
       (await owner.query(api.billing.overview, { organizationId: f.organizationId })).reviews,
-    ).toMatchObject([{ code: "INVOICE_UNEXPECTED" }, { code: "INVOICE_UNEXPECTED" }]);
+    ).toMatchObject([{ code: "INVOICE_UNEXPECTED" }]);
+  });
+
+  it("a fatura de uma assinatura fora da lista lê a âncora pelo id; sem âncora, espera a próxima conferência", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    // A sync racing the completion: the paid first invoice is listed, its subscription is not.
+    const sub = f.fake.subscribe(customer, "intermediate");
+    f.fake.state.unlisted.push(sub.id);
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await sync(f);
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "GET")).toHaveLength(1);
+    expect(await f.plan()).toMatchObject({ endsAt: NOV_10, periodAnchor: OCT, version: 1 });
+    // An anchor Stripe does not show at all records nothing: no permanent block, retried later.
+    vi.setSystemTime(NOV_10 + 3600_000);
+    const anchor = sub.billing_cycle_anchor;
+    delete (sub as Partial<typeof sub>).billing_cycle_anchor;
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    await sync(f);
+    expect(await grants(f)).toEqual([["applied", null, "2026-10-10T12:00:00.000Z"]]);
+    expect(await f.plan()).toMatchObject({ endsAt: NOV_10, version: 1 });
+    Object.assign(sub, { billing_cycle_anchor: anchor });
+    await sync(f);
+    expect(await grants(f)).toEqual([
+      ["applied", null, "2026-10-10T12:00:00.000Z"],
+      ["applied", null, "2026-11-10T12:00:00.000Z"],
+    ]);
+    expect(await f.plan()).toMatchObject({ endsAt: DEC_10, version: 2 });
+  });
+
+  it("a renovação cobrada abaixo de um upgrade cuja troca de preço não chegou fica para uma pessoa", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    const sub = f.fake.subscribe(customer, "intermediate");
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
+    await sync(f);
+    await f.owner.action(api.billing.checkout, {
+      organizationId: f.organizationId,
+      tier: "large",
+      key: "upgrade-switch-lost",
+    });
+    const name = f.fake
+      .sent("/v1/checkout/sessions")
+      .at(-1)!
+      .params.get("line_items[0][price_data][product_data][name]");
+    expect(name).toBe(
+      "Mudança para Grande, diferença do mês do plano iniciado em 10/10/2026 às 12:00 UTC",
+    );
+    f.fake.invoice({
+      customer,
+      amount_paid: 35000,
+      amount_due: 35000,
+      billing_reason: "manual",
+      metadata: {
+        organizationId: f.organizationId,
+        kind: "upgrade",
+        tier: "large",
+        period: "2026-10-10T12:00:00.000Z",
+        grantCents: "35000",
+      },
+    });
+    for (const session of f.fake.state.sessions.values()) session.status = "complete";
+    // The upgrade is granted, but the switch of price never reaches Stripe.
+    f.fake.state.failPaths.push(`/v1/subscriptions/${sub.id}`);
+    expect(await code(sync(f))).toBe("ERROR");
+    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV_10 });
+    vi.setSystemTime(NOV_10 + 3600_000);
+    f.fake.state.failPaths = [];
+    f.fake.invoice(cycleInvoice(customer, sub.id, NOV_10));
+    await sync(f);
+    // Granted at the tier charged, flagged; the switch lands now, for the next month.
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: DEC_10 });
+    expect(await grants(f)).toEqual([
+      ["applied", null, "2026-10-10T12:00:00.000Z"],
+      ["applied", null, "2026-10-10T12:00:00.000Z"],
+      ["applied", "RENEWAL_BELOW_UPGRADE", "2026-11-10T12:00:00.000Z"],
+    ]);
+    expect((sub.items.data[0] as Json).price).toBe("price_large");
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(
+      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).reviews,
+    ).toMatchObject([{ code: "RENEWAL_BELOW_UPGRADE" }]);
   });
 
   it("uma assinatura anterior à fatia 2a, ancorada no dia 1, continua concedendo e sobe de plano", async () => {
@@ -3939,6 +4021,31 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     );
     expect(await code(annualCheckout(f))).toBe("OK");
     expect(sessions(f)).toHaveLength(2);
+  });
+
+  it("um mensal maior que termina depois do dia 1 segura o anual menor até o fim dele", async () => {
+    const f = await fixture();
+    await annualOn(f);
+    // The card Grande signed on 10/10 at 12:00 runs to 10/11 at 12:00, past the annual's 1st.
+    const { customer } = await startCard(f, "large");
+    const sub = f.fake.subscribe(customer, "large");
+    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 49900, "large"));
+    await sync(f);
+    await f.owner.action(api.billing.changeRenewal, {
+      organizationId: f.organizationId,
+      change: "cancel",
+    });
+    const before = sessions(f).length;
+    // Its invoice on 01/11 would be blocked after the charge: one paid plan at a time, it waits.
+    expect(await refusal(annualCheckout(f, { key: "annual-int-under-large" }))).toEqual({
+      code: "PLAN_UNAVAILABLE",
+      availableAt: NOV_10,
+    });
+    expect(sessions(f)).toHaveLength(before);
+    // The same tier, or a larger one, replaces the monthly on the 1st, as the ADR allows.
+    expect(await code(annualCheckout(f, { tier: "large", key: "annual-large-over-large" }))).toBe(
+      "OK",
+    );
   });
 
   it("recusa com plano personalizado, na virada do mês e sem admissão", async () => {

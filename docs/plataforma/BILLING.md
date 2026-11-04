@@ -153,13 +153,27 @@ do Customer, inclusive das encerradas (`readSubscriptions`, `anchors`), e
 `invoiceGrant` (`lib/billingStripe.ts`) exige que a linha no preço mensal
 cubra exatamente um mês dessa âncora, `[addMonths(âncora, k),
 addMonths(âncora, k + 1))`, na primeira fatura e em cada renovação
-(`anchorMonth`). Uma linha fora disso, ou uma fatura cuja assinatura não
-tem âncora conhecida, fica `blocked` com `INVOICE_UNEXPECTED`. Concedida, a
+(`anchorMonth`). Uma linha fora disso fica `blocked` com `INVOICE_UNEXPECTED`.
+A assinatura de uma fatura que a lista não trouxe, porque ela só lê 10
+assinaturas ou porque a conferência correu junto com a conclusão do
+Checkout, é lida pelo id (`GET /v1/subscriptions/{id}`). Se ainda assim a
+âncora não for conhecida, a fatura não é registrada (`ANCHOR_UNKNOWN`, como
+uma fatura não paga) e volta a ser pesada na conferência seguinte. Concedida, a
 linha de `usagePlans` vai de agora ao fim da linha (`line.period.end`), com
 `periodAnchor` igual à âncora em ms (invariante 4), e as cotas viram nos
 aniversários ([USAGE.md](USAGE.md#período-de-cota)). `activateCatalogPlan`
 recusa uma âncora depois de `startsAt` ou um fim que não seja aniversário
 dela.
+
+Se a troca de preço de um upgrade pago não chegar ao Stripe antes de ele
+preparar a fatura do aniversário (falha da API, evento perdido), a renovação
+sai pelo tier anterior. O dinheiro entrou por esse preço, então o mês é
+concedido nesse tier, mas a concessão fica `applied` com
+`RENEWAL_BELOW_UPGRADE` e aparece em `billing:overview` (`reviews`) até
+`billing:resolveReview`, como no anual: a renovação abaixo do tier do mês
+anterior enquanto a conta ainda renova por ele. `renewalTier` não muda, e a
+troca, quando chegar, vale para o mês seguinte. Uma pessoa combina com o
+cliente a diferença ou o reembolso.
 
 ### Como uma fatura vira plano
 
@@ -173,7 +187,8 @@ Cada fatura paga é pesada uma vez (`billingGrants.invoiceId`):
   ([Fatura anual do cartão](#fatura-anual-do-cartão)). Uma renovação anual
   cobrada abaixo do tier que um upgrade comprou fica `applied` com
   `RENEWAL_BELOW_UPGRADE` e aparece para a equipe
-  ([Upgrade do anual](#upgrade-do-anual)).
+  ([Upgrade do anual](#upgrade-do-anual)), e a mensal também
+  ([Período da fatura mensal](#período-da-fatura-mensal)).
 - `skipped`: `ZERO_AMOUNT` (mês já pago, cobrado R$ 0) ou `SUPERSEDED` (um mês
   posterior já está em vigor; nunca encurta o plano).
 - `blocked`: precisa de uma pessoa. `ANNUAL_TERM_ACTIVE` (fatura mensal paga
@@ -824,8 +839,13 @@ Recusas, todas antes de qualquer chamada ao Stripe:
   não cancela a renovação por conta própria: um Checkout abandonado
   deixaria a organização sem renovação, e uma repetição no meio dessa troca
   poderia cobrar duas vezes;
-- `PLAN_UNAVAILABLE`: plano personalizado ou admissão fechada. Um
-  plano mensal maior em vigor não impede: o mês corrente fica com ele;
+- `PLAN_UNAVAILABLE`: plano personalizado ou admissão fechada. Um plano
+  mensal maior em vigor que termina até o dia 1 não impede: o mês corrente
+  fica com ele. Um mensal maior que termina depois do dia 1, como o do
+  cartão no aniversário da contratação desde a fatia 2a, recusa com
+  `availableAt` no fim dele: a fatura do dia 1 ficaria `PLAN_UNAVAILABLE`
+  depois da cobrança (um plano pago por vez). Um mensal de tier igual ou
+  menor é substituído pelo termo no dia 1, sem desconto, até a fatia 2b;
 - as demais recusas de `allocateOffer`, com o código dela: catálogo
   desligado (`PLANS_DISABLED`), inventário de capacidade ausente
   (`CAPACITY_INVENTORY_REQUIRED`) ou uso acima do plano (`QUOTA_EXCEEDED`);
@@ -1578,13 +1598,17 @@ Do mensal no cartão nos aniversários (fatia 2a), em
 preço recorrente, sem âncora, item avulso nem cupom; a assinatura de 31/01 às
 10:00:07 concedida até 28/02 e renovada até 31/03 e 30/04 no mesmo horário,
 sem deriva, com as cotas virando nos aniversários e as faturas reenviadas
-sem efeito novo; a fatura com um período fora do mês da âncora, ou sem
-âncora conhecida, bloqueada com `INVOICE_UNEXPECTED`; a assinatura anterior
+sem efeito novo; a fatura com um período fora do mês da âncora bloqueada
+com `INVOICE_UNEXPECTED`; a assinatura fora da lista lida pelo id, e a fatura
+sem âncora conhecida deixada para a conferência seguinte, sem registro; a
+renovação cobrada abaixo de um upgrade cuja troca de preço falhou, concedida
+com `RENEWAL_BELOW_UPGRADE`; a assinatura anterior
 à 2a, ancorada no dia 1, renovando nas chaves `AAAA-MM` e subindo de plano
 pelo mês civil; o upgrade no meio do mês pela diferença, com a mesma âncora
 e o mesmo fim, recusado a 45 minutos do fim com a data e bloqueado com
 `LATE_PAYMENT` se pago depois da virada; e as recusas com `availableAt`
-pelo termo anual, pelo mensal do cartão com a renovação parada e pelo Pix.
+pelo termo anual, pelo mensal do cartão com a renovação parada, pelo Pix e,
+no anual no cartão, pelo mensal maior que termina depois do dia 1.
 A tela, em `apps/console/src/plans-billing.test.tsx`, mostra a próxima
 cobrança e o fim do plano como instantes UTC, sem "dia 1".
 

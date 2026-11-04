@@ -327,8 +327,13 @@ export async function applyInvoice(
     annualSubscriptions,
     anchors,
   );
-  // An unpaid invoice may still be paid: it is weighed again on the next reconciliation.
-  if (decision.kind === "none" && decision.code === "NOT_PAID") return;
+  // An unpaid invoice may still be paid, and the anchor of a subscription not read yet will be:
+  // either is weighed again on the next reconciliation.
+  if (
+    decision.kind === "none" &&
+    (decision.code === "NOT_PAID" || decision.code === "ANCHOR_UNKNOWN")
+  )
+    return;
   const now = Date.now();
   const bought = decision.kind !== "none" && decision.kind !== "review";
   const record: GrantRecord = (state, code, planVersion, termId) =>
@@ -422,6 +427,19 @@ export async function applyInvoice(
     if (!code) throw error;
     return void (await record("blocked", code));
   }
+  // A renewal charged below the tier the month it follows reached, while the account still renews
+  // at that tier: the price switch of a paid upgrade did not reach Stripe before it drafted the
+  // renewal. The money taken is that tier's, so it is granted, but flagged for a person, as the
+  // annual one. `renewalTier` stays: the switch, once it lands, bills the next month right.
+  const below =
+    decision.kind === "grant" &&
+    invoice.billingReason === "subscription_cycle" &&
+    !!plan &&
+    !plan.termId &&
+    plan.endsAt === decision.startsAt &&
+    plan.catalogTier === account.renewalTier &&
+    !!account.renewalTier &&
+    PLATFORM_PLANS[account.renewalTier].monthlyCents > PLATFORM_PLANS[decision.tier].monthlyCents;
   // Every catalog row the card writes carries its anchor, up to `startsAt`, and ends on one of
   // its anniversaries (ADR 0012, invariant 4): `activateCatalogPlan` refuses anything else.
   await activateCatalogPlan(
@@ -436,7 +454,7 @@ export async function applyInvoice(
     undefined,
     anchor,
   );
-  await record("applied", undefined, (plan?.version ?? 0) + 1);
+  await record("applied", below ? "RENEWAL_BELOW_UPGRADE" : undefined, (plan?.version ?? 0) + 1);
   // An upgrade paid by card also raises what the subscription renews at.
   if (decision.kind === "upgrade")
     await ctx.db.patch("billingAccounts", account._id, {

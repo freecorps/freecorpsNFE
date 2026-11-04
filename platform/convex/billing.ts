@@ -503,6 +503,16 @@ export const prepareCheckout = internalMutation({
     } else if (annual) {
       // A card that still renews would bill beside the term: "Não renovar" comes first.
       if (renews(account)) deny("SUBSCRIPTION_RENEWING");
+      // Until slice 2b the term starts on the next 1st, and a monthly in force still pricier then
+      // would block its invoice (`PLAN_UNAVAILABLE`, a downgrade only at renewal) after Stripe
+      // charged it: one paid plan at a time, it waits for that monthly to end.
+      if (
+        current &&
+        current.monthlyCents > offer.monthlyCents &&
+        plan!.endsAt !== null &&
+        plan!.endsAt > firstPeriod!
+      )
+        deny("PLAN_UNAVAILABLE", { availableAt: plan!.endsAt });
       // The current month stays on the plan in force, so any tier may follow it.
       kind = "start";
       grantCents = offer.annualCents;
@@ -604,6 +614,14 @@ export const dropCheckout = internalMutation({
   },
 });
 
+/** An instant as the console writes it (`formatUtcInstant`): "10/11/2026 às 12:00 UTC". */
+function utcText(at: number) {
+  const date = new Date(at);
+  const two = (value: number) => String(value).padStart(2, "0");
+  const seconds = date.getUTCSeconds() ? `:${two(date.getUTCSeconds())}` : "";
+  return `${two(date.getUTCDate())}/${two(date.getUTCMonth() + 1)}/${date.getUTCFullYear()} às ${two(date.getUTCHours())}:${two(date.getUTCMinutes())}${seconds} UTC`;
+}
+
 const metadata = (prefix: string, fields: Record<string, string | number>): Params =>
   Object.fromEntries(
     Object.entries(fields).map(([name, value]) => [`${prefix}[${name}]`, String(value)]),
@@ -692,7 +710,7 @@ export const checkout = action({
                 0,
                 prepared.annual
                   ? `Mudança para ${offer.name} anual, de ${prepared.period} ao fim do período anual (UTC)`
-                  : `Mudança para ${offer.name}, diferença do mês do plano iniciado em ${prepared.period} (UTC)`,
+                  : `Mudança para ${offer.name}, diferença do mês do plano iniciado em ${utcText(periodStart(prepared.period))}`,
               ),
               "invoice_creation[enabled]": true,
               ...metadata("invoice_creation[invoice_data][metadata]", marks),
@@ -1389,15 +1407,41 @@ async function syncOrganization(
       subscriptions,
       target.customerId,
     );
+    const facts = readInvoices(invoices).filter(
+      (invoice) => invoice.customerId === target.customerId,
+    );
+    // The list holds at most 10 subscriptions, and one created while it was read (a Checkout
+    // completing) may be missing: an invoice's own subscription is then read by its id, so its
+    // anchor is known. One still unknown leaves the invoice for the next reconciliation.
+    const missing = new Set(
+      facts.flatMap((invoice) =>
+        invoice.subscriptionId &&
+        !anchors.some((item) => item.subscriptionId === invoice.subscriptionId)
+          ? [invoice.subscriptionId]
+          : [],
+      ),
+    );
+    for (const subscriptionId of missing) {
+      let body: Record<string, unknown>;
+      try {
+        body = await stripeApi(
+          cfg,
+          "GET",
+          `/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
+        );
+      } catch (error) {
+        if (error instanceof StripeApiError && error.status === 404) continue;
+        throw error;
+      }
+      anchors.push(...readSubscriptions({ data: [body] }, target.customerId).anchors);
+    }
     const change = await ctx.runMutation(internal.billing.reconcile, {
       organizationId,
       livemode: cfg.livemode,
       customerId: target.customerId,
       subscription: current,
       duplicates,
-      invoices: readInvoices(invoices).filter(
-        (invoice) => invoice.customerId === target.customerId,
-      ),
+      invoices: facts,
       prices,
       annualPrices,
       annualSubscriptions: annualIds,

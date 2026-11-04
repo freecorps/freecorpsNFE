@@ -414,11 +414,17 @@ export function invoiceGrant(
   if (invoice.amountPaid <= 0) return { kind: "none", code: "ZERO_AMOUNT" };
   if (invoice.currency !== "brl") return { kind: "review", code: "CURRENCY_MISMATCH" };
   const anchor = invoice.subscriptionId === null ? undefined : anchors[invoice.subscriptionId];
-  /** A line at a monthly price bills one month of the anchor, or the invoice goes to a person. */
+  /**
+   * A line at a monthly price bills one month of the anchor, or the invoice goes to a person. An
+   * anchor not read yet (a sync racing the Checkout's completion) decides nothing: the invoice is
+   * not recorded and is weighed again on the next reconciliation, as an unpaid one.
+   */
   const month = (tier: PaidTier, line: InvoiceFacts["lines"][number]): GrantDecision =>
-    anchor !== undefined && anchorMonth(anchor, line.periodStart, line.periodEnd)
-      ? { kind: "grant", tier, startsAt: line.periodStart, endsAt: line.periodEnd, anchor }
-      : { kind: "review", code: "INVOICE_UNEXPECTED" };
+    anchor === undefined
+      ? { kind: "none", code: "ANCHOR_UNKNOWN" }
+      : anchorMonth(anchor, line.periodStart, line.periodEnd)
+        ? { kind: "grant", tier, startsAt: line.periodStart, endsAt: line.periodEnd, anchor }
+        : { kind: "review", code: "INVOICE_UNEXPECTED" };
   const priced = (marks: typeof ourMetadata.type, kind: string): GrantDecision => {
     if (marks.organizationId !== organizationId)
       return { kind: "review", code: "ORGANIZATION_MISMATCH" };

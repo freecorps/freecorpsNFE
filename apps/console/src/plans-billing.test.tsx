@@ -396,7 +396,7 @@ it("an annual subscription already charged keeps the paid months and points to s
 
 it("names each annual item under review", () => {
   const codes = [
-    ["RENEWAL_BELOW_UPGRADE", "Renovação anual cobrada abaixo do plano da mudança paga"],
+    ["RENEWAL_BELOW_UPGRADE", "Renovação cobrada abaixo do plano da mudança paga"],
     ["SUBSCRIPTION_STOP_FAILED", "Cancelamento da assinatura anual rescindida pendente no Stripe"],
     ["ANNUAL_TERM_RESCINDED", "Cobrança de uma assinatura anual já rescindida"],
     ["AMOUNT_MISMATCH", "Pagamento com valor diferente do cobrado"],

@@ -49,7 +49,7 @@ const reviewNames: Record<string, string> = {
   ANNUAL_TERM_REQUIRED: "Mudança de plano anual paga sem o plano anual em vigor",
   ANNUAL_TERM_SCHEDULED: "Mudança de plano anual paga com um plano anual agendado",
   ANNUAL_TERM_RESCINDED: "Cobrança de uma assinatura anual já rescindida",
-  RENEWAL_BELOW_UPGRADE: "Renovação anual cobrada abaixo do plano da mudança paga",
+  RENEWAL_BELOW_UPGRADE: "Renovação cobrada abaixo do plano da mudança paga",
   SUBSCRIPTION_STOP_FAILED: "Cancelamento da assinatura anual rescindida pendente no Stripe",
   SUBSCRIPTION_REQUIRED: "Mudança de plano anual paga sem a assinatura anual do plano",
   AMOUNT_MISMATCH: "Pagamento com valor diferente do cobrado",
@@ -100,10 +100,11 @@ function failure(error: unknown) {
     PAYMENT_METHOD_PIX:
       "Há um plano pago por Pix em vigor ou uma renovação dele já paga. O cartão espera o fim dele.",
     CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
-    // The monthly upgrade closes 45 minutes before the renewal, with the date it reopens; the
-    // annual, which still starts on the 1st, 45 minutes before the month turns.
+    // Shared by both cases: the monthly upgrade closes 45 minutes before the renewal, with the
+    // date it reopens; the annual, which still starts on the 1st, 45 minutes before the month
+    // turns, even without a paid plan.
     PERIOD_CLOSING:
-      "O período pago está terminando. Pelo cartão, a mudança de plano fecha 45 minutos antes da renovação, e o anual, 45 minutos antes de 00:00 UTC do dia 1.",
+      "Pelo cartão, a mudança de plano fecha 45 minutos antes da renovação, e o anual, 45 minutos antes de 00:00 UTC do dia 1.",
     SUBSCRIPTION_REQUIRED: "Não há assinatura por cartão nesta organização.",
     SUBSCRIPTION_CANCELLING:
       "A renovação está cancelada. Retome a renovação antes de mudar o plano.",
@@ -372,7 +373,9 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
       ) : null}
       {canManage && data.annualEnabled && renewing && !live.annual ? (
         <p className="gestao-help">
-          Para assinar o anual no cartão, use “Cancelar renovação” antes. O mês já pago continua.
+          Para assinar o anual no cartão, use “Cancelar renovação” antes. O mês pago continua até o
+          anual começar, no dia 1 seguinte, e é substituído por ele sem desconto dos dias restantes.
+          Um anual menor que o plano mensal em vigor espera o fim dele.
         </p>
       ) : null}
       {canManage && data.annualEnabled && !live?.annual && data.annualBlocked ? (
