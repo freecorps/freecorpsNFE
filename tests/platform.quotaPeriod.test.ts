@@ -63,6 +63,7 @@ describe("chaves canônicas", () => {
       "2026-13",
       "2026-02-30T00:00:00.000Z",
       "+002026-11",
+      "+010000-01",
       "stock",
       "",
     ])
@@ -460,6 +461,9 @@ describe("usage:overview", () => {
     const view = await f.view({ period: "2026-10" });
     expect(view.period).toEqual(civilPeriod(NOW));
     expect(view.recent).toEqual([civilPeriod(NOW)]);
+    expect(view.current).toBeNull();
+    // The last instant a key names is the end of 9999.
+    expect((await f.view({ asOf: 253402300799999 })).period.key).toBe("9999-12");
     expect(view.environments.sandbox.find((row) => row.metric === "attempts")).toMatchObject({
       reserved: 1,
     });
@@ -469,6 +473,7 @@ describe("usage:overview", () => {
       { period: "2026-10-15T14:30:00Z" },
       { asOf: -1 },
       { asOf: 1.5 },
+      { asOf: 253402300800000 },
     ])
       await expect(f.view(args)).rejects.toThrow("INVALID_REQUEST");
   });
@@ -494,6 +499,7 @@ describe("usage:overview", () => {
     };
     const current = await f.view({ asOf: Date.now() });
     expect(current.period).toEqual(second);
+    expect(current.current).toEqual(second);
     expect(current.plan?.periodAnchor).toBe(anchor);
     expect(current.recent).toEqual([second, first, civilPeriod(NOW)]);
     const attempts = (view: typeof current) =>

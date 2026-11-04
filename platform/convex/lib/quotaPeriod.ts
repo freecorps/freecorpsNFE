@@ -13,13 +13,18 @@ import { termMonthAt } from "./annualTerms";
 export type QuotaPeriod = { key: string; startsAt: number; endsAt: number };
 type Anchored = { periodAnchor?: number } | null | undefined;
 
-/** The last instant a `Date` holds: 8.64e15 ms after 1970. */
-const MAX_INSTANT = 8.64e15;
+/**
+ * The last instant a period key can name, 9999-12-31T23:59:59.999Z: past it, `toISOString()`
+ * writes a six-digit signed year (`+010000-…`), outside both canonical forms.
+ */
+export const MAX_PERIOD_INSTANT = 253402300799999;
 const CIVIL = /^(\d{4})-(\d{2})$/;
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
-const isInstant = (value: number) =>
-  Number.isSafeInteger(value) && value >= 0 && value <= MAX_INSTANT;
+/** An instant a period key can name: whole ms from 1970 to the end of 9999. */
+export const isPeriodInstant = (value: number) =>
+  Number.isSafeInteger(value) && value >= 0 && value <= MAX_PERIOD_INSTANT;
+const isInstant = isPeriodInstant;
 const monthStart = (at: number) => {
   const date = new Date(at);
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);

@@ -163,6 +163,9 @@ export async function allocateOffer(
 /**
  * The quota anchor of the plan rows a term grants (ADR 0012, slice Q): the term's start, truncated
  * to the whole second. Terms sold so far start on a 1st at 00:00 UTC, so their keys stay `AAAA-MM`.
+ * Interim: ADR 0012 anchors a chain at its original instant, but each term here anchors at its own
+ * `firstPeriod`, so a renewal re-anchors at `addMonths(anchor, 12)` and a 29/02 anchor drifts to
+ * 28/02. Slices 1b (Pix) and 2b (card) give the terms their chain anchor.
  */
 const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod">) =>
   Math.floor(term.firstPeriod / 1000) * 1000;

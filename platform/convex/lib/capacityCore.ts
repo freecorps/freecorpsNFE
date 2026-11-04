@@ -46,31 +46,35 @@ export const capacityAccount = (ctx: QueryCtx, organizationId: Id<"organizations
     .query("capacityAccounts")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
     .unique();
-/**
- * The key a capacity metric counts under at `now`: the fixed `stock` for the stock metrics, the
- * only key that is not a period, or the quota period of the organization's plan row (ADR 0012,
- * section 2), read in the caller's transaction.
- */
-export async function capacityPeriod(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  metric: Metric,
-  now: number,
-) {
-  if (stock(metric)) return "stock";
-  const plan = await ctx.db
+type PlanRow = Doc<"usagePlans"> | null;
+const planRow = (ctx: QueryCtx, organizationId: Id<"organizations">) =>
+  ctx.db
     .query("usagePlans")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
     .unique();
-  return quotaPeriod(plan, now).key;
-}
+/**
+ * The key a capacity metric counts under at `now`: the fixed `stock` for the stock metrics, the
+ * only key that is not a period, or the quota period of the organization's plan row (ADR 0012,
+ * section 2), read by the caller in its transaction.
+ */
+export const capacityPeriod = (metric: Metric, plan: PlanRow, now: number) =>
+  stock(metric) ? "stock" : quotaPeriod(plan, now).key;
+/**
+ * The metric's total at `now`. `plan` is the organization's plan row when the caller already
+ * read it; without it, a periodic metric reads it here. Stock metrics never need it.
+ */
 export const capacityTotal = async (
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   metric: Metric,
   now: number,
+  plan?: PlanRow,
 ) => {
-  const period = await capacityPeriod(ctx, organizationId, metric, now);
+  const period = capacityPeriod(
+    metric,
+    plan === undefined && !stock(metric) ? await planRow(ctx, organizationId) : (plan ?? null),
+    now,
+  );
   return ctx.db
     .query("capacityTotals")
     .withIndex("by_organizationId_and_period_and_metric", (q) =>
@@ -99,10 +103,7 @@ export async function capacityPlan(
 ) {
   if (options.archived !== "allowed") await assertOrganizationHot(ctx, organizationId);
   if (!(await capacityPolicy(ctx))) return null;
-  const plan = await ctx.db
-    .query("usagePlans")
-    .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
-    .unique();
+  const plan = await planRow(ctx, organizationId);
   if (
     !plan?.catalogTier ||
     !plan.capacity ||
@@ -236,7 +237,7 @@ export async function checkCapacity(
   if (stock(metric) && !(await capacityAccount(ctx, organizationId))?.ready)
     deny("CAPACITY_INVENTORY_REQUIRED");
   const now = Date.now();
-  const total = await capacityTotal(ctx, organizationId, metric, now);
+  const total = await capacityTotal(ctx, organizationId, metric, now, plan);
   if (
     (total?.committed ?? 0) + (total?.reserved ?? 0) + quantity >
     plan.capacity![planMetric(metric)]
@@ -244,7 +245,7 @@ export async function checkCapacity(
     throw new ConvexError({
       code: "QUOTA_EXCEEDED",
       metric,
-      period: await capacityPeriod(ctx, organizationId, metric, now),
+      period: capacityPeriod(metric, plan, now),
     });
 }
 
@@ -268,7 +269,9 @@ export async function reserveCapacity(
   if (stock(metric)) await ensureCapacityReady(ctx, organizationId);
   if (!inventory) await checkCapacity(ctx, organizationId, metric, quantity, false, options);
   // Resolved once, here; commit and release use the event's stored period.
-  const period = await capacityPeriod(ctx, organizationId, metric, Date.now());
+  const period = stock(metric)
+    ? "stock"
+    : capacityPeriod(metric, await planRow(ctx, organizationId), Date.now());
   const id = await ctx.db.insert("capacityEvents", {
     organizationId,
     metric,
@@ -462,8 +465,9 @@ export async function getCapacityUsage(
     "exportsBytes",
     "restReads",
   ];
+  const plan = await planRow(ctx, organizationId);
   const rows = await Promise.all(
-    metrics.map((metric) => capacityTotal(ctx, organizationId, metric, now)),
+    metrics.map((metric) => capacityTotal(ctx, organizationId, metric, now, plan)),
   );
   return {
     ready: (await capacityAccount(ctx, organizationId))?.ready ?? false,

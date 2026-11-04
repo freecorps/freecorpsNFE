@@ -14,7 +14,13 @@ import { capacityPolicy, reserveCapacity, commitCapacity } from "./lib/capacityC
 import { assertOrganizationHot, assertPlanChangeable } from "./lib/coldArchiveCore";
 import { allocateOffer } from "./lib/planCore";
 import { termCovering } from "./lib/planTerms";
-import { isPeriodAnchor, keyPeriod, periodKeyStart, quotaPeriod } from "./lib/quotaPeriod";
+import {
+  isPeriodAnchor,
+  isPeriodInstant,
+  keyPeriod,
+  periodKeyStart,
+  quotaPeriod,
+} from "./lib/quotaPeriod";
 import { internal } from "./_generated/api";
 
 const restBudget = v.object({ organizationId: v.id("organizations"), actor: v.string() });
@@ -293,11 +299,13 @@ const periodValue = v.object({
 const RECENT_PERIODS = 12;
 /**
  * The latest distinct period keys counted for the organization, newest first: canonical keys sort
- * as their starts (ADR 0012, section 4). One indexed read per key.
+ * as their starts (ADR 0012, section 4). One indexed read per distinct key, at most
+ * `2 × RECENT_PERIODS` reads whatever the stored keys are, non-canonical ones skipped.
  */
 async function countedKeys(ctx: QueryCtx, organizationId: Id<"organizations">) {
   const keys: string[] = [];
-  for (let below: string | null = null; keys.length < RECENT_PERIODS;) {
+  let below: string | null = null;
+  for (let read = 0; read < 2 * RECENT_PERIODS && keys.length < RECENT_PERIODS; read++) {
     const bound: string | null = below;
     const row: Doc<"usageTotals"> | null = await ctx.db
       .query("usageTotals")
@@ -343,6 +351,8 @@ export const overview = query({
   returns: v.object({
     plan: v.union(v.object({ ...planFields, version: v.number() }), v.null()),
     period: periodValue,
+    /** The period holding `asOf`; null without it. */
+    current: v.union(periodValue, v.null()),
     recent: v.array(periodValue),
     environments: v.object({ sandbox: v.array(usageRow), production: v.array(usageRow) }),
     unattributed: v.boolean(),
@@ -355,7 +365,7 @@ export const overview = query({
     requireManager(membership); // Aggregate usage can reveal activity in companies outside a member's grant.
     const asOf = args.asOf;
     if (
-      (asOf !== undefined && (!Number.isSafeInteger(asOf) || asOf < 0 || asOf > 8.64e15)) ||
+      (asOf !== undefined && !isPeriodInstant(asOf)) ||
       (args.period !== undefined && periodKeyStart(args.period) === null) ||
       (args.period === undefined && asOf === undefined)
     )
@@ -394,6 +404,7 @@ export const overview = query({
           }
         : null,
       period,
+      current,
       recent,
       environments: {
         sandbox: view(countedIn("sandbox")),

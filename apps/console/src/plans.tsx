@@ -7,7 +7,7 @@ import type { Organization } from "./organizations";
 import { useQuery } from "./convex-query";
 import { useAsyncAction } from "./async-action";
 import { ErrorBoundary } from "./route-errors";
-import { formatBRL } from "./format";
+import { formatBRL, formatUtcInstant } from "./format";
 import { formatBytes } from "./usage-format";
 import { Button } from "./ui/button";
 import { RadioCard } from "./ui/choice";
@@ -372,11 +372,11 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       { term: "Plano solicitado", value: tierNames[request.tier] },
                       { term: "Valor integral", value: price(request.amountCents) },
                       {
-                        term: "Período, em UTC",
+                        term: "Período",
                         value:
                           request.periodEndsAt === null
-                            ? `A partir de ${utcDate(request.periodStartsAt)}`
-                            : `De ${utcDate(request.periodStartsAt)} até ${utcDate(request.periodEndsAt)}`,
+                            ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
+                            : `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
                       },
                     ]
             }

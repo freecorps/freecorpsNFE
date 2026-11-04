@@ -147,6 +147,29 @@ export function formatDateRange(from: number, to: number, start = false): string
   return start ? range[0]!.toUpperCase() + range.slice(1) : range;
 }
 
+const utcParts = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "UTC",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+/**
+ * Epoch em milissegundos → "01/12/2026 às 00:00 UTC", com os segundos só quando não são zero
+ * ("27/11/2026 às 11:59:29 UTC"). Para inícios e fins de período: o fim é o instante em que o
+ * período seguinte começa, e a frase diz isso ("renova em", "termina em"), sem "até".
+ */
+export function formatUtcInstant(ms: number): string {
+  const parts = utcParts.formatToParts(ms);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  const seconds = part("second") === "00" ? "" : `:${part("second")}`;
+  return `${part("day")}/${part("month")}/${part("year")} às ${part("hour")}:${part("minute")}${seconds} UTC`;
+}
+
 /** "2026-10-02T14:03:00-03:00" ou "2026-10-02" → "02/10/2026", sem converter fuso. */
 export function formatIsoDate(value: string | null | undefined): string {
   if (!value) return "—";

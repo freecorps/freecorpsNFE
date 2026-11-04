@@ -4,6 +4,7 @@ import { useQuery } from "./convex-query";
 import { api } from "../../../platform/convex/_generated/api";
 import type { Organization } from "./organizations";
 import { usageArgs, usageAsOf } from "./page-queries";
+import { formatUtcInstant } from "./format";
 import { environmentNames, type ProductEnvironment } from "./deployment";
 import { useProductEnvironment } from "./product-environment";
 import { FormField, Select } from "./ui/form";
@@ -79,20 +80,25 @@ const date = (time: number) => new Date(time).toLocaleString("pt-BR");
 type Overview = FunctionReturnType<typeof api.usage.overview>;
 type Row = Overview["rows"][number];
 type Period = Overview["period"];
-/** An instant of a quota period in UTC: the time only when the period does not start at midnight. */
-const utcInstant = (time: number) =>
-  new Date(time).toLocaleString("pt-BR", {
-    timeZone: "UTC",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    ...(time % 86_400_000 ? { hour: "2-digit", minute: "2-digit" } : {}),
-  });
-/** A quota period as the server named it (ADR 0012): civil month or the plan's anniversaries. */
+/**
+ * A quota period as the server named it (ADR 0012): civil month or the plan's anniversaries. The
+ * end is the instant the next period starts, so it reads as the renewal, never as a last day.
+ */
 const periodLabel = (period: Period) =>
   period.endsAt === null
-    ? `A partir de ${utcInstant(period.startsAt)}`
-    : `${utcInstant(period.startsAt)} até ${utcInstant(period.endsAt)}`;
+    ? `Desde ${formatUtcInstant(period.startsAt)}`
+    : `Desde ${formatUtcInstant(period.startsAt)}, renova em ${formatUtcInstant(period.endsAt)}`;
+/**
+ * Where `asOf` moves so the current period follows the plan: the latest instant between `asOf`
+ * and `now` that changes it, the current period's end or the plan's anchor or start (a plan
+ * assigned after `asOf`). Null when none passed.
+ */
+function followAsOf(data: Overview, asOf: number, now: number) {
+  const marks = [data.current?.endsAt, data.plan?.periodAnchor, data.plan?.startsAt].filter(
+    (mark): mark is number => typeof mark === "number" && mark > asOf && mark <= now,
+  );
+  return marks.length ? Math.max(...marks) : null;
+}
 /** Whether the plan limits Production by new notes instead of imports and captures. */
 const byNotes = (plan: Overview["plan"], environment: ProductEnvironment) =>
   environment === "production" && plan?.limits.notes !== undefined;
@@ -124,11 +130,11 @@ export function Usage({ org, contextKey }: { org: Organization; contextKey: stri
     api.usage.overview,
     usageArgs({ org, contextKey }, asOf, chosen ?? undefined),
   );
-  // The current period ended: ask for the one its end opens, an exact instant of the new period.
-  const currentEnd = chosen === null ? (data?.period.endsAt ?? null) : null;
+  // The current period ended, or a plan started or was anchored after `asOf`: ask at that instant.
+  const follow = data ? followAsOf(data, asOf, Math.max(clock, Date.now())) : null;
   useEffect(() => {
-    if (currentEnd !== null && Math.max(clock, Date.now()) >= currentEnd) setAsOf(currentEnd);
-  }, [clock, currentEnd]);
+    if (follow !== null) setAsOf(follow);
+  }, [follow]);
   const header = (
     <PageHeader
       eyebrow="Consumo da organização"
@@ -143,7 +149,8 @@ export function Usage({ org, contextKey }: { org: Organization; contextKey: stri
               value={data?.period.key ?? ""}
               onChange={(event) => {
                 const key = event.target.value;
-                setChosen(key === data?.recent[0]?.key ? null : key);
+                // The period holding `asOf` follows the clock; any other stays as chosen.
+                setChosen(key === data?.current?.key ? null : key);
               }}
             >
               {(data?.recent ?? []).map((period) => (

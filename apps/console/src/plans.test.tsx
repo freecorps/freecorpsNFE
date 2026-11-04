@@ -238,7 +238,9 @@ it("registers a paid request, discloses the integral UTC month and never claims 
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(screen.getByText("Aguardando pagamento")).toBeTruthy();
   expect(screen.getByText(/Pedido registrado/)).toBeTruthy();
-  expect(screen.getByText("De 01/10/2026, 00:00 UTC até 01/11/2026, 00:00 UTC")).toBeTruthy();
+  expect(
+    screen.getByText("Desde 01/10/2026 às 00:00 UTC, termina em 01/11/2026 às 00:00 UTC"),
+  ).toBeTruthy();
   expect(screen.getByText(/O plano atual continua durante a espera/)).toBeTruthy();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Grande" }).disabled).toBe(
     true,

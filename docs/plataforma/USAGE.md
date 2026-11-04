@@ -561,10 +561,15 @@ período de cota do plano que contém `asOf`. A resposta traz `period`, com
 antigo: os que têm consumo gravado, o que contém `asOf` e o pedido. `endsAt` é
 `null` numa chave ancorada cuja âncora o plano atual não guarda mais, como a
 de uma linha substituída. Uma chave fora das duas formas canônicas, ou um
-`asOf` que não é instante, responde `INVALID_REQUEST`. A tela pede `asOf` na
-hora cheia, a mesma do pré-carregamento da rota, e passa a pedir o fim do
-período quando ele chega; um período anterior é pedido pela chave listada em
-`recent`.
+`asOf` que não é instante até o fim de 9999, responde `INVALID_REQUEST`. A
+resposta traz também `current`, o período que contém `asOf`, ou `null` sem
+ele. A tela pede `asOf` na hora cheia, a mesma do pré-carregamento da rota, e
+o adianta quando um instante entre ele e o relógio muda o período: o fim do
+período corrente, ou a âncora ou o início do plano. Um período anterior é
+pedido pela chave listada em `recent`, e escolher o `current` volta a seguir
+o período corrente. Diferente do campo de mês de antes, a lista só alcança
+esses 12 períodos; um mais antigo continua acessível pela chave, chamando a
+função diretamente.
 
 ## Proteção das requisições REST
 
@@ -764,9 +769,9 @@ ao milissegundo, no dia 31 e no 29/02, o plano ancorado que vira no
 aniversário com a liquidação no período da reserva, o Gratuito no mês civil,
 a capacidade no período ancorado e o estoque em `stock`, a âncora das linhas
 dos termos anuais, as regras de `usage:assignPlan` com a política ligada e
-desligada e `usage:overview` com e sem `period` e `asOf`. A retomada da
-captura no fim do período ancorado não tem prova, porque ainda não existe.
-`tests/platform.siteCapture.test.ts` prova que a cota esgotada no sandbox não
+desligada e `usage:overview` com e sem `period` e `asOf`.
+`tests/platform.siteCapture.test.ts` prova que a captura de um plano ancorado,
+parada pela cota, retoma no aniversário da âncora, e que a cota esgotada no sandbox não
 pausa a captura em produção e que a esgotada em produção não bloqueia o sandbox.
 Na cota de notas do Gratuito, prova que a consulta sai com 99 notas, pausa com
 100 e volta no mês seguinte, e que uma consulta admitida com 99 notas entra
