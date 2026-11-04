@@ -22,7 +22,8 @@ afirmação e as decisões ficam em `docs/v1.0/`:
 | ------------------------------------ | ------------------------------- | ------------------------------------------------------------------ | ------------------------- |
 | `captura-fiscal-2026-10-22`          | 22/10/2026, PR #406 (`a4ec90c`) | `46dfca81f3c7413e2001d76c011417a9fd03a1f4bb3a863af7e7811a37379daa` | Atual                     |
 | `termos-de-uso-2026-11-01`           | 01/11/2026 (#428)               | `9473250bf91250e3bb6091f01eb1f6e05b6e5259a440027bd7761b3de23e1e3b` | Substituída em 02/11/2026 |
-| `termos-de-uso-2026-11-02`           | 02/11/2026 (#142)               | `3d0ebb439785d879900f7822b6d7bfa2480737ea0acdf8824db6498f85ba5984` | Atual                     |
+| `termos-de-uso-2026-11-02`           | 02/11/2026 (#142)               | `3d0ebb439785d879900f7822b6d7bfa2480737ea0acdf8824db6498f85ba5984` | Substituída em 04/11/2026 |
+| `termos-de-uso-2026-11-04`           | 04/11/2026 (ADR 0012)           | `41a617856f796a8d6219d04eb4a5260effc3eb59669d6146c483ca7f2f130748` | Atual                     |
 | `politica-de-privacidade-2026-11-01` | 01/11/2026 (#428)               | `02742f6e09412c1120dfde651216ce4c4c9c601a63fd453aaf3109dd04a3a899` | Atual                     |
 
 O texto de `captura-fiscal-2026-10-22` é o mesmo desde que entrou no console.
@@ -139,6 +140,21 @@ download e exportação; o resto do texto é o da 1.0. O mantenedor decidiu
 publicá-la na hora, com o aviso e os 30 dias da seção 11: as organizações
 aceitam a 1.1 até 02/12/2026, meia-noite de Brasília, inclusive as que ainda
 não tinham aceitado a 1.0.
+
+A versão 1.2, `termos-de-uso-2026-11-04`, entrou no console em 04/11/2026. Ela
+leva a cobrança ao aniversário da contratação
+([ADR 0012](../adr/0012-periodo-por-aniversario.md)): o primeiro parágrafo da
+seção 5 diz que as cotas do Gratuito seguem o mês civil UTC e as dos planos
+pagos, o mês da assinatura, e a seção 5A é nova inteira. Nela, os planos
+pagos são só por cartão, cada mês da assinatura vai da data e hora da
+contratação ao mesmo dia e hora do mês seguinte, o mensal e o anual são
+cobrados na contratação e renovam no aniversário, e o reembolso do anual
+conta os meses da assinatura. O Pix, a escolha do meio de pagamento e a
+contratação recusada antes do dia 1 saem. O resto do texto é o da 1.1. O dono
+aprovou o texto em 03/11/2026
+([decisão](../v1.0/TERMS-DRAFT.md#decisão-de-03112026)); as organizações
+aceitam a 1.2 até 04/12/2026, meia-noite de Brasília, inclusive as que ainda
+não tinham aceitado a 1.1.
 
 Cada versão é um arquivo `arquivo/termos-de-uso-AAAA-MM-DD.md`, imutável, no
 subconjunto aceito pelo console, e o servidor guarda a versão, o SHA-256 e a

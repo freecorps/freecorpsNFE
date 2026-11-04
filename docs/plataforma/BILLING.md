@@ -35,9 +35,11 @@ Ligar a oferta continua sujeito aos termos e às provas da modalidade na issue
 da entrega, conforme a [ADR 0011](../adr/0011-entregas-graduais.md): a prova
 hospedada e a ativação do anual ficam na #35
 ([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
-Desde 03/11/2026, ligar o catálogo ou o anual também espera uma versão nova
-dos termos de uso; a [ADR 0012](../adr/0012-periodo-por-aniversario.md) está
-implementada no código
+Desde 03/11/2026, ligar o catálogo ou o anual também esperava uma versão nova
+dos termos de uso e a implementação da
+[ADR 0012](../adr/0012-periodo-por-aniversario.md): a ADR está implementada
+no código, e a versão 1.2 dos termos, com o período por aniversário, entrou
+no console em 04/11/2026
 ([Período por aniversário](#período-por-aniversário-decidido-em-03112026)).
 
 Não confundir com a [conexão Stripe](STRIPE.md) (ADR 0006): ela recebe os
@@ -253,11 +255,13 @@ avulso, e cada fatura mensal concede só um mês exato da âncora da assinatura
 ([Contratação e ciclo](#contratação-e-ciclo)). Da fatia 2b, o anual no
 cartão é cobrado e começa na contratação, sem âncora no dia 1, e cada fatura
 anual concede só um ano exato da âncora da assinatura, que o termo guarda
-como a da cadeia ([Checkout anual](#checkout-anual)). Até uma versão nova dos
-termos de uso entrar no console, o catálogo e o anual não são ligados. A
+como a da cadeia ([Checkout anual](#checkout-anual)). A seção 5A dos
+[termos de uso 1.2](../termos/arquivo/termos-de-uso-2026-11-04.md), no
+console desde 04/11/2026, descreve este modelo, só por cartão. O catálogo e o
+anual continuam desligados até a
 [prova hospedada da #35](#prova-hospedada-e-ativação-do-anual-35), reescrita
-para este modelo, ainda não rodou, e as provas já feitas no Stripe de teste,
-com renovação ancorada no dia 1, precisam ser refeitas
+para este modelo e ainda não executada; as provas já feitas no Stripe de
+teste, com renovação ancorada no dia 1, precisam ser refeitas
 ([Prova do mensal](#prova-do-mensal-no-stripe-de-teste-668)).
 
 ## Mensal por Pix
