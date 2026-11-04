@@ -47,9 +47,8 @@ conferência de elegibilidade.
 ### Produção sem nova validação
 
 O `Validate` da PR é a validação da plataforma. O merge na `main` publica pelo
-`deploy.yml` sem rodar o CI de novo, como os outros projetos da Freecorps:
-`Owner review` e, em seguida, `Publish production`, que compila o commit e
-roda o smoke. Até 03/11/2026 o `deploy.yml` repetia o `Validate` no commit da
+`deploy.yml` sem rodar o CI de novo nem esperar aprovação, como os outros
+projetos da Freecorps: `Publish production` compila o commit e roda o smoke. Até 03/11/2026 o `deploy.yml` repetia o `Validate` no commit da
 `main` e o publicador exigia `CI_TESTED_SHA` igual a ele; em outubro de 2026
 essa repetição foi cerca de um terço do gasto de CI do projeto, e das oito vezes
 em que reprovou, sete foram testes instáveis.
@@ -791,14 +790,13 @@ O contrato da plataforma está em [API-REFERENCE.md](../v1.0/API-REFERENCE.md) e
 
 ### Onde cada job roda
 
-| Workflow            | Job                  | Runner                             |
-| ------------------- | -------------------- | ---------------------------------- |
-| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Deploy production` | `Owner review`       | `blacksmith-2vcpu-ubuntu-2404-arm` |
-| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404`     |
-| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404`     |
+| Workflow            | Job                  | Runner                         |
+| ------------------- | -------------------- | ------------------------------ |
+| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404` |
+| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404` |
+| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404` |
+| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404` |
+| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404` |
 
 `Deploy validation` chama o `CI` como workflow
 reutilizável; o job de validação roda na Blacksmith também nesses
@@ -835,8 +833,7 @@ O x64 de 4 vCPUs termina em menos de um minuto, mas com 6 a 12 s de folga:
 passando de 60 s, a execução custa 4. O de 2 vCPUs custa 2 com cerca de 40 s
 de folga. O ARM é mais lento e mais caro para este job. O gate, que só compara
 SHAs, durava cerca de 20 s e custava 0,625 no ARM como job próprio; desde a
-#51 é um passo de `Validate`. `Owner review` só lê o Git e a API do GitHub
-e custa 0,625 no ARM a cada push na `main`.
+#51 é um passo de `Validate`.
 
 Estimativa histórica, anterior à migração de produção e snapshot, com 150
 execuções de `CI` em PRs, 25 publicações de validação e 5 de produção:

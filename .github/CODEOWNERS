@@ -1,14 +1,8 @@
 # Owners of what can publish the platform, change the NFS-e fiscal production or open the fiscal
-# capture transport of the hosted site (#198, ADR 0004 §8, ADR 0007, #424). The current GitHub
-# plan of the organization (free, private repository) enforces neither the branch protection of
-# `main` nor code owner review, so this file only requests the review. The compensation chosen on
-# 26/10/2026 (ADR 0007, #424) is the owner review gate of the publication:
-# scripts/lib/owner-review.mjs refuses to publish a commit that touches a path below without an
-# owner's approval.
-# Single owner: wolf-stievano, the project owner, by his decision of 26/10/2026, until he changes
-# it. Since he is also the author of the commits, the approval is his `workflow_dispatch` of
-# `Deploy production` (operation release, or bootstrap after a reset) for the SHA: a push to
-# `main` that brings a commit touching a path below does not publish by itself.
+# capture transport of the hosted site (#198, ADR 0004 §8, ADR 0007, #424). The ruleset of `main`
+# requires no approval, so this file only requests the owner's review. Since 03/11/2026, by the
+# project owner's decision, no gate reads it before publishing (ADR 0007, note of 03/11/2026).
+# Single owner: wolf-stievano, the project owner, by his decision of 26/10/2026.
 
 # Workflows, including the gate and probe of the fiscal production, and this file.
 /.github/workflows/ @wolf-stievano
@@ -28,12 +22,8 @@
 /scripts/deploy-platform.mjs @wolf-stievano
 /scripts/lib/platform-release.mjs @wolf-stievano
 /scripts/lib/platform-unchanged.mjs @wolf-stievano
-/scripts/lib/owner-review.mjs @wolf-stievano
-/scripts/lib/owner-review-gate.mjs @wolf-stievano
-/scripts/owner-review-check.mjs @wolf-stievano
 # Everything deploy-platform.mjs imports runs in the process that holds the production keys, and
 # the build scripts it spawns run as the same user, which can read that process environment.
-# scripts/owner-review.test.ts fails if a module of those import graphs is left out.
 /platform/account-policy.mjs @wolf-stievano
 /platform/installation.ts @wolf-stievano
 /scripts/lib/installation-headers.mjs @wolf-stievano

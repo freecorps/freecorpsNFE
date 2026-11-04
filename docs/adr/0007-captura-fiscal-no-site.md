@@ -425,6 +425,25 @@ publicada desconhecida, como depois de um reset, só o dispatch de um dono
 publica. Os dois outros limites continuam: o dispatch de um dono com a
 revisão publicada desconhecida e o `--operator`.
 
+## Nota de 03/11/2026: a publicação sem gate humano
+
+Registrada por decisão do dono do projeto. Retira a compensação da decisão 1
+das [Decisões da #424](#decisões-da-424-em-26102026); não muda o resto desta
+ADR. O merge na `main` passa a publicar sozinho, como nos outros projetos
+da Freecorps, e nenhum gate confere a aprovação dos commits que tocam um
+caminho do `CODEOWNERS` antes de publicar. Saem `scripts/lib/owner-review.mjs`,
+o job `Owner review` do `deploy.yml` e a chamada no preflight do
+publicador.
+
+Divergência com as Consequências: elas pedem revisão obrigatória na `main` e
+`CODEOWNERS` com efeito, e a decisão 1 era o que restava disso. O ruleset da
+`main` exige PR, os checks `Validate` e `Public scan` e conversas
+resolvidas, com 0 aprovações; o `CODEOWNERS` só pede a revisão. Um commit
+que altere o transporte da captura, o runner ou o publicador chega à
+produção no merge, sem outra pessoa ver a mudança. Os workflows que abrem a
+captura e o gate fiscal da emissão continuam com as próprias travas
+(`authorizedActors`, revisores obrigatórios dos environments da NFS-e).
+
 ## Situação em 26/10/2026: processamento depois da retirada (#420, #499)
 
 Registrada para expor uma divergência, sem reescrever a decisão acima. O §2
