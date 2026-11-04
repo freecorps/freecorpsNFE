@@ -1,8 +1,8 @@
-import { hostedProof, assertSyntheticScope } from "./lib/hosted-proof.mjs";
-import { prepareScope, importSource, seedMetadata, hash, headers } from "./lib/hosted-fixtures.mjs";
+import { hostedProof, assertSyntheticScope } from "../lib/hosted-proof.mjs";
+import { prepareScope, importSource, seedMetadata, hash, headers } from "../lib/hosted-fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
-import { readPrivateState, writePrivateState } from "./lib/private-run-state.mjs";
+import { readPrivateState, writePrivateState } from "../lib/private-run-state.mjs";
 import { execFileSync } from "node:child_process";
 import { join, dirname, basename, resolve, relative, isAbsolute } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -13,8 +13,8 @@ import {
   runtimeUsage,
   assessLoad,
   adoptRevision,
-} from "./lib/hosted-load.mjs";
-import { planLoadOptions, planLoad, cleanupWithPlans } from "./lib/hosted-plan-load.mjs";
+} from "../lib/hosted-load.mjs";
+import { planLoadOptions, planLoad, cleanupWithPlans } from "../lib/hosted-plan-load.mjs";
 
 const mode = process.argv[3] ?? "preflight";
 const requestedTargets = mode === "load" ? loadTargets(process.argv.slice(5)) : null;
@@ -219,7 +219,7 @@ if (mode === "plan-load") {
   process.exit(result.result === "passed" ? 0 : 1);
 }
 if (mode === "cleanup") {
-  const { cleanupHosted } = await import("./lib/hosted-cleanup.mjs");
+  const { cleanupHosted } = await import("../lib/hosted-cleanup.mjs");
   const result = await cleanupWithPlans(hosted, state, cleanupHosted);
   writeFileSync(
     join(output, "cleanup.json"),
@@ -229,7 +229,7 @@ if (mode === "cleanup") {
   process.exit(result.closedPlans?.failed?.length ? 1 : 0);
 }
 if (mode === "retention") {
-  const { retentionDrill } = await import("./lib/hosted-retention-drill.mjs");
+  const { retentionDrill } = await import("../lib/hosted-retention-drill.mjs");
   const result = await retentionDrill(hosted, state);
   writeFileSync(
     join(output, "retention.json"),
@@ -282,12 +282,12 @@ if (mode === "read-candidate") {
   process.exit(0);
 }
 if (mode === "recover-seed") {
-  const { recoverSeed } = await import("./lib/hosted-recover-seed.mjs");
+  const { recoverSeed } = await import("../lib/hosted-recover-seed.mjs");
   for (const scope of state.scopes) console.log(JSON.stringify(await recoverSeed(hosted, scope)));
   process.exit(0);
 }
 if (mode === "monitors") {
-  const { monitorDrill } = await import("./lib/hosted-monitor-drill.mjs");
+  const { monitorDrill } = await import("../lib/hosted-monitor-drill.mjs");
   const result = await monitorDrill(hosted, state, savePrivate, process.argv[5]);
   writeFileSync(
     join(output, "monitors.json"),

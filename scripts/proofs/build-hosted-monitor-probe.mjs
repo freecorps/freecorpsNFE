@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { execFileSync } from "node:child_process";
-import { hash } from "./lib/hosted-fixtures.mjs";
+import { hash } from "../lib/hosted-fixtures.mjs";
 const dir = ".ci-results/hosted-79-80",
   path = "platform/convex/lib/operationalMetrics.ts";
 mkdirSync(dir, { recursive: true });

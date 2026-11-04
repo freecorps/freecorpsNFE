@@ -1,6 +1,6 @@
 import { it, expect, vi } from "vite-plus/test";
-import { recoverSeed } from "./lib/hosted-recover-seed.mjs";
-import { prepareMonitorFixtures, assertMonitorSamples } from "./lib/hosted-monitor-drill.mjs";
+import { recoverSeed } from "../lib/hosted-recover-seed.mjs";
+import { prepareMonitorFixtures, assertMonitorSamples } from "../lib/hosted-monitor-drill.mjs";
 
 type Row = Record<string, unknown> & { _id: string };
 function memoryStore(failAfter?: string) {

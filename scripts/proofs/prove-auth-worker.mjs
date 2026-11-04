@@ -4,8 +4,8 @@ import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { verifyAuthRequest } from "../platform/auth-transport.ts";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { verifyAuthRequest } from "../../platform/auth-transport.ts";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 // Use the actual workerd and bundler pinned by Wrangler, with no network services.
 const require = createRequire(import.meta.url);

@@ -6,7 +6,7 @@ import {
   runtimeUsage,
   assessLoad,
   adoptRevision,
-} from "./lib/hosted-load.mjs";
+} from "../lib/hosted-load.mjs";
 
 it("requires an explicit previous revision and the same target before preserving a synthetic dataset", () => {
   const previousSha = "a".repeat(40),
@@ -84,7 +84,7 @@ it("requires an explicit hosted load size before credentials or network access",
     execFileSync(
       process.execPath,
       [
-        "scripts/prove-hosted-operations.mjs",
+        "scripts/proofs/prove-hosted-operations.mjs",
         "missing-private-credential.json",
         "load",
         "missing-private-state.json",

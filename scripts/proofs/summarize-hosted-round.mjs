@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { assessLoad, runtimeUsage } from "./lib/hosted-load.mjs";
+import { assessLoad, runtimeUsage } from "../lib/hosted-load.mjs";
 
 const [input, output, ...loadNames] = process.argv.slice(2);
 assert.ok(input && output && loadNames.length, "Informe entrada, saída e recibos de carga");

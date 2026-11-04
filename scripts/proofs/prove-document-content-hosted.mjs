@@ -3,8 +3,8 @@ import { execFileSync } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import { access, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { loadReadFixtures, readProof } from "./lib/document-read-proof.mjs";
-import { headroomCode, headroomProof } from "./lib/document-headroom-proof.mjs";
+import { loadReadFixtures, readProof } from "../lib/document-read-proof.mjs";
+import { headroomCode, headroomProof } from "../lib/document-headroom-proof.mjs";
 import {
   checkHostedEnvironment,
   deniedDeployments,
@@ -17,8 +17,8 @@ import {
   readPreviewKey,
   resolvePreviewTarget,
   verifyPreviewEnvironment,
-} from "./lib/hosted-read-proof.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/hosted-read-proof.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(hostedUsage);
@@ -170,7 +170,7 @@ if (receipt) {
     report.codeHashes = Object.fromEntries(
       await Promise.all(
         [
-          "scripts/prove-document-content-hosted.mjs",
+          "scripts/proofs/prove-document-content-hosted.mjs",
           "scripts/lib/hosted-read-proof.mjs",
           "scripts/lib/document-read-proof.mjs",
           "platform/convex/testing/operationProof.ts",

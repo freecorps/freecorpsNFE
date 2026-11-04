@@ -7,15 +7,15 @@ import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { createRequire } from "node:module";
 import AxeBuilder from "@axe-core/playwright";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { currentLocalSiteUrl } from "./lib/worktree/env-file.mjs";
-import { convexRun } from "./lib/worktree/convex-local.mjs";
-import { assertLinkedWorktree } from "./lib/worktree/state.mjs";
-import { localAuthPacer } from "../apps/console/e2e/local-auth-pacing.mjs";
-import { createWebhookReceiver } from "../examples/webhook-receiver.mjs";
-import { independentReceiver, proveQuickstarts } from "./lib/sdk-proof.mjs";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { currentLocalSiteUrl } from "../lib/worktree/env-file.mjs";
+import { convexRun } from "../lib/worktree/convex-local.mjs";
+import { assertLinkedWorktree } from "../lib/worktree/state.mjs";
+import { localAuthPacer } from "../../apps/console/e2e/local-auth-pacing.mjs";
+import { createWebhookReceiver } from "../../examples/webhook-receiver.mjs";
+import { independentReceiver, proveQuickstarts } from "../lib/sdk-proof.mjs";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 const { chromium } = createRequire(new URL("apps/console/package.json", repoUrl))("playwright");
 
 const root = repoRoot,

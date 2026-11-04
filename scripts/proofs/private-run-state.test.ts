@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { it, expect } from "vite-plus/test";
-import { readPrivateState, writePrivateState } from "./lib/private-run-state.mjs";
+import { readPrivateState, writePrivateState } from "../lib/private-run-state.mjs";
 
 it.skipIf(process.platform !== "win32")(
   "creates private state under a directory granting inherited Everyone read access",

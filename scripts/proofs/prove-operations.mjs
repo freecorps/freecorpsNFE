@@ -5,10 +5,10 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { cleanupOperationProof } from "./lib/operation-proof-cleanup.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { cleanupOperationProof } from "../lib/operation-proof-cleanup.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const config = readLocalConfig(worktreePaths(root));

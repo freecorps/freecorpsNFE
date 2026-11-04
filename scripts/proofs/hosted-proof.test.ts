@@ -2,8 +2,8 @@ import { mkdtempSync, writeFileSync, rmSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it, expect, vi, afterEach } from "vite-plus/test";
-import { hostedProof, assertSyntheticScope } from "./lib/hosted-proof.mjs";
-import { seedMetadata } from "./lib/hosted-fixtures.mjs";
+import { hostedProof, assertSyntheticScope } from "../lib/hosted-proof.mjs";
+import { seedMetadata } from "../lib/hosted-fixtures.mjs";
 
 afterEach(() => vi.unstubAllEnvs());
 it("keeps a concurrently reindexed original out of the synthetic batch", async () => {

@@ -192,7 +192,7 @@ eventos, respostas perdidas e originais ausentes ou corrompidos.
 `tests/platform.exports.benchmark.test.ts` compara o worker completo com
 paginação nativa e em lotes sobre a mesma massa e exige igualdade de todos
 os hashes das partes. O relógio é congelado somente no teste em memória.
-`node scripts/prove-export-batches.mjs`, com o worktree `platform` em execução,
+`node scripts/proofs/prove-export-batches.mjs`, com o worktree `platform` em execução,
 repete a medição no Convex nativo local com dados sintéticos. O ensaio grava
 chamadas, bytes, leituras, partes, hashes e duração em `.ci-results/125/native.json`.
 Resultados e limitações estão em evidence/125/README.md.

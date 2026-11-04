@@ -105,8 +105,8 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
 | `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
 | `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
-| `ci:auth-worker`    | `node --experimental-strip-types scripts/prove-auth-worker.mjs` |                                    | não: Git            |
-| `ci:privacy-worker` | `node scripts/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
+| `ci:auth-worker`    | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
+| `ci:privacy-worker` | `node scripts/proofs/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
 
 As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
 `ci:distribution` instalam os tarballs num consumidor limpo com dependências do
@@ -929,7 +929,7 @@ confere o próprio alvo antes de escrever:
   fora do checkout, precisa apontar para a validação persistente de
   `platform/validation.json` (`modest-seal-118`, tipo `dev`), e o helper
   recusa `CONVEX_DEPLOY_KEY`, `CONVEX_SELF_HOSTED_URL` e
-  `CONVEX_SELF_HOSTED_ADMIN_KEY` herdados. `scripts/hosted-proof.test.ts`
+  `CONVEX_SELF_HOSTED_ADMIN_KEY` herdados. `scripts/proofs/hosted-proof.test.ts`
   cobre essa recusa, inclusive de credencial do tipo `prod` e de outro host,
   antes de qualquer chamada de rede. Os outros roteiros abaixo não passam por
   esse helper nem por esse teste.

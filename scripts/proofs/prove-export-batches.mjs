@@ -3,10 +3,10 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { convexToJson, jsonToConvex } from "convex/values";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { processNfe } from "../packages/fiscal-nfe/dist/index.js";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { processNfe } from "../../packages/fiscal-nfe/dist/index.js";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const paths = worktreePaths(root),

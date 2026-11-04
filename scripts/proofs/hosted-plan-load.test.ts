@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { afterAll, expect, it, vi } from "vite-plus/test";
-import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
+import { PLATFORM_PLANS } from "../../platform/convex/lib/planCatalog";
 import {
   ADMISSION_P95_MS,
   INTERMEDIATE,
@@ -18,7 +18,7 @@ import {
   planLoadOptions,
   summarizeReads,
   summarizeRound,
-} from "./lib/hosted-plan-load.mjs";
+} from "../lib/hosted-plan-load.mjs";
 
 // Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
 // (freecorps/no-wall-clock-in-tests).
@@ -177,7 +177,7 @@ it("refuses plan-load options before credentials or network access", () => {
     execFileSync(
       process.execPath,
       [
-        "scripts/prove-hosted-operations.mjs",
+        "scripts/proofs/prove-hosted-operations.mjs",
         "missing-private-credential.json",
         "plan-load",
         "missing-private-state.json",

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { hostedProof } from "./lib/hosted-proof.mjs";
-import { backendRequest, validationTarget } from "./lib/validation.mjs";
+import { hostedProof } from "../lib/hosted-proof.mjs";
+import { backendRequest, validationTarget } from "../lib/validation.mjs";
 
 const [credentialPath, expectedSha] = process.argv.slice(2);
 assert.match(expectedSha ?? "", /^[a-f0-9]{40}$/);

@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
-import { hash } from "./lib/hosted-fixtures.mjs";
+import { hash } from "../lib/hosted-fixtures.mjs";
 const dir = ".ci-results/hosted-79-80";
 mkdirSync(dir, { recursive: true });
 const source = `import {query} from "convex:/_system/repl/wrappers.js";

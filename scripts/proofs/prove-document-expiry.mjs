@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
-import { referenceLocal } from "./lib/reference-local.mjs";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig } from "./lib/worktree/deployment.mjs";
-import { prepareScope, headers, hash } from "./lib/hosted-fixtures.mjs";
+import { referenceLocal } from "../lib/reference-local.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig } from "../lib/worktree/deployment.mjs";
+import { prepareScope, headers, hash } from "../lib/hosted-fixtures.mjs";
 
 // Native runtime proof, deliberately restricted to this worktree's loopback backend.
 const { rpc, urls } = referenceLocal(process.cwd());

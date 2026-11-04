@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { expect, it } from "vite-plus/test";
-import { cleanupOperationProof } from "./lib/operation-proof-cleanup.mjs";
+import { cleanupOperationProof } from "../lib/operation-proof-cleanup.mjs";
 
 it("fecha servidor real quando backend de limpeza falha e preserva erro original", async () => {
   const server = createServer();

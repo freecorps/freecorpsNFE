@@ -589,7 +589,7 @@ export const syntheticDeployments = new Set([
   "outro-alvo-1",
   "happy-animal-123",
   "basic-anteater-667",
-  // Os do teste da prova de leitura hospedada (scripts/hosted-read-proof.test.ts).
+  // Os do teste da prova de leitura hospedada (scripts/proofs/hosted-read-proof.test.ts).
   "happy-otter-123",
   "other-otter-9",
   "a-b-1",

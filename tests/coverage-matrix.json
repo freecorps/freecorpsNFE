@@ -57,7 +57,7 @@
         "tests/platform.hostedAuth.test.ts",
         "tests/platform.authProxy.test.ts",
         "tests/platform.mail.test.ts",
-        "scripts/prove-auth-worker.mjs"
+        "scripts/proofs/prove-auth-worker.mjs"
       ]
     },
     {
@@ -166,7 +166,7 @@
       "evidence": [
         "tests/platform.operations.test.ts",
         "tests/platform.imports.test.ts",
-        "scripts/prove-operations.mjs",
+        "scripts/proofs/prove-operations.mjs",
         "docs/v1.0/evidence/70/README.md"
       ]
     },
@@ -207,7 +207,7 @@
         "tests/webhookTransport.test.ts",
         "packages/contracts/fixtures/webhooks.json",
         "scripts/prove-webhook-contract.mjs",
-        "scripts/prove-webhooks.mjs",
+        "scripts/proofs/prove-webhooks.mjs",
         "docs/v1.0/evidence/73/README.md"
       ]
     },
@@ -243,11 +243,11 @@
         "tests/platform.registry.test.ts",
         "tests/platform.webhooks.test.ts",
         "apps/console/e2e/usage.mjs",
-        "scripts/prove-usage-load.mjs",
+        "scripts/proofs/prove-usage-load.mjs",
         "docs/v1.0/evidence/79/README.md",
-        "scripts/hosted-proof.test.ts",
+        "scripts/proofs/hosted-proof.test.ts",
         "tests/platform.observability.test.ts",
-        "scripts/prove-hosted-operations.mjs",
+        "scripts/proofs/prove-hosted-operations.mjs",
         "docs/v1.0/evidence/79-80/README.md"
       ]
     },

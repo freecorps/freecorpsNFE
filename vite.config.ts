@@ -312,13 +312,13 @@ export default defineConfig({
       },
       // Sem cache: o relatório carimba o commit e o estado do checkout, lidos do Git.
       "ci:auth-worker": {
-        command: "node --experimental-strip-types scripts/prove-auth-worker.mjs",
+        command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
         cache: false,
       },
       // Só workerd local, sem Git nem rede; o relatório não carimba revisão. O
       // Miniflare regrava o cache de request.cf em node_modules/.mf.
       "ci:privacy-worker": {
-        command: "node scripts/prove-privacy-mail-worker.mjs",
+        command: "node scripts/proofs/prove-privacy-mail-worker.mjs",
         cache: {
           input: [{ auto: true }, ...generated],
           output: [".browser-results/privacy-worker/report.json"],

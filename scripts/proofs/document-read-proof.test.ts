@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { expect, it } from "vite-plus/test";
-import { loadReadFixtures } from "./lib/document-read-proof.mjs";
+import { loadReadFixtures } from "../lib/document-read-proof.mjs";
 
 const matrix = () =>
   ["invoice", "service-invoice-batch", ...Array<string>(3).fill("service-invoice")].map(
@@ -21,7 +21,7 @@ const matrix = () =>
 it("accepts the complete matrix and rejects empty, partial, duplicate and malformed fixtures before backend calls", async () => {
   const dir = await mkdtemp(join(tmpdir(), "read-proof-"));
   const path = join(dir, "fixtures.json");
-  const source = await readFile("scripts/prove-document-content-local.mjs", "utf8");
+  const source = await readFile("scripts/proofs/prove-document-content-local.mjs", "utf8");
   try {
     await writeFile(path, JSON.stringify(matrix()));
     expect(await loadReadFixtures(path)).toHaveLength(5);

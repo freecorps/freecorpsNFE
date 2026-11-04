@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { readFile, writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
-import { worktreePaths } from "./lib/worktree/paths.mjs";
-import { readLocalConfig, localUrls } from "./lib/worktree/deployment.mjs";
-import { loadReadFixtures, readProof } from "./lib/document-read-proof.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { worktreePaths } from "../lib/worktree/paths.mjs";
+import { readLocalConfig, localUrls } from "../lib/worktree/deployment.mjs";
+import { loadReadFixtures, readProof } from "../lib/document-read-proof.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(
@@ -182,7 +182,7 @@ report.finishedAt = new Date().toISOString();
 report.codeHashes = Object.fromEntries(
   await Promise.all(
     [
-      "scripts/prove-document-content-local.mjs",
+      "scripts/proofs/prove-document-content-local.mjs",
       "platform/convex/testing/documentContentProof.ts",
       "platform/convex/importProcessing.ts",
       "platform/convex/lib/documentContentWriter.ts",

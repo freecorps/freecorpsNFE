@@ -17,7 +17,7 @@ import {
   redact,
   resolvePreviewTarget,
   verifyPreviewEnvironment,
-} from "./lib/hosted-read-proof.mjs";
+} from "../lib/hosted-read-proof.mjs";
 
 const root = resolve(".");
 // Synthetic keys built at runtime, so no key-shaped literal reaches the repository scanner.
@@ -460,7 +460,7 @@ describe("CLI", () => {
     try {
       const { stdout, stderr } = await promisify(execFile)(
         process.execPath,
-        ["scripts/prove-document-content-hosted.mjs", ...args],
+        ["scripts/proofs/prove-document-content-hosted.mjs", ...args],
         { cwd: root, env: { ...clean, ...env } },
       );
       return { status: 0, output: stdout + stderr };

@@ -1,7 +1,7 @@
 // Hosted proof of webhook secret rotation and isolation (#51) on elated-possum-295.
 // Writes synthetic organizations only; never toggles WEBHOOK_MODE nor touches other endpoints.
 // Run: node --experimental-strip-types --require ./docs/v1.0/evidence/73/dns-proof.cjs \
-//   scripts/prove-hosted-webhooks.mjs <cloudflared> <expected-sha>
+//   scripts/proofs/prove-hosted-webhooks.mjs <cloudflared> <expected-sha>
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -10,9 +10,9 @@ import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { createWebhookReceiver } from "../examples/webhook-receiver.mjs";
-import { verifyWebhook } from "../packages/contracts/src/webhooks.ts";
-import { importSource, prepareScope } from "./lib/hosted-fixtures.mjs";
+import { createWebhookReceiver } from "../../examples/webhook-receiver.mjs";
+import { verifyWebhook } from "../../packages/contracts/src/webhooks.ts";
+import { importSource, prepareScope } from "../lib/hosted-fixtures.mjs";
 
 const [tunnelBinary, expectedSha] = process.argv.slice(2);
 assert.match(expectedSha ?? "", /^[a-f0-9]{40}$/, "Expected published SHA");
