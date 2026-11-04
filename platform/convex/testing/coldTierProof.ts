@@ -128,7 +128,7 @@ export const seed = internalMutation({
       source: "imported-xml",
       importedAt: createdAt,
     });
-    // The real parser's output for the stored XML (`tests/platform.coldTierProof.test.ts`), with
+    // The real parser's output for the stored XML (`platform/convex/testing/coldTierProof.test.ts`), with
     // the note's own key, so the readers project it as they would an imported note.
     const result = JSON.parse(args.result) as { document?: { kind?: string; key?: string } };
     if (result.document?.kind !== "invoice") throw new Error("COLD_PROOF_FIXTURE");

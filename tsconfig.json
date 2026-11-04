@@ -27,7 +27,9 @@
     "tooling",
     "vite.config.ts",
     "packages",
-    "examples"
+    "examples",
+    "apps/console/*.test.ts",
+    "apps/docs/scripts/*.test.ts"
   ],
   // ci:distribution apaga e recria packages/contracts/dist (contracts:build) ao
   // lado de ci:typecheck e ci:check; nada importa esse dist, cujos exports

@@ -275,20 +275,27 @@ que `vite.config.ts` monta com as tarefas `test:<área>` do ciclo local e
 ([Cache do grafo](#cache-do-grafo)); os projetos dão a cada área o seu timeout
 local. `bun run ci:test` ainda roda a suíte inteira num processo só.
 
-| Projeto             | Arquivos                                                 | Timeout |
-| ------------------- | -------------------------------------------------------- | ------- |
-| `platform`          | `tests/platform.*`, `tests/sdk.*`, `platform/`           | 20 s    |
-| `platform-isolated` | Os arquivos de `platform` que usam `vi.mock`             | 20 s    |
-| `packages`          | `packages/`                                              | 20 s    |
-| `console`           | `apps/*/src/` (jsdom por arquivo)                        | 20 s    |
-| `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus | 60 s    |
-| `repository`        | Os três testes que leem a árvore inteira                 | 60 s    |
-| `benchmark`         | `tests/**/*.benchmark.test.ts`                           | 120 s   |
+| Projeto             | Arquivos                                                  | Timeout |
+| ------------------- | --------------------------------------------------------- | ------- |
+| `platform`          | `platform/`, Workers de `apps/console/`, dois de `tests/` | 20 s    |
+| `platform-isolated` | Os arquivos de `platform` que usam `vi.mock`              | 20 s    |
+| `packages`          | `packages/`                                               | 20 s    |
+| `console`           | `apps/*/src/` (jsdom por arquivo)                         | 20 s    |
+| `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus  | 60 s    |
+| `repository`        | Os três testes que leem a árvore inteira                  | 60 s    |
+| `benchmark`         | `*.benchmark.test.ts` de `platform/` e `tests/`           | 120 s   |
 
-Os testes de `tests/` sem prefixo de área entram pelo nome no projeto do
-código que exercitam (por exemplo, `tests/webhookContract.test.ts` em
-`packages` e `tests/docsOutput.test.ts` em `tooling`). Nenhum projeto recolhe
-o restante: um arquivo novo sem projeto reprova `tests/ci.testProjects.test.ts`.
+Cada teste fica ao lado do código que exercita: os da plataforma em
+`platform/convex/` (com `lib/` e `testing/`), os dos Workers do console em
+`apps/console/`, os dos pacotes na raiz de cada pacote e os de scripts em
+`scripts/<domínio>/`. Em `tests/` ficam só os transversais (`ci.*`,
+`worktree*`, `validation*`, os corpus de fixtures e `publicSite`), com
+`helpers/`, `setup/`, `fixtures/` e `coverage-matrix.json`. Os testes ao lado
+dos módulos do Convex carregam a pasta por `tests/helpers/convex-modules.ts`,
+que tira os `*.test.ts` da lista; o Convex não publica arquivo com mais de um
+ponto no nome, e `platform/convex/tsconfig.json` deixa os testes fora do
+typecheck do deploy. Nenhum projeto recolhe o restante: um arquivo novo sem
+projeto reprova `tests/ci.testProjects.test.ts`.
 
 `repository` reúne os testes cujas entradas são quase todo o repositório:
 `scripts/public-copy/public-identifiers.test.ts` (todo Markdown), `scripts/public-copy/public-tree.test.ts`
@@ -355,7 +362,7 @@ scripts `.mjs`, `deploy/` e workflows rodam a suíte toda
 (`forceRerunTriggers`, com caminhos absolutos porque o `**` do Vitest não
 atravessa `.claude/worktrees/`).
 
-`tests/platform.publicSurface.test.ts` varre a superfície pública do Convex:
+`platform/convex/publicSurface.test.ts` varre a superfície pública do Convex:
 descobre toda query, mutation e action pública de `platform/convex`, inclusive
 de módulos novos, gera argumentos válidos pelo validador com IDs forjados e
 chama cada função diretamente, sem sessão. Só `access:session` e

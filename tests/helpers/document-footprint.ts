@@ -117,7 +117,7 @@ const beforePhaseB = {
  * B8 clears a version's inline copy as soon as the writer reads its blob back. The tests of B4 to
  * B7 compare the blob with that copy, so they keep it: the read-back still marks the version
  * verified, only the cleanup is left out. `prefix` is the path from the caller's module map to
- * the repository root (`../../` from `tests/helpers`, `../` from `tests`).
+ * the repository root; the shared map of `convex-modules.ts` uses `../../`.
  */
 export function keepInline(prefix = "../../") {
   return {

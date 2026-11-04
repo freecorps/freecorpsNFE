@@ -149,7 +149,7 @@ Há dois eixos de ambiente, e toda operação conhece ambos:
   Depois de retirada a liberação, sobra só a leitura do que foi capturado
   ([CAPTURE.md](CAPTURE.md#liberação-fiscal-no-site)). As
   verificações de acesso não leem `PRODUCT_ENV`, e
-  `tests/platform.environmentIsolation.test.ts` falha se uma passar a ler.
+  `platform/convex/environmentIsolation.test.ts` falha se uma passar a ler.
 - Ambiente fiscal: `FISCAL_ENV`, `disabled` por padrão. Transporte real é
   opt-in explícito por deployment (`platform/convex/environment.ts`); na
   emissão, o modo de transporte é `simulated`, `producao-restrita` ou
@@ -277,6 +277,6 @@ rotação, em [CERTIFICATES.md](CERTIFICATES.md); a recuperação das chaves, em
 | Operação            | Falha em pontos de persistência, restore, rotação e reenvio                        |
 | Consumidor          | SDK e curl contra a API de teste                                                   |
 
-Os testes de integração ficam em `tests/platform.*.test.ts`; a escolha dos
+Os testes de integração ficam ao lado do módulo, em `platform/convex/`; a escolha dos
 checks está na seção "Verificando" do [AGENTS.md](../../AGENTS.md#verificando).
 Testes com transporte simulado não comprovam integração fiscal real.

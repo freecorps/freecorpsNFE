@@ -1,5 +1,5 @@
 // Pure steps of the docs build (scripts/build.mjs), kept apart so
-// tests/docsOutput.test.ts can exercise them without a React Router build.
+// apps/docs/scripts/output.test.ts can exercise them without a React Router build.
 import { createHash } from "node:crypto";
 import {
   mkdirSync,

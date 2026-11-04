@@ -107,17 +107,19 @@ it("assigns every test file to exactly one project and one report suite", () => 
 
 it("classifies a new test file from the shared list", () => {
   expect(owners("src/pages/example.test.ts")).toEqual([]);
-  expect(owners("tests/sdk.test.ts")).toEqual(["platform"]);
-  expect(owners("tests/platform.exports.benchmark.test.ts")).toEqual(["benchmark"]);
+  expect(owners("platform/convex/companies.test.ts")).toEqual(["platform"]);
+  expect(owners("apps/console/auth-proxy.test.ts")).toEqual(["platform"]);
+  expect(owners("packages/sdk/index.test.ts")).toEqual(["packages"]);
+  expect(owners("platform/convex/exports.benchmark.test.ts")).toEqual(["benchmark"]);
   expect(owners("tests/worktreeSetup.benchmark.test.ts")).toEqual(["benchmark"]);
   expect(owners("tests/worktreeSafety.test.ts")).toEqual(["tooling"]);
   expect(owners("lib/worktree-local.test.ts")).toEqual(["tooling"]);
   // Os prefixos do backoffice legado, aposentado na #345, não têm mais dono.
   expect(owners("tests/convex.core.test.ts")).toEqual([]);
   expect(owners("tests/engine.novo.test.ts")).toEqual([]);
-  expect(owners("tests/apiKeyCrypto.test.ts")).toEqual(["platform"]);
-  expect(owners("tests/webhookContract.test.ts")).toEqual(["packages"]);
-  expect(owners("tests/docsOutput.test.ts")).toEqual(["tooling"]);
+  expect(owners("platform/convex/lib/apiKeyCrypto.test.ts")).toEqual(["platform"]);
+  expect(owners("packages/contracts/webhooks.test.ts")).toEqual(["packages"]);
+  expect(owners("apps/docs/scripts/output.test.ts")).toEqual(["tooling"]);
   // Os testes que leem a árvore inteira ficam fora de tooling.
   expect(owners("scripts/public-copy/public-tree.test.ts")).toEqual(["repository"]);
   expect(owners("scripts/public-copy/public-identifiers.test.ts")).toEqual(["repository"]);

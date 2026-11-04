@@ -218,7 +218,7 @@ Simples de Campinas à Sefin com data de emissão em Brasília a partir de
 01/11/2026 (00:00 em Brasília, 03:00Z); antes disso, o mesmo pedido vai à
 IMA (C5). O pedido não aceita data futura: a prova roda no próprio dia.
 O comportamento esperado está nos testes "exportação de Simples de
-Campinas" de `tests/platform.issuance.test.ts` e
+Campinas" de `platform/convex/issuance.test.ts` e
 `packages/fiscal-nfse/export.test.ts`, e o contrato em
 [ISSUANCE.md](../plataforma/ISSUANCE.md#canal-de-campinas).
 
@@ -542,7 +542,7 @@ da `main` de 03/11/2026 ainda não a exige
   oferece emitir (`canIssue` falso no `context`).
 
 Os testes com o plano e o ambiente substituídos estão em
-`tests/platform.issuanceProduction.test.ts`. Os do console estão em
+`platform/convex/lib/issuanceProduction.test.ts`. Os do console estão em
 `apps/console/src/issuances-production.test.tsx`, e as capturas, em
 console-ambiente-producao.
 

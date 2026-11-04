@@ -15,7 +15,7 @@ import {
 
 /**
  * The console forms point the same problems the server refuses (issue #281). The server runs
- * these tables in `tests/platform.sharedRules.test.ts`.
+ * these tables in `platform/convex/lib/sharedRules.test.ts`.
  */
 const NOW = Date.UTC(2026, 9, 8, 15); // 08/10/2026 12:00 in Brasília
 const activity = {

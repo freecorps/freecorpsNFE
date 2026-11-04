@@ -185,7 +185,7 @@ if (receipt) {
           "platform/convex/importProcessing.ts",
           "platform/convex/lib/documentContentWriter.ts",
           "platform/convex/lib/documentContent.ts",
-          "tests/platform.documentReadProof.test.ts",
+          "platform/convex/testing/documentReadProof.test.ts",
         ].map(async (path) => [path, hash(await readFile(join(root, path)))]),
       ),
     );

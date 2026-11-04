@@ -208,7 +208,7 @@ export async function waitFor(
 
 /** The XML original every proof note stores, and the test that parses it for the seed. */
 export const PROOF_XML = "tests/fixtures/nfe/4.00/invoice-authorized.xml";
-const FIXTURE_TEST = "tests/platform.coldTierProof.test.ts";
+const FIXTURE_TEST = "platform/convex/testing/coldTierProof.test.ts";
 
 /**
  * The parsed content of `PROOF_XML` ({ result, items }), as the real import stores it: the
