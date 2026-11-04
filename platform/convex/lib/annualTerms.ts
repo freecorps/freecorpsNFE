@@ -6,14 +6,16 @@ import { PLATFORM_PLANS, type paidTier } from "./planCatalog";
  * The term month of index `k`, counted from 0 (the (k + 1)-th month, ADR 0012), runs from
  * `termMonthStart(start, k)` to `termMonthStart(start, k + 1)`, and the term month under way
  * always counts whole. A term starting on a 1st at 00:00
- * UTC has the civil UTC months as its term months.
+ * UTC has the civil UTC months as its term months. A term that renews another keeps the anchor of
+ * their chain (`anchor`, ADR 0012, section 1): its months are the anchor's, from the one it starts.
  */
 type PaidTier = typeof paidTier.type;
 export const TERM_MONTHS = 12;
 /** Withdrawal period of CDC art. 49: 7 × 24 h from the purchase, inclusive. */
 export const WITHDRAWAL_MS = 7 * 24 * 60 * 60 * 1000;
 
-export type AnnualTerm = { startsAt: number; endsAt: number };
+/** A term's span; `anchor`, when given, is the anchor of its chain, which its months count from. */
+export type AnnualTerm = { startsAt: number; endsAt: number; anchor?: number | undefined };
 
 /** The last instant a `Date` holds: 8.64e15 ms after 1970. */
 const MAX_INSTANT = 8.64e15;
@@ -49,58 +51,91 @@ export function addMonths(start: number, count: number) {
   return instant(Date.UTC(year, month + count, Math.min(day, lastDay)) + timeOfDay);
 }
 
-/** End of the term that starts at `start`, any instant: its anniversary, 12 months later. */
-export function termEndsAt(start: number) {
-  return addMonths(start, TERM_MONTHS);
+/**
+ * The month of `anchor` holding `at`, counted from 0: `addMonths(anchor, k) <= at <
+ * addMonths(anchor, k + 1)`. −1 before `anchor`; not capped.
+ */
+function monthIndex(anchor: number, at: number) {
+  instant(anchor);
+  if (!Number.isSafeInteger(at)) throw new RangeError("Invalid instant");
+  if (at < anchor) return -1;
+  const from = new Date(anchor);
+  const to = new Date(instant(at));
+  const index =
+    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + to.getUTCMonth() - from.getUTCMonth();
+  // That month's start falls in the civil month of `at`, so it is at most one month ahead.
+  return addMonths(anchor, index) > at ? index - 1 : index;
+}
+
+/**
+ * How many months of `anchor` come before a term starting at `start`: the term's months are the
+ * anchor's months from there on (ADR 0012, section 1). `start` must be one of the anchor's
+ * monthly anniversaries, the anchor itself included.
+ */
+function offsetOf(anchor: number, start: number) {
+  const offset = monthIndex(anchor, instant(start));
+  if (offset < 0 || addMonths(anchor, offset) !== start)
+    throw new RangeError("Start is not an anniversary of the anchor");
+  return offset;
+}
+
+/**
+ * End of the term that starts at `start`, any instant: its anniversary, 12 months later. A term
+ * that continues a chain counts its months from the chain's `anchor` (ADR 0012, section 1), so a
+ * chain anchored on 29/02/2028 has terms turning on 28/02/2029 and on 29/02/2032, without drift.
+ * Without `anchor`, the term is its own anchor.
+ */
+export function termEndsAt(start: number, anchor = start) {
+  return addMonths(anchor, offsetOf(anchor, start) + TERM_MONTHS);
 }
 
 /** Start of the term's month `index`, from 0 to 12; month 12 starts when the term ends. */
-export function termMonthStart(start: number, index: number) {
-  return addMonths(start, months(index));
+export function termMonthStart(start: number, index: number, anchor = start) {
+  return addMonths(anchor, offsetOf(anchor, start) + months(index));
 }
 
 /**
  * The term month holding `at`, counted from 0: `termMonthStart(start, k) <= at <
  * termMonthStart(start, k + 1)`. −1 before `start`; not capped, so 12 from the term's end.
  */
-export function termMonthIndex(start: number, at: number) {
-  instant(start);
+export function termMonthIndex(start: number, at: number, anchor = start) {
+  const offset = offsetOf(anchor, start);
   if (!Number.isSafeInteger(at)) throw new RangeError("Invalid instant");
   if (at < start) return -1;
-  const from = new Date(start);
-  const to = new Date(instant(at));
-  const index =
-    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + to.getUTCMonth() - from.getUTCMonth();
-  // That month's start falls in the civil month of `at`, so it is at most one month ahead.
-  return addMonths(start, index) > at ? index - 1 : index;
+  return monthIndex(anchor, at) - offset;
 }
 
 /** The term month holding `at`, which must not come before `start`. */
-export function termMonthAt(start: number, at: number) {
-  const index = termMonthIndex(start, at);
+export function termMonthAt(start: number, at: number, anchor = start) {
+  const index = termMonthIndex(start, at, anchor);
   if (index < 0) throw new RangeError("Before the term");
-  return { index, startsAt: addMonths(start, index), endsAt: addMonths(start, index + 1) };
+  const offset = offsetOf(anchor, start);
+  return {
+    index,
+    startsAt: addMonths(anchor, offset + index),
+    endsAt: addMonths(anchor, offset + index + 1),
+  };
 }
 
 /** Whether `at` starts one of the term's months, the end included (`termMonthStart`, 0 to 12). */
-export function isTermMonthStart(start: number, at: number) {
+export function isTermMonthStart(start: number, at: number, anchor = start) {
   if (!Number.isSafeInteger(at) || at < start || at > MAX_INSTANT) return false;
-  const index = termMonthIndex(start, at);
-  return index <= TERM_MONTHS && addMonths(start, index) === at;
+  const index = termMonthIndex(start, at, anchor);
+  return index <= TERM_MONTHS && addMonths(anchor, offsetOf(anchor, start) + index) === at;
 }
 
 /** Term months already used at `now`, counting the current one as used. */
 export function usedMonths(term: AnnualTerm, now: number) {
   if (now < term.startsAt) return 0;
   if (now >= term.endsAt) return TERM_MONTHS;
-  return termMonthIndex(term.startsAt, now) + 1;
+  return termMonthIndex(term.startsAt, now, term.anchor) + 1;
 }
 
 /** Term months still ahead at `now` for an upgrade, counting the current one as whole. */
 export function remainingMonths(term: AnnualTerm, now: number) {
   if (now >= term.endsAt) return 0;
   if (now < term.startsAt) return TERM_MONTHS;
-  return TERM_MONTHS - termMonthIndex(term.startsAt, now);
+  return TERM_MONTHS - termMonthIndex(term.startsAt, now, term.anchor);
 }
 
 export function withinWithdrawal(purchasedAt: number, now: number) {
@@ -157,6 +192,8 @@ export function upgradeCents(input: {
 export type TermShape = {
   tier: PaidTier;
   firstPeriod: number;
+  /** The anchor of the term's chain (ADR 0012, section 1); missing, the term is its own. */
+  anchor?: number | undefined;
   endsAt: number;
   paidCents: number;
   purchasedAt: number;
@@ -178,6 +215,8 @@ export const isTermReference = (ref: string) => REFERENCE.test(ref);
 /**
  * Throws unless the term:
  * - starts at a valid instant and ends on its anniversary, `TERM_MONTHS` later (`termEndsAt`);
+ *   with `anchor`, it starts on one of the anchor's monthly anniversaries and its months, end
+ *   included, are the anchor's;
  * - holds positive integer cents and a valid purchase time;
  * - names at least one payment reference, valid and without repeats;
  * - has valid segments;
@@ -190,9 +229,22 @@ export const isTermReference = (ref: string) => REFERENCE.test(ref);
  * adding a segment.
  */
 export function assertTermShape(term: TermShape) {
-  if (!Number.isSafeInteger(term.firstPeriod) || term.firstPeriod < 0)
+  const anchor = term.anchor ?? term.firstPeriod;
+  if (
+    !Number.isSafeInteger(term.firstPeriod) ||
+    term.firstPeriod < 0 ||
+    !Number.isSafeInteger(anchor) ||
+    anchor < 0 ||
+    anchor > term.firstPeriod
+  )
     throw new RangeError("Invalid term start");
-  if (term.endsAt !== termEndsAt(term.firstPeriod)) throw new RangeError("Invalid term end");
+  let endsAt: number;
+  try {
+    endsAt = termEndsAt(term.firstPeriod, anchor);
+  } catch {
+    throw new RangeError("Invalid term start");
+  }
+  if (term.endsAt !== endsAt) throw new RangeError("Invalid term end");
   if (cents(term.paidCents) === 0) throw new RangeError("Invalid cents");
   if (!Number.isSafeInteger(term.purchasedAt) || term.purchasedAt < 0)
     throw new RangeError("Invalid purchase time");
@@ -206,7 +258,7 @@ export function assertTermShape(term: TermShape) {
   let tier = term.tier;
   for (const segment of term.segments) {
     if (
-      !isTermMonthStart(term.firstPeriod, segment.fromPeriod) ||
+      !isTermMonthStart(term.firstPeriod, segment.fromPeriod, anchor) ||
       segment.fromPeriod <= from ||
       segment.fromPeriod >= term.endsAt ||
       PLATFORM_PLANS[segment.tier].monthlyCents <= PLATFORM_PLANS[tier].monthlyCents
@@ -222,7 +274,7 @@ export function assertTermShape(term: TermShape) {
   let upgraded = 0;
   for (const upgrade of term.upgrades ?? []) {
     if (
-      !isTermMonthStart(term.firstPeriod, upgrade.fromPeriod) ||
+      !isTermMonthStart(term.firstPeriod, upgrade.fromPeriod, anchor) ||
       upgrade.fromPeriod < term.firstPeriod ||
       upgrade.fromPeriod >= term.endsAt ||
       tierAt(upgrade.fromPeriod) !== upgrade.tier ||

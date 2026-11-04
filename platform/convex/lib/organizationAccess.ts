@@ -10,8 +10,14 @@ import { requirePlatformEnvironment } from "../environment";
 import { closureOf, exportWindowOpen } from "./organizationClosure";
 import { assertOrganizationHot } from "./coldArchiveCore";
 
-export function deny(code = "ACCESS_DENIED"): never {
-  throw new ConvexError({ code });
+/**
+ * Refuses with `code`. `availableAt`, when known, is the instant the refused sale becomes
+ * available (ADR 0012, one paid plan at a time): the console shows it beside the code.
+ */
+export function deny(code = "ACCESS_DENIED", detail: { availableAt?: number | null } = {}): never {
+  throw new ConvexError(
+    typeof detail.availableAt === "number" ? { code, availableAt: detail.availableAt } : { code },
+  );
 }
 /** The code of a `deny` refusal, or null for any other error. */
 export function denialCode(error: unknown) {

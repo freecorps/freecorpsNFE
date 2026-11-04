@@ -347,6 +347,60 @@ describe("term shape", () => {
   });
 });
 
+describe("a term that continues a chain counts from its anchor (ADR 0012, section 1)", () => {
+  const ANCHOR = Date.UTC(2028, 1, 29, 9, 15);
+  const SECOND = Date.UTC(2029, 1, 28, 9, 15);
+
+  it("ends on the anchor's anniversaries: 28/02 in common years, 29/02 again in 2032", () => {
+    expect(termEndsAt(ANCHOR)).toBe(SECOND);
+    expect(termEndsAt(SECOND, ANCHOR)).toBe(Date.UTC(2030, 1, 28, 9, 15));
+    expect(termEndsAt(Date.UTC(2031, 1, 28, 9, 15), ANCHOR)).toBe(Date.UTC(2032, 1, 29, 9, 15));
+    // Its own anchor, the second term would drift: 28/02 for good.
+    expect(termEndsAt(Date.UTC(2031, 1, 28, 9, 15))).toBe(Date.UTC(2032, 1, 28, 9, 15));
+  });
+
+  it("turns its months on the anchor's day, not on its own start's", () => {
+    expect(termMonthStart(SECOND, 1, ANCHOR)).toBe(Date.UTC(2029, 2, 29, 9, 15));
+    expect(termMonthStart(SECOND, 1)).toBe(Date.UTC(2029, 2, 28, 9, 15));
+    const march28 = Date.UTC(2029, 2, 28, 12);
+    expect(termMonthAt(SECOND, march28, ANCHOR)).toEqual({
+      index: 0,
+      startsAt: SECOND,
+      endsAt: Date.UTC(2029, 2, 29, 9, 15),
+    });
+    expect(termMonthIndex(SECOND, march28)).toBe(1);
+    const span = { startsAt: SECOND, endsAt: termEndsAt(SECOND, ANCHOR), anchor: ANCHOR };
+    expect(usedMonths(span, march28)).toBe(1);
+    expect(remainingMonths(span, march28)).toBe(12);
+    expect(isTermMonthStart(SECOND, Date.UTC(2029, 2, 29, 9, 15), ANCHOR)).toBe(true);
+    expect(isTermMonthStart(SECOND, Date.UTC(2029, 2, 28, 9, 15), ANCHOR)).toBe(false);
+  });
+
+  it("refuses a start that is not one of the anchor's anniversaries, or before it", () => {
+    expect(() => termEndsAt(SECOND + 1, ANCHOR)).toThrow(RangeError);
+    expect(() => termEndsAt(Date.UTC(2029, 1, 27, 9, 15), ANCHOR)).toThrow(RangeError);
+    expect(() => termEndsAt(ANCHOR - 1, ANCHOR)).toThrow(RangeError);
+    const shape = {
+      tier: "intermediate" as const,
+      firstPeriod: SECOND,
+      anchor: ANCHOR,
+      endsAt: Date.UTC(2030, 1, 28, 9, 15),
+      paidCents: intermediate.annualCents,
+      purchasedAt: Date.UTC(2029, 0, 30),
+      references: ["pix-chain-renewal"],
+      segments: [{ tier: "large" as const, fromPeriod: Date.UTC(2029, 2, 29, 9, 15) }],
+    };
+    expect(() => assertTermShape(shape)).not.toThrow();
+    for (const change of [
+      { anchor: ANCHOR + 1 },
+      { anchor: SECOND + 1 },
+      { endsAt: termEndsAt(SECOND) + 1 },
+      { segments: [{ tier: "large" as const, fromPeriod: Date.UTC(2029, 2, 28, 9, 15) }] },
+    ])
+      expect(() => assertTermShape({ ...shape, ...change })).toThrow(RangeError);
+  });
+});
+
 describe("upgrade charges on the term", () => {
   const start = Date.UTC(2027, 0, 1);
   const MAY = Date.UTC(2027, 4, 1);

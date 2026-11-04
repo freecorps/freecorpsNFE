@@ -51,15 +51,16 @@ import {
   renews,
 } from "./lib/billingCore";
 import {
-  annualTermBlocks,
-  monthStart,
-  termCovering,
+  chainAnchor,
+  termLastMonth,
+  termMonth,
+  termOverlapping,
   termsInForce,
   termTierAt,
   termUpgradeCents,
   upgradableTerm,
 } from "./lib/planTerms";
-import { remainingMonths, termEndsAt, termMonthAt } from "./lib/annualTerms";
+import { remainingMonths, termEndsAt, termMonthStart } from "./lib/annualTerms";
 
 const scope = { organizationId: v.id("organizations") };
 const requestResult = v.object({
@@ -96,11 +97,14 @@ const offerValue = v.object({
 const termView = v.object({
   id: v.id("platformPlanTerms"),
   tier: paidTier,
-  /** Upgrades: the tier from the 1st of `fromPeriod` to the end of the term. */
+  /** Upgrades: the tier from `fromPeriod`, the start of a term month, to the end of the term. */
   segments: v.array(v.object({ tier: paidTier, fromPeriod: v.number() })),
+  /** Its start, any instant: the card still starts on a 1st, the Pix at the confirmation. */
   firstPeriod: v.number(),
   /** Its end, and the date the card renews it. */
   endsAt: v.number(),
+  /** The start of its last month, from which a Pix term may be renewed by a new request. */
+  renewalFrom: v.number(),
   source: v.union(v.literal("stripe"), v.literal("pix")),
   state: v.union(v.literal("scheduled"), v.literal("active"), v.literal("rescinded")),
   /** A scheduled term whose start was refused (`blockedCode`): paid, waiting for the team. */
@@ -114,7 +118,9 @@ const termView = v.object({
   renews: v.boolean(),
   /**
    * The upgrade on sale now, priced by the server (`termUpgradeCents`) over the `months` left,
-   * the current one whole. On the card it closes 72 hours before `endsAt` (`cardUntil`).
+   * the current one whole, from `from`, the start of the current term month, to the end of the
+   * term. A Pix upgrade is paid by `until`, the end of that month, as the price depends on it. On
+   * the card it closes 72 hours before `endsAt` (`cardUntil`).
    */
   upgrade: v.union(
     v.null(),
@@ -122,19 +128,151 @@ const termView = v.object({
       tier: paidTier,
       amountCents: v.number(),
       months: v.number(),
+      from: v.number(),
+      until: v.number(),
       cardUntil: v.union(v.number(), v.null()),
     }),
   ),
 });
 type TermView = typeof termView.type;
 
-/** How an annual request starts: `now` began in the month it was asked, `next` after it. */
+/**
+ * How an annual request starts: `now`, at its confirmation; `renewal`, at `firstPeriod`, the end
+ * of the plan it renews; or the `upgrade` of the term `termId`. Null for a monthly request.
+ */
 function startOf(request: Doc<"platformPlanRequests">) {
-  if (request.firstPeriod === undefined) return null;
+  if ((request.cycle ?? "monthly") !== "annual") return null;
   if (request.termId) return "upgrade" as const;
-  return request.firstPeriod === monthStart(request.startsAt)
-    ? ("now" as const)
-    : ("next" as const);
+  return request.firstPeriod === undefined ? ("now" as const) : ("renewal" as const);
+}
+
+/** A Pix request for an annual `now` is paid within 7 days (`payBy`); its price never changes. */
+const PIX_PAY_WINDOW = 7 * 24 * 60 * 60 * 1000;
+
+type AnnualStart =
+  | { start: "now" }
+  | {
+      start: "renewal";
+      firstPeriod: number;
+      anchor: number;
+      endsAt: number;
+      /** Why `now` is refused meanwhile: a paid plan is in force until `firstPeriod`. */
+      nowCode: string;
+    }
+  | { start: null; code: string; availableAt: number | null };
+
+/**
+ * How a new annual by Pix may start at `now` (ADR 0012, one paid plan at a time). Without a paid
+ * plan in force, `now`: at the confirmation, with a new anchor. In the last month of a Pix plan in
+ * force, its `renewal`: from its end, keeping the anchor of the chain; a monthly Pix plan is all
+ * its last month, so any tier renews it. Anything else waits for the plan in force to end and is
+ * refused with a code and, when known, the instant it becomes available: a Pix term before its
+ * last month, or already renewed (`ANNUAL_TERM_ACTIVE`, from the last month of the latest term);
+ * a card plan, even without renewal (`PAYMENT_METHOD_CARD`, from its end unless the card still
+ * renews it); the access left by a
+ * rescinded term (`PLAN_UNAVAILABLE`, from its end); a custom plan (`PLAN_UNAVAILABLE`).
+ */
+async function pixAnnualStart(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  now: number,
+): Promise<AnnualStart> {
+  const plan = await planFor(ctx, organizationId);
+  if (plan?.catalogTier === "custom")
+    return { start: null, code: "PLAN_UNAVAILABLE", availableAt: null };
+  const terms = (await termsInForce(ctx, organizationId, now)).sort(
+    (a, b) => a.firstPeriod - b.firstPeriod,
+  );
+  const last = terms.at(-1);
+  if (last) {
+    if (last.source !== "pix")
+      return {
+        start: null,
+        code: "PAYMENT_METHOD_CARD",
+        availableAt: (await cardBlocksPix(ctx, organizationId)) ? null : last.endsAt,
+      };
+    // Only the term granted and under way is renewed; one scheduled starts first.
+    if (last.state !== "active" || now < termLastMonth(last))
+      return {
+        start: null,
+        code: "ANNUAL_TERM_ACTIVE",
+        // A term whose start was refused waits for the team; it no longer holds after its end.
+        availableAt: last.blockedCode ? last.endsAt : termLastMonth(last),
+      };
+    const anchor = chainAnchor(last);
+    return {
+      start: "renewal",
+      firstPeriod: last.endsAt,
+      anchor,
+      endsAt: termEndsAt(last.endsAt, anchor),
+      nowCode: "ANNUAL_TERM_ACTIVE",
+    };
+  }
+  if (
+    !plan ||
+    plan.startsAt > now ||
+    planEnded(plan, now) ||
+    (plan.catalogTier !== "intermediate" && plan.catalogTier !== "large")
+  )
+    return { start: "now" };
+  if (plan.termId || plan.endsAt === null)
+    return { start: null, code: "PLAN_UNAVAILABLE", availableAt: plan.endsAt };
+  if (await paidByCard(ctx, plan))
+    return {
+      start: null,
+      code: "PAYMENT_METHOD_CARD",
+      // While the card renews, the date depends on cancelling it ("Cancelar renovação").
+      availableAt: (await cardBlocksPix(ctx, organizationId)) ? null : plan.endsAt,
+    };
+  const anchor = renewalAnchor({ ...plan, endsAt: plan.endsAt });
+  return {
+    start: "renewal",
+    firstPeriod: plan.endsAt,
+    anchor,
+    endsAt: termEndsAt(plan.endsAt, anchor),
+    nowCode: "PLAN_UNAVAILABLE",
+  };
+}
+
+const annualStartView = (start: AnnualStart) => ({
+  start: start.start,
+  startsAt: start.start === "renewal" ? start.firstPeriod : null,
+  endsAt: start.start === "renewal" ? start.endsAt : null,
+  code: start.start === null ? start.code : null,
+  availableAt: start.start === null ? start.availableAt : null,
+});
+
+/** Whether a card invoice granted this plan row: the last write was its `billingGrants` row's. */
+async function paidByCard(ctx: QueryCtx, plan: Doc<"usagePlans">) {
+  const grants = await ctx.db
+    .query("billingGrants")
+    .withIndex("by_organizationId", (q) => q.eq("organizationId", plan.organizationId))
+    .order("desc")
+    .take(20);
+  return grants.some((grant) => grant.state === "applied" && grant.planVersion === plan.version);
+}
+
+/**
+ * The anchor a renewal of the monthly `plan` keeps: its `periodAnchor` when its end is one of
+ * the anchor's anniversaries. The monthly Pix still runs by the civil month (slice 1c), so today
+ * this is its end, a 1st at 00:00 UTC, and the term is its own anchor.
+ */
+function renewalAnchor(plan: { periodAnchor?: number; endsAt: number }) {
+  const anchor = plan.periodAnchor;
+  if (anchor !== undefined && anchor <= plan.endsAt)
+    try {
+      termEndsAt(plan.endsAt, anchor);
+      return anchor;
+    } catch {
+      // Not an anniversary: the renewal starts a chain of its own.
+    }
+  return plan.endsAt;
+}
+
+/** The end of the last term in force or scheduled: a monthly sale waits for it. */
+async function termsEnd(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
+  const terms = await termsInForce(ctx, organizationId, now);
+  return terms.length ? Math.max(...terms.map((term) => term.endsAt)) : null;
 }
 
 /**
@@ -173,11 +311,11 @@ async function termViews(
     .flatMap((term): TermView[] => {
       if (term.state === "expired") return [];
       // Priced from the start of the term month under way, which counts whole.
-      const from =
+      const month =
         annualOnSale && !scheduled && term.state === "active" && term.firstPeriod <= now
-          ? termMonthAt(term.firstPeriod, now).startsAt
+          ? termMonth(term, now)
           : null;
-      const amountCents = from === null ? null : termUpgradeCents(term, "large", from);
+      const amountCents = month === null ? null : termUpgradeCents(term, "large", month.startsAt);
       return [
         {
           id: term._id,
@@ -185,6 +323,7 @@ async function termViews(
           segments: term.segments,
           firstPeriod: term.firstPeriod,
           endsAt: term.endsAt,
+          renewalFrom: termLastMonth(term),
           source: term.source,
           state: term.state,
           blocked: term.state === "scheduled" && term.blockedCode !== undefined,
@@ -194,15 +333,17 @@ async function termViews(
             term.source === "stripe" &&
             renewing(term.stripeSubscriptionId),
           upgrade:
-            from === null || amountCents === null
+            month === null || amountCents === null
               ? null
               : {
                   tier: "large" as const,
                   amountCents,
                   months: remainingMonths(
-                    { startsAt: term.firstPeriod, endsAt: term.endsAt },
-                    from,
+                    { startsAt: term.firstPeriod, endsAt: term.endsAt, anchor: chainAnchor(term) },
+                    month.startsAt,
                   ),
+                  from: month.startsAt,
+                  until: month.endsAt,
                   cardUntil: term.source === "stripe" ? term.endsAt - UPGRADE_SWITCH_MARGIN : null,
                 },
         },
@@ -256,14 +397,19 @@ export const overview = query({
           v.literal("cancelled"),
         ),
         cycle: v.union(v.literal("monthly"), v.literal("annual")),
-        /** Annual only: `now`, `next`, or the `upgrade` of the term in force. */
-        start: v.union(v.null(), v.literal("now"), v.literal("next"), v.literal("upgrade")),
-        /** Annual only: the 1st, 00:00 UTC, the term or the upgrade starts. */
+        /** Annual only: `now`, the `renewal` of the plan in force, or the `upgrade` of the term. */
+        start: v.union(v.null(), v.literal("now"), v.literal("renewal"), v.literal("upgrade")),
+        /** Annual renewal or upgrade: the instant the term or the upgrade starts. */
         firstPeriod: v.union(v.number(), v.null()),
-        /** When what the request buys starts: the month, the term or the upgrade. */
-        periodStartsAt: v.number(),
+        /**
+         * When what the request buys starts: the month, the renewal or the upgrade. Null for an
+         * annual `now`, which starts at the confirmation of the payment.
+         */
+        periodStartsAt: v.union(v.number(), v.null()),
         /** Monthly only: the end, exclusive, of the month bought. */
         periodEndsAt: v.union(v.number(), v.null()),
+        /** The payment deadline: past it, the confirmation is refused. */
+        payBy: v.number(),
       }),
     ),
     availability: v.object({ canClaimFree: v.boolean(), reason: v.union(v.string(), v.null()) }),
@@ -272,10 +418,17 @@ export const overview = query({
     /** The Pix switch (`pixEnabled`): new requests by assisted Pix, annual upgrades included. */
     pixEnabled: v.boolean(),
     /**
-     * Whether no term stops a new annual by Pix starting `now` (this month) or `next` month
-     * (`annualTermBlocks`): a term in force allows only `next`, and only in its last month.
+     * How a new annual by Pix starts (`pixAnnualStart`, ADR 0012): `now`, at the confirmation;
+     * `renewal`, from `startsAt`, the end of the Pix plan in force, to `endsAt`; or null, refused
+     * with `code` until `availableAt`, when known.
      */
-    annualStarts: v.object({ now: v.boolean(), next: v.boolean() }),
+    annualStart: v.object({
+      start: v.union(v.literal("now"), v.literal("renewal"), v.null()),
+      startsAt: v.union(v.number(), v.null()),
+      endsAt: v.union(v.number(), v.null()),
+      code: v.union(v.string(), v.null()),
+      availableAt: v.union(v.number(), v.null()),
+    }),
     /** A card Checkout is open; when it goes away the console starts a new intention. */
     checkout: v.boolean(),
     terms: v.array(termView),
@@ -362,8 +515,15 @@ export const overview = query({
             cycle: request.cycle ?? ("monthly" as const),
             start: startOf(request),
             firstPeriod: request.firstPeriod ?? null,
-            periodStartsAt: request.firstPeriod ?? periodStart(request.period),
+            periodStartsAt:
+              request.firstPeriod ??
+              ((request.cycle ?? "monthly") === "monthly"
+                ? request.period
+                  ? periodStart(request.period)
+                  : request.startsAt
+                : null),
             periodEndsAt: (request.cycle ?? "monthly") === "monthly" ? request.endsAt : null,
+            payBy: request.endsAt,
           }
         : null,
       availability: {
@@ -374,10 +534,7 @@ export const overview = query({
       },
       annualEnabled: annualOnSale,
       pixEnabled: pixOn(settings),
-      annualStarts: {
-        now: !(await annualTermBlocks(ctx, args.organizationId, now, now)),
-        next: !(await annualTermBlocks(ctx, args.organizationId, nextUsagePeriodStart(now), now)),
-      },
+      annualStart: annualStartView(await pixAnnualStart(ctx, args.organizationId, now)),
       checkout: !!(await openCheckout(ctx, args.organizationId, now)),
       terms: await termViews(ctx, args.organizationId, now, annualOnSale),
     };
@@ -429,10 +586,12 @@ export const claimFree = mutation({
 
 /**
  * Records an intent, never payment. Full UTC-month price and quota are shown before confirmation.
- * `cycle: "annual"` asks for a 12-month term paid in full (`annualCents`), starting `now` (the
- * current month counts as the first, ADR 0010, decision 9) or on the 1st of the `next` month.
- * `start: "upgrade"` raises the annual term in force to a higher tier from the current month to
- * its end, for the difference over the months left (`requestUpgrade`).
+ * `cycle: "annual"` asks for a 12-month term paid in full (`annualCents`, ADR 0012): `now` starts
+ * at the confirmation of the payment, with no paid plan in force; `renewal`, asked in the last
+ * month of the Pix plan in force, starts at its end and keeps its anchor (`pixAnnualStart`).
+ * `start: "upgrade"` raises the annual term in force to a higher tier from the current term month
+ * to its end, for the difference over the months left (`requestUpgrade`). Any other sale while a
+ * paid plan is in force is refused with the instant it becomes available (`availableAt`).
  */
 export const requestPaid = mutation({
   args: {
@@ -440,7 +599,7 @@ export const requestPaid = mutation({
     tier: paidTier,
     key: v.string(),
     cycle: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
-    start: v.optional(v.union(v.literal("now"), v.literal("next"), v.literal("upgrade"))),
+    start: v.optional(v.union(v.literal("now"), v.literal("renewal"), v.literal("upgrade"))),
   },
   returns: requestResult,
   handler: async (ctx, args) => {
@@ -452,11 +611,6 @@ export const requestPaid = mutation({
     if (!/^[a-zA-Z0-9_-]{8,100}$/.test(args.key) || annual !== (args.start !== undefined))
       deny("INVALID_REQUEST");
     const now = Date.now();
-    const firstPeriod = annual
-      ? args.start === "next"
-        ? nextUsagePeriodStart(now)
-        : monthStart(now)
-      : undefined;
     const prior = await ctx.db
       .query("platformPlanRequests")
       .withIndex("by_organizationId_and_key", (q) =>
@@ -464,7 +618,7 @@ export const requestPaid = mutation({
       )
       .unique();
     if (prior) {
-      // A replay repeats the same choice; `now` is a term starting in the month it was asked.
+      // A replay repeats the same choice.
       if (
         prior.tier !== args.tier ||
         (prior.cycle ?? "monthly") !== (args.cycle ?? "monthly") ||
@@ -478,15 +632,21 @@ export const requestPaid = mutation({
     if (annual && !(await annualEnabled(ctx))) deny("ANNUAL_DISABLED");
     if (!(await pixEnabled(ctx))) deny("PIX_DISABLED");
     if (args.start === "upgrade") return requestUpgrade(ctx, args, user._id, now);
-    // A monthly request buys the current month, which must not overlap an annual term; an
-    // annual one must not overlap one either, and waits while another is scheduled. A `next` in
-    // the last month of a term renews it without a gap (ADR 0010, decision 9).
-    if (
-      firstPeriod !== undefined
-        ? await annualTermBlocks(ctx, args.organizationId, firstPeriod, now)
-        : await termCovering(ctx, args.organizationId, monthStart(now))
-    )
-      deny("ANNUAL_TERM_ACTIVE");
+    let renewal: { firstPeriod: number; anchor: number; endsAt: number } | null = null;
+    if (annual) {
+      // One paid plan at a time (ADR 0012): `now` without a paid plan in force, `renewal` in the
+      // last month of the Pix plan in force; anything else waits, with the date it opens.
+      const start = await pixAnnualStart(ctx, args.organizationId, now);
+      if (start.start === null) deny(start.code, { availableAt: start.availableAt });
+      // Nothing to renew; or a paid plan in force until the renewal starts.
+      if (start.start === "now" && args.start !== "now") deny("PLAN_UNAVAILABLE");
+      if (start.start === "renewal") {
+        if (args.start !== "renewal") deny(start.nowCode, { availableAt: start.firstPeriod });
+        renewal = start;
+      }
+    } else if (await termOverlapping(ctx, args.organizationId, now, nextUsagePeriodStart(now)))
+      // A monthly request buys the rest of the civil month, which must not overlap a term.
+      deny("ANNUAL_TERM_ACTIVE", { availableAt: await termsEnd(ctx, args.organizationId, now) });
     const pending = await ctx.db
       .query("platformPlanRequests")
       .withIndex("by_organizationId_and_state", (q) =>
@@ -508,33 +668,51 @@ export const requestPaid = mutation({
         ? PLATFORM_PLANS[plan.catalogTier]
         : null;
     const offer = PLATFORM_PLANS[args.tier];
-    // Renewal becomes available at expiry. Downgrades need capacity review, not an in-month refund.
-    // An annual term starting now replaces the month at full price, so only a lower tier is refused.
-    if (
-      current &&
-      (args.start === "now"
-        ? current.monthlyCents > offer.monthlyCents
-        : !annual && current.monthlyCents >= offer.monthlyCents)
-    )
-      deny("PLAN_UNAVAILABLE");
+    if (!annual) {
+      // The access a rescinded term left runs to the end of its term month: no monthly over it.
+      if (current && plan!.termId) deny("PLAN_UNAVAILABLE", { availableAt: plan!.endsAt });
+      // Renewal becomes available at expiry. Downgrades need capacity review, not an in-month
+      // refund.
+      if (current && current.monthlyCents >= offer.monthlyCents) deny("PLAN_UNAVAILABLE");
+    }
     // A member's unpaid intent must not consume the company's admission budget.
     await allocateOffer(ctx, args.organizationId, args.tier, offer, { checkOnly: true });
-    const amountCents = annual
-      ? offer.annualCents
-      : offer.monthlyCents - (current?.monthlyCents ?? 0);
-    const period = usagePeriod(firstPeriod ?? now);
+    const expectedVersion = plan?.version ?? 0;
+    if (annual) {
+      const id = await ctx.db.insert("platformPlanRequests", {
+        organizationId: args.organizationId,
+        tier: args.tier,
+        key: args.key,
+        cycle: "annual",
+        ...(renewal ? { firstPeriod: renewal.firstPeriod, anchor: renewal.anchor } : {}),
+        amountCents: offer.annualCents,
+        startsAt: now,
+        // `payBy`: a renewal within the term's first month, which it then starts at once without
+        // moving its end; `now` within 7 days.
+        endsAt: renewal
+          ? termMonthStart(renewal.firstPeriod, 1, renewal.anchor)
+          : now + PIX_PAY_WINDOW,
+        expectedVersion,
+        state: "awaiting_payment",
+        requestedBy: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return { id, amountCents: offer.annualCents };
+    }
+    const amountCents = offer.monthlyCents - (current?.monthlyCents ?? 0);
+    const period = usagePeriod(now);
     const id = await ctx.db.insert("platformPlanRequests", {
       organizationId: args.organizationId,
       tier: args.tier,
       key: args.key,
-      cycle: args.cycle ?? "monthly",
-      ...(firstPeriod === undefined ? {} : { firstPeriod }),
+      cycle: "monthly",
       amountCents,
       period,
       startsAt: now,
-      // Monthly: the month bought. Annual: `payBy`, the end of the term's first month.
-      endsAt: nextUsagePeriodStart(firstPeriod ?? now),
-      expectedVersion: plan?.version ?? 0,
+      // The month bought.
+      endsAt: nextUsagePeriodStart(now),
+      expectedVersion,
       state: "awaiting_payment",
       requestedBy: user._id,
       createdAt: now,
@@ -565,11 +743,11 @@ export const cancelRequest = mutation({
 });
 
 /**
- * The annual upgrade by Pix (ADR 0010, decision 9): the term in force, bought by Pix, rises to
- * `tier` from the current month, counted whole, to its end. The price is the difference of the
- * annual prices over the months left; the renewal date does not move. Like the other requests it
- * records an intent and reserves nothing; the payment deadline is the end of the current month,
- * because the price depends on it.
+ * The annual upgrade by Pix (ADR 0010, decision 9, and ADR 0012): the term in force, bought by
+ * Pix, rises to `tier` from the start of the current term month, counted whole, to its end. The
+ * price is the difference of the annual prices over the term months left; the renewal date does
+ * not move. Like the other requests it records an intent and reserves nothing; the payment
+ * deadline is the end of the current term month, because the price depends on it.
  */
 async function requestUpgrade(
   ctx: MutationCtx,
@@ -590,32 +768,30 @@ async function requestUpgrade(
   if (await cardBlocksPix(ctx, args.organizationId)) deny("PAYMENT_METHOD_CARD");
   const plan = await planFor(ctx, args.organizationId);
   if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
-  const fromPeriod = monthStart(now);
+  const month = termMonth(term, now);
   // Already at this tier or above: a downgrade only happens at renewal.
-  const amountCents = termUpgradeCents(term, args.tier, fromPeriod);
+  const amountCents = termUpgradeCents(term, args.tier, month.startsAt);
   if (amountCents === null) return deny("PLAN_UNAVAILABLE");
   await allocateOffer(ctx, args.organizationId, args.tier, PLATFORM_PLANS[args.tier], {
     checkOnly: true,
   });
-  const period = usagePeriod(now);
   const id = await ctx.db.insert("platformPlanRequests", {
     organizationId: args.organizationId,
     tier: args.tier,
     key: args.key,
     cycle: "annual",
-    firstPeriod: fromPeriod,
+    firstPeriod: month.startsAt,
     termId: term._id,
     amountCents,
-    period,
     startsAt: now,
-    endsAt: nextUsagePeriodStart(now),
+    endsAt: month.endsAt,
     expectedVersion: plan?.version ?? 0,
     state: "awaiting_payment",
     requestedBy,
     createdAt: now,
     updatedAt: now,
   });
-  return { id, amountCents, period };
+  return { id, amountCents };
 }
 
 /** Operator verifies Pix in the bank before calling; a member cannot assert their own payment. */
@@ -686,9 +862,12 @@ export const confirmPayment = internalMutation({
 });
 
 /**
- * The paid annual request becomes a term (ADR 0010, decision 9). The request, now `activated`
- * with the payment reference, is the Pix receipt, as in the monthly flow. `startTerm` grants the
- * plan now or schedules the term for its 1st.
+ * The paid annual request becomes a term (ADR 0010, decision 9, and ADR 0012). The request, now
+ * `activated` with the payment reference, is the Pix receipt, as in the monthly flow. A `now`
+ * starts at the confirmation, truncated to the second, which anchors a new chain; it is refused,
+ * as the request would be, if a paid plan came into force since (`pixAnnualStart`). A `renewal`
+ * starts at its `firstPeriod` and keeps the chain's `anchor`; a term over it refuses it.
+ * `startTerm` grants the plan now, a renewal paid late included, or schedules the term.
  */
 async function grantAnnual(
   ctx: MutationCtx,
@@ -697,9 +876,16 @@ async function grantAnnual(
   actor: string,
 ) {
   const now = Date.now();
-  const firstPeriod = request.firstPeriod;
-  if (firstPeriod === undefined) return deny("INVALID_REQUEST");
-  if (await annualTermBlocks(ctx, request.organizationId, firstPeriod, now))
+  let firstPeriod = request.firstPeriod;
+  let anchor = request.anchor ?? firstPeriod;
+  if (firstPeriod === undefined || anchor === undefined) {
+    const start = await pixAnnualStart(ctx, request.organizationId, now);
+    if (start.start === null) deny(start.code, { availableAt: start.availableAt });
+    if (start.start === "renewal") deny(start.nowCode, { availableAt: start.firstPeriod });
+    firstPeriod = anchor = Math.floor(now / 1000) * 1000;
+  }
+  const endsAt = termEndsAt(firstPeriod, anchor);
+  if (await termOverlapping(ctx, request.organizationId, firstPeriod, endsAt))
     deny("ANNUAL_TERM_ACTIVE");
   await startTerm(
     ctx,
@@ -707,7 +893,8 @@ async function grantAnnual(
       organizationId: request.organizationId,
       tier: request.tier,
       firstPeriod,
-      endsAt: termEndsAt(firstPeriod),
+      ...(anchor !== firstPeriod ? { anchor } : {}),
+      endsAt,
       source: "pix",
       references: [paymentReference],
       paidCents: request.amountCents,
@@ -720,8 +907,9 @@ async function grantAnnual(
 }
 
 /**
- * The paid upgrade raises the term it was asked for (`upgradeTerm`), in the month it was asked,
- * which the payment deadline guarantees. The term must still be the one in force and priced the
+ * The paid upgrade raises the term it was asked for (`upgradeTerm`), from the start of the term
+ * month it was asked in, which the payment deadline guarantees. The term must still be the one in
+ * force and priced the
  * same; a plan changed since the request is refused (`OPERATION_CONFLICT`), as in the monthly
  * Pix. A refusal of the admission (stock, custody fund, window) throws and records nothing: the
  * operator holds the Pix, as with any refused confirmation.
@@ -734,7 +922,7 @@ async function grantUpgrade(
 ) {
   const now = Date.now();
   const term = await upgradableTerm(ctx, request.organizationId, now);
-  if (term._id !== request.termId || request.firstPeriod !== monthStart(now))
+  if (term._id !== request.termId || request.firstPeriod !== termMonth(term, now).startsAt)
     deny("PLAN_REQUEST_UNAVAILABLE");
   if (termUpgradeCents(term, request.tier, request.firstPeriod) !== request.amountCents)
     deny("OPERATION_CONFLICT");
@@ -753,8 +941,9 @@ async function grantUpgrade(
 }
 
 /**
- * Activates a `scheduled` term on its first 1st. Scheduled at confirmation and safe to run again
- * or late: the operator runs it to reconcile a term whose 1st passed without activation. Any other
+ * Activates a `scheduled` term at its start, `firstPeriod`. Scheduled at confirmation and safe to
+ * run again or late: the operator runs it to reconcile a term whose start passed without
+ * activation. Any other
  * state, a rescinded term included, is left alone. A refusal is recorded in `blockedCode` for the
  * operator, without retrying. The checks grant nothing; the only write they may make is the
  * organization's `capacityAccounts` row, which `allocateOffer` creates once and is harmless.
@@ -803,7 +992,7 @@ const operatorTermAction = {
  * 30/10/2026). The server computes the refund and records it on the term; the operator pays it
  * back by hand (a Stripe refund or a Pix) and then records it (`recordTermRefund`). Within 7 days
  * of the annual charge everything goes back and access ends now; afterwards access lasts until
- * the end of the current civil month (`rescindTerm` in `lib/planCore.ts`).
+ * the end of the current term month (`rescindTerm` in `lib/planCore.ts`).
  */
 export const rescindTerm = internalMutation({
   args: operatorTermAction,

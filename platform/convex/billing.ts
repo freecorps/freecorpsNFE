@@ -25,12 +25,12 @@ import {
   annualTermBlocks,
   rescindedSubscription,
   subscriptionHasTerm,
+  termMonth,
   termTierAt,
   termUpgradeCents,
   termsInForce,
   upgradableTerm,
 } from "./lib/planTerms";
-import { termMonthAt } from "./lib/annualTerms";
 import { assertPlanChangeable } from "./lib/coldArchiveCore";
 import { planFor } from "./lib/usageCore";
 import { nextUsagePeriodStart, planEnded, usagePeriod } from "./lib/usageValues";
@@ -448,6 +448,10 @@ export const prepareCheckout = internalMutation({
       deny("PLAN_REQUEST_PENDING");
     const plan = await planFor(ctx, args.organizationId);
     if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
+    // The access a rescinded term left runs to the end of its term month, and the invoice would
+    // be blocked over it (`applyInvoice`): the monthly waits for it (ADR 0012).
+    if (!annual && plan?.termId && plan.startsAt <= now && !planEnded(plan, now))
+      deny("PLAN_UNAVAILABLE", { availableAt: plan.endsAt });
     const anchor = nextUsagePeriodStart(now);
     // Stripe needs the anchor in the future when the customer finishes paying.
     if (anchor - now < 45 * 60_000) deny("PERIOD_CLOSING");
@@ -479,7 +483,7 @@ export const prepareCheckout = internalMutation({
       if (term.endsAt - now < UPGRADE_SWITCH_MARGIN) deny("PERIOD_CLOSING");
       // Already at this tier or above: a downgrade only happens at renewal. Priced from the
       // start of the term month under way, which counts whole.
-      const price = termUpgradeCents(term, args.tier, termMonthAt(term.firstPeriod, now).startsAt);
+      const price = termUpgradeCents(term, args.tier, termMonth(term, now).startsAt);
       if (price === null) return deny("PLAN_UNAVAILABLE");
       kind = "upgrade";
       grantCents = price;

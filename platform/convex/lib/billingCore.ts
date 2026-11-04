@@ -214,6 +214,9 @@ export async function applyInvoice(
   const plan = await planFor(ctx, organizationId);
   if (plan?.catalogTier === "custom") return void (await record("blocked", "PLAN_CUSTOM"));
   const active = plan && plan.startsAt <= now && !planEnded(plan, now);
+  // A plan a term granted, the access left by a rescinded term included, ends with the term
+  // month: a monthly would replace it (one paid plan at a time, ADR 0012), so a person looks.
+  if (active && plan.termId) return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
   if (active && plan.endsAt !== null && plan.endsAt > end)
     return void (await record("skipped", "SUPERSEDED"));
   if (

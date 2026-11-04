@@ -71,7 +71,7 @@ function overview(): PlansOverview {
     availability: { canClaimFree: true, reason: null },
     annualEnabled: false,
     pixEnabled: true,
-    annualStarts: { now: true, next: true },
+    annualStart: { start: "now", startsAt: null, endsAt: null, code: null, availableAt: null },
     checkout: false,
     terms: [],
   };
@@ -88,6 +88,7 @@ function pending(): NonNullable<PlansOverview["request"]> {
     firstPeriod: null,
     periodStartsAt: Date.UTC(2026, 9, 1),
     periodEndsAt: Date.UTC(2026, 10, 1),
+    payBy: Date.UTC(2026, 10, 1),
   };
 }
 beforeEach(() => {
@@ -405,6 +406,7 @@ function term(patch: Partial<Term> = {}): Term {
     segments: [],
     firstPeriod: OCT_1,
     endsAt: END,
+    renewalFrom: Date.UTC(2027, 8, 1),
     source: "pix",
     state: "active",
     blocked: false,
@@ -418,8 +420,18 @@ const upgrade = (patch: Partial<NonNullable<Term["upgrade"]>> = {}) => ({
   tier: "large" as const,
   amountCents: 349999,
   months: 12,
+  from: OCT_1,
+  until: Date.UTC(2026, 10, 1),
   cardUntil: null,
   ...patch,
+});
+type AnnualStart = PlansOverview["annualStart"];
+const refused = (code: string, availableAt: number | null): AnnualStart => ({
+  start: null,
+  startsAt: null,
+  endsAt: null,
+  code,
+  availableAt,
 });
 function clock() {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -457,7 +469,7 @@ it("the annual selector shows the catalog price and the savings over 12 months",
   expect(screen.getByRole("button", { name: "Solicitar Grande" })).toBeTruthy();
 });
 
-it("the annual Pix request asks when to start and sends the server only the intention", async () => {
+it("the annual Pix request starts at the confirmation and sends the server only the intention", async () => {
   clock();
   state.data = annualOn();
   const view = show();
@@ -465,27 +477,23 @@ it("the annual Pix request asks when to start and sends the server only the inte
   await click("Solicitar Intermediário anual");
   const dialog = screen.getByRole("alertdialog");
   expect(dialog.textContent).toMatch(/R\$\s1\.490,00 por 12 meses, pagos de uma vez/);
-  expect(dialog.textContent).toContain("Começa em 01/10/2026, 00:00 UTC");
-  expect(dialog.textContent).toContain("Começa em 01/11/2026, 00:00 UTC");
-  expect(dialog.textContent).toContain("Termina em 01/11/2027, 00:00 UTC");
+  // No day-1 choice (ADR 0012): the server says how it starts.
+  expect(dialog.textContent).toContain("Começa na confirmação do pagamento pela equipe");
+  expect(dialog.textContent).toContain("no mesmo dia e horário, em UTC");
+  expect(dialog.textContent).not.toMatch(/dia 1 do mês seguinte, e o plano atual/);
+  expect(within(dialog).queryByRole("radio")).toBeNull();
   expect(dialog.textContent).toContain("No cartão, o anual começa sempre no dia 1 do mês seguinte");
-  // The start is the client's choice: nothing is sent before it.
-  expect(screen.getByRole<HTMLButtonElement>("button", { name: "Registrar pedido" }).disabled).toBe(
-    true,
-  );
-  fireEvent.click(within(dialog).getByRole("radio", { name: /No dia 1 do mês seguinte/ }));
   await click("Registrar pedido");
   expect(state.request).toHaveBeenCalledWith({
     organizationId: "org-one",
     tier: "intermediate",
     key: expect.any(String),
     cycle: "annual",
-    start: "next",
+    start: "now",
   });
   // Switched off while a confirmation is open: the annual is not sent.
   state.request.mockClear();
   await click("Solicitar Grande anual");
-  fireEvent.click(screen.getByRole("radio", { name: /Agora/ }));
   state.data = overview();
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Registrar pedido" }).disabled).toBe(
@@ -501,16 +509,35 @@ it("shows a pending annual request and a Pix upgrade as what they are, not a ful
       ...pending(),
       amountCents: 149000,
       cycle: "annual",
-      start: "next",
+      start: "renewal",
       firstPeriod: Date.UTC(2026, 10, 1),
       periodStartsAt: Date.UTC(2026, 10, 1),
       periodEndsAt: null,
+      payBy: Date.UTC(2026, 11, 1),
     },
   };
   const view = show();
   expect(screen.getByText("Intermediário anual")).toBeTruthy();
   expect(screen.getByText(/R\$\s1\.490,00 por 12 meses/)).toBeTruthy();
-  expect(screen.getByText("01/11/2026, 00:00 UTC")).toBeTruthy();
+  expect(screen.getByText("01/11/2026 às 00:00 UTC, no fim do plano em vigor")).toBeTruthy();
+  expect(screen.getByText(/pagamento pela equipe, até 01\/12\/2026 às 00:00 UTC/)).toBeTruthy();
+  // An annual `now` starts at the confirmation: no instant to show yet.
+  state.data = {
+    ...annualOn(),
+    request: {
+      ...pending(),
+      amountCents: 149000,
+      cycle: "annual",
+      start: "now",
+      firstPeriod: null,
+      periodStartsAt: null,
+      periodEndsAt: null,
+      payBy: Date.UTC(2026, 9, 17, 12, 30, 15),
+    },
+  };
+  view.rerender(<Plans org={org} contextKey="entry-one" />);
+  expect(screen.getByText("Na confirmação do pagamento pela equipe")).toBeTruthy();
+  expect(screen.getByText(/até 17\/10\/2026 às 12:30:15 UTC/)).toBeTruthy();
   state.data = {
     ...annualOn(),
     request: {
@@ -519,10 +546,10 @@ it("shows a pending annual request and a Pix upgrade as what they are, not a ful
       amountCents: 233333,
       cycle: "annual",
       start: "upgrade",
-      firstPeriod: Date.UTC(2027, 1, 1),
-      period: "2027-02",
-      periodStartsAt: Date.UTC(2027, 1, 1),
+      firstPeriod: Date.UTC(2027, 1, 10, 12),
+      periodStartsAt: Date.UTC(2027, 1, 10, 12),
       periodEndsAt: null,
+      payBy: Date.UTC(2027, 2, 10, 12),
     },
     terms: [term()],
   };
@@ -532,7 +559,9 @@ it("shows a pending annual request and a Pix upgrade as what they are, not a ful
   expect(screen.getByText("Mudança solicitada")).toBeTruthy();
   expect(screen.getByText("Para Grande anual, até o fim do plano anual")).toBeTruthy();
   expect(screen.getByText(/R\$\s2\.333,33, pela diferença dos meses restantes/)).toBeTruthy();
+  expect(screen.getByText("10/02/2027 às 12:00 UTC")).toBeTruthy();
   expect(screen.getByText(/O plano anual continua durante a espera/)).toBeTruthy();
+  expect(screen.getByText(/até 10\/03\/2027 às 12:00 UTC/)).toBeTruthy();
 });
 
 it("shows the term in force with its payment method, start, end and the support rule to rescind", () => {
@@ -542,12 +571,14 @@ it("shows the term in force with its payment method, start, end and the support 
   expect(within(card).getByText("Em vigor")).toBeTruthy();
   expect(within(card).getByText("Intermediário anual")).toBeTruthy();
   expect(within(card).getByText("Pix assistido")).toBeTruthy();
-  expect(within(card).getByText("01/10/2026, 00:00 UTC")).toBeTruthy();
-  expect(within(card).getByText("01/10/2027, 00:00 UTC")).toBeTruthy();
+  expect(within(card).getByText("01/10/2026 às 00:00 UTC")).toBeTruthy();
+  expect(within(card).getByText("01/10/2027 às 00:00 UTC")).toBeTruthy();
   // A Pix term never renews by itself.
   expect(within(card).getByText("Fim")).toBeTruthy();
   expect(within(card).queryByText("Fim e renovação")).toBeNull();
-  expect(card.textContent).toContain("No Pix, a renovação é um novo pedido anual");
+  expect(card.textContent).toContain(
+    "No Pix, a renovação é um novo pedido anual, feito no último mês, a partir de 01/09/2027 às 00:00 UTC",
+  );
   expect(card.textContent).toContain("Rescindir, com reembolso, é pelo suporte da Freecorps");
   expect(card.textContent).toContain("até 7 dias da cobrança, o reembolso é integral");
   expect(card.textContent).toContain("menos os meses usados, pelo preço mensal cheio");
@@ -574,7 +605,7 @@ it("shows upgrades, scheduled, blocked and rescinded terms", () => {
   };
   const view = show();
   const active = screen.getByRole("region", { name: "Plano anual em vigor" });
-  expect(within(active).getByText("Grande anual a partir de 01/02/2027, 00:00 UTC")).toBeTruthy();
+  expect(within(active).getByText("Grande anual a partir de 01/02/2027 às 00:00 UTC")).toBeTruthy();
   expect(within(active).getByText("Cartão, pelo Stripe")).toBeTruthy();
   expect(active.textContent).toContain("pelo Grande anual, são cobrados nessa data");
   const scheduled = screen.getByRole("region", { name: "Plano anual agendado" });
@@ -592,7 +623,7 @@ it("shows upgrades, scheduled, blocked and rescinded terms", () => {
   const rescinded = screen.getByRole("region", { name: "Plano anual rescindido" });
   expect(within(rescinded).getByText("Rescindido")).toBeTruthy();
   expect(within(rescinded).getByText("Acesso até")).toBeTruthy();
-  expect(rescinded.textContent).toContain("01/02/2027, 00:00:00 UTC");
+  expect(rescinded.textContent).toContain("01/02/2027 às 00:00 UTC");
   expect(rescinded.textContent).not.toContain("Rescindir, com reembolso");
 });
 
@@ -600,7 +631,16 @@ it("upgrades a Pix term by a request priced by the server, keeping the renewal d
   clock();
   state.data = {
     ...annualOn(),
-    terms: [term({ upgrade: upgrade({ amountCents: 233333, months: 8 }) })],
+    terms: [
+      term({
+        upgrade: upgrade({
+          amountCents: 233333,
+          months: 8,
+          from: Date.UTC(2027, 1, 10, 12),
+          until: Date.UTC(2027, 2, 10, 12),
+        }),
+      }),
+    ],
   };
   show();
   expect(
@@ -608,6 +648,11 @@ it("upgrades a Pix term by a request priced by the server, keeping the renewal d
   ).toBeTruthy();
   await click("Mudar para Grande anual");
   const dialog = screen.getByRole("alertdialog");
+  // From the start of the term month under way, paid before it ends.
+  expect(dialog.textContent).toContain("do plano anual, de 10/02/2027 às 12:00 UTC a 01/10/2027");
+  expect(dialog.textContent).toContain(
+    "O plano muda quando a equipe confirmar o pagamento, até 10/03/2027 às 12:00 UTC",
+  );
   expect(dialog.textContent).toContain("O plano anual continua terminando em 01/10/2027");
   expect(dialog.textContent).not.toContain("a renovação passa a ser");
   expect(dialog.textContent).toContain("O pagamento por Pix é assistido");
@@ -641,7 +686,7 @@ it("upgrades a card term in the Stripe Checkout, and closes it in the last 72 ho
   await click("Mudar para Grande anual");
   expect(screen.getByRole("alertdialog").textContent).toContain("Você será levado ao Stripe");
   expect(screen.getByRole("alertdialog").textContent).toContain(
-    "A data de renovação continua 01/10/2027, 00:00 UTC, e a renovação passa a ser do Grande anual",
+    "A data de renovação continua 01/10/2027 às 00:00 UTC, e a renovação passa a ser do Grande anual",
   );
   state.checkout.mockRejectedValueOnce(new ConvexError({ code: "PERIOD_CLOSING" }));
   await click("Ir para o Stripe");
@@ -689,10 +734,23 @@ it.each([
   show();
   await chooseAnnual();
   await click("Solicitar Intermediário anual");
-  fireEvent.click(screen.getByRole("radio", { name: /Agora/ }));
   await click("Registrar pedido");
   expect(screen.getByRole("alert").textContent).toContain(text);
   expect(screen.getByRole("alert").textContent).not.toContain(refusal);
+});
+
+it("a sale that waits for the plan in force says when it becomes available", async () => {
+  state.data = annualOn();
+  state.request.mockRejectedValueOnce(
+    new ConvexError({ code: "PAYMENT_METHOD_CARD", availableAt: Date.UTC(2026, 10, 1) }),
+  );
+  show();
+  await chooseAnnual();
+  await click("Solicitar Intermediário anual");
+  await click("Registrar pedido");
+  expect(screen.getByRole("alert").textContent).toContain(
+    "Esta organização paga por cartão. O Pix fica disponível quando o período pago pelo cartão termina, com a renovação cancelada e sem pagamento em andamento. Disponível a partir de 01/11/2026 às 00:00 UTC.",
+  );
 });
 
 it("a card term that no longer renews says so, and its upgrade does not promise a renewal", async () => {
@@ -709,7 +767,7 @@ it("a card term that no longer renews says so, and its upgrade does not promise 
   await click("Mudar para Grande anual");
   const dialog = screen.getByRole("alertdialog");
   expect(dialog.textContent).toContain(
-    "continua terminando em 01/10/2027, 00:00 UTC, sem renovação",
+    "continua terminando em 01/10/2027 às 00:00 UTC, sem renovação",
   );
   expect(dialog.textContent).not.toContain("a renovação passa a ser");
 });
@@ -730,11 +788,11 @@ it("rescinded and Pix terms word the refund and the renewal without promises", (
   expect(active.textContent).not.toContain("último mês");
 });
 
-it("a term in force holds the annual purchase until its last month, which only starts next", async () => {
+it("a term in force holds the annual purchase until its last month, which renews it at its end", async () => {
   clock();
   state.data = {
     ...annualOn(),
-    annualStarts: { now: false, next: false },
+    annualStart: refused("ANNUAL_TERM_ACTIVE", Date.UTC(2027, 8, 1)),
     terms: [term()],
   };
   const view = show();
@@ -743,48 +801,74 @@ it("a term in force holds the annual purchase until its last month, which only s
     screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Intermediário anual" })
       .disabled,
   ).toBe(true);
-  expect(screen.getAllByText(/Um novo anual pode ser pedido no último mês dele/)).toHaveLength(2);
+  expect(
+    screen.getAllByText(
+      "Há um plano anual em vigor ou agendado. Pelo Pix, a renovação é pedida no último mês dele. Disponível a partir de 01/09/2027 às 00:00 UTC.",
+    ),
+  ).toHaveLength(2);
   // A card term renews by itself: the hint says so instead.
   state.data = {
     ...annualOn(),
-    annualStarts: { now: false, next: false },
+    annualStart: refused("PAYMENT_METHOD_CARD", null),
     terms: [term({ source: "stripe", renews: true })],
   };
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(screen.getAllByText("Há um plano anual em vigor, que renova pelo cartão.")).toHaveLength(
     2,
   );
-  // The last month: the renewal starts next month, never now.
-  state.data = { ...annualOn(), annualStarts: { now: false, next: true }, terms: [term()] };
+  // The last month: the renewal starts at the end of the term, never now.
+  state.data = {
+    ...annualOn(),
+    annualStart: {
+      start: "renewal",
+      startsAt: END,
+      endsAt: Date.UTC(2028, 9, 1),
+      code: null,
+      availableAt: null,
+    },
+    terms: [term()],
+  };
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   await click("Solicitar Intermediário anual");
-  const now = screen.getByRole<HTMLInputElement>("radio", { name: /Agora/ });
-  expect(now.disabled).toBe(true);
-  expect(screen.getByText(/o plano anual em vigor ainda cobre este mês/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("radio", { name: /No dia 1 do mês seguinte/ }));
+  const dialog = screen.getByRole("alertdialog");
+  expect(dialog.textContent).toContain(
+    "Renovação do plano em vigor: começa em 01/10/2027 às 00:00 UTC, quando ele termina, e vai até 01/10/2028 às 00:00 UTC.",
+  );
+  expect(within(dialog).queryByRole("radio")).toBeNull();
   await click("Registrar pedido");
   expect(state.request).toHaveBeenCalledWith(
-    expect.objectContaining({ cycle: "annual", start: "next" }),
+    expect.objectContaining({ cycle: "annual", start: "renewal" }),
   );
 });
 
-it("starting now never goes below the plan in force", async () => {
+it("with a monthly in force, the annual by Pix is its renewal, of any tier, at its end", async () => {
   clock();
   state.data = {
     ...annualOn(),
     subscription: { tier: "large", endsAt: Date.UTC(2026, 10, 1), version: 3 },
+    annualStart: {
+      start: "renewal",
+      startsAt: Date.UTC(2026, 10, 1),
+      endsAt: Date.UTC(2027, 10, 1),
+      code: null,
+      availableAt: null,
+    },
   };
   show();
   await chooseAnnual();
+  expect(
+    screen.getAllByText(
+      "Renovação do plano em vigor: começa em 01/11/2026 às 00:00 UTC, quando ele termina.",
+    ),
+  ).toHaveLength(2);
   await click("Solicitar Intermediário anual");
-  expect(screen.getByRole<HTMLInputElement>("radio", { name: /Agora/ }).disabled).toBe(true);
-  expect(screen.getByText(/começar agora não desce do plano em vigor/)).toBeTruthy();
-  expect(screen.getByRole<HTMLInputElement>("radio", { name: /No dia 1/ }).disabled).toBe(false);
-  cleanup();
-  show();
-  await chooseAnnual();
-  await click("Solicitar Grande anual");
-  expect(screen.getByRole<HTMLInputElement>("radio", { name: /Agora/ }).disabled).toBe(false);
+  expect(screen.getByRole("alertdialog").textContent).toContain(
+    "começa em 01/11/2026 às 00:00 UTC, quando ele termina, e vai até 01/11/2027 às 00:00 UTC",
+  );
+  await click("Registrar pedido");
+  expect(state.request).toHaveBeenCalledWith(
+    expect.objectContaining({ tier: "intermediate", cycle: "annual", start: "renewal" }),
+  );
 });
 
 it("after the card Checkout goes away, the upgrade is a new intention", async () => {

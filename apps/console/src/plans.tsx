@@ -19,7 +19,6 @@ import { Callout, Card, DescriptionList, StatusBadge } from "./ui/layout";
 type PaidTier = "intermediate" | "large";
 type Tier = "free" | PaidTier;
 type Cycle = "monthly" | "annual";
-type Start = "now" | "next";
 const plansApi = api.plans;
 export type PlansOverview = FunctionReturnType<typeof plansApi.overview>;
 type RequestId = NonNullable<PlansOverview["request"]>["id"];
@@ -60,7 +59,7 @@ const monthsLeft = (months: number) =>
 export const annualMessages: Record<string, string> = {
   ANNUAL_DISABLED: "O plano anual não está à venda no momento. Nada foi registrado.",
   ANNUAL_TERM_ACTIVE:
-    "Esta organização tem um plano anual em vigor ou agendado que coincide com este pedido. O mensal volta ao fim do período anual.",
+    "Esta organização tem um plano anual em vigor ou agendado que coincide com este pedido. Pelo Pix, a renovação é pedida no último mês dele, e o mensal volta ao fim do período anual.",
   ANNUAL_TERM_REQUIRED:
     "Não há plano anual em vigor neste mês para mudar de plano. Confira a situação atual.",
   ANNUAL_TERM_SCHEDULED:
@@ -72,46 +71,64 @@ export const annualMessages: Record<string, string> = {
   SUBSCRIPTION_RENEWING:
     "O cartão ainda renova a assinatura atual. Use “Cancelar renovação” antes de assinar o anual no cartão; o período já pago continua.",
 };
+/** Why a new annual by Pix waits (`annualStart.code`), before anything is asked. */
+const annualWaits: Record<string, string> = {
+  ANNUAL_TERM_ACTIVE:
+    "Há um plano anual em vigor ou agendado. Pelo Pix, a renovação é pedida no último mês dele.",
+  PAYMENT_METHOD_CARD:
+    "Esta organização paga por cartão. O anual por Pix espera o fim do período pago pelo cartão.",
+  PLAN_UNAVAILABLE: "Há um plano pago em vigor. O anual por Pix espera o fim dele.",
+};
+/**
+ * A refused sale waits for the plan in force (ADR 0012, one paid plan at a time): the server
+ * sends the instant it becomes available, which the message ends with.
+ */
+export const availableFrom = (availableAt: unknown) =>
+  typeof availableAt === "number"
+    ? ` Disponível a partir de ${formatUtcInstant(availableAt)}.`
+    : "";
 function failure(error: unknown) {
   const data: unknown = error instanceof ConvexError ? error.data : null;
   const code = data && typeof data === "object" && "code" in data ? data.code : null;
-  const messages: Record<string, string> = {
-    ...annualMessages,
-    ACCESS_DENIED:
-      "Seu acesso mudou. Apenas o proprietário e administradores podem contratar planos.",
-    UNAUTHENTICATED: "Sua sessão terminou. Entre novamente para continuar.",
-    PLANS_DISABLED: "A contratação de planos está indisponível no momento.",
-    PLAN_UNAVAILABLE: "Este plano está indisponível. Confira as opções atualizadas.",
-    FREE_PLAN_UNAVAILABLE:
-      "O plano gratuito não está disponível para esta organização. Confira o plano atual.",
-    PLAN_REQUEST_PENDING:
-      "Já existe um pedido aguardando pagamento. Confira o pedido antes de continuar.",
-    PLAN_REQUEST_UNAVAILABLE:
-      "Este pedido mudou ou não está mais disponível. Confira a situação atual.",
-    ORGANIZATION_CLOSED: "Esta organização foi encerrada. Não é possível contratar um plano.",
-    ORGANIZATION_ARCHIVED:
-      "Organização em arquivo econômico. Consulte a Freecorps sobre a recuperação dos dados.",
-    CAPACITY_INVENTORY_REQUIRED:
-      "O inventário de capacidade está pendente. Solicite a conferência à Freecorps.",
-    QUOTA_EXCEEDED: "O uso atual não cabe neste plano. Nada foi alterado.",
-    PIX_DISABLED:
-      "O pagamento por Pix não está disponível no momento. Assine pelo cartão em Cobrança. Nada foi registrado.",
-    PAYMENT_METHOD_CARD:
-      "Esta organização paga por cartão. Cancele a renovação ou desista do pagamento em andamento antes de pedir o Pix.",
-    // The card upgrade of an annual term opens a Stripe Checkout from here.
-    BILLING_DISABLED: "O pagamento por cartão está indisponível no momento.",
-    BILLING_UNAVAILABLE:
-      "O Stripe não respondeu. Nada foi cobrado por esta tentativa; tente novamente em instantes.",
-    CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
-    SUBSCRIPTION_REQUIRED:
-      "A assinatura anual por cartão deste plano não está mais ativa. Confira a cobrança.",
-    PERIOD_CLOSING:
-      "Pelo cartão, a mudança fecha na virada do mês e nas últimas 72 horas do plano anual. Tente de novo a partir de 00:00 UTC do dia 1.",
-  };
-  return typeof code === "string" && messages[code]
-    ? messages[code]
+  const availableAt =
+    data && typeof data === "object" && "availableAt" in data ? data.availableAt : null;
+  return typeof code === "string" && planMessages[code]
+    ? planMessages[code] + availableFrom(availableAt)
     : "Não foi possível concluir. Confira a situação do plano e tente novamente.";
 }
+const planMessages: Record<string, string> = {
+  ...annualMessages,
+  ACCESS_DENIED:
+    "Seu acesso mudou. Apenas o proprietário e administradores podem contratar planos.",
+  UNAUTHENTICATED: "Sua sessão terminou. Entre novamente para continuar.",
+  PLANS_DISABLED: "A contratação de planos está indisponível no momento.",
+  PLAN_UNAVAILABLE: "Este plano está indisponível. Confira as opções atualizadas.",
+  FREE_PLAN_UNAVAILABLE:
+    "O plano gratuito não está disponível para esta organização. Confira o plano atual.",
+  PLAN_REQUEST_PENDING:
+    "Já existe um pedido aguardando pagamento. Confira o pedido antes de continuar.",
+  PLAN_REQUEST_UNAVAILABLE:
+    "Este pedido mudou ou não está mais disponível. Confira a situação atual.",
+  ORGANIZATION_CLOSED: "Esta organização foi encerrada. Não é possível contratar um plano.",
+  ORGANIZATION_ARCHIVED:
+    "Organização em arquivo econômico. Consulte a Freecorps sobre a recuperação dos dados.",
+  CAPACITY_INVENTORY_REQUIRED:
+    "O inventário de capacidade está pendente. Solicite a conferência à Freecorps.",
+  QUOTA_EXCEEDED: "O uso atual não cabe neste plano. Nada foi alterado.",
+  PIX_DISABLED:
+    "O pagamento por Pix não está disponível no momento. Assine pelo cartão em Cobrança. Nada foi registrado.",
+  PAYMENT_METHOD_CARD:
+    "Esta organização paga por cartão. O Pix fica disponível quando o período pago pelo cartão termina, com a renovação cancelada e sem pagamento em andamento.",
+  // The card upgrade of an annual term opens a Stripe Checkout from here.
+  BILLING_DISABLED: "O pagamento por cartão está indisponível no momento.",
+  BILLING_UNAVAILABLE:
+    "O Stripe não respondeu. Nada foi cobrado por esta tentativa; tente novamente em instantes.",
+  CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
+  SUBSCRIPTION_REQUIRED:
+    "A assinatura anual por cartão deste plano não está mais ativa. Confira a cobrança.",
+  PERIOD_CLOSING:
+    "Pelo cartão, a mudança fecha na virada do mês e nas últimas 72 horas do plano anual. Tente de novo a partir de 00:00 UTC do dia 1.",
+};
 
 export function Plans({ org, contextKey }: { org: Organization; contextKey: string }) {
   const scope = `${org.id}:${contextKey}:${org.role}`;
@@ -154,7 +171,6 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
   const [cycle, setCycle] = useState<Cycle>("monthly");
   // The cycle of the open confirmation, fixed when it opened.
   const [chosenCycle, setChosenCycle] = useState<Cycle>("monthly");
-  const [start, setStart] = useState<Start | null>(null);
   const [cancellingId, setCancellingId] = useState<RequestId | null>(null);
   const [message, setMessage] = useState("");
   // Keep the same intention after an uncertain response, including closing and reopening.
@@ -179,8 +195,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
   const annualChosen = chosenCycle === "annual";
   const upgradable = data.terms.find((term) => term.upgrade);
   const now = Date.now();
-  const thisMonth = utcMonth(now);
-  const nextMonth = utcMonth(now, 1);
+  // How a new annual by Pix starts, as the server sells it: never a client choice (ADR 0012).
+  const annualStart = data.annualStart;
   const cardUpgradeClosed =
     typeof upgradable?.upgrade?.cardUntil === "number" && now >= upgradable.upgrade.cardUntil;
   const selectedPrice =
@@ -225,9 +241,9 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
     if ((selection === "intermediate" || selection === "large") && offer && !pending) {
       const tier = selection;
       if (annualChosen) {
-        if (!data.annualEnabled || !start)
+        if (!data.annualEnabled || !annualStart.start)
           return "A disponibilidade mudou. Feche esta confirmação e confira os planos atualizados.";
-        const chosenStart = start;
+        const chosenStart = annualStart.start;
         const key = (keys.current[
           `${tier}:annual:${chosenStart}:${data.request?.id ?? "first"}:${month}`
         ] ??= crypto.randomUUID());
@@ -254,25 +270,18 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
   const request = data.request;
   const requestStart = request?.start ?? null;
   const annualPrice = (item: Offer) => (annualView ? item.annualCents : undefined);
-  // A term in force or scheduled holds new annual sales; its last month may order the next one.
-  // A card term that renews bills its own next year: the Pix annual stays closed beside it.
+  // One paid plan at a time: while one is in force, the annual by Pix is only its renewal, asked
+  // in its last month. A card term that renews bills its own next year beside it.
   const cardRenews = data.terms.some((term) => term.renews);
-  const annualClosed = cardRenews || (!data.annualStarts.now && !data.annualStarts.next);
-  const annualHint = annualClosed
-    ? cardRenews
-      ? "Há um plano anual em vigor, que renova pelo cartão."
-      : "Há um plano anual em vigor ou agendado. Um novo anual pode ser pedido no último mês dele."
-    : "";
-  // Starting now never goes below the plan in force: the downgrade waits for the renewal.
-  const currentMonthly =
-    data.subscription && (data.subscription.endsAt === null || data.subscription.endsAt > now)
-      ? data.offers.find((item) => item.tier === data.subscription!.tier)?.monthlyCents
-      : undefined;
-  const belowCurrent =
-    !!offer && currentMonthly !== undefined && offer.monthlyCents < currentMonthly;
-  const nowAllowed = data.annualStarts.now && !belowCurrent && !cardRenews;
-  const startAllowed =
-    start === "now" ? nowAllowed : start === "next" ? data.annualStarts.next && !cardRenews : false;
+  const annualClosed = cardRenews || annualStart.start === null;
+  const annualHint = cardRenews
+    ? "Há um plano anual em vigor, que renova pelo cartão."
+    : annualStart.start === null
+      ? `${(annualStart.code && annualWaits[annualStart.code]) || "O anual por Pix não está disponível agora."}${availableFrom(annualStart.availableAt)}`
+      : annualStart.start === "renewal" && annualStart.startsAt !== null
+        ? `Renovação do plano em vigor: começa em ${formatUtcInstant(annualStart.startsAt)}, quando ele termina.`
+        : "";
+  const startAllowed = !cardRenews && annualStart.start !== null;
   return (
     <>
       {data.archive && data.archive.state !== "hot" ? (
@@ -357,7 +366,13 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       term: "Valor da mudança",
                       value: `${price(request.amountCents)}, pela diferença dos meses restantes`,
                     },
-                    { term: "A partir de", value: utcDate(request.periodStartsAt) },
+                    {
+                      term: "A partir de",
+                      value:
+                        request.periodStartsAt === null
+                          ? "—"
+                          : formatUtcInstant(request.periodStartsAt),
+                    },
                   ]
                 : request.cycle === "annual"
                   ? [
@@ -366,7 +381,13 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                         term: "Valor integral",
                         value: `${price(request.amountCents)} por 12 meses`,
                       },
-                      { term: "Início", value: utcDate(request.periodStartsAt) },
+                      {
+                        term: "Início",
+                        value:
+                          request.periodStartsAt === null
+                            ? "Na confirmação do pagamento pela equipe"
+                            : `${formatUtcInstant(request.periodStartsAt)}, no fim do plano em vigor`,
+                      },
                     ]
                   : [
                       { term: "Plano solicitado", value: tierNames[request.tier] },
@@ -374,9 +395,11 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       {
                         term: "Período",
                         value:
-                          request.periodEndsAt === null
-                            ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
-                            : `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
+                          request.periodStartsAt === null
+                            ? "—"
+                            : request.periodEndsAt === null
+                              ? `Desde ${formatUtcInstant(request.periodStartsAt)}`
+                              : `Desde ${formatUtcInstant(request.periodStartsAt)}, termina em ${formatUtcInstant(request.periodEndsAt)}`,
                       },
                     ]
             }
@@ -386,8 +409,10 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               <p>{pendingMessage}</p>
               <p>
                 {requestStart === "upgrade"
-                  ? "O plano anual continua durante a espera. A mudança só vale após a confirmação do pagamento pela equipe, dentro deste mês."
-                  : "O plano atual continua durante a espera. O novo plano só será ativado após a confirmação do pagamento pela equipe."}
+                  ? `O plano anual continua durante a espera. A mudança só vale após a confirmação do pagamento pela equipe, até ${formatUtcInstant(request.payBy)}.`
+                  : request.cycle === "annual"
+                    ? `O plano atual continua durante a espera. O plano anual só começa após a confirmação do pagamento pela equipe, até ${formatUtcInstant(request.payBy)}.`
+                    : "O plano atual continua durante a espera. O novo plano só será ativado após a confirmação do pagamento pela equipe."}
               </p>
               {canManage ? (
                 <Button
@@ -542,7 +567,6 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       onClick={() => {
                         setMessage("");
                         setChosenCycle(yearly ? "annual" : "monthly");
-                        setStart(null);
                         setSelection(item.tier);
                       }}
                     >
@@ -605,12 +629,12 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
               ? "R$ 0,00, sem vencimento, para 1 empresa. As cotas de uso renovam mensalmente, em UTC."
               : selection === "upgrade"
                 ? upgradable?.upgrade
-                  ? `${price(upgradable.upgrade.amountCents)} ${monthsLeft(upgradable.upgrade.months)} do plano anual, de ${utcDate(thisMonth)} a ${utcDate(upgradable.endsAt)}, com o mês corrente inteiro. ${
+                  ? `${price(upgradable.upgrade.amountCents)} ${monthsLeft(upgradable.upgrade.months)} do plano anual, de ${formatUtcInstant(upgradable.upgrade.from)} a ${formatUtcInstant(upgradable.endsAt)}, com o mês corrente inteiro. ${
                       upgradable.renews
-                        ? `A data de renovação continua ${utcDate(upgradable.endsAt)}, e a renovação passa a ser do ${tierNames[upgradable.upgrade.tier]} anual.`
+                        ? `A data de renovação continua ${formatUtcInstant(upgradable.endsAt)}, e a renovação passa a ser do ${tierNames[upgradable.upgrade.tier]} anual.`
                         : upgradable.source === "stripe"
-                          ? `O plano anual continua terminando em ${utcDate(upgradable.endsAt)}, sem renovação.`
-                          : `O plano anual continua terminando em ${utcDate(upgradable.endsAt)}.`
+                          ? `O plano anual continua terminando em ${formatUtcInstant(upgradable.endsAt)}, sem renovação.`
+                          : `O plano anual continua terminando em ${formatUtcInstant(upgradable.endsAt)}.`
                     }`
                   : "Esta mudança não está mais disponível. Confira o plano anual atualizado."
                 : annualChosen
@@ -658,38 +682,19 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
           <p>
             {upgradable?.source === "stripe"
               ? "Você será levado ao Stripe. O plano muda quando o Stripe confirmar o pagamento."
-              : "O pagamento por Pix é assistido. Aguarde as instruções pelo canal de atendimento. O plano muda quando a equipe confirmar o pagamento, dentro deste mês."}
+              : `O pagamento por Pix é assistido. Aguarde as instruções pelo canal de atendimento. O plano muda quando a equipe confirmar o pagamento, até ${upgradable?.upgrade ? formatUtcInstant(upgradable.upgrade.until) : "o fim do mês corrente do plano anual"}.`}
           </p>
         ) : selection !== "cancel" && selection !== "free" && annualChosen ? (
           <>
-            <div role="radiogroup" aria-label="Início do plano anual" className="ui-choice-group">
-              <RadioCard
-                name="annual-start"
-                label="Agora"
-                help={
-                  !data.annualStarts.now
-                    ? "Indisponível: o plano anual em vigor ainda cobre este mês."
-                    : belowCurrent
-                      ? "Indisponível: começar agora não desce do plano em vigor. Escolha o dia 1 seguinte."
-                      : `Começa em ${utcDate(thisMonth)}: o mês corrente conta como o 1º mês. Termina em ${utcDate(utcMonth(now, 12))}.`
-                }
-                disabled={!nowAllowed}
-                checked={start === "now"}
-                onChange={() => setStart("now")}
-              />
-              <RadioCard
-                name="annual-start"
-                label="No dia 1 do mês seguinte"
-                help={
-                  data.annualStarts.next
-                    ? `Começa em ${utcDate(nextMonth)}, e o plano atual continua até lá. Termina em ${utcDate(utcMonth(now, 13))}.`
-                    : "Indisponível: há um plano anual em vigor ou agendado para esse mês."
-                }
-                disabled={!data.annualStarts.next}
-                checked={start === "next"}
-                onChange={() => setStart("next")}
-              />
-            </div>
+            <p>
+              {annualStart.start === "renewal" &&
+              annualStart.startsAt !== null &&
+              annualStart.endsAt !== null
+                ? `Renovação do plano em vigor: começa em ${formatUtcInstant(annualStart.startsAt)}, quando ele termina, e vai até ${formatUtcInstant(annualStart.endsAt)}. O plano atual continua até lá.`
+                : annualStart.start === "now"
+                  ? "Começa na confirmação do pagamento pela equipe e termina 12 meses depois, no mesmo dia e horário, em UTC. O pedido vale por 7 dias."
+                  : annualHint}
+            </p>
             <p>
               O pagamento por Pix é assistido. Aguarde as instruções pelo canal de atendimento. O
               plano anual só começa após a confirmação do pagamento. No cartão, o anual começa
@@ -753,7 +758,7 @@ function AnnualTerm({
                   value: term.segments
                     .map(
                       (segment) =>
-                        `${tierNames[segment.tier]} anual a partir de ${utcDate(segment.fromPeriod)}`,
+                        `${tierNames[segment.tier]} anual a partir de ${formatUtcInstant(segment.fromPeriod)}`,
                     )
                     .join("; "),
                 },
@@ -763,13 +768,16 @@ function AnnualTerm({
             term: "Forma de pagamento",
             value: term.source === "pix" ? "Pix assistido" : "Cartão, pelo Stripe",
           },
-          { term: "Início", value: utcDate(term.firstPeriod) },
+          { term: "Início", value: formatUtcInstant(term.firstPeriod) },
           rescinded
             ? {
                 term: "Acesso até",
-                value: utcDateTime(term.accessEndsAt ?? term.endsAt),
+                value: formatUtcInstant(term.accessEndsAt ?? term.endsAt),
               }
-            : { term: term.renews ? "Fim e renovação" : "Fim", value: utcDate(term.endsAt) },
+            : {
+                term: term.renews ? "Fim e renovação" : "Fim",
+                value: formatUtcInstant(term.endsAt),
+              },
         ]}
       />
       {term.state === "scheduled" ? (
@@ -795,7 +803,7 @@ function AnnualTerm({
               : term.source === "stripe"
                 ? "No cartão, este plano anual não renova: termina nessa data, e os meses pagos continuam até lá."
                 : annualEnabled && pixEnabled
-                  ? "No Pix, a renovação é um novo pedido anual, feito no último mês. Sem ele, o plano termina nessa data, e os meses pagos continuam até lá."
+                  ? `No Pix, a renovação é um novo pedido anual, feito no último mês, a partir de ${formatUtcInstant(term.renewalFrom)}, e começa no fim deste plano. Sem ele, o plano termina nessa data, e os meses pagos continuam até lá.`
                   : "No Pix, o plano termina nessa data, sem renovação automática, e os meses pagos continuam até lá."}
           </p>
           <p className="gestao-help">
