@@ -81,13 +81,24 @@ export function areaReceipt(raw, root, area, exitCode, env = {}) {
   return {
     schemaVersion: 1,
     area,
-    result: exitCode === 0 && raw.success === true && totals.failed === 0 ? "passed" : "failed",
+    // Uma área que não rodou nenhum arquivo reprova aqui, antes de o Vite Task
+    // guardar o recibo.
+    result:
+      exitCode === 0 && raw.success === true && totals.failed === 0 && totals.files > 0
+        ? "passed"
+        : "failed",
     ...totals,
     ranOn: SHA.test(env.GITHUB_SHA ?? "")
       ? { sha: env.GITHUB_SHA, runId: env.GITHUB_RUN_ID ?? null }
       : null,
   };
 }
+
+/** `ranOn` de um recibo, só no formato que `areaReceipt` grava; qualquer outro vira nulo. */
+const ranOn = (value) =>
+  value && typeof value === "object" && SHA.test(value.sha ?? "")
+    ? { sha: value.sha, runId: typeof value.runId === "string" ? value.runId : null }
+    : null;
 
 /**
  * `tests.json` do grafo: junta os recibos das áreas sob a revisão do checkout.
@@ -129,7 +140,7 @@ export function collectTests(metadata, receipts, expectedFiles) {
       passed: Number(receipt.passed) || 0,
       failed: Number(receipt.failed) || 0,
       pending: Number(receipt.pending) || 0,
-      ranOn: receipt.ranOn ?? null,
+      ranOn: ranOn(receipt.ranOn),
     };
     areas[name] = entry;
     for (const key of ["files", "passed", "failed", "pending"]) suites[report][key] += entry[key];

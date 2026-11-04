@@ -152,6 +152,10 @@ it("records an area receipt from counts only, never the revision", () => {
   // A crash, a failed exit or a file from another area never passes.
   expect(areaReceipt({}, "/repo", "platform", 0).result).toBe("failed");
   expect(areaReceipt(raw, "/repo", "platform", 1).result).toBe("failed");
+  // An area that ran no file fails before the cache stores its receipt.
+  expect(areaReceipt({ success: true, testResults: [] }, "/repo", "platform", 0).result).toBe(
+    "failed",
+  );
   expect(() => areaReceipt(raw, "/repo", "console", 0)).toThrow("outside the area");
 });
 it("approves the checkout only with a passing receipt for every area under its revision", () => {
@@ -162,6 +166,21 @@ it("approves the checkout only with a passing receipt for every area under its r
   expect(approvedTests(metadata, report)).toBe(true);
   // A replayed receipt (another run's SHA) is still valid evidence for these inputs.
   expect(report.areas.platform).toMatchObject({ result: "passed", ranOn: { sha: head } });
+  // A receipt's ranOn keeps only the shape areaReceipt writes.
+  for (const ranOn of ["abc", 7, { sha: null }, { sha: "short", runId: "1" }]) {
+    const odd = { ...everyArea(), platform: { ...passing("platform"), ranOn } };
+    expect(collectTests(metadata, odd as never, expected()).areas.platform!.ranOn).toBeNull();
+  }
+  expect(
+    collectTests(
+      metadata,
+      {
+        ...everyArea(),
+        platform: { ...passing("platform"), ranOn: { sha: head, runId: 9 } },
+      } as never,
+      expected(),
+    ).areas.platform!.ranOn,
+  ).toEqual({ sha: head, runId: null });
   // Another checkout's tests.json does not approve this one.
   expect(approvedTests(revision({}, {}, head), report)).toBe(false);
   for (const area of areas) {
