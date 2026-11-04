@@ -46,8 +46,8 @@ try {
     // Build and package without publication credentials, including direct deploy.
     run("scripts/build/typecheck.mjs", ["--project", "tsconfig.json"], env);
     run("scripts/build/typecheck.mjs", ["--project", "tsconfig.worker.json"], env);
-    run("scripts/build/typecheck.mjs", ["--project", "../../docs/tsconfig.json"], env);
-    run("../../node_modules/vite-plus/bin/vp", ["build"], env);
+    run("scripts/build/typecheck.mjs", ["--project", "../docs/tsconfig.json"], env);
+    run("node_modules/vite-plus/bin/vp", ["build"], env);
     writeFileSync(
       `${cwd}/dist/build.json`,
       `${JSON.stringify({ environment: "validation", sha })}\n`,
