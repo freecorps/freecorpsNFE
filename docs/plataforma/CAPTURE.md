@@ -1128,10 +1128,10 @@ Ligar e desligar no dia a dia: [captura-fiscal.md](../operacao/captura-fiscal.md
 
 ## Execução fiscal manual da #50
 
-O operador usa `scripts/fiscal-proof.mjs` fora do CI, em Windows, com uma pasta
+O operador usa `scripts/fiscal/fiscal-proof.mjs` fora do CI, em Windows, com uma pasta
 privada fora dos checkouts. O runner recusa `CI`, `GITHUB_ACTIONS` e
 `RUNNER_NAME`, e nenhum workflow o chama nem recebe a política, o PFX ou a
-deploy key; `scripts/fiscal-proof-plan.test.ts` falha se um workflow passar a
+deploy key; `scripts/fiscal/fiscal-proof-plan.test.ts` falha se um workflow passar a
 mencioná-los. O deployment deve ser `dev`, exclusivo da prova, com referência
 `dev/issue-50-fiscal-proof` ou essa referência com um sufixo da rodada, como
 `dev/issue-50-fiscal-proof-20261020`. Produção, validação persistente e desenvolvimento
@@ -1209,13 +1209,13 @@ sem payload remoto, e saída não zero.
 6. **Execução**, nesta ordem, com o caminho absoluto da pasta privada:
 
    ```powershell
-   bun scripts/fiscal-proof.mjs validate-local C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs publish C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs provision C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs step C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs inspect C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs receipt C:\CAMINHO\PRIVADO
-   node scripts/fiscal-proof.mjs stop C:\CAMINHO\PRIVADO
+   bun scripts/fiscal/fiscal-proof.mjs validate-local C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs publish C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs provision C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs step C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs inspect C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs receipt C:\CAMINHO\PRIVADO
+   node scripts/fiscal/fiscal-proof.mjs stop C:\CAMINHO\PRIVADO
    ```
 
    - `validate-local` roda offline, com Bun, o mesmo validador do cofre:

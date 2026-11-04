@@ -381,7 +381,7 @@ metade do teto, 3 consultas pontuais por hora (`recovery_backoff` em
      se há rodada da #50 aberta para esse CNPJ. Se o
      transporte estiver `sefaz` ou houver rodada, o conflito é esse: quem
      tem a pasta privada da rodada roda
-     `node scripts/fiscal-proof.mjs pause C:\CAMINHO\PRIVADO`, o
+     `node scripts/fiscal/fiscal-proof.mjs pause C:\CAMINHO\PRIVADO`, o
      desligamento de emergência da
      [#50](../plataforma/CAPTURE.md#roteiro-do-operador), e registra na
      autorização da rodada que ela quebrou a

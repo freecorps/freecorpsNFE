@@ -179,7 +179,7 @@ decimal; um teste exige que o catálogo em uso seja o último.
 A regressão usa XMLs assinados sintéticos com respostas 573 e 136, autor/data
 divergentes e outra chave/ambiente. Confere as seis ordens de chegada,
 duplicatas e um controle aceito que continua produzindo conflito.
-`node scripts/prove-excluded-events.mjs`, após `bun run packages:build`, compara a
+`node scripts/fiscal/prove-excluded-events.mjs`, após `bun run packages:build`, compara a
 função de situação anterior à correção com a atual usando o mesmo parser.
 O runner precisa do histórico Git do commit `2947b9c`; não é uma reprodução
 integral da release antiga. O CI normal executa o mesmo contrato sobre a função
@@ -220,7 +220,7 @@ sintéticos; a chave privada versionada só reproduz assinaturas de teste e não
 é credencial de integração. Pacote, contratos e backend usam esse corpus.
 
 `schemas/manifest.json` registra arquivos oficiais, URLs, hashes e conversões
-de encoding dos XSDs antigos. `scripts/sync-nfe-schemas.py --download` recusa
+de encoding dos XSDs antigos. `scripts/fiscal/sync-nfe-schemas.py --download` recusa
 archives diferentes dos hashes revisados. Os bytes originais permanecem
 intactos; o catálogo runtime converte somente encoding para UTF-8. Dois
 entrypoints (`nfeProc` e `evento`) são wrappers locais dos tipos oficiais;

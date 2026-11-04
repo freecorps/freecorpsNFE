@@ -9,8 +9,8 @@ import {
   syntheticCertificate,
   syntheticServer,
   legacySyntheticCertificate,
-} from "../tests/helpers/certificates";
-import { certificateRequest } from "../platform/convex/lib/certificateTransport";
+} from "../../tests/helpers/certificates";
+import { certificateRequest } from "../../platform/convex/lib/certificateTransport";
 
 async function main(legacy = false) {
   const material = legacy ? legacySyntheticCertificate() : syntheticCertificate(),

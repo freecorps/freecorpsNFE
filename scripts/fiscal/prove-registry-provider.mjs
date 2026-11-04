@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
-import { lookupOpenCnpj } from "../platform/convex/lib/registryProvider.ts";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { lookupOpenCnpj } from "../../platform/convex/lib/registryProvider.ts";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 // Explicit standalone online proof. Does not seed a database or store source payloads.
 const report = {

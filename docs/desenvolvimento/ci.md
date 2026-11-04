@@ -873,7 +873,7 @@ saída de `--output`.
   alias `bun run ci:prove` e saída padrão `.ci-results/acceptance/<tentativa>`.
   `--input <arquivo>` (repetível)
   registra o hash de um schema ou corpus da entrega.
-- **Recorrente:** `scripts/prove-capture.mjs`, validação geral, TLS real em
+- **Recorrente:** `scripts/fiscal/prove-capture.mjs`, validação geral, TLS real em
   loopback e jornada de captura no navegador, com `bun run dev` ativo. Saída
   padrão `.ci-results/78`.
 

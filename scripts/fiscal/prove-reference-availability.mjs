@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { referenceLocal } from "./lib/reference-local.mjs";
-import { canonicalEntries, sha256 } from "../lib/reference-dataset.ts";
-import { normalizeCnpj } from "../packages/fiscal-core/src/cnpj.ts";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+import { referenceLocal } from "../lib/reference-local.mjs";
+import { canonicalEntries, sha256 } from "../../lib/reference-dataset.ts";
+import { normalizeCnpj } from "../../packages/fiscal-core/src/cnpj.ts";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 // Local-only assay. Official reference payloads stay in ignored storage; CNPJ is synthetic.
 const root = repoRoot;

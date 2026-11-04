@@ -384,7 +384,7 @@ resposta tardia e revogação com página aberta, usando as assinaturas Convex.
 platform ativo e SDK compilado, verifica importação/publicação de municípios e
 NCM, HTTP/SDK, interrupção, paginação entre versões e rollback. Cria identidade
 sintética e exercita pesquisa por prefixo, código inexistente, fora de vigência,
-rota direta e mobile. Exige coleta prévia com `scripts/fetch-references.ts`.
+rota direta e mobile. Exige coleta prévia com `scripts/fiscal/fetch-references.ts`.
 Recibos e limites em evidence/75.
 
 ## Consulta cadastral

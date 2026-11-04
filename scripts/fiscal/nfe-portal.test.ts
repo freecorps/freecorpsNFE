@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
-import { compareSurvey, describeFinding, parseOfficialList } from "./lib/nfe-portal.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { compareSurvey, describeFinding, parseOfficialList } from "../lib/nfe-portal.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 const schemas = new URL("packages/fiscal-nfe/schemas/", repoUrl);
 const survey = JSON.parse(readFileSync(new URL("portal-survey.json", schemas), "utf8"));

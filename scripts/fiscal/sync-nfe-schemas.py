@@ -15,7 +15,7 @@ import re
 import sys
 import urllib.request
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / ".ci-results/69-sources"
 DEST = ROOT / "packages/fiscal-nfe/schemas"
 RETRIEVED_AT = "2026-10-26"

@@ -12,7 +12,7 @@ import json
 import sys
 import urllib.request
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / ".ci-results/nfse-sources"
 DEST = ROOT / "packages/fiscal-nfse/schemas"
 # DPS, pedido de registro de evento and the types they include. CNC, evento and NFSe are

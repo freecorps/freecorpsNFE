@@ -168,7 +168,7 @@ de que a DPS e o pedido de registro de evento dependem: `DPS_v1.01.xsd`,
 `tiposEventos_v1.01.xsd`, `tiposSimples_v1.01.xsd` e
 `xmldsig-core-schema.xsd`. `schemas/manifest.json` registra a URL, a data de
 obtenção, o SHA-256 do ZIP e de cada arquivo e o da cópia de runtime.
-`scripts/sync-nfse-schemas.py --download` baixa os ZIPs para `.ci-results/`,
+`scripts/fiscal/sync-nfse-schemas.py --download` baixa os ZIPs para `.ci-results/`,
 recusa um ZIP diferente do fixado e gera `src/schemas.json`, o catálogo
 offline que `src/schema.ts` registra no `libxml2-wasm`, como em
 `@freecorps/fiscal-nfe`. Nada é baixado em runtime.

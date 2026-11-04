@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { referenceCorpus } from "../tests/helpers/reference-corpus";
-import { sha256 } from "../lib/reference-dataset";
+import { referenceCorpus } from "../../tests/helpers/reference-corpus";
+import { sha256 } from "../../lib/reference-dataset";
 const root = "tests/fixtures/references/1.0";
 mkdirSync(root, { recursive: true });
 const files = [];

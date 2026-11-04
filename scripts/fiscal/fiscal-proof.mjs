@@ -4,8 +4,8 @@ import { randomBytes, createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
-import { validateBackupDirectory } from "./lib/validation-backup.mjs";
-import { shutdownFiscalProof, signOutFiscalProof } from "./lib/fiscal-proof-cleanup.mjs";
+import { validateBackupDirectory } from "../lib/validation-backup.mjs";
+import { shutdownFiscalProof, signOutFiscalProof } from "../lib/fiscal-proof-cleanup.mjs";
 import {
   acquireProofLock,
   assertAuthorizationActive,
@@ -16,8 +16,8 @@ import {
   proofBaseline,
   publicReceipt,
   validatePlan,
-} from "./lib/fiscal-proof-plan.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/fiscal-proof-plan.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 // Local operator job only. No workflow receives the fiscal certificate.
 const root = repoRoot;
@@ -60,7 +60,7 @@ async function validateLocal(privateDir, plan) {
     windowsHide: true,
   });
   check(build.status === 0, "FISCAL_PACKAGES_BUILD_FAILED");
-  const { validateCertificate } = await import("../platform/convex/lib/certificateValidation.ts");
+  const { validateCertificate } = await import("../../platform/convex/lib/certificateValidation.ts");
   const pfx = Buffer.from(readPrivate(join(privateDir, plan.pfxFile), "PFX_MISSING", null));
   const password = Buffer.from(
     protect(readPrivate(join(privateDir, "password.dpapi"), "PASSWORD_MISSING"), true),

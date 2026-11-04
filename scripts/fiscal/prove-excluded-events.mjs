@@ -5,9 +5,9 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { join } from "node:path";
 import ts from "typescript";
-import { processNfe, deriveFiscalSituation } from "../packages/fiscal-nfe/dist/index.js";
-import { proveExcludedEvents } from "./lib/nfe-situation-proof.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { processNfe, deriveFiscalSituation } from "../../packages/fiscal-nfe/dist/index.js";
+import { proveExcludedEvents } from "../lib/nfe-situation-proof.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const beforeSha = "2947b9c6d9b1671a7d5100c447d68f10d9537e5d";

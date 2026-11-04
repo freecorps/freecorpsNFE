@@ -491,7 +491,7 @@ export const knownCnpjs = new Set([
   "00000000000191",
   "63113119000190",
   // Alfanuméricos: o exemplo oficial da Receita (12.ABC.345/01DE-35) e o CNPJ
-  // público que a prova do provedor consulta (scripts/prove-registry-provider.mjs).
+  // público que a prova do provedor consulta (scripts/fiscal/prove-registry-provider.mjs).
   "12ABC34501DE35",
   // O CPF de exemplo 001.234.567-97 depois de três zeros, que também é CNPJ válido:
   // o caso "CNPJ ou CPF" dos testes da chave de acesso.
@@ -655,7 +655,7 @@ export const findingAllowlist = [
     reason: "Regras da skill de terceiros que só vêm compiladas neste arquivo",
   },
   {
-    path: "scripts/prove-certificates-hosted.ts",
+    path: "scripts/fiscal/prove-certificates-hosted.ts",
     kind: "email-externo",
     count: 1,
     reason: "Destino SSH do túnel público pinggy, não é e-mail",

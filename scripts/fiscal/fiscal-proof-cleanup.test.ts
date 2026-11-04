@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vite-plus/test";
-import { shutdownFiscalProof, signOutFiscalProof } from "./lib/fiscal-proof-cleanup.mjs";
+import { shutdownFiscalProof, signOutFiscalProof } from "../lib/fiscal-proof-cleanup.mjs";
 
 it.each(["disable", "pause", "revoke", "all", "none"])(
   "attempts every fiscal shutdown action when %s fails, without exposing error payloads",

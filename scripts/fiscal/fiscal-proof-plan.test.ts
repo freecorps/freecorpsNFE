@@ -15,8 +15,8 @@ import {
   proofBaseline,
   publicReceipt,
   validatePlan,
-} from "./lib/fiscal-proof-plan.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/fiscal-proof-plan.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 // Synthetic plan only: no real company, certificate or deployment.
 const startsAt = 1_800_000_000_000;

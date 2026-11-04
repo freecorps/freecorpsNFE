@@ -5,10 +5,10 @@ import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import https from "node:https";
 import { once } from "node:events";
 import { join } from "node:path";
-import { formatEnvFile } from "./lib/worktree/env-file.mjs";
+import { formatEnvFile } from "../lib/worktree/env-file.mjs";
 import type { TLSSocket } from "node:tls";
-import { syntheticCertificate, syntheticServer } from "../tests/helpers/certificates";
-import { encryptCertificate } from "../platform/convex/lib/certificateCrypto";
+import { syntheticCertificate, syntheticServer } from "../../tests/helpers/certificates";
+import { encryptCertificate } from "../../platform/convex/lib/certificateCrypto";
 
 const root = process.cwd(),
   output = join(root, ".ci-results/77");

@@ -10,8 +10,8 @@ memória gerado deste manifesto; nada é baixado em tempo de execução
 | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | `packages/fiscal-nfe/schemas/manifest.json`            | URL, SHA-256 do ZIP, caminho no ZIP, SHA-256 e encoding de cada XSD fixado     |
 | `packages/fiscal-nfe/schemas/portal-survey.json`       | A lista oficial do portal no último levantamento, com a decisão de cada pacote |
-| `scripts/sync-nfe-schemas.py`                          | Única entrada de XSD: baixa os pacotes revisados e recusa hash diferente       |
-| `scripts/check-nfe-schemas.mjs` (`bun run xml:portal`) | Compara o portal com o levantamento e, com `--hashes`, os ZIPs fixados         |
+| `scripts/fiscal/sync-nfe-schemas.py`                          | Única entrada de XSD: baixa os pacotes revisados e recusa hash diferente       |
+| `scripts/fiscal/check-nfe-schemas.mjs` (`bun run xml:portal`) | Compara o portal com o levantamento e, com `--hashes`, os ZIPs fixados         |
 
 ## Levantamento de 26/10/2026
 
@@ -247,11 +247,11 @@ Não há tarefa agendada. A conferência roda à mão, só lendo o portal:
    levantamento.
 3. Para cada diferença, decida trazer, adiar ou excluir e registre aqui, com a
    data. Um pacote trazido entra em `SOURCES` e `PINNED` de
-   `scripts/sync-nfe-schemas.py`, depois de baixado e revisado; rode
-   `python scripts/sync-nfe-schemas.py --download` e confira o diff de
+   `scripts/fiscal/sync-nfe-schemas.py`, depois de baixado e revisado; rode
+   `python scripts/fiscal/sync-nfe-schemas.py --download` e confira o diff de
    `manifest.json`, `schemas.json` e `schema-policy.json`.
 4. Atualize `portal-survey.json` (data, títulos e decisões). O teste
-   `scripts/nfe-portal.test.ts` recusa pacote fixado sem decisão.
+   `scripts/fiscal/nfe-portal.test.ts` recusa pacote fixado sem decisão.
 
 `--page <arquivo>` compara um HTML salvo da lista, sem rede; serve para
 reproduzir uma conferência.

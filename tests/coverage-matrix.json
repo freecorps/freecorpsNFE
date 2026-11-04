@@ -144,8 +144,8 @@
         "tests/platform.xml.test.ts",
         "packages/contracts/index.test.ts",
         "scripts/package-boundaries.test.ts",
-        "scripts/prove-nfe-runtime.mjs",
-        "scripts/prove-excluded-events.mjs",
+        "scripts/fiscal/prove-nfe-runtime.mjs",
+        "scripts/fiscal/prove-excluded-events.mjs",
         "tests/platform.documents.test.ts",
         "docs/v1.0/evidence/69/README.md"
       ]
@@ -187,7 +187,7 @@
       "evidence": [
         "tests/platform.certificateCrypto.test.ts",
         "tests/platform.certificates.test.ts",
-        "scripts/prove-certificate-transport.ts",
+        "scripts/fiscal/prove-certificate-transport.ts",
         "docs/v1.0/evidence/77/hosted.json",
         "docs/v1.0/evidence/77/browser.json",
         "docs/v1.0/evidence/77-78/README.md"

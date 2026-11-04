@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const target = JSON.parse(readFileSync(join(root, ".ci-results/nfe/hosted-target.json"), "utf8"));

@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { canonicalEntries, sha256, parseReferencePayload } from "../lib/reference-dataset";
-import type { ReferenceEntry, ReferenceManifest } from "../packages/contracts/src/references";
-import { municipalitySource, ncmSource } from "../packages/contracts/src/references";
+import { canonicalEntries, sha256, parseReferencePayload } from "../../lib/reference-dataset";
+import type { ReferenceEntry, ReferenceManifest } from "../../packages/contracts/src/references";
+import { municipalitySource, ncmSource } from "../../packages/contracts/src/references";
 
 const output = process.argv[2] ?? ".reference-data";
 const sources = {

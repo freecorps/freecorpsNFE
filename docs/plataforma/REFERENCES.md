@@ -61,11 +61,11 @@ esta entrega conserva as versões para permitir reprodução e rollback.
 Reprodução **somente no Convex local desta worktree**, com `bun run dev` ativo:
 
 ```powershell
-bunx bun@1.4.0 scripts/fetch-references.ts
-bunx bun@1.4.0 scripts/reference-local.mjs stage .reference-data/ncm.json
-bunx bun@1.4.0 scripts/reference-local.mjs current ncm
+bunx bun@1.4.0 scripts/fiscal/fetch-references.ts
+bunx bun@1.4.0 scripts/fiscal/reference-local.mjs stage .reference-data/ncm.json
+bunx bun@1.4.0 scripts/fiscal/reference-local.mjs current ncm
 # Use o versionId retornado e a geração lida, sem adivinhá-los:
-bunx bun@1.4.0 scripts/reference-local.mjs publish <versionId> <geracao> "Atualiza NCM"
+bunx bun@1.4.0 scripts/fiscal/reference-local.mjs publish <versionId> <geracao> "Atualiza NCM"
 # Para rollback, repita publish com o ID anterior e a nova geração corrente.
 ```
 

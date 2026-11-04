@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import forge from "node-forge";
 import { SignedXml } from "xml-crypto";
-import { repoRoot } from "./lib/repo-root.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const output = join(root, "tests/fixtures/nfe/4.00");
@@ -534,7 +534,7 @@ for (const [id, xml, expected] of cases) {
     id,
     path,
     sha256: createHash("sha256").update(xml).digest("hex"),
-    origin: "scripts/generate-nfe-corpus.mjs",
+    origin: "scripts/fiscal/generate-nfe-corpus.mjs",
     expected: completeExpected,
     expectedCodes,
   });

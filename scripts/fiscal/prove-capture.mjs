@@ -2,9 +2,9 @@
 // TLS real em loopback com o bundle Node e a jornada de captura no navegador,
 // tudo local e sintético. O recibo histórico está em docs/v1.0/evidence/78.
 //
-//   bun scripts/prove-capture.mjs [--base <ref>] [--output <dir>]
-import { acceptanceSteps, proofArguments, runProof } from "./lib/proof-runner.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+//   bun scripts/fiscal/prove-capture.mjs [--base <ref>] [--output <dir>]
+import { acceptanceSteps, proofArguments, runProof } from "../lib/proof-runner.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 if (!process.versions.bun) throw new Error("Use Bun para a prova");
 const root = repoRoot;
@@ -13,7 +13,7 @@ const bundle = `${options.output}/local-tls.mjs`;
 const receipt = runProof({
   root,
   proof: "capture",
-  runner: "scripts/prove-capture.mjs",
+  runner: "scripts/fiscal/prove-capture.mjs",
   output: options.output,
   base: options.base,
   inputs: ["platform/convex/lib/captureSchema.ts", "tests/fixtures/nfe/4.00/manifest.json"],
@@ -24,7 +24,7 @@ const receipt = runProof({
       command: [
         "bun",
         "build",
-        "scripts/prove-certificate-transport.ts",
+        "scripts/fiscal/prove-certificate-transport.ts",
         "--target",
         "node",
         "--outfile",
