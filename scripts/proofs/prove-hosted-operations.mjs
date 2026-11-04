@@ -21,6 +21,7 @@ import {
   adoptRevision,
 } from "../lib/hosted-load.mjs";
 import { planLoadOptions, planLoad, cleanupWithPlans } from "../lib/hosted-plan-load.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 const mode = process.argv[3] ?? "preflight";
 const requestedTargets = mode === "load" ? loadTargets(process.argv.slice(5)) : null;
@@ -50,7 +51,7 @@ assert.ok(
 const privatePath = process.argv[4];
 assert.ok(privatePath, "Provide an absolute private run-state path outside the checkout");
 assert.ok(isAbsolute(privatePath));
-const privateRelative = relative(process.cwd(), resolve(privatePath));
+const privateRelative = relative(repoRoot, resolve(privatePath));
 assert.ok(
   privateRelative === ".." ||
     privateRelative.startsWith(`..\\`) ||
@@ -58,11 +59,11 @@ assert.ok(
     isAbsolute(privateRelative),
   "Private run-state must stay outside the checkout",
 );
-const output = ".ci-results/hosted-79-80";
+const output = join(repoRoot, ".ci-results/hosted-79-80");
 mkdirSync(output, { recursive: true });
 mkdirSync(dirname(privatePath), { recursive: true });
 const physicalRelative = relative(
-  realpathSync(process.cwd()),
+  realpathSync(repoRoot),
   join(realpathSync(dirname(privatePath)), basename(privatePath)),
 );
 assert.ok(
@@ -219,8 +220,11 @@ if (mode === "plan-load") {
     options: planOptions,
     ...result,
   };
-  mkdirSync(".ci-results/hosted-429", { recursive: true });
-  writeFileSync(".ci-results/hosted-429/plan-load.json", JSON.stringify(report, null, 2) + "\n");
+  mkdirSync(join(repoRoot, ".ci-results/hosted-429"), { recursive: true });
+  writeFileSync(
+    join(repoRoot, ".ci-results/hosted-429/plan-load.json"),
+    JSON.stringify(report, null, 2) + "\n",
+  );
   console.log(JSON.stringify({ result: result.result }));
   process.exit(result.result === "passed" ? 0 : 1);
 }

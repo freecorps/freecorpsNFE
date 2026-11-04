@@ -630,9 +630,11 @@ chama pelo caminho:
 
 Um script em `scripts/<domínio>/` acha a raiz do repositório por `repoRoot` ou
 `repoUrl`, de `scripts/lib/repo-root.mjs`, e não subindo pastas a partir de si
-mesmo. Um `..` a mais ou a menos não falha: lê e grava no lugar errado.
-`scripts/repo/scripts-layout.test.ts` reprova arquivo novo solto na raiz de
-`scripts/`, cálculo de raiz pela própria pasta e caminho de `scripts/` citado
+mesmo nem pela pasta de execução (`process.cwd()`). Um `..` a mais ou a menos
+não falha: lê e grava no lugar errado; e quem roda o script de outra pasta
+gravaria os recibos fora da raiz. `scripts/repo/scripts-layout.test.ts`
+reprova arquivo novo solto na raiz de `scripts/`, cálculo de raiz pela própria
+pasta ou pela pasta de execução e caminho de `scripts/` citado
 por `package.json`, workflow, `vite.config.ts`, `knip.jsonc` ou `CODEOWNERS`
 que não existe.
 

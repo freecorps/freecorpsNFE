@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { repoRoot } from "../lib/repo-root.mjs";
 const require = createRequire(import.meta.url);
 const wranglerRequire = createRequire(require.resolve("wrangler/package.json"));
 const { Miniflare, Response, convertV4MiniflareOptions } = wranglerRequire("miniflare");
@@ -16,7 +18,7 @@ export default {async fetch(request,env){
  const accepted=await deliver(env,'pending/test.eml',bytes,meta);
  return Response.json({accepted,preserved:!!await env.INBOUND_MAIL.get('pending/test.eml')});
 }}`,
-    resolveDir: process.cwd(),
+    resolveDir: repoRoot,
     loader: "ts",
   },
   bundle: true,
@@ -70,11 +72,9 @@ try {
     redirectNotFollowed: true,
     externalRequests: 0,
   };
-  mkdirSync(".browser-results/privacy-worker", { recursive: true });
-  writeFileSync(
-    ".browser-results/privacy-worker/report.json",
-    JSON.stringify(report, null, 2) + "\n",
-  );
+  const output = join(repoRoot, ".browser-results/privacy-worker");
+  mkdirSync(output, { recursive: true });
+  writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(report);
 } finally {
   await runtime.dispose();

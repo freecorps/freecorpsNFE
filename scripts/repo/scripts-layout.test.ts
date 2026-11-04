@@ -27,6 +27,10 @@ const rootFiles: Record<string, string> = {
  * número exato de ocorrências, para que uma ocorrência nova não passe calada.
  */
 const rootAllowlist: Record<string, { count: number; reason: string }> = {
+  "scripts/ci/proof-runner.test.ts": {
+    count: 3,
+    reason: "código do processo filho que o teste grava no checkout descartável e roda lá",
+  },
   "scripts/public-copy/public-tree.mjs": {
     count: 2,
     reason: "trecho de tests/fixtureCorpus.test.ts (antes e depois) que a cópia pública reescreve",
@@ -42,9 +46,11 @@ const tracked = execFileSync("git", ["ls-files", "-z", "scripts"], {
   .filter((file) => existsSync(join(repoRoot, file)));
 
 /**
- * Formas de achar a raiz subindo pastas a partir do próprio arquivo. Num script
- * de scripts/<domínio>/, um `..` a mais ou a menos não falha: lê e grava no
- * lugar errado. A raiz vem de scripts/lib/repo-root.mjs.
+ * Formas de achar a raiz subindo pastas a partir do próprio arquivo, ou de
+ * tomá-la da pasta de execução. Num script de scripts/<domínio>/, um `..` a
+ * mais ou a menos não falha: lê e grava no lugar errado; e quem roda o script
+ * de outra pasta grava recibos fora da raiz. A raiz vem de
+ * scripts/lib/repo-root.mjs.
  */
 function rootEscapes(file: string, text: string) {
   const found: string[] = [];
@@ -61,6 +67,7 @@ function rootEscapes(file: string, text: string) {
     /dirname\(\s*fileURLToPath\(\s*import\.meta\.url\s*\)\s*\)\s*,\s*["'`]\.\./g,
     /import\.meta\.dirname\s*,\s*["'`]\.\./g,
     /parents\[[01]\]/g,
+    /process\.cwd\(\)/g,
   ])
     for (const match of text.matchAll(pattern)) found.push(match[0]);
   return found;

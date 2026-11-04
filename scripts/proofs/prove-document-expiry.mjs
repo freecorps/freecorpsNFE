@@ -5,11 +5,13 @@ import { setTimeout as delay } from "node:timers/promises";
 import { referenceLocal } from "../lib/reference-local.mjs";
 import { worktreePaths } from "../lib/worktree/paths.mjs";
 import { readLocalConfig } from "../lib/worktree/deployment.mjs";
+import { join } from "node:path";
 import { prepareScope, headers, hash } from "../lib/hosted-fixtures.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 // Native runtime proof, deliberately restricted to this worktree's loopback backend.
-const { rpc, urls } = referenceLocal(process.cwd());
-const config = readLocalConfig(worktreePaths(process.cwd()));
+const { rpc, urls } = referenceLocal(repoRoot);
+const config = readLocalConfig(worktreePaths(repoRoot));
 const h = {
   add: async (table, documents) =>
     assert.equal(
@@ -60,10 +62,13 @@ const report = {
   firstRead: before.status,
   afterClockExpiry: after.status,
   runnerSha256: hash(readFileSync(new URL(import.meta.url))),
-  sourceSha256: hash(readFileSync("platform/convex/documentRest.ts")),
+  sourceSha256: hash(readFileSync(join(repoRoot, "platform/convex/documentRest.ts"))),
   scope:
     "Real HTTP route after warming an indexed empty page, same request/key, wall clock advanced without patching the key or redeploying. No fiscal IO.",
 };
-mkdirSync(".ci-results/hosted-79-80", { recursive: true });
-writeFileSync(".ci-results/hosted-79-80/expiry.json", JSON.stringify(report, null, 2) + "\n");
+mkdirSync(join(repoRoot, ".ci-results/hosted-79-80"), { recursive: true });
+writeFileSync(
+  join(repoRoot, ".ci-results/hosted-79-80/expiry.json"),
+  JSON.stringify(report, null, 2) + "\n",
+);
 console.log(JSON.stringify(report));
