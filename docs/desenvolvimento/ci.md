@@ -754,8 +754,8 @@ Em uma stack, informe a base apropriada. CI usa checkout e base do evento.
 O Vite Task já faz aqui o papel do Turborepo usado em outros projetos da Freecorps: registra os
 arquivos efetivamente lidos, inclusive fixtures, sem `inputs` declarados à
 mão, e `vp test run --changed` escolhe arquivos de teste, mais fino que o
-`--affected` do Turborepo. Desde 04/11/2026 o Validate usa o cache dele como o
-groceryops usa o do Turborepo: restaurado do Actions, com o artifact da PR
+`--affected` do Turborepo. Desde 04/11/2026 o Validate usa o cache dele como esses
+projetos usam o do Turborepo: restaurado do Actions, com o artifact da PR
 mesclada repetido no push da `main`. Adotar o Turborepo poria um segundo
 executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
 `inputs` manuais.
