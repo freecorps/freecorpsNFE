@@ -69,7 +69,7 @@ export const annualMessages: Record<string, string> = {
   PAYMENT_METHOD_PIX:
     "Este plano anual foi pago por Pix, e a mudança de plano também é pelo Pix. Confira a situação atual.",
   SUBSCRIPTION_RENEWING:
-    "O cartão ainda renova a assinatura atual. Use “Cancelar renovação” antes de assinar o anual no cartão; o período já pago continua.",
+    "O cartão ainda renova a assinatura atual. Use “Cancelar renovação” antes de assinar o anual no cartão; o período já pago continua até o anual começar, no dia 1 seguinte, e é substituído por ele sem desconto.",
 };
 /** Why a new annual by Pix waits (`annualStart.code`), before anything is asked. */
 const annualWaits: Record<string, string> = {

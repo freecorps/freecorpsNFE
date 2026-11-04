@@ -29,6 +29,8 @@ vi.mock("convex/react", () => ({
 }));
 const owner = { id: "org-one", slug: "equipe", name: "Equipe", role: "owner" } as Organization;
 const NOV = Date.UTC(2026, 10, 1);
+/** The anniversary of a monthly card signed on 10/10/2026 at 12:00 UTC (ADR 0012, slice 2a). */
+const NOV_10 = Date.UTC(2026, 10, 10, 12);
 function overview(patch: Partial<BillingOverview> = {}): BillingOverview {
   return {
     card: true,
@@ -46,7 +48,7 @@ function overview(patch: Partial<BillingOverview> = {}): BillingOverview {
 }
 const subscribed = (patch: Partial<NonNullable<BillingOverview["account"]>> = {}) =>
   overview({
-    plan: { tier: "intermediate", endsAt: NOV },
+    plan: { tier: "intermediate", endsAt: NOV_10 },
     account: {
       renewalTier: "intermediate",
       subscription: {
@@ -54,7 +56,7 @@ const subscribed = (patch: Partial<NonNullable<BillingOverview["account"]>> = {}
         status: "active",
         tier: "intermediate",
         cancelAtPeriodEnd: false,
-        periodEnd: NOV,
+        periodEnd: NOV_10,
       },
       openInvoice: null,
       syncedAt: Date.UTC(2026, 9, 10, 12),
@@ -99,6 +101,11 @@ it("leva ao Checkout do servidor e reusa a mesma intenção depois de uma respos
     Promise.reject(new ConvexError({ code: "BILLING_UNAVAILABLE" }));
   show();
   fireEvent.click(screen.getByRole("button", { name: "Assinar Intermediário no cartão" }));
+  // Charged at the signing, renewed on its anniversary (ADR 0012, slice 2a).
+  const dialog = screen.getByRole("alertdialog").textContent;
+  expect(dialog).toMatch(/R\$\s149,00 são cobrados no pagamento, integrais e sem pró-rata/);
+  expect(dialog).toContain("até o mesmo dia e horário do mês seguinte, em UTC");
+  expect(dialog).not.toContain("dia 1");
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Ir para o Stripe" }));
   });
@@ -119,9 +126,19 @@ it("mostra meio, período, próxima cobrança em UTC e as ações da assinatura"
   show();
   expect(screen.getByText("Cartão, pelo Stripe")).toBeTruthy();
   expect(screen.getByText("Assinatura ativa")).toBeTruthy();
-  expect(screen.getByText(/R\$\s149,00 em 01\/11\/2026, 00:00 UTC \(Intermediário\)/)).toBeTruthy();
+  // The card renews on the anniversary of the signing, an instant in UTC, never "day 1".
+  expect(
+    screen.getByText(/R\$\s149,00 em 10\/11\/2026 às 12:00 UTC \(Intermediário\)/),
+  ).toBeTruthy();
+  expect(screen.getByText("Intermediário, até 10/11/2026 às 12:00 UTC")).toBeTruthy();
+  expect(screen.queryByText(/dia 1/)).toBeNull();
   expect(screen.getByRole("button", { name: "Mudar para Grande" })).toBeTruthy();
   expect(screen.queryByRole("button", { name: /Assinar/ })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Mudar para Grande" }));
+  expect(screen.getByRole("alertdialog").textContent).toContain(
+    "a diferença integral do mês do plano, que termina em 10/11/2026 às 12:00 UTC",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancelar renovação" }));
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -130,6 +147,22 @@ it("mostra meio, período, próxima cobrança em UTC e as ações da assinatura"
     { name: "billing:changeRenewal", args: { organizationId: "org-one", change: "cancel" } },
   ]);
   expect(screen.getByText("Renovação cancelada. O período pago continua até o fim.")).toBeTruthy();
+});
+
+it("uma recusa que espera o plano em vigor termina com a data em UTC", async () => {
+  state.data = subscribed();
+  state.results["billing:checkout"] = () =>
+    Promise.reject(new ConvexError({ code: "PERIOD_CLOSING", availableAt: NOV_10 }));
+  show();
+  fireEvent.click(screen.getByRole("button", { name: "Mudar para Grande" }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Ir para o Stripe" }));
+  });
+  expect(
+    screen.getByText(
+      /a mudança de plano fecha 45 minutos antes da renovação.*Disponível a partir de 10\/11\/2026 às 12:00 UTC\./,
+    ),
+  ).toBeTruthy();
 });
 
 it("mostra pagamento recusado e pendências; quem não gerencia não vê a cobrança", () => {
@@ -187,18 +220,15 @@ it("mostra o Checkout aberto pelo ciclo: o mensal cobra agora, o anual só no di
     url: "https://checkout.stripe.com/c/pay/cs_1",
     expiresAt: Date.UTC(2026, 9, 11, 12),
   };
+  // A monthly start has no period until it is paid (ADR 0012, slice 2a).
   state.data = overview({
-    checkout: {
-      ...open,
-      cycle: "monthly",
-      period: "2026-10",
-      periodStartsAt: Date.UTC(2026, 9, 1),
-      grantCents: 14900,
-    },
+    checkout: { ...open, cycle: "monthly", periodStartsAt: null, grantCents: 14900 },
   });
   show();
   expect(
-    screen.getByText(/Intermediário: R\$\s149,00 agora, depois R\$\s149,00 por mês/),
+    screen.getByText(
+      /Intermediário: R\$\s149,00 agora, depois R\$\s149,00 por mês, no dia e horário do pagamento/,
+    ),
   ).toBeTruthy();
   cleanup();
   state.data = overview({
@@ -366,7 +396,7 @@ it("an annual subscription already charged keeps the paid months and points to s
 
 it("names each annual item under review", () => {
   const codes = [
-    ["RENEWAL_BELOW_UPGRADE", "Renovação anual cobrada abaixo do plano da mudança paga"],
+    ["RENEWAL_BELOW_UPGRADE", "Renovação cobrada abaixo do plano da mudança paga"],
     ["SUBSCRIPTION_STOP_FAILED", "Cancelamento da assinatura anual rescindida pendente no Stripe"],
     ["ANNUAL_TERM_RESCINDED", "Cobrança de uma assinatura anual já rescindida"],
     ["AMOUNT_MISMATCH", "Pagamento com valor diferente do cobrado"],
@@ -498,7 +528,9 @@ it("com o Pix desligado, a cobrança fala só do cartão", () => {
   state.data = overview({ annualEnabled: true, pixEnabled: false });
   show();
   expect(
-    screen.getByText("Cartão com renovação automática no dia 1 de cada mês, em UTC."),
+    screen.getByText(
+      "Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC.",
+    ),
   ).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Assinar Grande anual no cartão" }));
   expect(screen.getByRole("alertdialog").textContent).not.toContain("Pix");

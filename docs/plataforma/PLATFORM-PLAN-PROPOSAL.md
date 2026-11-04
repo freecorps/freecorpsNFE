@@ -114,7 +114,7 @@ A proposta usa mês civil UTC, com primeira mensalidade integral porque concede
 a franquia inteira. O cliente escolhe iniciar agora ou no próximo mês antes
 do pagamento. Implantação não é cobrada. Em 27/10/2026 o mantenedor escolheu
 cobrar por cartão recorrente no Stripe, mantendo o Pix assistido (#556): o
-cartão renova no dia 1, 00:00 UTC, com as mesmas regras de upgrade, downgrade e
+cartão renovava no dia 1, 00:00 UTC, com as mesmas regras de upgrade, downgrade e
 cancelamento, e o Pix continua sem débito automático. Inadimplência sem
 carência e reembolso ou contestação só sinalizados foram decididos em
 28/10/2026. A integração está em [BILLING.md](BILLING.md) e não liga o
@@ -124,8 +124,10 @@ Em 03/11/2026 o dono trocou o mês civil dos planos pagos pelo período por
 aniversário, a partir da contratação, para a assinatura e para as cotas. Com
 isso, a escolha entre iniciar agora ou no próximo mês deixa de existir. O
 Gratuito continua no mês civil UTC. A decisão está na
-[ADR 0012](../adr/0012-periodo-por-aniversario.md) e ainda não está
-implementada.
+[ADR 0012](../adr/0012-periodo-por-aniversario.md) e está implementada em
+parte: o mensal, pelo Pix e pelo cartão, já corre de aniversário a
+aniversário, e o anual no cartão ainda começa no dia 1 seguinte
+([BILLING.md](BILLING.md#período-por-aniversário-decidido-em-03112026)).
 
 A #639 já permite renovar reutilizando a alocação depois de `admissionsUntil`.
 A janela continua exigida quando há nova reserva, como na primeira adesão

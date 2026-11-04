@@ -21,7 +21,6 @@ import {
 import { PLATFORM_PLANS, isCatalogTier, paidTier } from "./lib/planCatalog";
 import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from "./lib/planCore";
 import {
-  activeTerm,
   rescindedSubscription,
   termsEnd,
   subscriptionHasTerm,
@@ -34,6 +33,7 @@ import {
 import { assertPlanChangeable } from "./lib/coldArchiveCore";
 import { planFor } from "./lib/usageCore";
 import { nextUsagePeriodStart, planEnded, usagePeriod } from "./lib/usageValues";
+import { quotaPeriod } from "./lib/quotaPeriod";
 import { billingOpenInvoice, billingSubscription, checkoutKind } from "./lib/billingSchema";
 import {
   ANNUAL_CYCLE,
@@ -59,6 +59,7 @@ import {
 import {
   ADMISSION_RECHECK_MARGIN,
   CREATING_TTL,
+  PERIOD_CLOSING_MARGIN,
   RENEWAL_CHECK_DELAY,
   admitAnnualCheckout,
   UPGRADE_SWITCH_MARGIN,
@@ -66,6 +67,7 @@ import {
   accountOf,
   applyInvoice,
   openCheckout,
+  paidByCard,
   periodStart,
   pixMonthlyUntil,
   pixPending,
@@ -165,12 +167,16 @@ export const overview = query({
         /** An annual one charges nothing now and `grantCents` at `periodStartsAt`. */
         cycle: v.union(v.literal("monthly"), v.literal("annual")),
         /**
-         * The first month bought, `AAAA-MM`, for consoles published before ADR 0012; optional, as
-         * the anniversary periods will not have it. Read `periodStartsAt` instead.
+         * The canonical key of the period priced (ADR 0012), for consoles published before it;
+         * absent on a monthly start, which begins when it is paid. Read `periodStartsAt`.
          */
         period: v.optional(v.string()),
-        /** When the first month bought starts: for an annual one, its first charge. */
-        periodStartsAt: v.number(),
+        /**
+         * When the period priced starts: for an annual start, its first charge on the 1st; for an
+         * upgrade, the start of the period it raises. Null for a monthly start, whose month runs
+         * from the payment to the same day and time next month.
+         */
+        periodStartsAt: v.union(v.number(), v.null()),
         grantCents: v.number(),
         url: v.union(v.string(), v.null()),
         expiresAt: v.number(),
@@ -272,8 +278,8 @@ export const overview = query({
             kind: checkout.kind,
             tier: checkout.tier,
             cycle: checkout.cycle ?? ("monthly" as const),
-            period: checkout.period,
-            periodStartsAt: periodStart(checkout.period),
+            ...(checkout.period !== undefined ? { period: checkout.period } : {}),
+            periodStartsAt: checkout.period === undefined ? null : periodStart(checkout.period),
             grantCents: checkout.grantCents,
             url: checkout.state === "open" ? (checkout.url ?? null) : null,
             expiresAt: checkout.expiresAt,
@@ -329,9 +335,12 @@ export const overview = query({
 });
 
 /**
- * Prices the intention under the same rules as Pix: the whole current UTC month, or the full
- * difference on an upgrade, nothing for a month Pix already paid. A subscription anchored at the
- * next month renews on day 1, 00:00 UTC, so card and quota periods stay the same months.
+ * Prices the intention under the same rules as Pix (ADR 0012, slice 2a): the whole month, charged
+ * at the signing, or the full difference on an upgrade. The monthly subscription has no anchor of
+ * its own: Stripe anchors it at the signing (`billing_cycle_anchor`), and it renews on each
+ * anniversary of that instant, which the quota periods of the plan follow. One paid plan at a
+ * time: with a paid plan in force, the card monthly only sells an upgrade of the card plan that
+ * renews; anything else waits for the end of that plan, refused with the date (`availableAt`).
  *
  * `cycle: "annual"` prices a 12-month term at `annualCents` (ADR 0010, decision 9) under the
  * refusals of the annual Pix. On the card it always starts on the 1st of the next month (owner
@@ -359,9 +368,13 @@ export const prepareCheckout = internalMutation({
     customerId: v.union(v.string(), v.null()),
     organizationName: v.string(),
     slug: v.string(),
-    period: v.string(),
+    /** The period priced: the annual start's first month, or the period an upgrade raises. */
+    period: v.optional(v.string()),
     grantCents: v.number(),
-    /** The 1st the subscription anchors at; `null` for an annual upgrade, a one-off payment. */
+    /**
+     * The 1st an annual start anchors at; `null` for a monthly start, which Stripe anchors at the
+     * signing, and for upgrades, one-off payments.
+     */
     anchor: v.union(v.number(), v.null()),
     expiresAt: v.number(),
     url: v.union(v.string(), v.null()),
@@ -375,9 +388,13 @@ export const prepareCheckout = internalMutation({
     const annual = args.cycle === "annual";
     const upgrade = args.start === "upgrade";
     if (!/^[a-zA-Z0-9_-]{8,100}$/.test(args.key) || (upgrade && !annual)) deny("INVALID_REQUEST");
-    // A card that renews monthly would charge months of the term: refused while any term holds.
-    if (!annual && (await activeTerm(ctx, args.organizationId, Date.now())))
-      deny("ANNUAL_TERM_ACTIVE");
+    // A card that renews monthly would charge months of the term: refused while any term holds,
+    // in force or scheduled, until the last one ends (one paid plan at a time, ADR 0012). The card
+    // has no deferred start, so a monthly never waits inside the term for its end.
+    if (!annual) {
+      const busyUntil = await termsEnd(ctx, args.organizationId, Date.now());
+      if (busyUntil !== null) deny("ANNUAL_TERM_ACTIVE", { availableAt: busyUntil });
+    }
     // The admission window is checked by `allocateOffer` below: an organization that already
     // holds the reservation may return to the card after it closes (#549).
     const now = Date.now();
@@ -389,17 +406,10 @@ export const prepareCheckout = internalMutation({
       customerId: account?.customerId ?? null,
       organizationName: organization.name,
       slug: organization.slug,
-      period: row.period,
+      ...(row.period !== undefined ? { period: row.period } : {}),
       grantCents: row.grantCents,
-      // The monthly renews after the month it charges; the annual first bills on its 1st.
-      anchor:
-        row.kind === "upgrade"
-          ? row.cycle === "annual"
-            ? null
-            : nextUsagePeriodStart(periodStart(row.period))
-          : row.cycle === "annual"
-            ? periodStart(row.period)
-            : nextUsagePeriodStart(periodStart(row.period)),
+      // Only the annual start still anchors, on its 1st, until slice 2b of ADR 0012.
+      anchor: row.kind === "start" && row.cycle === "annual" ? periodStart(row.period) : null,
       expiresAt: row.expiresAt,
       url: row.url ?? null,
     });
@@ -450,9 +460,15 @@ export const prepareCheckout = internalMutation({
       const renewal = await scheduledPixRenewal(ctx, args.organizationId, now);
       if (renewal) deny("PAYMENT_METHOD_PIX", { availableAt: renewal.availableAt });
     }
-    const anchor = nextUsagePeriodStart(now);
-    // Stripe needs the anchor in the future when the customer finishes paying.
-    if (anchor - now < 45 * 60_000) deny("PERIOD_CLOSING");
+    // The annual still anchors on the next 1st until slice 2b: Stripe needs that anchor in the
+    // future when the customer finishes paying, and its upgrade is priced by the civil month.
+    const monthTurn = nextUsagePeriodStart(now);
+    if (annual && monthTurn - now < PERIOD_CLOSING_MARGIN)
+      deny("PERIOD_CLOSING", { availableAt: monthTurn });
+    const day = 24 * 60 * 60_000;
+    // The annual sessions expire before the month turns; a monthly start, a day later.
+    let expiresAt = annual ? Math.min(now + day, monthTurn - 5 * 60_000) : now + day;
+    let period = annual ? usagePeriod(firstPeriod ?? now) : undefined;
     const current =
       plan &&
       plan.startsAt <= now &&
@@ -488,24 +504,50 @@ export const prepareCheckout = internalMutation({
     } else if (annual) {
       // A card that still renews would bill beside the term: "Não renovar" comes first.
       if (renews(account)) deny("SUBSCRIPTION_RENEWING");
+      // Until slice 2b the term starts on the next 1st, and a monthly in force still pricier then
+      // would block its invoice (`PLAN_UNAVAILABLE`, a downgrade only at renewal) after Stripe
+      // charged it: one paid plan at a time, it waits for that monthly to end.
+      if (
+        current &&
+        current.monthlyCents > offer.monthlyCents &&
+        plan!.endsAt !== null &&
+        plan!.endsAt > firstPeriod!
+      )
+        deny("PLAN_UNAVAILABLE", { availableAt: plan!.endsAt });
       // The current month stays on the plan in force, so any tier may follow it.
       kind = "start";
       grantCents = offer.annualCents;
     } else if (renews(account)) {
-      // Already renewing by card: only an upgrade is paid here; a downgrade is `changeRenewal`.
-      // An annual subscription is upgraded with `cycle: "annual"` and `start: "upgrade"`.
+      // Already renewing by card: only an upgrade is paid here; a downgrade is `changeRenewal`
+      // and the same tier renews by itself. An annual subscription is upgraded with
+      // `cycle: "annual"` and `start: "upgrade"`.
       if (account!.subscription!.annual || !current || current.monthlyCents >= offer.monthlyCents)
         deny("PLAN_UNAVAILABLE");
+      // The full difference buys the rest of the plan's quota period, with the same anchor and
+      // end; the plan in force must be exactly that period.
+      const span = quotaPeriod(plan, now);
+      if (plan!.endsAt !== span.endsAt) deny("PLAN_UNAVAILABLE");
+      // So the payment and the switch of price never straddle the renewal, the upgrade closes
+      // shortly before it, and the session expires before the period ends.
+      if (span.endsAt - now < PERIOD_CLOSING_MARGIN)
+        deny("PERIOD_CLOSING", { availableAt: span.endsAt });
       kind = "upgrade";
       grantCents = offer.monthlyCents - current.monthlyCents;
+      period = span.key;
+      expiresAt = Math.min(now + day, span.endsAt - 5 * 60_000);
     } else {
+      // A card plan in force whose renewal was cancelled: a new subscription would start a second
+      // paid plan beside it. It renews by "Retomar renovação"; anything else waits for its end.
+      if (
+        current &&
+        plan!.endsAt !== null &&
+        current.monthlyCents > 0 &&
+        (await paidByCard(ctx, plan!))
+      )
+        deny("PLAN_UNAVAILABLE", { availableAt: plan!.endsAt });
+      // The first month in full, charged at the signing (#556): no credit, no proration.
       kind = "start";
-      // A civil month already paid is credited: a card month whose renewal was cancelled (a Pix
-      // plan in force waits, above). A lower tier only starts at the next renewal.
-      const paidThisMonth = current && current.monthlyCents > 0 && plan!.endsAt === anchor;
-      grantCents = paidThisMonth
-        ? Math.max(0, offer.monthlyCents - current.monthlyCents)
-        : offer.monthlyCents;
+      grantCents = offer.monthlyCents;
     }
     await allocateOffer(ctx, args.organizationId, args.tier, offer, { checkOnly: true });
     const id = await ctx.db.insert("billingCheckouts", {
@@ -513,12 +555,11 @@ export const prepareCheckout = internalMutation({
       key: args.key,
       kind,
       tier: args.tier,
-      period: usagePeriod(firstPeriod ?? now),
+      ...(period !== undefined ? { period } : {}),
       grantCents,
       ...(annual ? { cycle: "annual" as const } : {}),
       state: "creating",
-      // Before the month turns, for both cycles: past it, the anchor would be in the past.
-      expiresAt: Math.min(now + 24 * 60 * 60_000, anchor - 5 * 60_000),
+      expiresAt,
       requestedBy: user._id,
       createdAt: now,
       updatedAt: now,
@@ -573,6 +614,14 @@ export const dropCheckout = internalMutation({
     return null;
   },
 });
+
+/** An instant as the console writes it (`formatUtcInstant`): "10/11/2026 às 12:00 UTC". */
+function utcText(at: number) {
+  const date = new Date(at);
+  const two = (value: number) => String(value).padStart(2, "0");
+  const seconds = date.getUTCSeconds() ? `:${two(date.getUTCSeconds())}` : "";
+  return `${two(date.getUTCDate())}/${two(date.getUTCMonth() + 1)}/${date.getUTCFullYear()} às ${two(date.getUTCHours())}:${two(date.getUTCMinutes())}${seconds} UTC`;
+}
 
 const metadata = (prefix: string, fields: Record<string, string | number>): Params =>
   Object.fromEntries(
@@ -631,7 +680,8 @@ export const checkout = action({
         organizationId: args.organizationId,
         kind: prepared.kind,
         tier: args.tier,
-        period: prepared.period,
+        // A monthly start has none: its period is the one Stripe bills from the signing.
+        ...(prepared.period !== undefined ? { period: prepared.period } : {}),
         grantCents: prepared.grantCents,
         // Read back by `invoiceGrant`: the first invoice of this subscription buys a term.
         ...(prepared.annual ? { cycle: ANNUAL_CYCLE } : {}),
@@ -652,30 +702,6 @@ export const checkout = action({
         expires_at: Math.floor(prepared.expiresAt / 1000),
         ...metadata("metadata", marks),
       };
-      // Checkout rejects a one-off item with proration_behavior:none. Discount only the
-      // recurring product on the first invoice; the separate item charges the full month
-      // (or the Pix difference). The next invoice charges the recurring price in full.
-      const paidMonthlyStart =
-        prepared.kind === "start" && !prepared.annual && prepared.grantCents > 0;
-      let initialCoupon: string | undefined;
-      if (paidMonthlyStart) {
-        const coupon = await stripeApi(
-          cfg,
-          "POST",
-          "/v1/coupons",
-          {
-            duration: "once",
-            percent_off: 100,
-            "applies_to[products][0]": prices[args.tier].productId,
-            name: "Mensalidade integral no item avulso",
-            max_redemptions: 1,
-            redeem_by: Math.floor(prepared.expiresAt / 1000),
-          },
-          `fnfe-checkout-discount:${prepared.checkoutId}`,
-        );
-        if (typeof coupon.id !== "string") throw new StripeApiError(0, "MALFORMED");
-        initialCoupon = coupon.id;
-      }
       const params: Params =
         prepared.kind === "upgrade"
           ? {
@@ -685,7 +711,7 @@ export const checkout = action({
                 0,
                 prepared.annual
                   ? `Mudança para ${offer.name} anual, de ${prepared.period} ao fim do período anual (UTC)`
-                  : `Mudança para ${offer.name}, ${prepared.period} (UTC)`,
+                  : `Mudança para ${offer.name}, diferença do mês do plano iniciado em ${utcText(periodStart(prepared.period))}`,
               ),
               "invoice_creation[enabled]": true,
               ...metadata("invoice_creation[invoice_data][metadata]", marks),
@@ -695,16 +721,16 @@ export const checkout = action({
               mode: "subscription",
               "line_items[0][price]": (prepared.annual ? yearly! : prices[args.tier]).priceId,
               "line_items[0][quantity]": 1,
-              // The annual charges nothing now: Stripe bills the first year at the anchor.
-              ...(prepared.annual || prepared.grantCents === 0
-                ? {}
-                : oneOff(1, `${offer.name}, ${prepared.period} (UTC)`)),
-              // Only a one-off annual upgrade has no anchor, and it is paid in `payment` mode.
-              "subscription_data[billing_cycle_anchor]": Math.floor(prepared.anchor! / 1000),
-              "subscription_data[proration_behavior]": paidMonthlyStart
-                ? "create_prorations"
-                : "none",
-              ...(initialCoupon ? { "discounts[0][coupon]": initialCoupon } : {}),
+              // The monthly (ADR 0012, slice 2a) has no anchor, one-off item, coupon or
+              // proration: Stripe charges the whole month at the signing, anchors the
+              // subscription there and renews it on each anniversary. The annual still charges
+              // nothing now and bills its first year at the 1st it anchors on, until slice 2b.
+              ...(prepared.annual
+                ? {
+                    "subscription_data[billing_cycle_anchor]": Math.floor(prepared.anchor! / 1000),
+                    "subscription_data[proration_behavior]": "none",
+                  }
+                : {}),
               ...metadata("subscription_data[metadata]", marks),
             };
       const session = await stripeApi(
@@ -1190,6 +1216,8 @@ export const reconcile = internalMutation({
     prices: pricesValue,
     annualPrices: pricesValue.partial(),
     annualSubscriptions: v.array(v.string()),
+    /** The `billing_cycle_anchor` of each subscription of the customer, in ms (invariant 6). */
+    anchors: v.array(v.object({ subscriptionId: v.string(), anchor: v.number() })),
     sessions: v.array(
       v.object({
         sessionId: v.string(),
@@ -1212,6 +1240,9 @@ export const reconcile = internalMutation({
   handler: async (ctx, args) => {
     const first = await accountOf(ctx, args.organizationId, args.livemode);
     if (!first || first.customerId !== args.customerId) return null;
+    const anchors = Object.fromEntries(
+      args.anchors.map((item) => [item.subscriptionId, item.anchor]),
+    );
     // Oldest first, so a renewal never lands before the month it follows.
     for (const invoice of [...args.invoices].reverse())
       await applyInvoice(
@@ -1221,6 +1252,7 @@ export const reconcile = internalMutation({
         args.prices,
         args.annualPrices,
         args.annualSubscriptions,
+        anchors,
       );
     for (const session of args.sessions) {
       if (session.status !== "complete" && session.status !== "expired") continue;
@@ -1372,24 +1404,65 @@ async function syncOrganization(
         }),
       ),
     ]);
-    const { current, duplicates, annualIds } = readSubscriptions(subscriptions, target.customerId);
+    const { current, duplicates, annualIds, anchors } = readSubscriptions(
+      subscriptions,
+      target.customerId,
+    );
+    const facts = readInvoices(invoices).filter(
+      (invoice) => invoice.customerId === target.customerId,
+    );
+    // The list holds at most 10 subscriptions, and one created while it was read (a Checkout
+    // completing) may be missing: an invoice's own subscription is then read by its id, so its
+    // anchor is known. One that failed to load, or came without an anchor, leaves the invoice for
+    // the next reconciliation; one Stripe says is gone (404), or another customer's, never will
+    // anchor it, so it gets the anchor -1, which no line matches: the paid invoice goes to review
+    // (`INVOICE_UNEXPECTED`) instead of waiting forever.
+    const missing = new Set(
+      facts.flatMap((invoice) =>
+        invoice.subscriptionId &&
+        !anchors.some((item) => item.subscriptionId === invoice.subscriptionId)
+          ? [invoice.subscriptionId]
+          : [],
+      ),
+    );
+    for (const subscriptionId of missing) {
+      let body: Record<string, unknown>;
+      try {
+        body = await stripeApi(
+          cfg,
+          "GET",
+          `/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
+        );
+      } catch (error) {
+        if (error instanceof StripeApiError && error.status === 404) {
+          anchors.push({ subscriptionId, anchor: -1 });
+          continue;
+        }
+        throw error;
+      }
+      // Another customer's subscription never anchors this one's invoice.
+      const customer = typeof body.customer === "string" ? body.customer : null;
+      if (customer !== null && customer !== target.customerId)
+        anchors.push({ subscriptionId, anchor: -1 });
+      else anchors.push(...readSubscriptions({ data: [body] }, target.customerId).anchors);
+    }
     const change = await ctx.runMutation(internal.billing.reconcile, {
       organizationId,
       livemode: cfg.livemode,
       customerId: target.customerId,
       subscription: current,
       duplicates,
-      invoices: readInvoices(invoices).filter(
-        (invoice) => invoice.customerId === target.customerId,
-      ),
+      invoices: facts,
       prices,
       annualPrices,
       annualSubscriptions: annualIds,
+      anchors,
       sessions,
     });
     if (!change) return;
     // Without proration: the period already paid keeps its plan, the next one bills the new
-    // price. The annual one says so explicitly: same yearly interval, same anchor.
+    // price. Both cycles say so explicitly: same interval, same anchor, so the renewal stays on
+    // the anniversary of the signing (ADR 0012).
     await stripeApi(
       cfg,
       "POST",
@@ -1398,7 +1471,7 @@ async function syncOrganization(
         "items[0][id]": change.itemId,
         "items[0][price]": change.priceId,
         proration_behavior: "none",
-        ...(change.annual ? { billing_cycle_anchor: "unchanged" } : {}),
+        billing_cycle_anchor: "unchanged",
       },
       change.key,
     );

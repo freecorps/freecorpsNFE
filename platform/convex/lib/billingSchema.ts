@@ -68,8 +68,12 @@ export const billingTables = {
     key: v.string(),
     kind: checkoutKind,
     tier: paidTier,
-    /** The first month bought: the current one, or for an annual Checkout, the next one. */
-    period: v.string(),
+    /**
+     * The canonical key (ADR 0012) of the period priced: an annual start's first month, the next
+     * one, or the quota period an upgrade raises. A monthly start has none since slice 2a: its
+     * month starts when it is paid. Rows before it hold the civil month, `AAAA-MM`.
+     */
+    period: v.optional(v.string()),
     grantCents: v.number(),
     /** An annual Checkout (ADR 0010, decision 9): its term starts on the 1st of `period`. */
     cycle: v.optional(v.literal("annual")),
@@ -107,6 +111,11 @@ export const billingTables = {
     organizationId: v.id("organizations"),
     invoiceId: v.string(),
     tier: v.union(paidTier, v.null()),
+    /**
+     * The canonical key (ADR 0012) of the period bought: the start of a card month, which is an
+     * anniversary of its subscription's anchor since slice 2a, the period an upgrade raised, or a
+     * term's first month. Null when the invoice bought nothing.
+     */
     period: v.union(v.string(), v.null()),
     amountCents: v.number(),
     state: grantState,

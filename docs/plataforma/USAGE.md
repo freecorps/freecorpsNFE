@@ -68,10 +68,16 @@ fatia Q da ADR implementou o modelo do período em
   anual ([BILLING.md](BILLING.md#mensal-por-pix)). Confirmado em 31/01/2027
   às 10:00:07 UTC e renovado, ele tem os períodos
   `2027-01-31T10:00:07.000Z`, `2027-02-28T10:00:07.000Z` e
-  `2027-03-31T10:00:07.000Z`. As
-  ativações mensais do cartão, e as do Pix pedidas antes da 1c, ainda não têm
-  âncora e seguem no mês civil; o cartão, até a fatia 2a. O Gratuito nunca
-  tem. O Personalizado segue
+  `2027-03-31T10:00:07.000Z`. O mensal no cartão tem âncora desde a fatia
+  2a: o `billing_cycle_anchor` da assinatura, que o Stripe põe na
+  contratação, e cada fatura concede só um mês exato dela
+  ([BILLING.md](BILLING.md#período-da-fatura-mensal)); a assinatura de
+  31/01/2027 às 10:00:07 UTC tem os mesmos períodos do exemplo do Pix. Uma
+  assinatura do cartão anterior à 2a tem a âncora no dia 1 às 00:00 UTC, e as
+  linhas que ela concede ficam nas chaves `AAAA-MM`. As ativações mensais do
+  Pix pedidas antes da 1c, e as do cartão concedidas antes da 2a, não têm
+  âncora e seguem no mês civil até o fim delas. O Gratuito nunca tem. O
+  Personalizado segue
   [Plano e autorização](#plano-e-autorização). Uma linha que substitui outra
   não herda a âncora dela; os contadores já gravados ficam na chave antiga.
 
@@ -260,7 +266,8 @@ sobrepõe ao período do plano mensal, a ativação mensal é recusada com
 `ANNUAL_TERM_ACTIVE`: Pix (`plans:requestPaid`, `plans:confirmPayment`) e
 `plans:claimFree`; `usage:assignPlan` é recusado quando um termo cobre o
 instante atual. O cartão mensal é recusado enquanto houver qualquer termo
-em vigor, mesmo agendado para depois ([BILLING.md](BILLING.md#plano-anual)).
+em vigor, mesmo agendado para depois, com a data em que o último termina
+([BILLING.md](BILLING.md#plano-anual)).
 
 ### Estoque e tráfego
 

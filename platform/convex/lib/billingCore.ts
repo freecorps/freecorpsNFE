@@ -15,6 +15,7 @@ import {
 import { isTermReference, termEndsAt, termMonthStart } from "./annualTerms";
 import { planFor } from "./usageCore";
 import { nextUsagePeriodStart, planEnded } from "./usageValues";
+import { periodKey, periodKeyStart, quotaPeriod } from "./quotaPeriod";
 import {
   ENDED_STATUSES,
   invoiceGrant,
@@ -266,8 +267,23 @@ export async function pixMonthlyUntil(
   return inForce;
 }
 
-export const periodStart = (period: string) =>
-  Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)) - 1, 1);
+/**
+ * The start of the period a stored key names: `AAAA-MM`, or the exact ISO instant of an
+ * anniversary period (`periodKeyStart`, ADR 0012). The server only writes canonical keys, so any
+ * other spelling, or a missing key, is a bug and throws.
+ */
+export function periodStart(period: string | undefined) {
+  const start = period === undefined ? null : periodKeyStart(period);
+  if (start === null) throw new Error("Invalid period key");
+  return start;
+}
+
+/**
+ * A card monthly upgrade is refused this close to the end of the period it would raise
+ * (`PERIOD_CLOSING`), so the difference is paid within that period and the switch of price never
+ * straddles the renewal.
+ */
+export const PERIOD_CLOSING_MARGIN = 45 * 60 * 1000;
 
 /** Records how one invoice was weighed, once (`billingGrants`). */
 type GrantRecord = (
@@ -281,7 +297,9 @@ type GrantRecord = (
  * Weighs one paid invoice exactly once (`billingGrants.invoiceId`), whatever the order or the
  * number of times Stripe or the reconciliation shows it. It never shortens a plan already in
  * force, never sells the same month twice and never drops a payment silently: what cannot be
- * applied stays `blocked` for a person.
+ * applied stays `blocked` for a person. `anchors` holds the `billing_cycle_anchor` of each
+ * subscription of the customer (`readSubscriptions`), which a monthly invoice is weighed against
+ * (ADR 0012, invariant 6).
  */
 export async function applyInvoice(
   ctx: MutationCtx,
@@ -290,6 +308,7 @@ export async function applyInvoice(
   prices: CatalogPrices,
   annual: AnnualPrices = {},
   annualSubscriptions: readonly string[] = [],
+  anchors: Readonly<Record<string, number>> = {},
 ) {
   if (invoice.customerId !== account.customerId) return;
   if (
@@ -300,18 +319,34 @@ export async function applyInvoice(
   )
     return;
   const organizationId = account.organizationId;
-  const decision = invoiceGrant(invoice, prices, organizationId, annual, annualSubscriptions);
-  // An unpaid invoice may still be paid: it is weighed again on the next reconciliation.
-  if (decision.kind === "none" && decision.code === "NOT_PAID") return;
+  const decision = invoiceGrant(
+    invoice,
+    prices,
+    organizationId,
+    annual,
+    annualSubscriptions,
+    anchors,
+  );
+  // An unpaid invoice may still be paid, and the anchor of a subscription not read yet will be:
+  // either is weighed again on the next reconciliation.
+  if (
+    decision.kind === "none" &&
+    (decision.code === "NOT_PAID" || decision.code === "ANCHOR_UNKNOWN")
+  )
+    return;
   const now = Date.now();
-  const bought =
-    decision.kind === "grant" || decision.kind === "annual" || decision.kind === "annualUpgrade";
+  const bought = decision.kind !== "none" && decision.kind !== "review";
   const record: GrantRecord = (state, code, planVersion, termId) =>
     ctx.db.insert("billingGrants", {
       organizationId,
       invoiceId: invoice.id,
       tier: bought ? decision.tier : null,
-      period: bought ? decision.period : null,
+      // The canonical key of the period bought (ADR 0012): `AAAA-MM` or the exact ISO instant.
+      period: !bought
+        ? null
+        : decision.kind === "grant"
+          ? periodKey(decision.startsAt)
+          : decision.period,
       amountCents: invoice.amountPaid,
       state,
       ...(code ? { code } : {}),
@@ -334,23 +369,41 @@ export async function applyInvoice(
       record,
       annualSubscriptions,
     );
-  // A monthly invoice. The activation below runs from now to the end of the month paid for; an
-  // annual term overlapping it would be shortened, so the money was paid but cannot be granted: a
-  // person looks at it, never `SUPERSEDED`, instead of `activateCatalogPlan` failing the sync. A
-  // month that ends before a term scheduled for later is still granted.
-  const end = nextUsagePeriodStart(periodStart(decision.period));
-  if (await monthlyBlockedByTerm(ctx, organizationId, now, end))
+  // A monthly invoice (ADR 0012, slice 2a). A first month or a renewal buys its line's period, a
+  // month of the subscription's anchor; an upgrade buys the rest of the quota period in force,
+  // the one it was priced on, with the anchor of that plan. A plan row granted before slice 2a
+  // has no anchor and runs by the civil UTC month: its upgrade anchors on the 1st that month
+  // starts, which keeps the same `AAAA-MM` periods (invariant 4).
+  const plan = await planFor(ctx, organizationId);
+  const active = !!plan && plan.startsAt <= now && !planEnded(plan, now);
+  let end: number | null;
+  let anchor: number;
+  if (decision.kind === "upgrade") {
+    // A plan a term granted is never raised by a monthly upgrade (one paid plan at a time).
+    if (active && plan.termId) return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
+    const current = active && plan.endsAt !== null ? quotaPeriod(plan, now) : null;
+    const same = current?.key === decision.period && current.endsAt === plan!.endsAt;
+    end = same ? current.endsAt : null;
+    anchor = plan?.periodAnchor ?? current?.startsAt ?? now;
+  } else {
+    end = decision.endsAt;
+    anchor = decision.anchor;
+  }
+  // The activation below runs from now to the end of the period paid for; an annual term
+  // overlapping it would be shortened, so the money was paid but cannot be granted: a person
+  // looks at it, never `SUPERSEDED`, instead of `activateCatalogPlan` failing the sync. A month
+  // that ends before a term scheduled for later is still granted.
+  if (end !== null && (await monthlyBlockedByTerm(ctx, organizationId, now, end)))
     return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
-  // Paid after the month it bought: no quota is sold for the past.
-  if (end <= now) return void (await record("blocked", "LATE_PAYMENT"));
+  // Paid after the period it bought, or an upgrade paid after its period turned: no quota is
+  // sold for the past, and the difference was priced on a period no longer in force.
+  if (end === null || end <= now) return void (await record("blocked", "LATE_PAYMENT"));
   const closure = await ctx.db
     .query("organizationClosures")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
     .unique();
   if (closure) return void (await record("blocked", "ORGANIZATION_CLOSED"));
-  const plan = await planFor(ctx, organizationId);
   if (plan?.catalogTier === "custom") return void (await record("blocked", "PLAN_CUSTOM"));
-  const active = plan && plan.startsAt <= now && !planEnded(plan, now);
   // A plan a term granted, the access left by a rescinded term included, ends with the term
   // month: a monthly would replace it (one paid plan at a time, ADR 0012), so a person looks.
   if (active && plan.termId) return void (await record("blocked", "ANNUAL_TERM_ACTIVE"));
@@ -374,6 +427,21 @@ export async function applyInvoice(
     if (!code) throw error;
     return void (await record("blocked", code));
   }
+  // A renewal charged below the tier the month it follows reached, while the account still renews
+  // at that tier: the price switch of a paid upgrade did not reach Stripe before it drafted the
+  // renewal. The money taken is that tier's, so it is granted, but flagged for a person, as the
+  // annual one. `renewalTier` stays: the switch, once it lands, bills the next month right.
+  const below =
+    decision.kind === "grant" &&
+    invoice.billingReason === "subscription_cycle" &&
+    !!plan &&
+    !plan.termId &&
+    plan.endsAt === decision.startsAt &&
+    plan.catalogTier === account.renewalTier &&
+    !!account.renewalTier &&
+    PLATFORM_PLANS[account.renewalTier].monthlyCents > PLATFORM_PLANS[decision.tier].monthlyCents;
+  // Every catalog row the card writes carries its anchor, up to `startsAt`, and ends on one of
+  // its anniversaries (ADR 0012, invariant 4): `activateCatalogPlan` refuses anything else.
   await activateCatalogPlan(
     ctx,
     organizationId,
@@ -383,10 +451,12 @@ export async function applyInvoice(
     plan?.version ?? 0,
     `stripe:${invoice.id}`,
     "Pagamento por cartão confirmado (Stripe)",
+    undefined,
+    anchor,
   );
-  await record("applied", undefined, (plan?.version ?? 0) + 1);
+  await record("applied", below ? "RENEWAL_BELOW_UPGRADE" : undefined, (plan?.version ?? 0) + 1);
   // An upgrade paid by card also raises what the subscription renews at.
-  if (invoice.metadata.kind === "upgrade")
+  if (decision.kind === "upgrade")
     await ctx.db.patch("billingAccounts", account._id, {
       renewalTier: decision.tier,
       updatedAt: now,
