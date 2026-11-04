@@ -396,6 +396,10 @@ Mapa para navegar:
 - `packages/`: contratos REST, núcleo fiscal, NF-e e SDK.
 - `tests/` e `apps/console/e2e/`: testes de domínio, integração, pacotes e
   jornadas no navegador.
+- `scripts/<domínio>/`: scripts por domínio, com o teste ao lado; helpers
+  compartilhados em `scripts/lib/` e a raiz do repositório por
+  `scripts/lib/repo-root.mjs`
+  ([organização](docs/desenvolvimento/ci.md#organização-de-scripts)).
 - `scripts/lib/worktree/`: ciclo de vida dos ambientes locais.
 - `.github/workflows/`: validação e publicação.
 - `.agents/skills/`: skills de outro projeto do mantenedor e adaptações de Matt Pocock. Consulte

@@ -89,22 +89,22 @@ na chave `run.tasks`; o Vite Task as executa em ordem de dependência, até quat
 ao mesmo tempo, e agrupa a saída de cada uma no log, com um resumo no final que
 diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
-| Tarefa              | Comando                                                         | Depende de                         | Cache               |
-| ------------------- | --------------------------------------------------------------- | ---------------------------------- | ------------------- |
-| `ci:packages`       | `node scripts/build/build-fiscal-packages.mjs`                        |                                    | sim                 |
-| `ci:sdk`            | `bun run sdk:prove`                                             | `ci:packages`                      | não: registro e Git |
-| `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                            | `ci:packages`                      | sim, lê o Git       |
-| `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                            | `ci:packages`                      | não: registro       |
-| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`          | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
-| `ci:check`          | `vp check`                                                      | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                                |                                    | não: índice do Git  |
-| `ci:knip`           | `bun run knip:check`                                            |                                    | não: manifests      |
-| `ci:typecheck`      | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`          | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                          | `ci:packages`                      | sim                 |
-| `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
-| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
-| `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
-| `ci:console`        | `node scripts/console/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| Tarefa              | Comando                                                                | Depende de                         | Cache               |
+| ------------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
+| `ci:packages`       | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
+| `ci:sdk`            | `bun run sdk:prove`                                                    | `ci:packages`                      | não: registro e Git |
+| `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
+| `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
+| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
+| `ci:check`          | `vp check`                                                             | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                           |                                    | não: índice do Git  |
+| `ci:knip`           | `bun run knip:check`                                                   |                                    | não: manifests      |
+| `ci:typecheck`      | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                      | sim                 |
+| `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`              | não: revisão        |
+| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
+| `ci:docs`           | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
+| `ci:console`        | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
 | `ci:auth-worker`    | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
 | `ci:privacy-worker` | `node scripts/proofs/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
 
@@ -588,6 +588,54 @@ Quando a tarefa reprova, remova o arquivo ou a dependência órfã. Se o uso for
 real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o motivo,
 em vez de ignorar o achado.
 
+Todo script de `scripts/` e de `scripts/<domínio>/` é entrada do knip, porque
+cada um é chamado pelo caminho. Um roteiro que nenhum comando, workflow ou
+documento cita não aparece como órfão.
+
+### Organização de `scripts/`
+
+Cada script fica na pasta do seu domínio, com o teste ao lado. Os helpers que
+mais de um domínio usa ficam em `scripts/lib/`.
+
+| Pasta           | Conteúdo                                                                        |
+| --------------- | ------------------------------------------------------------------------------- |
+| `backup/`       | Backup offsite, exportação incremental, custódia e provas de restauração        |
+| `billing/`      | Conferência da conta Stripe e estado da migração de uso                         |
+| `build/`        | Build dos pacotes fiscais, typecheck e fronteiras entre pacotes                 |
+| `ci/`           | Executores do CI (`ci`, `ci-changes`, `validate-local`, `prove-acceptance`)     |
+| `cold-tier/`    | Arquivo frio, travas no R2 e provas locais e hospedadas do tier frio            |
+| `console/`      | Build e publicação do console, prova do site público e medições de bundle       |
+| `contracts/`    | Geração e deriva dos contratos, build e prova do SDK                            |
+| `deploy/`       | Publicação hospedada e da produção NFS-e, gate de emissão, liberação da captura |
+| `distribution/` | Provas dos pacotes npm e publicação                                             |
+| `fiscal/`       | Prova fiscal, schemas NF-e e NFS-e, corpus, referências, captura e certificados |
+| `licenses/`     | Inventário de licenças, licenças próprias e avisos dos pacotes                  |
+| `proofs/`       | Provas hospedadas e locais sem domínio mais estreito                            |
+| `public-copy/`  | Varredura pública, `pre-push` e varredura de credenciais                        |
+| `repo/`         | Catálogo de `bun run help` e guardas do próprio repositório                     |
+| `validation/`   | Deployment de validação e diagnóstico do smoke                                  |
+| `worktree/`     | `bun run dev`, prova de isolamento e testes do ciclo de vida dos worktrees      |
+
+Seis arquivos ficam na raiz de `scripts/`, porque algo de fora do checkout os
+chama pelo caminho:
+
+- `worktree.mjs`: `scripts/lib/worktree/lifecycle.mjs` roda o `worktree.mjs`
+  do checkout recém-criado, que pode vir de uma ref anterior.
+- `selfhost.mjs`: a documentação pública da instalação própria manda o
+  operador rodá-lo pelo caminho.
+- `contribution-terms.mjs` e o teste dele: o workflow `pull_request_target` faz
+  checkout da base da PR e roda o script pelo caminho.
+- `sync-claude-skills.mjs` e o teste dele: o caminho está gravado nos atalhos
+  gerados de `.claude/skills/` e marca quais são dele.
+
+Um script em `scripts/<domínio>/` acha a raiz do repositório por `repoRoot` ou
+`repoUrl`, de `scripts/lib/repo-root.mjs`, e não subindo pastas a partir de si
+mesmo. Um `..` a mais ou a menos não falha: lê e grava no lugar errado.
+`scripts/repo/scripts-layout.test.ts` reprova arquivo novo solto na raiz de
+`scripts/`, cálculo de raiz pela própria pasta e caminho de `scripts/` citado
+por `package.json`, workflow, `vite.config.ts`, `knip.jsonc` ou `CODEOWNERS`
+que não existe.
+
 ### Segredos no repositório
 
 Duas barreiras evitam que uma credencial entre por acidente. O `.gitignore`
@@ -911,7 +959,7 @@ versão atual. Os roteiros `prove-webhook-checks.mjs`, `prove-sdk-checks.mjs`,
 `prove-usage.mjs` e `prove-operational-support.mjs` foram removidos porque o
 `validate` cobre o que repetiam.
 
-As demais provas `scripts/prove-*` são roteiros próprios, fora do CI
+As demais provas `scripts/<domínio>/prove-*` são roteiros próprios, fora do CI
 obrigatório e sem esse executor. Exigem ambiente local, Convex local ou
 operador, e não usam dados fiscais reais. Entre elas: `prove-usage-load.mjs`
 (10 mil e 100 mil documentos sintéticos), `prove-operations.mjs` (Workpool
