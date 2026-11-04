@@ -173,7 +173,7 @@ reteste no SHA corrigido. Um scan sem violações não apaga achados humanos.
 
 ## Medições
 
-No build do candidato, executar `node scripts/measure-console-bundle.mjs` após
+No build do candidato, executar `node scripts/console/measure-console-bundle.mjs` após
 `bun run console:build`. O recibo soma JS e CSS comprimidos por arquivo com gzip
 nível 9, inclusive chunks carregados sob demanda. Se essa soma couber em 250 KiB,
 ela dá um limite superior para a entrada. Se exceder, medir o grafo inicial antes

@@ -104,7 +104,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                             | cada `ci:test:<área>`              | não: revisão        |
 | `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                        |                                    | sim                 |
 | `ci:docs`           | `node apps/docs/scripts/build.mjs`                              |                                    | sim, só local       |
-| `ci:console`        | `node scripts/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| `ci:console`        | `node scripts/console/console.mjs package`                              | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
 | `ci:auth-worker`    | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
 | `ci:privacy-worker` | `node scripts/proofs/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
 
@@ -235,7 +235,7 @@ aprova o SHA.
 `ci:docs` compila a documentação pública em `apps/docs/dist`, e `ci:console`
 só a copia para a saída do console; uma falha da documentação aparece na
 própria tarefa ([PUBLIC.md](../plataforma/PUBLIC.md#fontes-e-construção)).
-`scripts/console.mjs` executa `scripts/prove-public-site.mjs` depois do build:
+`scripts/console/console.mjs` executa `scripts/console/prove-public-site.mjs` depois do build:
 landing e páginas da documentação legíveis sem JavaScript, sem script ou estilo
 inline, referências locais existentes e ausência de protótipo no bundle.
 `tests/publicSite.test.ts` confere os links e o contrato da documentação

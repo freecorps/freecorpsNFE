@@ -51,7 +51,7 @@ it("publishes everything a build reads and skips only tests, CI, agents and inte
     "platform/convex/keys.ts",
     "packages/fiscal-nfe/src/parser.ts",
     "deploy/platform-release.json",
-    "scripts/console.mjs",
+    "scripts/console/console.mjs",
     "examples/nfe-demonstracao.xml",
     "package.json",
     "bun.lock",

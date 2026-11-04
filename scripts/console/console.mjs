@@ -6,9 +6,9 @@ import {
   consoleEnvironment,
   consolePublicationEnvironment,
   checkPreparedConsole,
-} from "./lib/console.mjs";
-import { requireIntegrationWriter } from "./lib/validation.mjs";
-import { repoRoot, repoUrl } from "./lib/repo-root.mjs";
+} from "../lib/console.mjs";
+import { requireIntegrationWriter } from "../lib/validation.mjs";
+import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const cwd = fileURLToPath(new URL("apps/console", repoUrl));
@@ -46,15 +46,15 @@ try {
     // Build and package without publication credentials, including direct deploy.
     run("scripts/build/typecheck.mjs", ["--project", "tsconfig.json"], env);
     run("scripts/build/typecheck.mjs", ["--project", "tsconfig.worker.json"], env);
-    run("scripts/build/typecheck.mjs", ["--project", "../docs/tsconfig.json"], env);
-    run("../node_modules/vite-plus/bin/vp", ["build"], env);
+    run("scripts/build/typecheck.mjs", ["--project", "../../docs/tsconfig.json"], env);
+    run("../../node_modules/vite-plus/bin/vp", ["build"], env);
     writeFileSync(
       `${cwd}/dist/build.json`,
       `${JSON.stringify({ environment: "validation", sha })}\n`,
     );
   }
   checkPreparedConsole(JSON.parse(readFileSync(`${cwd}/dist/build.json`, "utf8")), sha);
-  run("scripts/prove-public-site.mjs", [`${cwd}/dist`], env);
+  run("scripts/console/prove-public-site.mjs", [`${cwd}/dist`], env);
   if (command !== "build")
     run(
       "node_modules/wrangler/bin/wrangler.js",

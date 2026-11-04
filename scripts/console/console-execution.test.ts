@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { afterEach, expect, it } from "vite-plus/test";
-import { subprocessEnvironment } from "./lib/subprocess-environment.mjs";
+import { subprocessEnvironment } from "../lib/subprocess-environment.mjs";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -38,7 +38,7 @@ syncBuiltinESMExports();
     );
     const result = spawnSync(
       process.execPath,
-      ["--import", pathToFileURL(preload).href, resolve("scripts/console.mjs"), command],
+      ["--import", pathToFileURL(preload).href, resolve("scripts/console/console.mjs"), command],
       {
         cwd: resolve("."),
         env: {

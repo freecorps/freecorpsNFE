@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
-import { isPageRequest, serveAsset } from "../apps/console/asset-fallback.ts";
-import { checkConsoleWorker } from "./lib/console.mjs";
-import { issuanceReleaseWorker } from "./lib/issuance-release.mjs";
-import { releaseWorker } from "./lib/platform-release.mjs";
-import { repoUrl } from "./lib/repo-root.mjs";
+import { isPageRequest, serveAsset } from "../../apps/console/asset-fallback.ts";
+import { checkConsoleWorker } from "../lib/console.mjs";
+import { issuanceReleaseWorker } from "../lib/issuance-release.mjs";
+import { releaseWorker } from "../lib/platform-release.mjs";
+import { repoUrl } from "../lib/repo-root.mjs";
 
 // The asset layer with `not_found_handling: "none"`: a listed file or 404 with
 // no body. Each answer carries the header of the address asked, as `_headers`.

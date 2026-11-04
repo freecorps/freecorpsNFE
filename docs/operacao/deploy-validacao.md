@@ -242,7 +242,7 @@ e [Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/).
 O build usa o ambiente reduzido de `subprocess-environment.mjs`. Credenciais
 Cloudflare e Convex não chegam ao TypeScript, Vite ou build dos pacotes.
 `scripts/validation/deploy-validation.mjs` prepara o console antes da publicação e chama
-`node scripts/console.mjs publish` para publicar o artefato já produzido.
+`node scripts/console/console.mjs publish` para publicar o artefato já produzido.
 Esse comando exige `dist/build.json` com o mesmo SHA e ambiente `validation`,
 revalida o site público e mantém as restrições de alvo, escritor e checkout limpo.
 

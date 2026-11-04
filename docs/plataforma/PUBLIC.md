@@ -34,7 +34,7 @@ verificação (ou direto, com a sessão aberta), o console abre o Início com a
 tarefa "Importar XML". O endereço de entrada de cada tarefa
 (`importar`, `emitir`, `capturar`, `integrar`) é permanente depois de
 publicado e usa só o `?redirect=` que o login já tinha; nunca leva id de
-organização ou empresa. `scripts/prove-public-site.mjs` aceita as telas do
+organização ou empresa. `scripts/console/prove-public-site.mjs` aceita as telas do
 console também com consulta.
 
 A documentação é um app próprio, `apps/docs`, feito com Fumadocs sobre React
@@ -67,7 +67,7 @@ interrupção, duplicidade, cancelamento), sem ensinar reserva e ticket como
 tarefa manual; `importar-xml`, "Importar XML pela API", mantém a rota e
 descreve o protocolo. Os links de criar conta dos guias usam o endereço de
 entrada da tarefa (`taskEntryHref`): `importar` na página inicial e no guia
-do painel, `integrar` na primeira chamada; `scripts/prove-public-site.mjs`
+do painel, `integrar` na primeira chamada; `scripts/console/prove-public-site.mjs`
 recusa outra query string nos links para o console. Cada regra tem uma página
 dona: limites gerais e erros em `contrato`, assinatura e entrega em
 `webhooks`, disponibilidade do XML em `importar-xml`. Rótulos do painel
@@ -200,7 +200,7 @@ recebe o cache longo, porque a resposta vem do Worker.
 
 `wrangler dev` sobre o build real e a configuração gerada por `releaseWorker`
 reproduz esse roteamento sem publicar; o teste
-`scripts/asset-fallback.test.ts` cobre as decisões do Worker, a configuração
+`scripts/console/asset-fallback.test.ts` cobre as decisões do Worker, a configuração
 dos Workers e as regras de cache de `_headers`. O servidor da instalação
 própria (`scripts/lib/selfhost-server.mjs`) e o servidor de desenvolvimento
 do console usam a mesma regra (`apps/console/page-request.mjs`) e também
@@ -319,7 +319,7 @@ páginas da documentação sem extensão.
 ```powershell
 bun run contracts:check --base origin/main
 bun run console:build
-node scripts/prove-public-site.mjs
+node scripts/console/prove-public-site.mjs
 ```
 
 A prova lê os arquivos compilados, sem executar JavaScript, confere em cada

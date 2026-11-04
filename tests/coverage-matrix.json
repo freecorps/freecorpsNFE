@@ -301,7 +301,7 @@
       "status": "delivered",
       "evidence": [
         "tests/publicSite.test.ts",
-        "scripts/prove-public-site.mjs",
+        "scripts/console/prove-public-site.mjs",
         "docs/v1.0/evidence/85/README.md"
       ]
     },

@@ -287,7 +287,7 @@ exige checkout limpo, configuração exata do Worker e o pipeline manual da
 
 ```powershell
 bun run console:build
-node scripts/console.mjs package
+node scripts/console/console.mjs package
 # Publicação manual inicial, após commit e verificação do backend correspondente:
 bun run validation:console:deploy --bootstrap
 ```

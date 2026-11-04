@@ -45,7 +45,7 @@ Escolha o caminho:
   Mudanças em inferência ou aceitação de código exigem também prova de
   correção dos tipos; tempo de compilação não a substitui.
 - **Bundle:** faça um build novo de cada revisão e use
-  `scripts/measure-console-bundle.mjs` para o console. Compare bytes e gzip
+  `scripts/console/measure-console-bundle.mjs` para o console. Compare bytes e gzip
   dos artefatos equivalentes. O total inclui chunks lazy e não representa
   sozinho o carregamento inicial nem métricas de usuários reais.
 

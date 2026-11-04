@@ -290,7 +290,7 @@ export default defineConfig({
       // Compõe landing, painel e documentação. A origem pública muda canonical,
       // sitemap e headers da saída.
       "ci:console": {
-        command: "node scripts/console.mjs package",
+        command: "node scripts/console/console.mjs package",
         dependsOn: ["ci:packages", "ci:sdk", "ci:docs"],
         // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
         // só carimba o SHA em dist/build.json e no bundle; o build e as provas não

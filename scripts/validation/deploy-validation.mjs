@@ -105,7 +105,7 @@ async function main() {
         build: async () => {
           buildPlatformPackages();
           run("node_modules/vite-plus/bin/vp", ["run", "ci:docs"], baseEnv);
-          run("scripts/console.mjs", ["package"], baseEnv);
+          run("scripts/console/console.mjs", ["package"], baseEnv);
         },
         eligible: async () => {
           if (rehearsal) {
@@ -158,7 +158,7 @@ async function main() {
         frontend: async () => {
           if (failAfterBackend)
             throw new Error("Intentional interruption after backend publication");
-          run("scripts/console.mjs", ["publish", ...writerFlags], frontendEnv);
+          run("scripts/console/console.mjs", ["publish", ...writerFlags], frontendEnv);
         },
         smoke: async () => {
           await smokeValidation(sha, credentials);
