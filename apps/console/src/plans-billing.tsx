@@ -25,8 +25,6 @@ const annual: Record<PaidTier, number> = {
   intermediate: PLATFORM_PLANS.intermediate.annualCents,
   large: PLATFORM_PLANS.large.annualCents,
 };
-const periodStart = (period: string) =>
-  Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)) - 1, 1);
 const reviewNames: Record<string, string> = {
   REFUND_FULL: "Reembolso total registrado no Stripe",
   REFUND_PARTIAL: "Reembolso parcial registrado no Stripe",
@@ -342,7 +340,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
           {data.checkout.cycle === "annual" && data.checkout.kind === "upgrade"
             ? `${price(data.checkout.grantCents)} agora, pela mudança para o ${tierNames[data.checkout.tier]} anual até o fim do plano anual`
             : data.checkout.cycle === "annual"
-              ? `${tierNames[data.checkout.tier]} anual: nada agora, ${price(data.checkout.grantCents)} em ${utcDate(periodStart(data.checkout.period))} por 12 meses`
+              ? `${tierNames[data.checkout.tier]} anual: nada agora, ${price(data.checkout.grantCents)} em ${utcDate(data.checkout.periodStartsAt)} por 12 meses`
               : `${tierNames[data.checkout.tier]}: ${price(data.checkout.grantCents)} agora${
                   data.checkout.kind === "start"
                     ? `, depois ${price(monthly[data.checkout.tier])} por mês`

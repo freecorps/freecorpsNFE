@@ -161,11 +161,19 @@ export async function allocateOffer(
 }
 
 /**
+ * The quota anchor of the plan rows a term grants (ADR 0012, slice Q): the term's start, truncated
+ * to the whole second. Terms sold so far start on a 1st at 00:00 UTC, so their keys stay `AAAA-MM`.
+ */
+const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod">) =>
+  Math.floor(term.firstPeriod / 1000) * 1000;
+
+/**
  * Without `termId`, a monthly activation: refused when an annual term overlaps it from `startsAt`
- * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. With it, the plan row records the
- * term it grants, and the grant must match the term (`INVALID_REQUEST` otherwise): same
- * organization, `scheduled` or `active`, the tier in force at `startsAt`, `startsAt` within the
- * term and `endsAt` equal to the term's.
+ * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. It has no `periodAnchor` yet
+ * (ADR 0012, slice Q): its quotas count by the civil UTC month. With it, the plan row records the
+ * term it grants and the term's start as `periodAnchor`, and the grant must match the term
+ * (`INVALID_REQUEST` otherwise): same organization, `scheduled` or `active`, the tier in force at
+ * `startsAt`, `startsAt` within the term and `endsAt` equal to the term's.
  */
 export async function activateCatalogPlan(
   ctx: MutationCtx,
@@ -178,6 +186,7 @@ export async function activateCatalogPlan(
   reason: string,
   termId?: Id<"platformPlanTerms">,
 ) {
+  let periodAnchor: number | undefined;
   if (termId === undefined) {
     if (await monthlyBlockedByTerm(ctx, organizationId, startsAt, endsAt))
       deny("ANNUAL_TERM_ACTIVE");
@@ -192,6 +201,7 @@ export async function activateCatalogPlan(
       termTierAt(term, startsAt) !== tier
     )
       deny("INVALID_REQUEST");
+    periodAnchor = termAnchor(term);
   }
   const before = await planFor(ctx, organizationId);
   if ((before?.version ?? 0) !== expectedVersion) deny("OPERATION_CONFLICT");
@@ -209,6 +219,7 @@ export async function activateCatalogPlan(
     version: expectedVersion + 1,
     updatedAt: Date.now(),
     ...(termId ? { termId } : {}),
+    ...(periodAnchor !== undefined ? { periodAnchor } : {}),
   };
   if (before) await ctx.db.replace("usagePlans", before._id, after);
   else await ctx.db.insert("usagePlans", after);
@@ -368,6 +379,8 @@ async function rewriteTermPlan(
     version: before.version + 1,
     updatedAt: now,
     termId: term._id,
+    // The same chain keeps its anchor (ADR 0012, section 4).
+    ...(before.periodAnchor !== undefined ? { periodAnchor: before.periodAnchor } : {}),
   };
   await ctx.db.replace("usagePlans", before._id, after);
   await ctx.db.insert("usagePlanAudit", {

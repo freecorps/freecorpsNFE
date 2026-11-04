@@ -3,7 +3,8 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { WithoutSystemFields } from "convex/server";
 import { deny, type CustodyOption } from "./organizationAccess";
-import { planEnded, usagePeriod } from "./usageValues";
+import { planEnded } from "./usageValues";
+import { quotaPeriod } from "./quotaPeriod";
 import { capacityMetric } from "./capacitySchema";
 import { archiveStatus, assertOrganizationHot } from "./coldArchiveCore";
 
@@ -45,21 +46,38 @@ export const capacityAccount = (ctx: QueryCtx, organizationId: Id<"organizations
     .query("capacityAccounts")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
     .unique();
-export const capacityTotal = (
+/**
+ * The key a capacity metric counts under at `now`: the fixed `stock` for the stock metrics, the
+ * only key that is not a period, or the quota period of the organization's plan row (ADR 0012,
+ * section 2), read in the caller's transaction.
+ */
+export async function capacityPeriod(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   metric: Metric,
   now: number,
-) =>
-  ctx.db
+) {
+  if (stock(metric)) return "stock";
+  const plan = await ctx.db
+    .query("usagePlans")
+    .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
+    .unique();
+  return quotaPeriod(plan, now).key;
+}
+export const capacityTotal = async (
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  metric: Metric,
+  now: number,
+) => {
+  const period = await capacityPeriod(ctx, organizationId, metric, now);
+  return ctx.db
     .query("capacityTotals")
     .withIndex("by_organizationId_and_period_and_metric", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("period", stock(metric) ? "stock" : usagePeriod(now))
-        .eq("metric", metric),
+      q.eq("organizationId", organizationId).eq("period", period).eq("metric", metric),
     )
     .unique();
+};
 export const capacityEvent = (
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
@@ -217,7 +235,8 @@ export async function checkCapacity(
   if (!plan) return;
   if (stock(metric) && !(await capacityAccount(ctx, organizationId))?.ready)
     deny("CAPACITY_INVENTORY_REQUIRED");
-  const total = await capacityTotal(ctx, organizationId, metric, Date.now());
+  const now = Date.now();
+  const total = await capacityTotal(ctx, organizationId, metric, now);
   if (
     (total?.committed ?? 0) + (total?.reserved ?? 0) + quantity >
     plan.capacity![planMetric(metric)]
@@ -225,7 +244,7 @@ export async function checkCapacity(
     throw new ConvexError({
       code: "QUOTA_EXCEEDED",
       metric,
-      period: stock(metric) ? "stock" : usagePeriod(Date.now()),
+      period: await capacityPeriod(ctx, organizationId, metric, now),
     });
 }
 
@@ -248,7 +267,8 @@ export async function reserveCapacity(
   }
   if (stock(metric)) await ensureCapacityReady(ctx, organizationId);
   if (!inventory) await checkCapacity(ctx, organizationId, metric, quantity, false, options);
-  const period = stock(metric) ? "stock" : usagePeriod(Date.now());
+  // Resolved once, here; commit and release use the event's stored period.
+  const period = await capacityPeriod(ctx, organizationId, metric, Date.now());
   const id = await ctx.db.insert("capacityEvents", {
     organizationId,
     metric,

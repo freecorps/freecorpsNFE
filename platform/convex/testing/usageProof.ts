@@ -10,8 +10,9 @@ import {
   recordUsage,
   releaseUsageLease,
   laneTotal,
+  planFor,
 } from "../lib/usageCore";
-import { usagePeriod } from "../lib/usageValues";
+import { quotaPeriod } from "../lib/quotaPeriod";
 import { environment } from "../lib/projectValues";
 
 export const lease = internalMutation({
@@ -51,7 +52,7 @@ export const legacy = internalMutation({
     const key = `usage-proof-legacy:${args.fileId}`;
     if (await eventFor(ctx, args.organizationId, "bytes", key)) return null;
     const now = Date.now();
-    const period = usagePeriod(now);
+    const period = quotaPeriod(await planFor(ctx, args.organizationId), now).key;
     await ctx.db.insert("usageEvents", {
       organizationId: args.organizationId,
       metric: "bytes",

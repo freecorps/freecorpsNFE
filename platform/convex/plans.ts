@@ -43,7 +43,13 @@ import {
 import { requirePlatformEnvironment } from "./environment";
 import { assertPlanCapacity, getCapacityUsage } from "./lib/capacityCore";
 import { archiveStatus } from "./lib/coldArchiveCore";
-import { UPGRADE_SWITCH_MARGIN, cardBlocksPix, openCheckout, renews } from "./lib/billingCore";
+import {
+  UPGRADE_SWITCH_MARGIN,
+  cardBlocksPix,
+  openCheckout,
+  periodStart,
+  renews,
+} from "./lib/billingCore";
 import {
   annualTermBlocks,
   monthStart,
@@ -59,7 +65,11 @@ const scope = { organizationId: v.id("organizations") };
 const requestResult = v.object({
   id: v.id("platformPlanRequests"),
   amountCents: v.number(),
-  period: v.string(),
+  /**
+   * The civil month bought, `AAAA-MM`, for consoles published before ADR 0012; optional, as the
+   * anniversary periods will not have it. The console reads the instants instead.
+   */
+  period: v.optional(v.string()),
 });
 const offerValue = v.object({
   tier: catalogTier,
@@ -250,6 +260,10 @@ export const overview = query({
         start: v.union(v.null(), v.literal("now"), v.literal("next"), v.literal("upgrade")),
         /** Annual only: the 1st, 00:00 UTC, the term or the upgrade starts. */
         firstPeriod: v.union(v.number(), v.null()),
+        /** When what the request buys starts: the month, the term or the upgrade. */
+        periodStartsAt: v.number(),
+        /** Monthly only: the end, exclusive, of the month bought. */
+        periodEndsAt: v.union(v.number(), v.null()),
       }),
     ),
     availability: v.object({ canClaimFree: v.boolean(), reason: v.union(v.string(), v.null()) }),
@@ -348,6 +362,8 @@ export const overview = query({
             cycle: request.cycle ?? ("monthly" as const),
             start: startOf(request),
             firstPeriod: request.firstPeriod ?? null,
+            periodStartsAt: request.firstPeriod ?? periodStart(request.period),
+            periodEndsAt: (request.cycle ?? "monthly") === "monthly" ? request.endsAt : null,
           }
         : null,
       availability: {

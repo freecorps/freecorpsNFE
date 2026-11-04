@@ -477,7 +477,7 @@ it("as páginas assinam as primeiras consultas com os mesmos argumentos que os l
   );
   expect(sent("companies:get")).toEqual([JSON.stringify(pages.companyArgs(scope, "c1"))]);
   expect(sent("usage:overview")).toEqual([
-    JSON.stringify(pages.usageArgs(scope, pages.currentUsagePeriod())),
+    JSON.stringify(pages.usageArgs(scope, pages.usageAsOf())),
   ]);
   expect(sent("observability:overview")).toEqual([
     JSON.stringify(pages.operationsOverviewArgs(scope)),

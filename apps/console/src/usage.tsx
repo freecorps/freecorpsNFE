@@ -3,10 +3,10 @@ import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "./convex-query";
 import { api } from "../../../platform/convex/_generated/api";
 import type { Organization } from "./organizations";
-import { currentUsagePeriod, usageArgs } from "./page-queries";
+import { usageArgs, usageAsOf } from "./page-queries";
 import { environmentNames, type ProductEnvironment } from "./deployment";
 import { useProductEnvironment } from "./product-environment";
-import { FormField, Input } from "./ui/form";
+import { FormField, Select } from "./ui/form";
 import { Icon } from "./ui/icons";
 import { counted, formatBytes, usedPercent } from "./usage-format";
 import { planEnded, planLimit } from "../../../platform/convex/lib/usageValues";
@@ -78,6 +78,21 @@ const integer = new Intl.NumberFormat("pt-BR");
 const date = (time: number) => new Date(time).toLocaleString("pt-BR");
 type Overview = FunctionReturnType<typeof api.usage.overview>;
 type Row = Overview["rows"][number];
+type Period = Overview["period"];
+/** An instant of a quota period in UTC: the time only when the period does not start at midnight. */
+const utcInstant = (time: number) =>
+  new Date(time).toLocaleString("pt-BR", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    ...(time % 86_400_000 ? { hour: "2-digit", minute: "2-digit" } : {}),
+  });
+/** A quota period as the server named it (ADR 0012): civil month or the plan's anniversaries. */
+const periodLabel = (period: Period) =>
+  period.endsAt === null
+    ? `A partir de ${utcInstant(period.startsAt)}`
+    : `${utcInstant(period.startsAt)} até ${utcInstant(period.endsAt)}`;
 /** Whether the plan limits Production by new notes instead of imports and captures. */
 const byNotes = (plan: Overview["plan"], environment: ProductEnvironment) =>
   environment === "production" && plan?.limits.notes !== undefined;
@@ -96,14 +111,24 @@ const reached = (plan: Overview["plan"], environment: ProductEnvironment, rows: 
 const environments: ProductEnvironment[] = ["sandbox", "production"];
 export function Usage({ org, contextKey }: { org: Organization; contextKey: string }) {
   const [clock, setClock] = useState(Date.now);
-  const [period, setPeriod] = useState(() => currentUsagePeriod());
+  const [asOf, setAsOf] = useState(() => usageAsOf());
+  /** A past period chosen in the list, by its key; null follows the current one. */
+  const [chosen, setChosen] = useState<string | null>(null);
   const { environment } = useProductEnvironment();
   // Only advances presentation of calendar/vigency. Usage itself comes from a subscription.
   useEffect(() => {
     const id = setInterval(() => setClock(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
-  const data = useQuery(api.usage.overview, usageArgs({ org, contextKey }, period));
+  const data = useQuery(
+    api.usage.overview,
+    usageArgs({ org, contextKey }, asOf, chosen ?? undefined),
+  );
+  // The current period ended: ask for the one its end opens, an exact instant of the new period.
+  const currentEnd = chosen === null ? (data?.period.endsAt ?? null) : null;
+  useEffect(() => {
+    if (currentEnd !== null && Math.max(clock, Date.now()) >= currentEnd) setAsOf(currentEnd);
+  }, [clock, currentEnd]);
   const header = (
     <PageHeader
       eyebrow="Consumo da organização"
@@ -112,18 +137,21 @@ export function Usage({ org, contextKey }: { org: Organization; contextKey: stri
       actions={
         <div className="gestao-period">
           <FormField id="usage-period" label="Período de consumo, em UTC">
-            <Input
+            <Select
               id="usage-period"
-              type="month"
-              min="2000-01"
-              max="2099-12"
-              required
-              value={period}
+              disabled={!data}
+              value={data?.period.key ?? ""}
               onChange={(event) => {
-                if (/^20\d\d-(0[1-9]|1[0-2])$/.test(event.target.value))
-                  setPeriod(event.target.value);
+                const key = event.target.value;
+                setChosen(key === data?.recent[0]?.key ? null : key);
               }}
-            />
+            >
+              {(data?.recent ?? []).map((period) => (
+                <option key={period.key} value={period.key}>
+                  {periodLabel(period)}
+                </option>
+              ))}
+            </Select>
           </FormField>
         </div>
       }

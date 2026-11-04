@@ -28,7 +28,7 @@ import {
   companiesListArgs,
   companyArgs,
   companyContextArgs,
-  currentUsagePeriod,
+  usageAsOf,
   defaultAuditFilters,
   firstPageArgs,
   operationsOverviewArgs,
@@ -437,7 +437,7 @@ const usageRoute = createRoute({
   ),
   loader: organizationLoader((scope) => {
     if (scope.org.capabilities.manageOrganization)
-      prewarm(api.usage.overview, usageArgs(scope, currentUsagePeriod()));
+      prewarm(api.usage.overview, usageArgs(scope, usageAsOf()));
   }),
 });
 const exportsRoute = createRoute({

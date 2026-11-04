@@ -86,6 +86,8 @@ function pending(): NonNullable<PlansOverview["request"]> {
     cycle: "monthly",
     start: null,
     firstPeriod: null,
+    periodStartsAt: Date.UTC(2026, 9, 1),
+    periodEndsAt: Date.UTC(2026, 10, 1),
   };
 }
 beforeEach(() => {
@@ -236,7 +238,7 @@ it("registers a paid request, discloses the integral UTC month and never claims 
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(screen.getByText("Aguardando pagamento")).toBeTruthy();
   expect(screen.getByText(/Pedido registrado/)).toBeTruthy();
-  expect(screen.getByText("2026-10")).toBeTruthy();
+  expect(screen.getByText("De 01/10/2026, 00:00 UTC até 01/11/2026, 00:00 UTC")).toBeTruthy();
   expect(screen.getByText(/O plano atual continua durante a espera/)).toBeTruthy();
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Grande" }).disabled).toBe(
     true,
@@ -499,6 +501,8 @@ it("shows a pending annual request and a Pix upgrade as what they are, not a ful
       cycle: "annual",
       start: "next",
       firstPeriod: Date.UTC(2026, 10, 1),
+      periodStartsAt: Date.UTC(2026, 10, 1),
+      periodEndsAt: null,
     },
   };
   const view = show();
@@ -515,6 +519,8 @@ it("shows a pending annual request and a Pix upgrade as what they are, not a ful
       start: "upgrade",
       firstPeriod: Date.UTC(2027, 1, 1),
       period: "2027-02",
+      periodStartsAt: Date.UTC(2027, 1, 1),
+      periodEndsAt: null,
     },
     terms: [term()],
   };

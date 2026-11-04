@@ -357,13 +357,7 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                       term: "Valor da mudança",
                       value: `${price(request.amountCents)}, pela diferença dos meses restantes`,
                     },
-                    {
-                      term: "A partir de",
-                      value:
-                        request.firstPeriod === null
-                          ? request.period
-                          : utcDate(request.firstPeriod),
-                    },
+                    { term: "A partir de", value: utcDate(request.periodStartsAt) },
                   ]
                 : request.cycle === "annual"
                   ? [
@@ -372,18 +366,18 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
                         term: "Valor integral",
                         value: `${price(request.amountCents)} por 12 meses`,
                       },
-                      {
-                        term: "Início",
-                        value:
-                          request.firstPeriod === null
-                            ? request.period
-                            : utcDate(request.firstPeriod),
-                      },
+                      { term: "Início", value: utcDate(request.periodStartsAt) },
                     ]
                   : [
                       { term: "Plano solicitado", value: tierNames[request.tier] },
                       { term: "Valor integral", value: price(request.amountCents) },
-                      { term: "Período, em UTC", value: request.period },
+                      {
+                        term: "Período, em UTC",
+                        value:
+                          request.periodEndsAt === null
+                            ? `A partir de ${utcDate(request.periodStartsAt)}`
+                            : `De ${utcDate(request.periodStartsAt)} até ${utcDate(request.periodEndsAt)}`,
+                      },
                     ]
             }
           />
