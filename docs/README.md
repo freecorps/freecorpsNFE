@@ -93,6 +93,7 @@ define metas de custo para redesenhar a entrada paga.
 | Guarda de dados                          | [RETENTION.md](plataforma/RETENTION.md)                                                                                |
 | Termos e privacidade                     | [termos/](termos/README.md), [PRIVACY-DRAFT.md](v1.0/PRIVACY-DRAFT.md) e [TERMS-DRAFT.md](v1.0/TERMS-DRAFT.md)         |
 | Visual do console e do site              | [DESIGN.md](../DESIGN.md) e [frontend.md](desenvolvimento/frontend.md)                                                 |
+| Período das assinaturas e cotas pagas    | [ADR 0012](adr/0012-periodo-por-aniversario.md), ainda não implementada                                                |
 | Decisões em aberto e expansões           | [ARQUITETURA.md](ARQUITETURA.md#decisões-em-aberto-e-expansões)                                                        |
 | Convex                                   | `platform/convex/_generated/ai/guidelines.md`                                                                          |
 

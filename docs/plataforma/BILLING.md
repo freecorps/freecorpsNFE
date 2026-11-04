@@ -148,6 +148,17 @@ Fatura não paga não é registrada e volta a ser lida na próxima conferência.
   [termos de uso 1.0](../termos/arquivo/termos-de-uso-2026-11-01.md), publicados em 01/11/2026 (#428). Elas valem quando um plano
   pago estiver à venda no console.
 
+## Período por aniversário, decidido em 03/11/2026
+
+Em 03/11/2026 o dono decidiu que toda assinatura paga corre por aniversário
+([ADR 0012](../adr/0012-periodo-por-aniversario.md)). O mensal e o anual
+começam na contratação, pelo cartão, ou na confirmação, pelo Pix, e renovam
+no mesmo dia e horário do mês ou do ano seguinte. As cotas dos planos pagos
+seguem esse mês. Isso substitui o mês civil UTC das políticas mensais da
+#556, a renovação no dia 1 e o anual que começa no dia 1 do mês seguinte.
+**A decisão ainda não está implementada:** o código faz o que este documento
+descreve, e cada fatia da ADR atualiza a seção correspondente.
+
 ## Interruptor do Pix
 
 `platformPlanSettings.pix` (`enabled`, `evidence`, `updatedAt`) fica
