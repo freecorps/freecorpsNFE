@@ -9,8 +9,11 @@ import { requirePlatformEnvironment } from "../environment";
 import { environmentServed, organizationEnvironmentServed } from "./environmentAccess";
 import { closureOf, exportWindowOpen } from "./organizationClosure";
 
-/** Re-check the accepting actor, including epochs, even in workers and bearer tickets. */
-export async function exportAllowed(ctx: QueryCtx, job: Doc<"documentExports">) {
+/**
+ * Re-check the accepting actor, including epochs, even in workers and bearer tickets. A query
+ * passes `now` from its caller and never reads the clock (#45).
+ */
+export async function exportAllowed(ctx: QueryCtx, job: Doc<"documentExports">, now = Date.now()) {
   requirePlatformEnvironment();
   // The destination job of an assisted export has no actor: no ticket is ever issued for it,
   // and it only runs where the organization does not exist (ADR 0009, §7).
@@ -34,7 +37,7 @@ export async function exportAllowed(ctx: QueryCtx, job: Doc<"documentExports">) 
       return deny("ENVIRONMENT_DENIED");
   }
   const closure = await closureOf(ctx, job.organizationId);
-  if (closure && !exportWindowOpen(closure)) return deny("NOT_FOUND");
+  if (closure && !exportWindowOpen(closure, now)) return deny("NOT_FOUND");
   let member: Doc<"memberships"> | null = null;
   if (job.membershipId) {
     member = await ctx.db.get("memberships", job.membershipId);

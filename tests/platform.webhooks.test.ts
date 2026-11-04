@@ -275,6 +275,16 @@ it("persists Retry-After, survives lost responses, fences old attempts and exhau
     generation: current.generation,
   });
   expect(claimed).not.toBeNull();
+  // The lease is judged by the worker's clock, which it passes in (#45).
+  const canSend = (now: number) =>
+    f.t.query(internal.webhookDelivery.canSend, {
+      deliveryId: d._id,
+      generation: current.generation,
+      endpointVersion: claimed!.endpoint.version,
+      now,
+    });
+  expect(await canSend(Date.now())).toBe(true);
+  expect(await canSend(Date.now() + 60_001)).toBe(false);
   vi.setSystemTime(Date.now() + 60_001);
   await f.t.mutation(internal.webhookDelivery.recover, {
     deliveryId: d._id,

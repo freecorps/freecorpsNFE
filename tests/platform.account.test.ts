@@ -170,7 +170,9 @@ it("rejects expired codes and prevents mailbox access in a hosted environment", 
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(Date.now() + 11 * 60_000);
   expect((await post(t, "/email-otp/verify-email", { email, otp })).status).toBe(400);
-  expect(await t.query(internal.mail.inbox, { email })).toEqual([]);
+  // The query does not read the clock: the expired code stays listed with its deadline.
+  const [expired] = await t.query(internal.mail.inbox, { email });
+  expect(expired!.expiresAt).toBeLessThan(Date.now());
   vi.stubEnv("APP_ENV", "validation");
   vi.stubEnv("EMAIL_MODE", "disabled");
   vi.stubEnv("SITE_URL", "https://freecorpsnfe-validation.freecorps.workers.dev");

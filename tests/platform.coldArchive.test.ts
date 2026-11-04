@@ -998,7 +998,8 @@ async function sealedOpen(state: "notice" | "frozen" | "archived" | "restoring" 
 }
 it("renews an open archived package's custody from today, only forward and only while archived", async () => {
   const f = await sealedOpen("archived");
-  const retention = () => f.t.query(internal.coldArchive.retention, { runId: f.runId });
+  const retention = () =>
+    f.t.query(internal.coldArchive.retention, { runId: f.runId, now: Date.now() });
   // Archived this year: the guard from today is the sealed date, so nothing moves yet.
   expect(await retention()).toEqual({
     version: 1,
@@ -1012,11 +1013,16 @@ it("renews an open archived package's custody from today, only forward and only 
   // Never back, never past today's target, never with a stale fence.
   for (const retainUntil of [f.retainUntil - 1, target + 1])
     await expect(
-      f.t.mutation(internal.coldArchive.renewRetention, { ...f.fence, retainUntil }),
+      f.t.mutation(internal.coldArchive.renewRetention, {
+        ...f.fence,
+        now: Date.now(),
+        retainUntil,
+      }),
     ).rejects.toThrow("ARCHIVE_RETENTION_MISMATCH");
   await expect(
     f.t.mutation(internal.coldArchive.renewRetention, {
       ...f.fence,
+      now: Date.now(),
       version: 2,
       retainUntil: target,
     }),
@@ -1031,13 +1037,41 @@ it("renews an open archived package's custody from today, only forward and only 
       createdAt: Date.now(),
     }),
   );
-  await f.t.mutation(internal.coldArchive.renewRetention, { ...f.fence, retainUntil: target });
-  await f.t.mutation(internal.coldArchive.renewRetention, { ...f.fence, retainUntil: target });
+  await f.t.mutation(internal.coldArchive.renewRetention, {
+    ...f.fence,
+    now: Date.now(),
+    retainUntil: target,
+  });
+  await f.t.mutation(internal.coldArchive.renewRetention, {
+    ...f.fence,
+    now: Date.now(),
+    retainUntil: target,
+  });
   const run = (await f.state())!;
   expect(run.retainUntil).toBe(target);
   expect(run.retentionRenewedAt).toBe(Date.now());
   // The sealed manifest keeps its date.
   expect(JSON.parse(run.manifest!).retainUntil).toBe(f.retainUntil);
+});
+it("honors the executor's clock up to an hour ahead when the year turns", async () => {
+  const f = await sealedOpen("archived");
+  const midnight = Date.UTC(2027, 0, 1, 3); // 1 January 2027, 00:00 in Brasília.
+  const renew = async (now: number) => {
+    const { target } = await f.t.query(internal.coldArchive.retention, { runId: f.runId, now });
+    expect(target).toBe(fiscalGuardUntil(now));
+    return f.t.mutation(internal.coldArchive.renewRetention, {
+      ...f.fence,
+      now,
+      retainUntil: target,
+    });
+  };
+  // Two hours early on the server: an executor already in 2027 is refused.
+  vi.setSystemTime(midnight - 2 * 3_600_000);
+  await expect(renew(midnight + 60_000)).rejects.toThrow("ARCHIVE_RETENTION_MISMATCH");
+  // A minute early: the executor two minutes ahead gets the 2027 target R2 already holds.
+  vi.setSystemTime(midnight - 60_000);
+  await renew(midnight + 60_000);
+  expect((await f.state())!.retainUntil).toBe(fiscalGuardUntil(midnight));
 });
 it("refuses a renewal without a package or after the rehydration", async () => {
   for (const [state, code] of [
@@ -1046,24 +1080,30 @@ it("refuses a renewal without a package or after the rehydration", async () => {
     ["hot", "ARCHIVE_ORGANIZATION_HOT"],
   ] as const) {
     const f = await sealedOpen(state);
-    await expect(f.t.query(internal.coldArchive.retention, { runId: f.runId })).rejects.toThrow(
-      code,
-    );
     await expect(
-      f.t.mutation(internal.coldArchive.renewRetention, { ...f.fence, retainUntil: f.retainUntil }),
+      f.t.query(internal.coldArchive.retention, { runId: f.runId, now: Date.now() }),
+    ).rejects.toThrow(code);
+    await expect(
+      f.t.mutation(internal.coldArchive.renewRetention, {
+        ...f.fence,
+        now: Date.now(),
+        retainUntil: f.retainUntil,
+      }),
     ).rejects.toThrow(code);
   }
   const f = await sealedOpen("restoring");
-  expect((await f.t.query(internal.coldArchive.retention, { runId: f.runId })).target).toBe(
-    f.retainUntil,
-  );
+  expect(
+    (await f.t.query(internal.coldArchive.retention, { runId: f.runId, now: Date.now() })).target,
+  ).toBe(f.retainUntil);
 });
 it("counts a closed run's custody from its closure and never extends it past that", async () => {
   const f = await fixture();
   await archive(f);
   vi.setSystemTime(Date.UTC(2028, 5, 1, 12));
   const run = (await f.state())!;
-  expect(await f.t.query(internal.coldArchive.retention, { runId: f.runId })).toEqual({
+  expect(
+    await f.t.query(internal.coldArchive.retention, { runId: f.runId, now: Date.now() }),
+  ).toEqual({
     version: 1,
     retainUntil: run.retainUntil,
     target: run.retainUntil,
@@ -1071,6 +1111,7 @@ it("counts a closed run's custody from its closure and never extends it past tha
   await expect(
     f.t.mutation(internal.coldArchive.renewRetention, {
       ...f.fence,
+      now: Date.now(),
       retainUntil: fiscalGuardUntil(Date.now()),
     }),
   ).rejects.toThrow("ARCHIVE_RETENTION_MISMATCH");
@@ -1091,9 +1132,9 @@ it("moves an archived open organization's custody to its closure guard when it i
   );
   // Later renewals stop at the closure's guard instead of following today.
   vi.setSystemTime(Date.UTC(2031, 5, 1, 12));
-  expect((await f.t.query(internal.coldArchive.retention, { runId: f.runId })).target).toBe(
-    fiscalGuardUntil(closedAt),
-  );
+  expect(
+    (await f.t.query(internal.coldArchive.retention, { runId: f.runId, now: Date.now() })).target,
+  ).toBe(fiscalGuardUntil(closedAt));
 });
 it("lists the packages to renew and compacts a renewed run against its sealed date", async () => {
   const f = await fixture();

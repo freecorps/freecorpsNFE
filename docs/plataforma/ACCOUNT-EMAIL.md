@@ -51,7 +51,8 @@ Reenvio substitui o OTP local anterior do mesmo endereço normalizado e finalida
 A limpeza é limitada a 100 registros por captura; a leitura mostra apenas o
 OTP mais recente por finalidade mesmo diante de histórico anterior maior.
 Convites de organizações permanecem independentes, com leitura limitada aos
-20 mais recentes. Registros expirados não aparecem na caixa local.
+20 mais recentes. Cada registro traz `expiresAt`; o expirado continua na caixa
+local até a próxima captura apagá-lo, porque a query não lê o relógio.
 
 ## Caminho da requisição e limites
 

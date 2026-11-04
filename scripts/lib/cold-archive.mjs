@@ -606,7 +606,9 @@ export function validateAssistedRequest(request) {
  */
 async function generateInDestination(destination, jobId) {
   for (let steps = 0; steps < ASSISTED_MAX_STEPS; steps++) {
-    const progress = parse(await destination.query("assistedExport:progress", { jobId }));
+    const progress = parse(
+      await destination.query("assistedExport:progress", { jobId, now: Date.now() }),
+    );
     if (progress.state === "succeeded") return;
     assert.equal(progress.state, "running", `Geração falhou: ${progress.code ?? progress.state}`);
     await destination.action("exportWorker:run", { exportId: jobId, sequence: progress.sequence });

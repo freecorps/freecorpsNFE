@@ -262,18 +262,16 @@ export const recover = internalMutation({
     return null;
   },
 });
-/** A request already in flight cannot be recalled by a subsequent permission change. */
+/**
+ * A request already in flight cannot be recalled by a subsequent permission change. `now` is the
+ * worker's clock: a query never reads it (#45).
+ */
 export const canSend = internalQuery({
-  args: { ...deliveryArgs, endpointVersion: v.number() },
+  args: { ...deliveryArgs, endpointVersion: v.number(), now: v.number() },
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const d = await ctx.db.get("webhookDeliveries", args.deliveryId);
-    if (
-      !d ||
-      d.generation !== args.generation ||
-      d.state !== "running" ||
-      d.leaseUntil <= Date.now()
-    )
+    if (!d || d.generation !== args.generation || d.state !== "running" || d.leaseUntil <= args.now)
       return false;
     const e = await ctx.db.get("webhookEndpoints", d.endpointId),
       event = await ctx.db.get("outboxEvents", d.eventId);

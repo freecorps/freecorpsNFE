@@ -94,7 +94,11 @@ async function measure(batched) {
     organizationId: scope.organizationId,
     batched,
   });
-  const start = await call("query", "exportSource:start", { exportId, sequence: 0 });
+  const start = await call("query", "exportSource:start", {
+    exportId,
+    sequence: 0,
+    now: Date.now(),
+  });
   let checkpoint = start.checkpoint,
     calls = 0,
     responseBytes = 0,
@@ -107,6 +111,7 @@ async function measure(batched) {
     const result = await call("query", "testing/exportProof:measuredRead", {
       exportId,
       sequence: 0,
+      now: Date.now(),
       checkpoint,
     });
     const { page, metrics } = JSON.parse(result);

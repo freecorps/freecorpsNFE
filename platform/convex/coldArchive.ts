@@ -23,6 +23,8 @@ import {
   lastActivity,
 } from "./lib/coldArchiveCore";
 import { fiscalGuardUntil } from "./lib/retentionClasses";
+
+const HOUR = 3_600_000;
 import { internal } from "./_generated/api";
 import { requirePlatformEnvironment } from "./environment";
 import { sandboxOnly } from "./fiscalGuard";
@@ -608,14 +610,14 @@ const RENEWABLE = ["sealed", "verified", "deleting", "archived", "restoring"] as
  * organization still archived keeps its package for the guard counted from today, so the package
  * never expires while it stays archived. A closure counts from its own date. Only ever extends.
  */
-async function retentionTarget(ctx: QueryCtx, run: Doc<"coldArchiveRuns">) {
+async function retentionTarget(ctx: QueryCtx, run: Doc<"coldArchiveRuns">, now: number) {
   const closure = await ctx.db
     .query("organizationClosures")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", run.organizationId))
     .unique();
   if (closure) return Math.max(run.retainUntil, fiscalGuardUntil(closure.requestedAt));
   if (run.reason === "closed") return run.retainUntil;
-  return Math.max(run.retainUntil, fiscalGuardUntil(Date.now()));
+  return Math.max(run.retainUntil, fiscalGuardUntil(now));
 }
 // A coded refusal: the executor prints only the code to the operator.
 function assertRenewable(run: Doc<"coldArchiveRuns">) {
@@ -626,35 +628,46 @@ function assertRenewable(run: Doc<"coldArchiveRuns">) {
 /**
  * What the executor must lock in R2 before `renewRetention` records it: the run's version, its
  * current `retainUntil` and the date to reach. Refuses a run without a package or already `hot`,
- * whose lock is no longer renewed and lapses at the date in force.
+ * whose lock is no longer renewed and lapses at the date in force. `now` is the executor's clock:
+ * a query never reads it (#45); `renewRetention` checks the target again with its own.
  */
 export const retention = internalQuery({
-  args: { runId: v.id("coldArchiveRuns") },
+  args: { runId: v.id("coldArchiveRuns"), now: v.number() },
   returns: v.object({ version: v.number(), retainUntil: v.number(), target: v.number() }),
-  handler: async (ctx, { runId }) => {
+  handler: async (ctx, { runId, now }) => {
     const run = await ctx.db.get("coldArchiveRuns", runId);
     if (!run) throw new Error("ARCHIVE_NOT_FOUND");
     assertRenewable(run);
     return {
       version: run.version,
       retainUntil: run.retainUntil,
-      target: await retentionTarget(ctx, run),
+      target: await retentionTarget(ctx, run, now),
     };
   },
 });
 /**
  * Records a renewal the executor already locked in R2 (`scripts/cold-tier/cold-archive.mjs renew`): the
  * run's `retainUntil` moves to `retainUntil`, never back and never past today's target. A legal
- * hold does not stop it; a renewal only keeps the package longer. Idempotent.
+ * hold does not stop it; a renewal only keeps the package longer. Idempotent. `now` is the clock
+ * `retention` was asked with: R2 already holds the target it gave, so a clock up to an hour ahead
+ * of the server's (a renewal at midnight of 31 December) is honored instead of refused.
  */
 export const renewRetention = internalMutation({
-  args: { ...runArgs, retainUntil: v.number() },
+  args: { ...runArgs, retainUntil: v.number(), now: v.number() },
   returns: v.null(),
   handler: async (ctx, args) => {
     const run = await fenced(ctx, args.runId, args.version, false);
     assertRenewable(run);
     if (args.retainUntil === run.retainUntil) return null;
-    if (args.retainUntil < run.retainUntil || args.retainUntil > (await retentionTarget(ctx, run)))
+    if (
+      args.retainUntil < run.retainUntil ||
+      args.retainUntil >
+        (await retentionTarget(
+          ctx,
+          run,
+          Math.max(Date.now(), Math.min(args.now, Date.now() + HOUR)),
+        ))
+    )
       throw new ConvexError({ code: "ARCHIVE_RETENTION_MISMATCH" });
     const now = Date.now();
     await ctx.db.patch("coldArchiveRuns", run._id, {
