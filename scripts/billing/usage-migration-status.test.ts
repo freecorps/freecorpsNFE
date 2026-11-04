@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { metrics as platformMetrics } from "../platform/convex/lib/usageValues";
+import { metrics as platformMetrics } from "../../platform/convex/lib/usageValues";
 import {
   collectStatus,
   compareReceipts,
@@ -11,7 +11,7 @@ import {
   readReceipt,
   receipt,
   sum,
-} from "./lib/usage-migration-status.mjs";
+} from "../lib/usage-migration-status.mjs";
 
 const secret = "conteudo-que-nao-pode-vazar-12345678901234";
 const eventGroup = {

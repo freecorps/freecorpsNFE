@@ -1462,7 +1462,7 @@ Os itens 1 a 4 são conferidos só lendo a conta, sem escrever no Stripe nem no
 Convex:
 
 ```sh
-node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]
+node scripts/billing/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]
 ```
 
 O arquivo guarda uma chave restrita própria da conferência (`rk_`, ou `sk_`;
@@ -1477,7 +1477,7 @@ se não conseguiu conferir (argumento, chave, rede ou resposta de erro do
 Stripe), e
 imprime um relatório sem chave nem ids da conta, com os itens 5 e 6 e os
 e-mails do Stripe listados para conferência manual no painel.
-`scripts/billing-stripe-check.test.ts` impede que essas regras se afastem das
+`scripts/billing/billing-stripe-check.test.ts` impede que essas regras se afastem das
 da plataforma.
 
 ## Tarifas e tratamento fiscal
@@ -1748,7 +1748,7 @@ item avulso, período de teste nem cupom.
    `https://modest-seal-118.convex.site/v1/billing/stripe/events`, o host HTTP
    da validação: o Worker `freecorpsnfe-validation` só encaminha a
    autenticação e não chega a `/v1`.
-   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <essa URL>`
+   `node scripts/billing/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <essa URL>`
    passa com a chave de teste.
 2. **Deployment.** Publicar na validação o SHA que contém a fatia 2b. Antes
    das variáveis, um `POST` sem assinatura nessa URL responde 404; depois de
@@ -1799,7 +1799,7 @@ item avulso, período de teste nem cupom.
 10. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado
     na validação, as datas de cada fatura das partes A e B, os estados e
     códigos observados e o resultado de
-    `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
+    `node scripts/billing/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
     sem chaves nem ids da conta.
 
 A renovação anual na jornada hospedada não pode ser antecipada, porque o
@@ -1808,7 +1808,7 @@ testes com Stripe simulado. Os termos de uso 1.2, que a ativação abaixo
 esperava, estão no console desde 04/11/2026 (ADR 0012, Consequências).
 
 Depois da prova, a ativação em produção segue esta ordem:
-`node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave
+`node scripts/billing/check-billing-stripe.mjs --key-file <arquivo absoluto>`, sem `--endpoint`, com a chave
 `live` contra o endpoint de produção, os
 segredos no deployment de produção, o catálogo ligado e
 `plans:configureAnnual` com `enabled: true` e evidência que cite a prova. O

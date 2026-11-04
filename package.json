@@ -57,7 +57,7 @@
     "xml:portal": "node scripts/fiscal/check-nfe-schemas.mjs",
     "platform:check": "node scripts/build/build-fiscal-packages.mjs && node scripts/build/typecheck.mjs -p tsconfig.platform.json && node scripts/build/typecheck.mjs -p apps/console/tsconfig.json",
     "platform:test": "vp run test:platform && vp run test:packages",
-    "usage:migration:status": "node scripts/usage-migration-status.mjs",
+    "usage:migration:status": "node scripts/billing/usage-migration-status.mjs",
     "archive:cold": "node scripts/cold-tier/cold-archive.mjs",
     "archive:prove-local": "node scripts/cold-tier/prove-cold-archive-local.mjs",
     "content:prove-local": "node scripts/proofs/prove-document-content-local.mjs",

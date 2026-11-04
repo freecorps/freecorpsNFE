@@ -737,7 +737,7 @@ export const gitleaksAllowlist = [
     1,
     "Chave de objeto sintética da prova da camada fria",
   ],
-  ["scripts/usage-migration-status.test.ts", "generic-api-key", 1, "Texto fixo do teste"],
+  ["scripts/billing/usage-migration-status.test.ts", "generic-api-key", 1, "Texto fixo do teste"],
   [
     "tests/fixtures/nfe/4.00/synthetic-signing-key.pem",
     "private-key",

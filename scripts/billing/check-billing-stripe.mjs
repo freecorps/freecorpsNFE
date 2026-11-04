@@ -9,7 +9,7 @@ import {
   readKey,
   report,
   usage,
-} from "./lib/billing-stripe-check.mjs";
+} from "../lib/billing-stripe-check.mjs";
 
 if (process.argv.includes("--help")) {
   console.log(usage);

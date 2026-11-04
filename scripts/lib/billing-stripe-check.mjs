@@ -1,6 +1,6 @@
 // Conferência só de leitura da conta Stripe da cobrança dos planos (BILLING.md, "Configuração").
 // Espelha as regras de platform/convex/lib/billingStripe.ts; o teste
-// scripts/billing-stripe-check.test.ts confere que as duas não se afastam.
+// scripts/billing/billing-stripe-check.test.ts confere que as duas não se afastam.
 
 export const STRIPE_API_VERSION = "2025-03-31.basil";
 export const DEFAULT_ENDPOINT = "https://api.nfe.freecorps.com.br/v1/billing/stripe/events";
@@ -35,7 +35,7 @@ export const MANUAL_ITEMS = [
 ];
 
 export const usage =
-  "uso: node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]\n" +
+  "uso: node scripts/billing/check-billing-stripe.mjs --key-file <arquivo absoluto> [--endpoint <url>]\n" +
   "A chave (sk_ ou rk_, test ou live) precisa de leitura em Prices, Webhook Endpoints e\n" +
   "Customer portal. Nada é escrito no Stripe; a saída não traz chaves nem ids da conta.";
 

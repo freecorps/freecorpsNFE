@@ -3,8 +3,8 @@
 // escolhido por nome. Imprime só contagens e unidades por métrica, ambiente e
 // estado. Uso: docs/plataforma/USAGE.md, Migração.
 //
-//   node scripts/usage-migration-status.mjs --deployment <nome> [--out antes.json]
-//   node scripts/usage-migration-status.mjs --deployment <nome> --compare antes.json
+//   node scripts/billing/usage-migration-status.mjs --deployment <nome> [--out antes.json]
+//   node scripts/billing/usage-migration-status.mjs --deployment <nome> --compare antes.json
 import { readFileSync, writeFileSync } from "node:fs";
 import {
   collectStatus,
@@ -14,8 +14,8 @@ import {
   parseArgs,
   readReceipt,
   receipt,
-} from "./lib/usage-migration-status.mjs";
-import { repoRoot } from "./lib/repo-root.mjs";
+} from "../lib/usage-migration-status.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 /** O conteúdo do recibo anterior; nem um erro de leitura repete o que o arquivo tem. */
 function readCompare(path) {

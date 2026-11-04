@@ -7,8 +7,8 @@ import {
   readAnnualPrices,
   readCatalogPrices,
   readPortalSession,
-} from "../platform/convex/lib/billingStripe";
-import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
+} from "../../platform/convex/lib/billingStripe";
+import { PLATFORM_PLANS } from "../../platform/convex/lib/planCatalog";
 import {
   BILLING_EVENTS,
   CATALOG_PRICES,
@@ -20,7 +20,7 @@ import {
   parseArgs,
   readKey,
   report,
-} from "./lib/billing-stripe-check.mjs";
+} from "../lib/billing-stripe-check.mjs";
 
 const prices = (patch: (key: string) => Record<string, unknown> = () => ({})) => ({
   data: Object.entries(CATALOG_PRICES).map(([key, { interval, cents }], i) => ({

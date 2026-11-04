@@ -822,7 +822,7 @@ organizações, pausa e retomada por atribuição, reconciliação sem nova cobr
 e recusa antes do envio quando o plano muda depois da reserva.
 `tests/platform.usageMigration.test.ts` cobre várias páginas, repetição,
 resíduos, tráfego durante o backfill e o limite da leitura sem snapshot.
-`scripts/usage-migration-status.test.ts` confere seleção explícita do alvo,
+`scripts/billing/usage-migration-status.test.ts` confere seleção explícita do alvo,
 agregação sem arredondamento e saída sanitizada, inclusive nos erros.
 A jornada `imports.mjs --usage` grava, pelas mutations locais
 `testing/usageProof:record` e `testing/usageProof:legacy`, consumo de produção e
