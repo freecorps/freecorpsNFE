@@ -18,6 +18,7 @@ import { currentLocalSiteUrl } from "../../../scripts/lib/worktree/env-file.mjs"
 import { assertLinkedWorktree } from "../../../scripts/lib/worktree/state.mjs";
 import { currentOrganization, organizationOption, switchOrganization } from "./shell.mjs";
 import { managementSession } from "./management-session.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "keys", async () => {
@@ -260,6 +261,7 @@ await withLocalBrowser(root, "keys", async () => {
     const otherOrg = await success(owner, "mutation", "organizations:create", {
       name: "Outra equipe Ipê",
       slug: `other-${crypto.randomUUID()}`,
+      ...(await termsAcceptance((path, args) => success(owner, "query", path, args))),
     });
     const company = await success(owner, "mutation", "companies:create", {
       organizationId: org.id,

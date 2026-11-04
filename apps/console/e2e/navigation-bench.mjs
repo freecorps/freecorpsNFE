@@ -59,6 +59,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright";
 import { startDelayProxy } from "./latency-proxy.mjs";
 import { startConsoleServer } from "./console-static-server.mjs";
+import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
 
 const selfRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const round = (value) => Math.round(value * 10) / 10;
@@ -595,6 +596,7 @@ async function createFixture(browser) {
   const org = await convexCall(user, "mutation", "organizations:create", {
     name: "Benchmark de navegação",
     slug: `navegacao-${crypto.randomUUID().slice(0, 8)}`,
+    ...(await termsAcceptance((path, args) => convexCall(user, "query", path, args))),
   });
   const { companyId } = await convexCall(user, "mutation", "onboarding:start", {
     organizationId: org.organizationId,

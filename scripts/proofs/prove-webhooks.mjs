@@ -16,6 +16,7 @@ import { localAuthPacer } from "../../apps/console/e2e/local-auth-pacing.mjs";
 import { createWebhookReceiver } from "../../examples/webhook-receiver.mjs";
 import { independentReceiver, proveQuickstarts } from "../lib/sdk-proof.mjs";
 import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
+import { termsAcceptance } from "../lib/organization-terms.mjs";
 const { chromium } = createRequire(new URL("apps/console/package.json", repoUrl))("playwright");
 
 const root = repoRoot,
@@ -291,6 +292,7 @@ try {
   const org = await rpc("mutation", "organizations:create", {
     name: "Webhooks sintéticos",
     slug: `webhook-${crypto.randomUUID()}`,
+    ...(await termsAcceptance((path, args) => rpc("query", path, args))),
   });
   const { companyId } = await rpc("mutation", "onboarding:start", {
     organizationId: org.organizationId,
