@@ -107,6 +107,30 @@ function lockPath(paths) {
   return join(paths.convexDir, "worktree-operation.lock");
 }
 
+/**
+ * Libera a trava de um `dev` cujo dono morreu sem soltá-la (parada forçada,
+ * terminal fechado). Só apaga se a trava ainda for a lida em `expected` e o
+ * dono continuar morto ou com outra identidade; dono vivo, identidade ilegível
+ * ou trava trocada ficam como estão. Quem chama já encerrou os filhos
+ * registrados. Devolve se apagou.
+ */
+export function releaseInterruptedDev(paths, expected) {
+  const path = lockPath(paths);
+  const current = readOperationRecord(path);
+  if (
+    current.state !== "recorded" ||
+    current.command !== "dev" ||
+    current.runId !== expected.runId ||
+    current.pid !== expected.pid ||
+    operationOwnerState(current) !== "interrupted"
+  )
+    return false;
+  // Sem intervalo assíncrono entre a última leitura e a remoção.
+  if (JSON.stringify(readOperationRecord(path)) !== JSON.stringify(current)) return false;
+  unlinkSync(path);
+  return true;
+}
+
 export function operationIsRunning(paths) {
   return runningOperation(paths) !== null;
 }
@@ -136,7 +160,7 @@ export async function withOperation(paths, command, action) {
     if (error.code !== "EEXIST") throw error;
     const owner = readOperationRecord(path);
     fail(
-      `worktree:${owner.command ?? "desconhecido"} já está rodando ou deixou um lock sem conclusão. Consulte worktree:status; aguarde o dono ou confirme manualmente os processos antes de remover o lock. Use worktree:cleanup para parar um dev identificado.`,
+      `worktree:${owner.command ?? "desconhecido"} já está rodando ou deixou um lock sem conclusão. Consulte worktree:status; aguarde o dono ou confirme manualmente os processos antes de remover o lock. Use worktree:cleanup para parar um dev identificado ou liberar o lock de um dev que terminou sem soltá-lo.`,
     );
   }
   owned.set(normalizePath(paths.root), record.runId);

@@ -272,10 +272,16 @@ não exige o `doctor` inteiro como pré-condição.
 
 Os locks identificam a execução e o processo. Um arquivo incompleto ou uma
 identidade que não pôde ser conferida é indeterminado. Um dono morto deixa uma
-execução interrompida; o script não recupera o lock automaticamente, pois apagar
-depois de ler poderia remover o lock de outro processo concorrente. Nesse caso,
-confira os processos e os terminais do worktree, interrompa qualquer reinício
-automático e remova somente `.convex/worktree-operation.lock` deste checkout
+execução interrompida; nenhum comando recupera o lock por conta própria, pois
+apagar depois de ler poderia remover o lock de outro processo concorrente.
+
+Um `dev` encerrado à força (no Windows, `taskkill /F` ou o terminal fechado)
+deixa o lock assim. `bun run worktree:cleanup` encerra os filhos que esse dev
+registrou, pela identidade, apaga o registro e libera o lock, só se ele ainda
+for o mesmo e o dono continuar morto. Um dono vivo ou de identidade ilegível
+mantém o lock. Para outra operação interrompida, confira os processos e os
+terminais do worktree, interrompa qualquer reinício automático e remova
+somente `.convex/worktree-operation.lock` deste checkout
 depois de confirmar que nenhum executor da operação continua vivo. Preserve
 `worktree-setup.json` como diagnóstico; o próximo setup substitui seu resultado.
 

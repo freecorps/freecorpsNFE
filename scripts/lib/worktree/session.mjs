@@ -31,6 +31,7 @@ import {
   assertPrivateDirectories,
   ownsOperation,
   readOperation,
+  releaseInterruptedDev,
   withOperation,
 } from "./operation.mjs";
 import { waitForObservedSetup } from "./readiness.mjs";
@@ -468,6 +469,15 @@ export async function cleanup(options = {}) {
   assertPrivateDirectories(paths);
   const operation = readOperation(paths);
   if (operation.command === "dev") {
+    if (operation.state === "interrupted") {
+      // O dono morreu sem soltar o lock (parada forçada, terminal fechado):
+      // encerra os filhos que ele registrou, apaga o registro e libera o lock,
+      // se ainda for o mesmo. Um filho que não para mantém tudo como está.
+      await stopDevRecord(paths, options.quiet);
+      if (releaseInterruptedDev(paths, operation) && !options.quiet)
+        console.log("Liberei o lock de um dev que terminou sem soltá-lo.");
+      return;
+    }
     // O dono continua segurando o lock enquanto encerramos somente os filhos
     // registrados. Não varremos executores ou backends neste caminho.
     await stopDevRecord(paths, options.quiet, operation);

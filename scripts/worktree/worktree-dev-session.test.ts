@@ -304,3 +304,62 @@ it("parada que falha remove os handlers de sinal e preserva o registro", async (
   expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(listeners);
   expect(readProcessRecord(paths)?.pids).toEqual([backend.pid, frontend.pid]);
 }, 30000);
+
+/** Um lock de dev como o que `withOperation` grava, com o dono informado. */
+async function devLock(paths: ReturnType<typeof worktreePaths>, owner: ChildProcess) {
+  const { readProcessIdentity } = await vi.importActual<
+    typeof import("../lib/worktree/process-identity.mjs")
+  >("../lib/worktree/process-identity.mjs");
+  const record = {
+    version: 1,
+    runId: randomUUID(),
+    pid: owner.pid,
+    identity: readProcessIdentity(owner.pid!),
+    command: "dev",
+    startedAt: new Date().toISOString(),
+    outcome: "running",
+  };
+  writeFileSync(join(paths.convexDir, "worktree-operation.lock"), JSON.stringify(record));
+  return record;
+}
+
+it("cleanup libera o lock de um dev que morreu sem soltá-lo, depois de parar os filhos", async () => {
+  const paths = fixture();
+  const actual = await vi.importActual<typeof import("../lib/worktree/process-identity.mjs")>(
+    "../lib/worktree/process-identity.mjs",
+  );
+  vi.mocked(stopRecordedProcesses).mockImplementation(actual.stopRecordedProcesses);
+  const owner = await synthetic();
+  await devLock(paths, owner);
+  // O filho continua vivo depois que o dono morre, como o Vite e o Convex de
+  // um dev encerrado à força.
+  const orphan = await synthetic();
+  const orphanExited = once(orphan, "exit");
+  writeProcessRecord(paths, { cwd: paths.root, pid: orphan.pid, pids: [orphan.pid] });
+  const ownerExited = once(owner, "exit");
+  owner.kill("SIGKILL");
+  await ownerExited;
+  expect(readOperation(paths).state).toBe("interrupted");
+
+  await cleanup({ root: paths.root, quiet: true });
+
+  await orphanExited;
+  expect(processIsRunning(orphan.pid!)).toBe(false);
+  expect(readProcessRecord(paths)).toBeNull();
+  expect(readOperation(paths).state).toBe("idle");
+}, 30000);
+
+it("cleanup mantém o lock de um dev vivo", async () => {
+  const paths = fixture();
+  const actual = await vi.importActual<typeof import("../lib/worktree/process-identity.mjs")>(
+    "../lib/worktree/process-identity.mjs",
+  );
+  vi.mocked(stopRecordedProcesses).mockImplementation(actual.stopRecordedProcesses);
+  const owner = await synthetic();
+  const lock = await devLock(paths, owner);
+
+  await cleanup({ root: paths.root, quiet: true });
+
+  expect(readOperation(paths)).toMatchObject({ state: "running", runId: lock.runId });
+  expect(processIsRunning(owner.pid!)).toBe(true);
+}, 30000);
