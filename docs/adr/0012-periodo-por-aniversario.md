@@ -266,13 +266,15 @@ Invariantes:
   precisam ser refeitas
   ([ADR 0011](0011-entregas-graduais.md)). O roteiro da #35, em
   [Prova hospedada e ativação do anual](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35),
-  nunca rodou e precisa ser reescrito para este modelo antes de rodar. As
+  foi reescrito para este modelo na fatia 2b e ainda não rodou. As
   provas novas usam relógios de teste em 31/01, 31/03 e 29/02 para confirmar
   que o Stripe ajusta o dia e renova os anos da âncora como esta ADR.
 
 ## Implementação
 
-Não implementada. A ordem das fatias:
+As fatias 0 a 2b estão implementadas no código. Ligar o catálogo ou o anual
+espera a fatia 8, os termos de uso 1.2, e a prova hospedada. A ordem das
+fatias:
 
 1. Fatia 0: esta ADR, só documentação.
 2. Fatia 1a: aritmética de aniversário nos termos anuais, sem mudar

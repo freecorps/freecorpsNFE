@@ -249,16 +249,20 @@ it("mostra o Checkout aberto pelo ciclo: o mensal e o anual cobram no pagamento"
 });
 
 it("a assinatura anual mostra a cobrança no aniversário da contratação e não oferece troca mensal", () => {
-  state.data = subscribed({
-    subscription: {
-      id: "sub_annual",
-      status: "active",
-      tier: "intermediate",
-      cancelAtPeriodEnd: false,
-      periodEnd: YEAR,
-      annual: true,
-    },
-  });
+  state.data = {
+    ...subscribed({
+      subscription: {
+        id: "sub_annual",
+        status: "active",
+        tier: "intermediate",
+        cancelAtPeriodEnd: false,
+        periodEnd: YEAR,
+        annual: true,
+      },
+    }),
+    // The subscription's first charge became a term.
+    subscriptionTerm: true,
+  };
   show();
   expect(
     screen.getByText(
@@ -341,7 +345,7 @@ it("a monthly card that still renews holds the annual until “Cancelar renovaç
   show();
   fireEvent.click(screen.getByRole("button", { name: "Assinar Intermediário anual no cartão" }));
   expect(screen.getByRole("alertdialog").textContent).toContain(
-    "Um plano mensal em vigor do mesmo plano ou menor é substituído na hora, sem desconto dos dias restantes.",
+    "O Intermediário mensal em vigor é substituído na hora, sem desconto dos dias restantes.",
   );
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Ir para o Stripe" }));
@@ -358,6 +362,68 @@ it("a monthly card that still renews holds the annual until “Cancelar renovaç
   expect(screen.getByRole("alert").textContent).toContain(
     "Disponível a partir de 10/11/2026 às 12:00 UTC.",
   );
+});
+
+it("promises the replacement of the monthly only when the server sells it", () => {
+  const dialogOf = (patch: Partial<BillingOverview>, name: string) => {
+    state.data = overview({ annualEnabled: true, ...patch });
+    show();
+    fireEvent.click(screen.getByRole("button", { name }));
+    const text = screen.getByRole("alertdialog").textContent;
+    cleanup();
+    return text;
+  };
+  const replaced = /mensal em vigor é substituído na hora/;
+  // A larger monthly holds a smaller annual; the server refuses it with the date.
+  expect(
+    dialogOf({ plan: { tier: "large", endsAt: NOV_10 } }, "Assinar Intermediário anual no cartão"),
+  ).not.toMatch(replaced);
+  expect(
+    dialogOf({ plan: { tier: "intermediate", endsAt: NOV_10 } }, "Assinar Grande anual no cartão"),
+  ).toMatch(replaced);
+  // The month a rescinded term left is no monthly to replace.
+  expect(
+    dialogOf(
+      { plan: { tier: "intermediate", endsAt: NOV_10, annual: true } },
+      "Assinar Grande anual no cartão",
+    ),
+  ).not.toMatch(replaced);
+  expect(dialogOf({}, "Assinar Grande anual no cartão")).not.toMatch(replaced);
+});
+
+it("an annual subscription whose charge bought no term says so instead of a renewal", async () => {
+  state.data = { ...annualSubscription(), subscriptionTerm: false };
+  const view = show();
+  expect(
+    screen.getByText(
+      "Nenhuma enquanto a cobrança anual está em confirmação ou em análise pela equipe: ela não concedeu um plano anual.",
+    ),
+  ).toBeTruthy();
+  expect(screen.queryByText(/12 meses/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar renovação" }));
+  const dialog = screen.getByRole("alertdialog").textContent;
+  expect(dialog).toContain("Esta assinatura anual não concedeu um plano anual");
+  expect(dialog).not.toContain("Os meses pagos");
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+  });
+  expect(
+    screen.getByText("Renovação cancelada. A assinatura anual não cobra de novo."),
+  ).toBeTruthy();
+  // Once Stripe stops it, the grant shows the stop until it is done.
+  state.data = overview({
+    reviews: [
+      { source: "grant", code: "PLAN_UNAVAILABLE", amountCents: 149000, createdAt: 2 },
+      { source: "grant", code: "SUBSCRIPTION_STOP_FAILED", amountCents: null, createdAt: 1 },
+    ],
+  });
+  view.rerender(<PlanBilling org={owner} contextKey="test" />);
+  expect(
+    screen.getByText(
+      "Cancelamento pendente no Stripe da assinatura anual cuja cobrança não virou plano",
+    ),
+  ).toBeTruthy();
+  expect(screen.queryByText(/assinatura anual rescindida/)).toBeNull();
 });
 
 it("an annual subscription keeps the paid months when its renewal is cancelled and points to support", async () => {

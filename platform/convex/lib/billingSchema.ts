@@ -120,6 +120,17 @@ export const billingTables = {
     termId: v.optional(v.id("platformPlanTerms")),
     /** Operator who settled a blocked grant (refund, manual plan), outside the platform. */
     resolvedBy: v.optional(v.string()),
+    /**
+     * A blocked first invoice of an annual subscription (slice 2b of ADR 0012): the year was
+     * charged but bought no term, so the subscription is cancelled before it charges again
+     * (`billing:stopBlockedAnnual`). `failed` once the retries ran out, for a person.
+     */
+    subscriptionStop: v.optional(
+      v.object({
+        subscriptionId: v.string(),
+        state: v.union(v.literal("pending"), v.literal("done"), v.literal("failed")),
+      }),
+    ),
     createdAt: v.number(),
   })
     .index("by_invoiceId", ["invoiceId"])

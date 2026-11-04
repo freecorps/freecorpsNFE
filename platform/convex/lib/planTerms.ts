@@ -279,6 +279,27 @@ export function withoutLastUpgrade(term: Doc<"platformPlanTerms">) {
 }
 
 /**
+ * Whether the Stripe subscription `subscriptionId` bought a term scheduled or in force: it renews
+ * that term, so a blocked charge of it never cancels it (`billing:stopBlockedAnnual`).
+ */
+export async function subscriptionHasTerm(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  subscriptionId: string,
+) {
+  for (const state of HOLDING) {
+    const terms = await ctx.db
+      .query("platformPlanTerms")
+      .withIndex("by_organizationId_and_state_and_endsAt", (q) =>
+        q.eq("organizationId", organizationId).eq("state", state),
+      )
+      .take(100);
+    if (terms.some((term) => term.stripeSubscriptionId === subscriptionId)) return true;
+  }
+  return false;
+}
+
+/**
  * Whether the Stripe subscription `subscriptionId` bought a term that was rescinded: it must not
  * charge again (`billing:stopTermRenewal` cancels it), so its renewal is blocked and resuming it
  * is refused (`ANNUAL_TERM_RESCINDED`).

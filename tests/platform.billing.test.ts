@@ -2536,7 +2536,8 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
     // The yearly subscription is never moved to a monthly price.
     expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toEqual([]);
     expect((await f.billing()).account?.subscription).toMatchObject({ tier: "intermediate" });
-    // Another annual invoice for months the term covers: paid, so blocked for a person.
+    // Another annual invoice for months the term covers: paid, so blocked for a person. Its
+    // subscription renews the term it bought, so nothing stops it.
     const twice = annualStart(f, sub.id);
     await sync(f);
     expect((await grants(f))[1]).toMatchObject({
@@ -2544,6 +2545,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       state: "blocked",
       code: "ANNUAL_TERM_ACTIVE",
     });
+    expect((await grants(f))[1]!.subscriptionStop).toBeUndefined();
     expect(await terms(f)).toHaveLength(1);
   });
 
@@ -2775,6 +2777,113 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
     expect(await grants(g)).toMatchObject([{ state: "blocked", code: "PLAN_UNAVAILABLE" }]);
     expect(await terms(g)).toEqual([]);
     expect((await stock(g)).allocations).toEqual([]);
+  });
+
+  it("a primeira fatura anual bloqueada para a assinatura no Stripe, sem reembolso automático, e o console mostra a parada até ela acontecer", async () => {
+    const f = await fixture();
+    // The admission window closed between the Checkout and the payment: paid, but no term.
+    await f.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, { admissionsUntil: Date.now() - 1 });
+    });
+    const sub = await annualCard(f);
+    annualStart(f, sub.id);
+    await sync(f);
+    const [grant] = await grants(f);
+    expect(grant).toMatchObject({
+      state: "blocked",
+      code: "PLAN_UNAVAILABLE",
+      subscriptionStop: { subscriptionId: sub.id, state: "pending" },
+    });
+    const reviews = async () =>
+      (
+        await (
+          await person(f.t, f.organizationId, "owner")
+        ).query(api.billing.overview, { organizationId: f.organizationId })
+      ).reviews.map((row) => [row.source, row.code]);
+    expect(await reviews()).toEqual(
+      expect.arrayContaining([
+        ["grant", "PLAN_UNAVAILABLE"],
+        ["grant", "SUBSCRIPTION_STOP_PENDING"],
+      ]),
+    );
+    // Cancelled at once, before it charges the next year; the refund stays manual.
+    await runUntil(f, Date.now());
+    expect(sub.status).toBe("canceled");
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
+    expect(f.fake.state.calls.filter((call) => call.path.includes("refund"))).toEqual([]);
+    expect((await grants(f))[0]!.subscriptionStop).toMatchObject({ state: "done" });
+    expect(await reviews()).toEqual([["grant", "PLAN_UNAVAILABLE"]]);
+    // Repeats do nothing new.
+    await sync(f);
+    await f.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: f.organizationId,
+      grantId: grant!._id,
+      attempt: 0,
+    });
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
+    expect(await grants(f)).toHaveLength(1);
+
+    // Stripe stays down: retried, then flagged until the operator runs it again.
+    const g = await fixture();
+    await g.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, { admissionsUntil: Date.now() - 1 });
+    });
+    const gSub = await annualCard(g);
+    annualStart(g, gSub.id);
+    await sync(g);
+    const [gGrant] = await grants(g);
+    g.fake.state.failNext = 1000;
+    await g.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: g.organizationId,
+      grantId: gGrant!._id,
+      attempt: 5,
+    });
+    g.fake.state.failNext = 0;
+    expect((await grants(g))[0]!.subscriptionStop).toMatchObject({ state: "failed" });
+    expect(gSub.status).toBe("active");
+    expect(
+      (
+        await (
+          await person(g.t, g.organizationId, "owner")
+        ).query(api.billing.overview, { organizationId: g.organizationId })
+      ).reviews.map((row) => row.code),
+    ).toContain("SUBSCRIPTION_STOP_FAILED");
+    await g.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: g.organizationId,
+      grantId: gGrant!._id,
+      attempt: 0,
+    });
+    expect(gSub.status).toBe("canceled");
+    expect((await grants(g))[0]!.subscriptionStop).toMatchObject({ state: "done" });
+  });
+
+  it("os jobs agendados pelo Checkout anual do dia 1 só registram e não fazem nada", async () => {
+    const f = await fixture();
+    const checkoutId = await f.t.run((ctx) =>
+      ctx.db.insert("billingCheckouts", {
+        organizationId: f.organizationId,
+        key: "legacy-annual-day-one",
+        kind: "start",
+        tier: "intermediate",
+        period: "2026-11",
+        grantCents: 149000,
+        cycle: "annual",
+        state: "complete",
+        subscriptionId: "sub_legacy_day_one",
+        admission: { state: "refused", code: "PLAN_UNAVAILABLE", at: Date.now(), stop: "pending" },
+        expiresAt: Date.now(),
+        requestedBy: "legacy",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }),
+    );
+    await f.t.mutation(internal.billing.recheckAnnualAdmission, { checkoutId });
+    const legacy = { organizationId: f.organizationId, checkoutId, attempt: 0 };
+    await f.t.mutation(internal.billing.retryAnnualStop, legacy);
+    await f.t.action(internal.billing.stopRefusedAnnual, legacy);
+    expect(f.fake.state.calls).toEqual([]);
   });
 
   it("depois do anual por cartão, a fatura mensal de um mês coberto continua bloqueada", async () => {
@@ -3364,6 +3473,21 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
         code: "LATE_PAYMENT",
       });
       expect(await terms(late.f)).toEqual([late.term]);
+
+      // Priced in the term's last month and paid after the term ended: still late for its month.
+      vi.setSystemTime(OCT);
+      const ended = await cardTerm();
+      vi.setSystemTime(END + DAY);
+      upgradePaid(ended.f, {
+        amount: 29166,
+        period: "2027-09-10T12:00:00.000Z",
+        paidAt: END + 3600_000,
+      });
+      await sync(ended.f);
+      expect((await grants(ended.f)).at(-1)).toMatchObject({
+        state: "blocked",
+        code: "LATE_PAYMENT",
+      });
 
       // A period that is not the start of a term month: the civil 1st of a term of the 10th.
       vi.setSystemTime(OCT);

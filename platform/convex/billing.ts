@@ -20,6 +20,7 @@ import { PLATFORM_PLANS, isCatalogTier, paidTier } from "./lib/planCatalog";
 import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from "./lib/planCore";
 import {
   rescindedSubscription,
+  subscriptionHasTerm,
   termsEnd,
   termMonth,
   termTierAt,
@@ -129,7 +130,11 @@ async function catalogPrices(
 }
 
 const reviewItem = v.object({
-  /** `term`: a rescinded card term whose subscription could not be cancelled. */
+  /**
+   * `term`: a rescinded card term whose subscription could not be cancelled. `grant` also carries
+   * the stop of the subscription of a blocked first annual invoice: `SUBSCRIPTION_STOP_PENDING`
+   * until it is cancelled, `SUBSCRIPTION_STOP_FAILED` once the retries ran out.
+   */
   source: v.union(v.literal("event"), v.literal("grant"), v.literal("term")),
   code: v.string(),
   amountCents: v.union(v.number(), v.null()),
@@ -173,8 +178,18 @@ export const overview = query({
       }),
     ),
     reviews: v.array(reviewItem),
-    /** Plan in force and a Pix request waiting, so the card actions follow the same rules. */
-    plan: v.union(v.null(), v.object({ tier: v.string(), endsAt: v.union(v.number(), v.null()) })),
+    /**
+     * Plan in force and a Pix request waiting, so the card actions follow the same rules.
+     * `annual`: the plan row a term granted, the access a rescinded term left included.
+     */
+    plan: v.union(
+      v.null(),
+      v.object({
+        tier: v.string(),
+        endsAt: v.union(v.number(), v.null()),
+        annual: v.optional(v.literal(true)),
+      }),
+    ),
     pixPending: v.boolean(),
     /** The annual switch (`annualEnabled`): the annual Checkout is on sale. */
     annualEnabled: v.boolean(),
@@ -207,7 +222,11 @@ export const overview = query({
     const current = await planFor(ctx, args.organizationId);
     const plan =
       current && current.startsAt <= now && !planEnded(current, now)
-        ? { tier: current.catalogTier ?? "custom", endsAt: current.endsAt }
+        ? {
+            tier: current.catalogTier ?? "custom",
+            endsAt: current.endsAt,
+            ...(current.termId ? { annual: true as const } : {}),
+          }
         : null;
     const pixWaiting = await pixPending(ctx, args.organizationId, now);
     const annualOnSale = await annualEnabled(ctx);
@@ -291,6 +310,22 @@ export const overview = query({
             amountCents: grant.amountCents,
             createdAt: grant.createdAt,
           })),
+        // The subscription of a blocked first annual charge, until it is cancelled at Stripe.
+        ...grants.flatMap((grant) =>
+          grant.subscriptionStop && grant.subscriptionStop.state !== "done"
+            ? [
+                {
+                  source: "grant" as const,
+                  code:
+                    grant.subscriptionStop.state === "failed"
+                      ? "SUBSCRIPTION_STOP_FAILED"
+                      : "SUBSCRIPTION_STOP_PENDING",
+                  amountCents: null,
+                  createdAt: grant.createdAt,
+                },
+              ]
+            : [],
+        ),
         // A term and its scheduled renewal, rescinded together, share one subscription to stop.
         ...rescinded.flatMap((term, index) => {
           const failed = term.rescission?.renewalStopFailed;
@@ -1558,6 +1593,126 @@ export const markRenewalStop = internalMutation({
     await markTermRenewalStop(ctx, args.organizationId, args.subscriptionId, args.code);
     return null;
   },
+});
+
+/**
+ * The subscription a blocked first annual invoice should stop (`applyInvoice`), or null when
+ * there is nothing left to do: the stop is done, or the subscription has since bought a term it
+ * now renews, which is never cancelled from here.
+ */
+export const blockedAnnualTarget = internalQuery({
+  args: { ...scope, grantId: v.id("billingGrants"), livemode: v.boolean() },
+  returns: v.union(v.null(), v.object({ customerId: v.string(), subscriptionId: v.string() })),
+  handler: async (ctx, args) => {
+    const grant = await ctx.db.get("billingGrants", args.grantId);
+    const stop = grant?.subscriptionStop;
+    if (grant?.organizationId !== args.organizationId || !stop || stop.state === "done")
+      return null;
+    if (await subscriptionHasTerm(ctx, args.organizationId, stop.subscriptionId)) return null;
+    const account = await accountOf(ctx, args.organizationId, args.livemode);
+    return account ? { customerId: account.customerId, subscriptionId: stop.subscriptionId } : null;
+  },
+});
+export const markAnnualStop = internalMutation({
+  args: {
+    grantId: v.id("billingGrants"),
+    state: v.union(v.literal("done"), v.literal("failed")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const grant = await ctx.db.get("billingGrants", args.grantId);
+    // A stop done is final: a later failure never reopens it.
+    if (!grant?.subscriptionStop || grant.subscriptionStop.state === "done") return null;
+    await ctx.db.patch("billingGrants", grant._id, {
+      subscriptionStop: { ...grant.subscriptionStop, state: args.state },
+    });
+    return null;
+  },
+});
+/**
+ * A blocked first annual invoice (slice 2b of ADR 0012) charged a year that bought no term: its
+ * subscription is cancelled at once, without proration or refund, so it does not charge again at
+ * the anniversary. The refund stays a person's decision (`billing:resolveReview`). One already
+ * ended, unknown to Stripe or of another Customer is left alone, so a repeat does nothing new. A
+ * Stripe failure is retried with a growing wait; after the last attempt the stop is `failed` and
+ * shows in `billing:overview` until the operator runs this again with `attempt: 0`.
+ */
+export const stopBlockedAnnual = internalAction({
+  args: { ...scope, grantId: v.id("billingGrants"), attempt: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const cfg = config();
+    if (!cfg) return null;
+    const target = await ctx.runQuery(internal.billing.blockedAnnualTarget, {
+      organizationId: args.organizationId,
+      grantId: args.grantId,
+      livemode: cfg.livemode,
+    });
+    if (!target) return null;
+    try {
+      await cancelSubscription(cfg, target.customerId, target.subscriptionId);
+    } catch (error) {
+      if (!(error instanceof StripeApiError)) throw error;
+      console.error("billing.stopBlockedAnnual", error.message);
+      if (args.attempt >= STOP_ATTEMPTS)
+        await ctx.runMutation(internal.billing.markAnnualStop, {
+          grantId: args.grantId,
+          state: "failed",
+        });
+      else await ctx.runMutation(internal.billing.retryBlockedAnnualStop, args);
+      return null;
+    }
+    await ctx.runMutation(internal.billing.markAnnualStop, {
+      grantId: args.grantId,
+      state: "done",
+    });
+    // Reading the account back is a courtesy: the subscription events repeat it.
+    try {
+      await syncOrganization(ctx, args.organizationId, cfg);
+    } catch (error) {
+      if (!(error instanceof StripeApiError)) throw error;
+      console.error("billing.stopBlockedAnnual.sync", error.message);
+    }
+    return null;
+  },
+});
+export const retryBlockedAnnualStop = internalMutation({
+  args: { ...scope, grantId: v.id("billingGrants"), attempt: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.scheduler.runAfter(
+      15 * 60_000 * (args.attempt + 1),
+      internal.billing.stopBlockedAnnual,
+      { ...args, attempt: args.attempt + 1 },
+    );
+    return null;
+  },
+});
+
+/**
+ * Legacy no-ops: the annual Checkout anchored on the next 1st, removed in slice 2b of ADR 0012,
+ * scheduled these. A job still queued in a deployment where that Checkout ran (the sandbox or
+ * the validation) lands here, logs and does nothing; the annual is now charged at the signing.
+ */
+const legacyAnnual = (name: string) => {
+  console.warn("billing.legacyAnnual", name);
+  return null;
+};
+export const recheckAnnualAdmission = internalMutation({
+  args: { checkoutId: v.id("billingCheckouts") },
+  returns: v.null(),
+  handler: async () => legacyAnnual("recheckAnnualAdmission"),
+});
+const legacyStop = { ...scope, checkoutId: v.id("billingCheckouts"), attempt: v.number() };
+export const stopRefusedAnnual = internalAction({
+  args: legacyStop,
+  returns: v.null(),
+  handler: async () => legacyAnnual("stopRefusedAnnual"),
+});
+export const retryAnnualStop = internalMutation({
+  args: legacyStop,
+  returns: v.null(),
+  handler: async () => legacyAnnual("retryAnnualStop"),
 });
 
 /**

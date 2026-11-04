@@ -9,6 +9,7 @@ import {
   chainAnchor,
   monthlyBlockedByTerm,
   rescindedSubscription,
+  subscriptionHasTerm,
   termCovering,
   termMonth,
   termTierAt,
@@ -20,6 +21,7 @@ import { planFor } from "./usageCore";
 import { planEnded } from "./usageValues";
 import { periodKey, periodKeyStart, quotaPeriod } from "./quotaPeriod";
 import {
+  ANNUAL_CYCLE,
   ENDED_STATUSES,
   invoiceGrant,
   type AnnualPrices,
@@ -297,8 +299,21 @@ export async function applyInvoice(
     return;
   const now = Date.now();
   const bought = decision.kind !== "none" && decision.kind !== "review";
-  const record: GrantRecord = (state, code, planVersion, termId) =>
-    ctx.db.insert("billingGrants", {
+  // The first invoice of an annual subscription (slice 2b): charged at the signing. Blocked, it
+  // bought no term, and the subscription would charge the next year at its anniversary.
+  const firstAnnual =
+    invoice.billingReason === "subscription_create" &&
+    invoice.subscriptionId !== null &&
+    (invoice.subscriptionMetadata.cycle === ANNUAL_CYCLE ||
+      annualSubscriptions.includes(invoice.subscriptionId));
+  const record: GrantRecord = async (state, code, planVersion, termId) => {
+    // Stopped at once, unless the subscription renews a term it bought (a repeated charge of a
+    // year already granted): the refund stays a person's decision.
+    const stop =
+      state === "blocked" &&
+      firstAnnual &&
+      !(await subscriptionHasTerm(ctx, organizationId, invoice.subscriptionId!));
+    const grantId = await ctx.db.insert("billingGrants", {
       organizationId,
       invoiceId: invoice.id,
       tier: bought ? decision.tier : null,
@@ -313,8 +328,24 @@ export async function applyInvoice(
       ...(code ? { code } : {}),
       ...(planVersion !== undefined ? { planVersion } : {}),
       ...(termId ? { termId } : {}),
+      ...(stop
+        ? {
+            subscriptionStop: {
+              subscriptionId: invoice.subscriptionId!,
+              state: "pending" as const,
+            },
+          }
+        : {}),
       createdAt: now,
     });
+    if (stop)
+      await ctx.scheduler.runAfter(0, internal.billing.stopBlockedAnnual, {
+        organizationId,
+        grantId,
+        attempt: 0,
+      });
+    return grantId;
+  };
   if (decision.kind === "none") return void (await record("skipped", decision.code));
   if (decision.kind === "review") return void (await record("blocked", decision.code));
   if (decision.kind === "annual")
@@ -590,7 +621,9 @@ async function applyAnnualUpgrade(
   const fromPeriod = periodStart(period);
   const paidAt = invoice.paidAt ?? now;
   // The price depends on the term month: paid after it, the difference no longer matches. The
-  // month is the one of the term covering `period`, even one that has ended since.
+  // month is the one of the `active` or `scheduled` term covering `period`, even one whose
+  // `endsAt` has passed since (terms are not marked `expired`); a rescinded term is not looked
+  // at, and its upgrade is refused below (`ANNUAL_TERM_REQUIRED`).
   const priced = await termCovering(ctx, organizationId, fromPeriod);
   if (
     priced &&

@@ -809,6 +809,22 @@ Uma fatura anual paga vira termo como a confirmação de um Pix anual. O
   Uma fatura anual bloqueada não tem plano a ajustar: o operador reembolsa
   pelo painel do Stripe e marca com `billing:resolveReview`.
 
+  **Primeira fatura bloqueada.** Uma fatura `subscription_create` de uma
+  assinatura anual que fica `blocked` cobrou um ano que não virou termo, e a
+  assinatura cobraria de novo no aniversário. A concessão grava
+  `subscriptionStop` (`pending`) e agenda `billing:stopBlockedAnnual`, que lê
+  a assinatura pelo id e a cancela na hora (`DELETE`, sem pró-rata nem
+  crédito) se ainda for do Customer e não tiver terminado; o reembolso
+  continua manual. Uma falha do Stripe é repetida 5 vezes, com espera
+  crescente a partir de 15 minutos, como na rescisão; esgotadas, a parada
+  fica `failed`. Até ficar `done`, `billing:overview` mostra, além da fatura
+  bloqueada, `SUBSCRIPTION_STOP_PENDING` ou `SUBSCRIPTION_STOP_FAILED`
+  (`source: "grant"`). O operador repete com
+  `bunx convex run billing:stopBlockedAnnual` e `organizationId`, `grantId`
+  e `attempt: 0`. Nada é cancelado quando a assinatura já comprou um termo
+  em vigor ou agendado, como numa segunda cobrança do ano já concedido: ela
+  renova esse termo.
+
   Uma renovação agendada pode ser recusada no início (admissão, `TERM_ENDED`)
   enquanto a concessão da fatura continua `applied`: a recusa fica no
   `blockedCode` do termo (`termId` na concessão), e o operador a trata como
@@ -881,7 +897,9 @@ troca o preço dela depois de um upgrade.
 
 Entre o pagamento e a concessão, a admissão pode recusar (catálogo
 desligado, uso acima do tier, inventário, arquivamento, janela fechada para
-uma reserva nova): a fatura fica `blocked` com o código, e o reembolso é
+uma reserva nova): a fatura fica `blocked` com o código, a assinatura é
+cancelada antes de cobrar de novo
+([Primeira fatura bloqueada](#fatura-anual-do-cartão)), e o reembolso é
 manual, pelo painel do Stripe. Os termos de uso 1.0 e 1.1 dizem que a
 contratação recusada antes do início é cancelada sem cobrança; a versão nova
 dos termos precisa dizer isso antes de o anual ser ligado (ADR 0012,
@@ -919,9 +937,16 @@ Até a fatia 2b, o Checkout anual ancorava a assinatura no dia 1 seguinte,
 não cobrava nada na sessão e reservava a admissão na conclusão, com uma
 reconferência agendada seis horas antes da âncora e o cancelamento da
 assinatura recusada. Essa máquina saiu do código; as linhas antigas de
-`billingCheckouts` podem ter `subscriptionId` e `admission`, que nada lê. O
-catálogo e o anual nunca foram ligados em produção, então nenhuma
-assinatura desse formato existe fora do sandbox.
+`billingCheckouts` podem ter `subscriptionId` e `admission`, que nada lê, e
+uma recusa antiga deixa de aparecer em `billing:overview`. Os nomes das
+tarefas que ela agendava (`billing:recheckAnnualAdmission`,
+`billing:stopRefusedAnnual` e `billing:retryAnnualStop`) continuam como
+funções internas que só registram `billing.legacyAnnual` no log e não fazem
+nada, para que uma tarefa ainda na fila de um deployment de sandbox ou de
+validação não falhe. Uma assinatura recusada desse formato que ainda renove
+é cancelada à mão no painel do Stripe. O catálogo e o anual nunca foram
+ligados em produção, então nenhuma assinatura desse formato existe fora do
+sandbox.
 
 ### Upgrade do anual
 
@@ -1331,7 +1356,12 @@ opcional nas funções do console, e só o console anterior a essa mudança o l�
   o cancelamento da mesma assinatura falhando, aparecem como um só
   `SUBSCRIPTION_STOP_FAILED` em `billing:overview`. Desde a fatia 2b não há
   mais pendência de Checkout (`source: "checkout"`): uma recusa do anual
-  depois do pagamento é uma fatura `blocked`, como as outras.
+  depois do pagamento é uma fatura `blocked`, como as outras, e a parada da
+  assinatura dela aparece como "Cancelamento em andamento" ou "pendente no
+  Stripe da assinatura anual cuja cobrança não virou plano". Enquanto a
+  assinatura anual não tem termo (`subscriptionTerm` falso), a próxima
+  cobrança diz que a cobrança anual está em confirmação ou em análise, e
+  "Cancelar renovação" não promete meses pagos.
 
 ## Eventos e reconciliação
 
@@ -1374,6 +1404,12 @@ Eventos assinados: `checkout.session.completed`, `checkout.session.expired`,
   Uma fatura de cartão bloqueada com `ANNUAL_TERM_ACTIVE` não tem plano a
   ajustar, porque esses caminhos também recusam o mês coberto: o operador
   reembolsa pelo painel do Stripe e marca com `billing:resolveReview`.
+- A primeira fatura anual bloqueada para a assinatura sozinha
+  (`billing:stopBlockedAnnual`). Com `SUBSCRIPTION_STOP_FAILED`, o operador
+  repete a ação com `organizationId`, `grantId` e `attempt: 0`; depois do
+  cancelamento, reembolsa pelo painel do Stripe e marca a fatura com
+  `billing:resolveReview` (`grantId`)
+  ([Primeira fatura bloqueada](#fatura-anual-do-cartão)).
 - A rescisão do anual, o upgrade desfeito em 7 dias e o registro da
   devolução são `plans:rescindTerm`, `plans:undoTermUpgrade` e
   `plans:recordTermRefund` ([Rescisão do anual](#rescisão-do-anual)).
@@ -1488,8 +1524,10 @@ diferente, valor, moeda, atraso, linha que não é um ano da âncora, âncora
 desconhecida deixada para a conferência seguinte, renovação paga mais de um
 mês antes, organização errada ou encerrada, plano personalizado, interruptor
 desligado, recusa de admissão, a fatura mensal de um mês coberto, a retomada
-recusada com outro termo agendado e os anuais anteriores à fatia 2b,
-ancorados no dia 1, renovando. Do Checkout anual (fatia 2b): os parâmetros
+recusada com outro termo agendado, a primeira fatura bloqueada que cancela
+a assinatura sem reembolso automático, com a falha repetida e sinalizada
+até o operador repetir, os jobs do Checkout do dia 1 que só registram, e os
+anuais anteriores à fatia 2b, ancorados no dia 1, renovando. Do Checkout anual (fatia 2b): os parâmetros
 exatos da sessão, sem âncora nem `proration_behavior` e sem `period`; a
 assinatura de 31/01/2027 às 10:00:07 UTC cobrada na hora, com o termo até
 31/01/2028 no mesmo horário, as cotas virando em 28/02 e 31/03 e a
@@ -1715,44 +1753,49 @@ item avulso, período de teste nem cupom.
    (`plans:configureAnnual`), com evidência citando a #35.
 3. **Mensal.** O owner sintético contrata o Intermediário mensal pelo console
    com cartão de teste. Conferir os eventos `processed` em `billingEvents`, a
-   concessão `applied` em `billingGrants`, com `period` igual ao instante do
-   pagamento, e o plano no console até o mesmo dia e horário do mês seguinte,
-   sem "Conferir pagamento". "Cartão e faturas" abre o portal só com cartão e
-   faturas.
-4. **Anual sobre o mensal.** Com o mensal em vigor, "Assinar Intermediário
-   anual no cartão" fica desabilitado até "Cancelar renovação". Depois dele,
-   o anual do mesmo tier abre o Checkout, e o pagamento gera a fatura
-   `subscription_create` de R$ 1.490. Conferir: o termo `active` com
-   `firstPeriod` no instante do pagamento, truncado ao segundo, e `endsAt` no
-   mesmo dia e horário do ano seguinte; a linha de `usagePlans` com `termId`,
-   `periodAnchor` igual ao `billing_cycle_anchor` da assinatura e o fim do
-   termo, substituindo o mensal na hora; a reserva em
-   `platformPlanAllocations`; a assinatura mensal com `cancel_at_period_end`
-   e sem nova cobrança; e o console com o anual em vigor e a próxima
-   cobrança anual como instante UTC. Antes do Checkout, o Grande mensal
-   recusa o Intermediário anual com a data em que fica disponível.
-5. **Upgrade.** Com o termo do cartão em vigor, "Mudar para Grande anual"
-   abre a sessão em modo `payment` pela diferença dos meses restantes, com
-   `period` no início do mês do termo. Paga, conferir o segmento do Grande
-   desde esse início, o fim do termo mantido, a assinatura no preço anual do
-   Grande com a mesma âncora (`current_period_end` inalterado) e o console.
-6. **Arrependimento e rescisão.** Dentro dos 7 dias da cobrança anual,
+   concessão `applied` em `billingGrants`, com `period` igual à chave do
+   `billing_cycle_anchor` da assinatura (a criação dela, em segundos), e o
+   plano no console até o mesmo dia e horário do mês seguinte, sem "Conferir
+   pagamento". "Cartão e faturas" abre o portal só com cartão e faturas.
+4. **Anual sobre o mensal.** Com o mensal do passo 3 em vigor, "Assinar
+   Intermediário anual no cartão" fica desabilitado até "Cancelar
+   renovação". Depois dele, o anual do mesmo tier abre o Checkout, e o
+   pagamento gera a fatura `subscription_create` de R$ 1.490. Conferir: o
+   termo `active` com `firstPeriod` no `billing_cycle_anchor` da assinatura
+   anual (a criação dela, em segundos) e `endsAt` no mesmo dia e horário do
+   ano seguinte; a linha de `usagePlans` com `termId`, `periodAnchor` igual a
+   essa âncora e o fim do termo, substituindo o mensal na hora; a reserva em
+   `platformPlanAllocations`; a assinatura mensal com
+   `cancel_at_period_end` e sem nova cobrança; e o console com o anual em
+   vigor e a próxima cobrança anual como instante UTC.
+5. **Anual menor sobre mensal maior.** Numa segunda organização sintética,
+   o owner contrata o Grande mensal pelo cartão e usa "Cancelar renovação".
+   "Assinar Intermediário anual no cartão" é recusado com
+   `PLAN_UNAVAILABLE`, e o console mostra a data em que fica disponível, o
+   fim do Grande mensal. Nenhum Checkout é aberto.
+6. **Upgrade.** Na primeira organização, com o termo do cartão em vigor,
+   "Mudar para Grande anual" abre a sessão em modo `payment` pela diferença
+   dos meses restantes, com `period` no início do mês do termo. Paga,
+   conferir o segmento do Grande desde esse início, o fim do termo mantido, a
+   assinatura no preço anual do Grande com a mesma âncora
+   (`current_period_end` inalterado) e o console.
+7. **Arrependimento e rescisão.** Dentro dos 7 dias da cobrança anual,
    `plans:rescindTerm` devolve o total pago e termina o acesso na hora;
    conferir a assinatura anual cancelada no Stripe pela reconciliação, sem
    reembolso automático, e o console. Com o Pix desligado, o console não
    oferece o pedido Pix, e `plans:requestPaid` responde `PIX_DISABLED`.
-7. **Repetição.** Reenviar pelo painel um evento já processado não cria
+8. **Repetição.** Reenviar pelo painel um evento já processado não cria
    efeito novo.
-8. **Limpeza.** Cancelar as assinaturas de teste, desligar o anual
-   (`plans:configureAnnual`) e fechar a janela de admissão na validação
-   (`plans:configure` com `admissionsUntil` no passado: a mutation não
-   desliga um catálogo já ligado) e retirar as variáveis, salvo decisão de
-   manter o cartão de teste ali.
-9. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado
-   na validação, as datas de cada fatura das partes A e B, os estados e
-   códigos observados e o resultado de
-   `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
-   sem chaves nem ids da conta.
+9. **Limpeza.** Cancelar as assinaturas de teste das duas organizações,
+   desligar o anual (`plans:configureAnnual`) e fechar a janela de admissão
+   na validação (`plans:configure` com `admissionsUntil` no passado: a
+   mutation não desliga um catálogo já ligado) e retirar as variáveis, salvo
+   decisão de manter o cartão de teste ali.
+10. **Registro.** Num comentário da #35, registrar as datas, o SHA publicado
+    na validação, as datas de cada fatura das partes A e B, os estados e
+    códigos observados e o resultado de
+    `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <URL do passo 1>`,
+    sem chaves nem ids da conta.
 
 A renovação anual na jornada hospedada não pode ser antecipada, porque o
 Customer do console não tem relógio: ela fica provada pela parte A e pelos
