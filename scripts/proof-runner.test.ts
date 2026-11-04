@@ -649,9 +649,13 @@ describe("shared CI writers", () => {
             : [command === "identity" ? "revision.json" : "tests.json"];
         for (const file of writes) {
           const ready = join(root, `${file}.ready`);
-          const deadline = Date.now() + 15000;
-          while (!existsSync(ready) && Date.now() < deadline && child.exitCode === null)
-            await new Promise((resolve) => setTimeout(resolve, 30));
+          // Espera o marcador do filho; um filho que saiu antes encerra a espera.
+          await vi.waitFor(
+            () => {
+              if (child.exitCode === null) expect(existsSync(ready)).toBe(true);
+            },
+            { timeout: 15000, interval: 30 },
+          );
           expect(existsSync(ready)).toBe(true);
           tokens.push(JSON.parse(readFileSync(ready, "utf8")).token);
           writeFileSync(join(root, ".ci-results/tests.json"), "sentinel");
@@ -787,20 +791,21 @@ describe("checkout exclusion", () => {
     const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
     let receiptPath = "";
     try {
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline) {
-        const out = join(root, "out");
-        if (existsSync(out)) {
-          const attempt = readdirSync(out)[0];
+      // Espera o recibo registrar a etapa; um filho que saiu antes encerra a espera.
+      await vi.waitFor(
+        () => {
+          if (child.exitCode !== null) return;
+          const out = join(root, "out");
+          const attempt = existsSync(out) ? readdirSync(out)[0] : undefined;
           const file = attempt && join(out, attempt, "receipt.json");
-          if (file && existsSync(file) && JSON.parse(readFileSync(file, "utf8")).commands.length) {
-            receiptPath = file;
-            break;
-          }
-        }
-        if (child.exitCode !== null) throw new Error("Child exited before recording its step");
-        await new Promise((resolve) => setTimeout(resolve, 30));
-      }
+          if (!file || !existsSync(file) || !JSON.parse(readFileSync(file, "utf8")).commands.length)
+            throw new Error("Receipt has no step yet");
+          receiptPath = file;
+        },
+        { timeout: 15000, interval: 30 },
+      );
+      if (!receiptPath && child.exitCode !== null)
+        throw new Error("Child exited before recording its step");
       expect(receiptPath).not.toBe("");
       expectWritersBlocked();
       expect(() => local()).toThrow(/Validação indisponível/);

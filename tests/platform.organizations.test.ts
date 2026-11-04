@@ -14,6 +14,8 @@ const modules = import.meta.glob("../platform/convex/**/*.ts");
 const paginationOpts = { numItems: 50, cursor: null };
 const contextKey = "isolated-test";
 beforeEach(() => {
+  // Relógio fixo, longe de virada de dia e de mês (freecorps/no-wall-clock-in-tests).
+  vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
   for (const [key, value] of Object.entries({
     APP_ENV: "development",
     PRODUCT_ENV: "sandbox",

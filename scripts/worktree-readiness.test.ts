@@ -470,6 +470,9 @@ it.each(["cleanup", "remove"])(
   },
 );
 
+// Instante fixo dos registros: a espera mede pelo `performance.now` simulado, não pelo relógio
+// real (freecorps/no-wall-clock-in-tests).
+const FIXED_AT = "2026-06-15T15:00:00.000Z";
 function timedObservation() {
   const paths = fixture();
   let now = 0;
@@ -489,7 +492,7 @@ function timedObservation() {
     pid: observedPid,
     runId: randomUUID(),
     identity: createHash("sha256").update(probeOutput).digest("hex"),
-    startedAt: new Date().toISOString(),
+    startedAt: FIXED_AT,
     outcome: "running",
   };
   const lock = join(paths.convexDir, "worktree-operation.lock");
@@ -547,10 +550,7 @@ it.each(["lock", "receipt", "both"] as const)(
 
 it("espera aceita conclusão dentro do prazo sem arredondar a comparação", async () => {
   const { paths, record, receipt, advance } = timedObservation();
-  writeFileSync(
-    receipt,
-    JSON.stringify({ ...record, outcome: "succeeded", finishedAt: new Date().toISOString() }),
-  );
+  writeFileSync(receipt, JSON.stringify({ ...record, outcome: "succeeded", finishedAt: FIXED_AT }));
   vi.mocked(readLocalConfig).mockImplementationOnce(() => {
     advance(24.75);
     return null;
@@ -571,10 +571,7 @@ it.each(["succeeded", "failed"])(
       // Mesmo que a consulta devolva identidade, o dono terminou enquanto ela
       // rodava. A releitura do status encontra um terminal tarde demais.
       advance(25);
-      writeFileSync(
-        receipt,
-        JSON.stringify({ ...record, outcome, finishedAt: new Date().toISOString() }),
-      );
+      writeFileSync(receipt, JSON.stringify({ ...record, outcome, finishedAt: FIXED_AT }));
       rmSync(lock);
       return probeResult;
     });
@@ -613,10 +610,7 @@ it("status padrão conserva o limite da sonda e timeout zero consulta o estado u
   expect(await waitForSetup(paths.root, { timeoutMs: 0 })).toMatchObject({ outcome: "timeout" });
   expect(spawnSync).toHaveBeenCalledTimes(2);
   rmSync(lock);
-  writeFileSync(
-    receipt,
-    JSON.stringify({ ...record, outcome: "succeeded", finishedAt: new Date().toISOString() }),
-  );
+  writeFileSync(receipt, JSON.stringify({ ...record, outcome: "succeeded", finishedAt: FIXED_AT }));
   expect(await waitForSetup(paths.root, { timeoutMs: 0 })).toMatchObject({ outcome: "succeeded" });
   expect(readProcessIdentity(process.pid, { deadlineMs: 0 })).toBeNull();
   expect(spawnSync).toHaveBeenCalledTimes(2);
@@ -632,6 +626,8 @@ it("remover o próprio registro preserva o substituto mesmo com o mesmo PID", ()
 
 it("preload do bootstrap mantém o pai do CLI bem-sucedido até o filho sair", async () => {
   const preload = pathToFileURL(resolve("scripts/lib/worktree/bootstrap-parent.mjs")).href;
+  // O neto grava o marcador ao terminar: se o pai saiu depois dele, o marcador já existe.
+  const marker = join(fixture().root, "neto-terminou");
   const child = spawn(
     process.execPath,
     [
@@ -641,7 +637,7 @@ it("preload do bootstrap mantém o pai do CLI bem-sucedido até o filho sair", a
       "-e",
       `
     import { spawn } from "node:child_process";
-    spawn(process.execPath, ["-e", "setTimeout(() => {}, 1200)"], {stdio: "ignore", windowsHide: true});
+    spawn(process.execPath, ["-e", "setTimeout(() => require('node:fs').writeFileSync(process.argv[1], 'ok'), 300)", ${JSON.stringify(marker)}], {stdio: "ignore", windowsHide: true});
     console.log("started");
     process.exit(0);
   `,
@@ -653,9 +649,8 @@ it("preload do bootstrap mantém o pai do CLI bem-sucedido até o filho sair", a
   children.push(child);
   const exited = once(child, "exit");
   await once(child.stdout!, "data");
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  expect(child.exitCode).toBeNull();
   expect((await exited)[0]).toBe(0);
+  expect(existsSync(marker)).toBe(true);
 });
 
 it("preload do bootstrap preserva erros e recusa uso sem --skip-push", () => {

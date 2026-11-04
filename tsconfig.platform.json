@@ -9,6 +9,7 @@
     "tests",
     "scripts",
     "lib",
+    "tooling",
     "vite.config.ts",
     "packages",
     "examples"

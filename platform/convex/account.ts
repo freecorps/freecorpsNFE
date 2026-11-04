@@ -44,6 +44,7 @@ export const capabilities = query({
   },
 });
 
+// freecorps-access: sem-tenant — lê só a conta Better Auth de quem chama
 export const profile = query({
   args: {},
   returns: v.object({ name: v.string(), emailVerified: v.literal(true), organization: v.null() }),

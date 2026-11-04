@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { getFunctionName } from "convex/server";
 
 const state = vi.hoisted(() => ({
@@ -88,6 +88,11 @@ vi.mock("@tanstack/react-router", async (original) => ({
     ),
 }));
 import { ProtectedLayout } from "./session-layout";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 
 beforeEach(() => {
   state.authenticated = true;

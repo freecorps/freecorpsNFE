@@ -1167,8 +1167,7 @@ function InvitationAcceptance() {
   // Opened from the link: show the organization and the role right away, still asking to confirm.
   useEffect(() => {
     if (opened) void check(opened);
-    // Runs once for the code that opened the page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Runs once for the code that opened the page.
   }, []);
   async function inspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

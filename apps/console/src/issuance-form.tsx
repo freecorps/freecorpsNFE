@@ -293,8 +293,7 @@ function DraftForm({
     // Centered, so the label above the field stays in view.
     target?.focus({ preventScroll: true });
     target?.scrollIntoView?.({ block: "center" });
-    // `targets` follows the draft; only a new focus request moves the focus.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `targets` follows the draft; only a new focus request moves the focus.
   }, [focus, busy]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {

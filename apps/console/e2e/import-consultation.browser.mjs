@@ -147,8 +147,7 @@ export function selectFiles(model, loseResponse = false) {
   const state = read(),
     input = uploadInput();
   if (loseResponse) {
-    // Each call below supplies the original XHR receiver.
-    // eslint-disable-next-line typescript/unbound-method
+    // eslint-disable-next-line typescript/unbound-method -- Each call below supplies the original XHR receiver.
     const send = XMLHttpRequest.prototype.send;
     XMLHttpRequest.prototype.send = function (body) {
       if (body instanceof File && body.name === `${model}.xml`) {

@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 // tests/ci.testProjects.test.ts.
 const tooling = [
   "scripts/**/*.test.ts",
+  "tooling/**/*.test.ts",
   "apps/console/e2e/**/*.test.ts",
   "lib/worktree*.test.ts",
   "tests/{worktree,validation,consoleTarget,ci.,fixtureCorpus,docsOutput}*.test.ts",

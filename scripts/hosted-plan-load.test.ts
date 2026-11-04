@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { it, expect } from "vite-plus/test";
+import { afterAll, expect, it, vi } from "vite-plus/test";
 import { PLATFORM_PLANS } from "../platform/convex/lib/planCatalog";
 import {
   ADMISSION_P95_MS,
@@ -19,6 +19,11 @@ import {
   summarizeReads,
   summarizeRound,
 } from "./lib/hosted-plan-load.mjs";
+
+// Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
+// (freecorps/no-wall-clock-in-tests).
+vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+afterAll(() => vi.useRealTimers());
 
 const quota = { error: { code: "RATE_LIMITED", retryable: false } };
 const limiter = { error: { code: "RATE_LIMITED", retryable: true } };

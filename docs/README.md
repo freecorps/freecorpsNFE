@@ -10,7 +10,7 @@ agentes e aponta para as referências abaixo.
 | Pasta                                  | Responde                                                                                 |
 | -------------------------------------- | ---------------------------------------------------------------------------------------- |
 | [`plataforma/`](plataforma/)           | Contrato atual de cada domínio e arquitetura do backend                                  |
-| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI e validação no navegador                                           |
+| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI, lint e validação no navegador                                     |
 | [`operacao/`](operacao/)               | Publicação, ambientes, backup, restauração e instalação própria                          |
 | [`adr/`](adr/)                         | Decisões aceitas; mudança posterior entra em "Situação" datada, sem reescrever a decisão |
 | [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                        |
@@ -86,7 +86,7 @@ define metas de custo para redesenhar a entrada paga.
 
 | Regra                                    | Referência principal                                                                                                   |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Autorização e escopos                    | Contrato do domínio e os `*Access.ts` de `platform/convex/lib/`                                                        |
+| Autorização e escopos                    | Contrato do domínio, os `*Access.ts` de `platform/convex/lib/` e [lint.md](desenvolvimento/lint.md)                    |
 | Valores fiscais em decimal exato (texto) | [fiscal-core](../packages/fiscal-core/README.md)                                                                       |
 | Idempotência e deduplicação              | [OPERATIONS.md](plataforma/OPERATIONS.md), [IMPORTS.md](plataforma/IMPORTS.md) e [WEBHOOKS.md](plataforma/WEBHOOKS.md) |
 | Ambientes e gate de produção fiscal      | [ISSUANCE.md](plataforma/ISSUANCE.md) e [deploy-producao.md](operacao/deploy-producao.md)                              |

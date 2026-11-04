@@ -73,6 +73,7 @@ authComponent.registerRoutesLazy(http, createAuth, {
   trustedOrigins: () => [requirePlatformEnvironment().siteUrl],
   cors: { allowedOrigins: [] },
 });
+// freecorps-access: sem-tenant — saúde pública do deployment, sem dado de organização
 http.route({
   path: "/health",
   method: "GET",

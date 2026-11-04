@@ -142,7 +142,7 @@ cada área o seu timeout.
 | `platform-isolated` | Os arquivos de `platform` que usam `vi.mock`             | 20 s    |
 | `packages`          | `packages/`                                              | 20 s    |
 | `console`           | `apps/*/src/` (jsdom por arquivo)                        | 20 s    |
-| `tooling`           | `scripts/`, worktree, validação, CI e corpus de fixtures | 60 s    |
+| `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus | 60 s    |
 | `benchmark`         | `tests/**/*.benchmark.test.ts`                           | 120 s   |
 
 Os testes de `tests/` sem prefixo de área entram pelo nome no projeto do
@@ -239,7 +239,10 @@ Regras para um teste novo, das falhas que suítes parecidas já tiveram:
   instante longe de viradas (`now` de `usePlatformEnvironment` ou
   `vi.setSystemTime`). A suíte de `platform`, `console` e `packages`
   passou com o relógio deslocado para 23:59 de São Paulo, fim de mês e fim de
-  ano.
+  ano. `freecorps/no-wall-clock-in-tests` reprova `Date.now()`,
+  `performance.now()`, `new Date()` e timers reais num arquivo sem relógio
+  falso, e loop de polling em qualquer teste
+  ([lint.md](lint.md#no-wall-clock-in-tests)).
 - **Bytes grandes por hash ou primeira diferença.** `toEqual` em dois
   `Uint8Array` de megabytes compara elemento por elemento e leva segundos;
   compare um hash ou o primeiro índice que difere.

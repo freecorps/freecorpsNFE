@@ -134,6 +134,7 @@ export async function evidenceSnapshot(
  * the caller's identity, read and rendered here. The console calls them again when the token
  * changes.
  */
+// freecorps-access: delegada — contentRead.documentDetail passa por getDocument (documentAccess)
 export const documentDetailRead = action({
   args: readerArgs.documentDetail,
   returns: documentDetail,
@@ -145,6 +146,7 @@ export const documentDetailRead = action({
       ),
     ) as Infer<typeof documentDetail>,
 });
+// freecorps-access: delegada — contentRead.documentItems passa por documentItems (documentAccess)
 export const documentItemsRead = action({
   args: readerArgs.documentItems,
   returns: itemsPage,
@@ -156,6 +158,7 @@ export const documentItemsRead = action({
       ),
     ) as Infer<typeof itemsPage>,
 });
+// freecorps-access: delegada — contentRead.documentVersions passa por documentVersions (documentAccess)
 export const documentVersionsRead = action({
   args: readerArgs.documentVersions,
   returns: versionsPage,
@@ -167,6 +170,7 @@ export const documentVersionsRead = action({
       ),
     ) as Infer<typeof versionsPage>,
 });
+// freecorps-access: delegada — contentRead.importDetail passa por importDetailPlan (importAccess)
 export const importDetailRead = action({
   args: readerArgs.importDetail,
   returns: importDetailResult,
@@ -178,6 +182,7 @@ export const importDetailRead = action({
       ),
     ) as Infer<typeof importDetailResult>,
 });
+// freecorps-access: delegada — contentRead.importHistory passa por historyPlan (getFile)
 export const importHistoryRead = action({
   args: readerArgs.importHistory,
   returns: historyResult,

@@ -159,8 +159,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
     if (back === "cancelado") return setMessage("Pagamento não concluído. Nada foi cobrado.");
     setMessage("Pagamento em confirmação. O plano muda quando o Stripe confirmar a fatura paga.");
     if (canManage) void action.run(() => refresh({ organizationId: org.id }), { quiet: true });
-    // Once per visit: `action` and `refresh` change identity on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Once per visit: `action` and `refresh` change identity on every render.
   }, [data.card, canManage, org.id]);
 
   const sub = data.account?.subscription ?? null;

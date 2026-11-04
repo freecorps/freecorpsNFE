@@ -281,6 +281,7 @@ export const responseHeaders = {
   "Content-Type": "application/octet-stream",
   "Content-Disposition": 'attachment; filename="original.xml"',
 };
+// freecorps-access: ticket — o token de download é conferido por documentDownloads.authorize
 export const route = observedAction(async (ctx, request) => {
   const requestId = request.headers.get("X-Request-Id")!;
   const origin = request.headers.get("Origin"),

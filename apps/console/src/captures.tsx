@@ -1264,8 +1264,7 @@ function useSituationAnnouncement(
       if (said.length) setMessage(said.map((entry) => entry!.text).join(" "));
     }
     previous.current = keys;
-    // `keyed` follows `signature`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `keyed` follows `signature`.
   }, [signature]);
   return message;
 }

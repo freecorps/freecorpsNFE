@@ -31,8 +31,10 @@ Permissão, escopo de organização, projeto, empresa e ambiente, valores e
 transições se validam no Convex. O cliente envia a intenção; o servidor carrega
 o registro e confere quem pode agir sobre ele. `organizationId`, `projectId`,
 `companyId` e ids de documentos são seletores, nunca prova de acesso.
-Validação no formulário é feedback; a proteção precisa existir também na função que lê ou escreve os
-dados.
+Validação no formulário é feedback; a proteção fica na função que lê ou escreve
+os dados: `freecorps/require-access-helper-in-convex-functions` exige um helper
+de acesso antes do primeiro toque em dado em toda função pública do Convex
+([lint.md](docs/desenvolvimento/lint.md)).
 
 ### 2. Retentativa não pode duplicar efeito
 
@@ -46,7 +48,8 @@ falha: consulte e reconcilie antes de repetir.
 
 A plataforma trata valores fiscais como texto decimal exato, com os helpers
 de `packages/fiscal-core`; não passe por ponto flutuante ao calcular, formatar
-ou serializar. Documento fiscal e auditoria preservam histórico, sem apagar o
+ou serializar. `freecorps/no-float-fiscal-values` reprova conversão e
+aritmética de número sobre eles ([lint.md](docs/desenvolvimento/lint.md)). Documento fiscal e auditoria preservam histórico, sem apagar o
 original. A guarda dos dados está em [RETENTION.md](docs/plataforma/RETENTION.md).
 
 ### 4. Pessoas, projetos e empresas têm escopos distintos
@@ -54,8 +57,9 @@ original. A guarda dos dados está em [RETENTION.md](docs/plataforma/RETENTION.m
 Better Auth autentica as pessoas, e o papel de cada membro na organização
 define o que ela pode fazer. Login sem membership não concede acesso. API keys
 pertencem a um projeto e exigem escopo, ambiente e concessão ativa da empresa.
-Reutilize os helpers de `platform/convex/lib/`, como `organizationAccess.ts`,
-`projectAccess.ts` e os `*Access.ts` de cada domínio. Uma chave não pode ler
+Reutilize os helpers de acesso dos `platform/convex/lib/*Access.ts`; quais
+deles conferem acesso e como marcar uma exceção estão em
+[lint.md](docs/desenvolvimento/lint.md#require-access-helper-in-convex-functions). Uma chave não pode ler
 dados de outra organização ou de empresa fora da sua concessão, inclusive em
 downloads, respostas deduplicadas e webhooks. Cabeçalhos de proxy e IP vêm
 somente do Worker, nunca do chamador.
@@ -295,7 +299,7 @@ proteção: um padrão errado imprime o segredo inteiro.
 - Os testes ficam em projetos do Vitest por área, definidos em
   `scripts/lib/test-projects.mjs` e montados por `vite.config.ts`:
   `platform` (`tests/platform.*`, `tests/sdk.*` e `platform/`), `packages`,
-  `console` (`apps/*/src/`), `tooling` (scripts, worktree, validação e CI) e
+  `console` (`apps/*/src/`), `tooling` (scripts, `tooling/`, worktree, validação e CI) e
   `benchmark`. Os poucos testes de `tests/` fora desses prefixos são
   nomeados no projeto da área; um arquivo novo sem dono reprova
   `tests/ci.testProjects.test.ts`. Durante o desenvolvimento, rode só a área
@@ -320,7 +324,8 @@ proteção: um padrão errado imprime o segredo inteiro.
   A área `platform` roda sem isolamento por arquivo, e os arquivos com
   `vi.mock` vão sozinhos para `platform-isolated`; `--project platform`
   sozinho os deixa de fora. As regras para um teste novo (estado, mocks,
-  relógio e bytes grandes) estão em `docs/desenvolvimento/ci.md`, Isolamento.
+  relógio e bytes grandes) estão em `docs/desenvolvimento/ci.md`, Isolamento;
+  `freecorps/no-wall-clock-in-tests` reprova relógio real e polling.
 
 - Antes de concluir, rode a suíte toda sem cache: `vp test run` ou
   `bun run ci:local`, que reproduz o grafo Validate, aceita alterações locais e
@@ -412,6 +417,9 @@ Mapa para navegar:
 - Exemplos de Next.js/RSC e SWR das skills não definem a arquitetura daqui.
 - Mantenha integrações nas bordas e regras fiscais em helpers testáveis.
   Comentários explicam decisões e acompanham o código que descrevem.
+- Supressão de lint e teste pulado dizem por quê:
+  `freecorps/require-suppression-reason` exige `-- <motivo>` e
+  `// quarantine: #<issue> <motivo>`.
 - A UI precisa mostrar o que aconteceu com o documento e qual ação está
   disponível, sem sugerir sucesso enquanto a operação ou o fisco não
   responderam.

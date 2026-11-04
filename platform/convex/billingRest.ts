@@ -14,6 +14,7 @@ import { billingConfig, readBillingEnvelope } from "./lib/billingStripe";
 const answer = (status: number, code: string) =>
   Response.json({ code }, { status, headers: { "Cache-Control": "no-store" } });
 
+// freecorps-access: assinatura — webhook de cobrança do Stripe, verifyStripeSignature antes do efeito
 export const route = httpAction(async (ctx, request) => {
   const { installation } = requirePlatformEnvironment();
   const config = billingConfig(installation);
