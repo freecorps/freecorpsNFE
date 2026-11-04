@@ -155,8 +155,7 @@ describe("entrada e relatório", () => {
 
   it("aceita só os argumentos conhecidos e a rota de eventos da cobrança", () => {
     expect(parseArgs(["--key-file", "/k"])).toEqual({ keyFile: "/k", endpoint: DEFAULT_ENDPOINT });
-    const validation =
-      "https://freecorpsnfe-validation.freecorps.workers.dev/v1/billing/stripe/events";
+    const validation = "https://modest-seal-118.convex.site/v1/billing/stripe/events";
     expect(parseArgs(["--key-file", "/k", "--endpoint", validation]).endpoint).toBe(validation);
     expect(() => parseArgs([])).toThrow("BILLING_CHECK_ARGUMENTS_INVALID");
     expect(() => parseArgs(["--key-file"])).toThrow("BILLING_CHECK_ARGUMENTS_INVALID");

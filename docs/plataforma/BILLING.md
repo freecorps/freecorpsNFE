@@ -701,8 +701,8 @@ regra é a mesma nas duas:
   O orçamento de custódia (`platformPlanSettings.custodyCents`), o estoque e
   a janela de admissão precisam comportar a reserva; senão, nada sobe.
 - **Renovação.** Passa a ser do Grande anual. No cartão, a assinatura muda
-  de preço; no Pix, o cliente pede a renovação (`next`) no último mês, como
-  antes, e pode descer para o Intermediário nela, porque o downgrade vale na
+  de preço; no Pix, com o [interruptor do Pix](#interruptor-do-pix) ligado,
+  o cliente pede a renovação (`next`) no último mês, como antes, e pode descer para o Intermediário nela, porque o downgrade vale na
   renovação.
 - **Downgrade.** Continua recusado no meio do termo: o Intermediário num
   termo já Grande responde `PLAN_UNAVAILABLE`, e a assinatura anual não
@@ -725,6 +725,9 @@ Recusas, as mesmas nas duas formas e antes de qualquer chamada ao Stripe:
 - `OPERATION_CONFLICT`: a mesma chave com outra escolha;
 - as demais recusas de `allocateOffer` (`PLANS_DISABLED`,
   `CAPACITY_INVENTORY_REQUIRED`, `QUOTA_EXCEEDED`).
+
+Só no Pix, com o Pix desligado, o pedido de upgrade responde `PIX_DISABLED`
+depois de `ANNUAL_DISABLED` ([interruptor do Pix](#interruptor-do-pix)).
 
 **Pix.** O pedido guarda `termId`, `firstPeriod` (o dia 1 do mês corrente) e
 a diferença em `amountCents`, e vence no fim do mês (`endsAt`). Não reserva
@@ -1009,7 +1012,7 @@ e `annualBlocked`, se um termo impede o anual no cartão.
   renova: a assinatura que o comprou está ativa e sem "Não renovar". Só
   então o fim aparece como data de renovação; senão, o termo diz que não
   renova. O termo Pix nunca renova sozinho e só fala no pedido do último mês
-  com o anual à venda. Um termo agendado com a ativação recusada aparece como
+  com o anual e o Pix à venda. Um termo agendado com a ativação recusada aparece como
   "Início pendente". O reembolso calculado não aparece.
 - **Upgrade.** Com o anual à venda e sem termo agendado, o termo `active` do
   mês corrente traz `upgrade`: o preço de `termUpgradeCents`, os meses
@@ -1095,8 +1098,8 @@ Configuração parcial ou inválida derruba as funções de cobrança com
 `Invalid platform configuration: STRIPE_BILLING`; a tela trata como cartão
 indisponível, e o Pix, se ligado, continua. A chave restrita precisa de escrita em
 Customers, Checkout Sessions, Coupons, Subscriptions e Billing Portal, e leitura de
-Prices, Invoices e Charges. Essa chave não lê Webhook Endpoints nem a
-configuração do portal: a conferência abaixo usa outra chave, só de leitura.
+Prices, Invoices e Charges. Essa chave não lê Webhook Endpoints: a
+conferência abaixo usa outra chave, só de leitura.
 
 No painel do Stripe, antes de ligar:
 
@@ -1298,14 +1301,16 @@ Sem prova, dependendo de validação operacional:
 Esta prova cobre o que a matriz de sandbox não cobriu: eventos entregues a um
 backend hospedado, concessão gravada e lida pelo console conectado, e a
 configuração padrão da conta. Ela roda no deployment de validação
-(`modest-seal-118`, Worker `freecorpsnfe-validation`), com chave de teste e
+(`modest-seal-118`), com chave de teste e
 organização sintética. A produção não liga o catálogo só para provar. Cada
 passo que escreve no Stripe ou no deployment precisa de autorização do
 mantenedor.
 
 1. **Conta de teste.** Preparar os itens 1 a 4 de
    [Configuração](#configuração), com o endpoint em
-   `https://freecorpsnfe-validation.freecorps.workers.dev/v1/billing/stripe/events`.
+   `https://modest-seal-118.convex.site/v1/billing/stripe/events`, o host HTTP
+   da validação: o Worker `freecorpsnfe-validation` só encaminha a
+   autenticação e não chega a `/v1`.
    `node scripts/check-billing-stripe.mjs --key-file <arquivo absoluto> --endpoint <essa URL>`
    passa com a chave de teste.
 2. **Deployment.** Antes das variáveis, um `POST` sem assinatura nessa URL

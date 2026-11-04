@@ -175,8 +175,11 @@ Sandbox nem altera a política das outras unidades sem plano.
 O [catálogo e suas hipóteses comerciais](PLATFORM-PLAN-PROPOSAL.md) define
 Gratuito permanente, Intermediário de R$ 149/mês, Grande de R$ 499/mês e
 Personalizado por orçamento. A política começa desligada. O console permite
-ativar o Gratuito ou pedir um plano pago quando o operador habilita admissões
-com inventário e orçamento da empresa. Não há atribuição automática no cadastro.
+ativar o Gratuito ou contratar um plano pago quando o operador habilita
+admissões com inventário e orçamento da empresa. Desde 03/11/2026 a venda nova
+é só pelo cartão ([cobrança](BILLING.md)); o pedido por Pix descrito abaixo só
+vale com o [interruptor do Pix](BILLING.md#interruptor-do-pix) ligado, e
+desligado ele responde `PIX_DISABLED`. Não há atribuição automática no cadastro.
 
 O pedido pago mantém o plano atual e não reserva o orçamento global. O servidor
 confere disponibilidade, preço integral do mês UTC e diferença de upgrade.
