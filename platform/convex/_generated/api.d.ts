@@ -97,6 +97,7 @@ import type * as lib_certificateSchema from "../lib/certificateSchema.js";
 import type * as lib_certificateTransport from "../lib/certificateTransport.js";
 import type * as lib_certificateValidation from "../lib/certificateValidation.js";
 import type * as lib_certificateValues from "../lib/certificateValues.js";
+import type * as lib_clock from "../lib/clock.js";
 import type * as lib_closureSchema from "../lib/closureSchema.js";
 import type * as lib_coldArchiveCore from "../lib/coldArchiveCore.js";
 import type * as lib_coldArchiveCurrent from "../lib/coldArchiveCurrent.js";
@@ -360,6 +361,7 @@ declare const fullApi: ApiFromModules<{
   "lib/certificateTransport": typeof lib_certificateTransport;
   "lib/certificateValidation": typeof lib_certificateValidation;
   "lib/certificateValues": typeof lib_certificateValues;
+  "lib/clock": typeof lib_clock;
   "lib/closureSchema": typeof lib_closureSchema;
   "lib/coldArchiveCore": typeof lib_coldArchiveCore;
   "lib/coldArchiveCurrent": typeof lib_coldArchiveCurrent;

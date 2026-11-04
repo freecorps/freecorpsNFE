@@ -155,8 +155,9 @@ it("does not charge preflight and does not authenticate absent, revoked or expir
     expect((await request(t, "/convex/token", cookie)).status).toBe(401);
   }
   vi.setSystemTime(minute + 7 * 24 * 60 * 60 * 1000 + 2000);
-  expect(await (await request(t, "/get-session", expired)).json()).toBeNull();
+  // No token for an expired session, while its row still exists: queries rely on it (#43).
   expect((await request(t, "/convex/token", expired)).status).toBe(401);
+  expect(await (await request(t, "/get-session", expired)).json()).toBeNull();
 });
 
 it("preserves login and OTP inactivity windows when the session minute turns", async () => {

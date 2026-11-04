@@ -27,9 +27,38 @@ export function denialCode(error: unknown) {
     ? data.code
     : null;
 }
+type AuthUser = NonNullable<Awaited<ReturnType<typeof authComponent.safeGetAuthUser>>>;
+/**
+ * The Better Auth user of the caller's session, or null. Replaces `safeGetAuthUser`, whose
+ * session lookup filters `expiresAt` by the wall clock and so makes every query uncacheable
+ * (#43). A query finds the session by `_id` only: the JWT that names it lasts 15 minutes and
+ * is only issued for a live session, and logout, revocation and account deletion remove the
+ * row. A mutation, or an action that calls this itself, still refuses a session past `expiresAt`;
+ * an action that checks access through a query accepts it like the query does.
+ */
+export async function sessionUser(
+  ctx: QueryCtx | MutationCtx | ActionCtx,
+): Promise<AuthUser | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity || typeof identity.sessionId !== "string") return null;
+  const now = clockOf(ctx);
+  const session = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "session",
+    where: [
+      { field: "_id", value: identity.sessionId },
+      ...(now === null ? [] : [{ field: "expiresAt", operator: "gt" as const, value: now }]),
+    ],
+  });
+  if (!session) return null;
+  const user: AuthUser | null = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "_id", value: identity.subject }],
+  });
+  return user ?? null;
+}
 export async function requireUser(ctx: QueryCtx | MutationCtx | ActionCtx) {
   requirePlatformEnvironment();
-  const user = await authComponent.safeGetAuthUser(ctx);
+  const user = await sessionUser(ctx);
   if (!user) return deny("UNAUTHENTICATED");
   if (!user.emailVerified) return deny("EMAIL_UNVERIFIED");
   return user;

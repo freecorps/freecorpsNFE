@@ -172,8 +172,12 @@ O plugin crossDomain continua transportando `Better-Auth-Cookie` e
 `Set-Better-Auth-Cookie`. Sua representação permanece em `localStorage`, acessível
 a JavaScript. O proxy não transforma esse armazenamento em HttpOnly. A sessão
 expira em sete dias, o JWT em 15 minutos; recuperação revoga sessões anteriores.
-Cada consulta confere a sessão no banco, então logout, revogação e expiração
-negam na hora, mesmo com um JWT ainda válido.
+Cada consulta confere a sessão no banco, então logout e revogação negam na
+hora, mesmo com um JWT ainda válido. A expiração nega na hora em mutations e
+nas actions que conferem a sessão por conta própria; uma query, e a action que
+confere acesso por uma query, não lê o relógio e, com a sessão vencida, ainda
+responde até o JWT terminar, no máximo 15 minutos, porque o Better Auth só emite
+token para sessão viva (#43).
 Logout e mudanças de storage atualizam outras abas. Verificar também sessão
 removida/expirada no backend, não apenas o estado visual da SPA.
 

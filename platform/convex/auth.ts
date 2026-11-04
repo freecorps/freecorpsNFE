@@ -160,9 +160,10 @@ export function createAuth(ctx: GenericCtx<DataModel>, provision = false) {
           ]
         : []),
       crossDomain({ siteUrl }),
-      // Every query rechecks the session in the database (`safeGetAuthUser`), so logout and
-      // expiry deny at once; the token's lifetime only paces the renewals, each of which reruns
-      // every subscription of the tab under a new identity, uncached.
+      // Every console function rechecks the session in the database (`sessionUser`), so logout and
+      // revocation deny at once. A query does not read the clock (#43): past `expiresAt` it
+      // still answers until this token ends, since a new one is only issued for a live session.
+      // Each renewal reruns every subscription of the tab under a new identity.
       convex({ authConfig, jwt: { expirationSeconds: 15 * 60 } }),
     ],
   });

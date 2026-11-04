@@ -1,13 +1,13 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, query, type QueryCtx } from "./_generated/server";
-import { authComponent } from "./auth";
 import { requirePlatformEnvironment } from "./environment";
+import { sessionUser } from "./lib/organizationAccess";
 
 export const roleValidator = v.union(v.literal("operator"), v.literal("viewer"));
 
 async function actor(ctx: QueryCtx) {
   requirePlatformEnvironment();
-  const user = await authComponent.safeGetAuthUser(ctx);
+  const user = await sessionUser(ctx);
   if (!user) return null;
   const grant = await ctx.db
     .query("validationAccess")
