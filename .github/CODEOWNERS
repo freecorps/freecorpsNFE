@@ -24,7 +24,18 @@
 /scripts/lib/platform-unchanged.mjs @wolf-stievano
 # Everything deploy-platform.mjs imports runs in the process that holds the production keys, and
 # the build scripts it spawns run as the same user, which can read that process environment.
+# scripts/deploy/platform-release.test.ts walks those imports from the publisher, from each script
+# it spawns and from each `vp run` task, the docs build included, and fails on a file without an
+# owner here. The configs and app code that Vite and React Router load inside the builds of the
+# console and of the docs stay outside these rules.
 /platform/account-policy.mjs @wolf-stievano
+/scripts/lib/repo-root.mjs @wolf-stievano
+/apps/docs/scripts/build.mjs @wolf-stievano
+/apps/docs/scripts/output.mjs @wolf-stievano
+# The task runner config that `vp run ci:docs` loads, and what it imports.
+/vite.config.ts @wolf-stievano
+/scripts/lib/test-projects.mjs @wolf-stievano
+/tests/setup/sequencer.ts @wolf-stievano
 /platform/installation.ts @wolf-stievano
 /scripts/lib/installation-headers.mjs @wolf-stievano
 /scripts/lib/platform-operator.mjs @wolf-stievano
