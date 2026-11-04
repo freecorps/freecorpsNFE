@@ -219,14 +219,20 @@ Resolve a antiga pendência 4
   a confirmação do arrependimento nas renovações e no upgrade
   ([decisões](../v1.0/TERMS-DRAFT.md#decisões-de-01112026)). O anual continua
   desligado até a #690.
-- Decidido pelo dono em 03/11/2026: o anual e o mensal passam a correr por
-  aniversário, do instante da contratação ao mesmo dia e horário do ano ou do
-  mês seguinte, e os meses do reembolso são os meses do termo. Isso substitui
-  "o acesso vai até o fim do mês civil corrente", nas duas vezes acima, que
-  passa a ir até o fim do mês corrente do termo; "no cartão, o anual começa no
-  dia 1 do mês seguinte", porque o cartão cobra e começa na contratação; e
-  "Mensal para anual: começa no dia 1 do mês seguinte ou imediatamente",
-  porque o anual começa no pagamento. Valores e prazos acima não mudam. Ver a
+- Decidido pelo dono em 03/11/2026: toda assinatura paga, mensal ou anual,
+  corre por aniversário, do instante da contratação ao mesmo dia e horário do
+  mês ou do ano seguinte; o anual no cartão começa e é cobrado na
+  contratação; e as cotas dos planos pagos seguem o mês da assinatura. Isso
+  substitui "no cartão, o anual começa no dia 1 do mês seguinte;
+  'imediatamente' é só pelo Pix", e a escolha entre o dia 1 e o início
+  imediato deixa de existir: o Pix começa na confirmação. Substitui também
+  "Mensal para anual: começa no dia 1 do mês seguinte ou imediatamente, com
+  cobrança cheia, à escolha do cliente": o anual começa no pagamento, com
+  cobrança cheia. Como consequência adotada na ADR 0012, e não decisão do
+  dono, os meses do reembolso passam a ser os meses da assinatura, e o acesso
+  depois da rescisão fora dos 7 dias vai até o fim do mês corrente da
+  assinatura, no lugar de "o fim do mês civil corrente", nas duas vezes
+  acima. Valores e prazos acima não mudam. Ver a
   [ADR 0012](0012-periodo-por-aniversario.md), ainda não implementada.
 
 ### 10. Importação e cota de notas do Gratuito

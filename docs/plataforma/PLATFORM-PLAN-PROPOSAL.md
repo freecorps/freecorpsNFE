@@ -120,6 +120,13 @@ carência e reembolso ou contestação só sinalizados foram decididos em
 28/10/2026. A integração está em [BILLING.md](BILLING.md) e não liga o
 catálogo, que segue desligado.
 
+Em 03/11/2026 o dono trocou o mês civil dos planos pagos pelo período por
+aniversário, a partir da contratação, para a assinatura e para as cotas. Com
+isso, a escolha entre iniciar agora ou no próximo mês deixa de existir. O
+Gratuito continua no mês civil UTC. A decisão está na
+[ADR 0012](../adr/0012-periodo-por-aniversario.md) e ainda não está
+implementada.
+
 A #639 já permite renovar reutilizando a alocação depois de `admissionsUntil`.
 A janela continua exigida quando há nova reserva, como na primeira adesão
 ou no upgrade; o catálogo precisa estar ligado em ambos os casos

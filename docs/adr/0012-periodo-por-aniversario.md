@@ -19,19 +19,22 @@ dia 1, de uma conferência agendada depois dela e da recusa da admissão antes
 da cobrança. As cotas de uso também são por mês civil UTC.
 
 Quem assina em 20/11 paga um mês inteiro por 11 dias, ou espera o dia 1 para
-começar o anual. Em 03/11/2026 o dono decidiu primeiro levar só o anual ao
-aniversário, com as cotas no mês civil. No mesmo dia estendeu a decisão a
-todas as assinaturas pagas e às cotas delas. Esta ADR registra o resultado.
+começar o anual. Na manhã de 03/11/2026 o dono decidiu levar só o anual ao
+aniversário, com o mensal e as cotas no mês civil. Horas depois, no mesmo
+dia, substituiu essa decisão pelas três abaixo, que valem para todas as
+assinaturas pagas e para as cotas delas.
 
 ## Decisão
 
 O dono decidiu três coisas: toda assinatura paga vai de aniversário a
 aniversário a partir da contratação, o anual no cartão começa e é cobrado na
 contratação, e as cotas dos planos pagos seguem o mês da assinatura, com o
-Gratuito no mês civil. O resto desta seção, inclusive as transições, o modelo
-da seção 4 e o limite do 29/02 em [Consequências](#consequências), foi
-adotado no desenho para cumprir essas decisões, sem decisão própria do dono;
-uma mudança nesses pontos não reabre as três decisões.
+Gratuito no mês civil. Os demais pontos desta seção foram adotados no desenho
+para cumprir essas decisões, sem decisão própria do dono: a contagem do
+reembolso e do acesso pelos meses da assinatura (seção 3), o modelo da
+seção 4 com as transições e as invariantes, e as consequências de desenho
+listadas em [Consequências](#consequências). Uma mudança nesses pontos não
+reabre as três decisões.
 
 ### 1. Assinaturas por aniversário
 
@@ -40,22 +43,38 @@ vai até o mesmo dia e horário do mês seguinte, no mensal, ou do ano seguinte,
 no anual. Ela renova nesse aniversário.
 
 - O período é semiaberto, [início, fim).
+- Aniversários, dia do mês e ajuste ao fim do mês são calculados em UTC. Uma
+  contratação à noite em Brasília, a partir das 21:00, cai no dia seguinte em
+  UTC, e o aniversário fica nesse dia.
 - Se o dia não existe no mês de destino, vale o último dia desse mês, no
-  mesmo horário: 31/01 10:00 vai a 28/02 10:00, ou 29/02 em ano bissexto.
-- Todo aniversário é calculado a partir do início original, nunca do
-  anterior. Um início em 31/01 dá 28/02 e depois 31/03, sem deriva.
-- O k-ésimo mês da assinatura vai do k-ésimo ao (k+1)-ésimo aniversário
-  mensal. O termo anual tem 12 desses meses e termina no 12º.
+  mesmo horário: 31/01 10:00 UTC vai a 28/02 10:00 UTC, ou 29/02 em ano
+  bissexto.
+- Todo aniversário é calculado a partir da âncora original, nunca do
+  anterior. Uma âncora em 31/01 dá 28/02 e depois 31/03, sem deriva.
+- Os meses contam a partir de 1. O 1º mês vai do início, o aniversário 0, ao
+  1º aniversário mensal; o k-ésimo, do aniversário k − 1 ao aniversário k. O
+  termo anual tem 12 meses e termina no 12º aniversário mensal.
+- Termos anuais e períodos de cota saem da âncora original da assinatura. No
+  cartão, a âncora é o `billing_cycle_anchor` da assinatura, e o n-ésimo
+  termo cobre o n-ésimo ano da âncora, do aniversário mensal 12(n − 1) ao
+  12n. Uma assinatura iniciada em 29/02/2028 tem termos que viram em
+  28/02/2029, 28/02/2030, 28/02/2031 e 29/02/2032, sem intervalo, como o
+  Stripe deve cobrar. No Pix, a âncora é o início do primeiro termo, e as
+  renovações a continuam.
 - No cartão, a cobrança acontece na contratação, e o período começa nela. O
   anual deixa de esperar o dia 1 do mês seguinte, e a admissão é reservada
   quando a primeira fatura é concedida, como no mensal.
 - No Pix assistido, desligado desde 03/11/2026 em `platformPlanSettings.pix`,
-  o período começa na confirmação do pagamento, mensal ou anual. Não há mais
-  a escolha de começar no dia 1 seguinte. A renovação de um termo Pix, pedida
-  no último mês dele, começa no fim do termo corrente.
+  um mensal pedido no último mês de um plano Pix em vigor é renovação:
+  começa no fim desse plano e mantém a âncora. Fora disso, o mensal começa na
+  confirmação do pagamento, com âncora nova. O anual segue a mesma regra: a
+  renovação de um termo Pix, pedida no último mês dele, começa no fim do
+  termo e mantém a âncora; um anual novo começa na confirmação. Não há mais a
+  escolha de começar no dia 1 seguinte.
 - Do mensal para o anual, o anual começa no pagamento, no cartão, ou na
-  confirmação, no Pix, com cobrança cheia, e substitui o mensal sem desconto.
-  No cartão, o cliente cancela antes a renovação do mensal, como hoje.
+  confirmação, no Pix, com cobrança cheia e âncora nova, e substitui o mensal
+  sem desconto. No cartão, o cliente cancela antes a renovação do mensal,
+  como hoje.
 - O upgrade do Intermediário anual para o Grande anual cobra a diferença dos
   preços anuais dividida por 12 por mês restante do termo, com o corrente
   inteiro. O Grande vale desde o início do mês corrente do termo, e a data de
@@ -68,23 +87,44 @@ cada aniversário mensal dela. Um termo anual tem 12 períodos de cota. O
 Gratuito continua no mês civil UTC
 ([ADR 0010, decisão 10](0010-guarda-em-camadas-e-custo-dos-planos.md#10-importação-e-cota-de-notas-do-gratuito)).
 
+A regra vale para todas as cotas mensais dos planos pagos:
+
+- as de uso, em `usageTotals`: importação, notas, captura, CNPJ, bytes
+  recebidos e webhooks;
+- as de capacidade, em `capacityTotals` e `capacityEvents`, por
+  `capacityCore`: leituras REST, downloads, exportações e bytes de
+  exportação;
+- a retomada da captura parada por cota, que hoje espera
+  `nextUsagePeriodStart` em `captureProcessing` e passa a esperar o fim do
+  período de cota do plano.
+
+As métricas de estoque, como os bytes guardados, não são periódicas e não
+mudam.
+
 ### 3. Reembolso pelo mês da assinatura
 
-As regras de dinheiro da decisão 9 da ADR 0010 continuam: reembolso integral
-até 7 dias depois de cada cobrança anual ou de upgrade; depois disso, o total
-pago menos os meses usados, o corrente contado inteiro, cada um pelo preço
-mensal cheio do tier em vigor nele, nunca negativo. Os meses contados passam
-a ser os do termo. Na rescisão fora dos 7 dias, o acesso vai até o fim do mês
-corrente do termo, e não mais do mês civil. Um Intermediário anual
-iniciado em 15/10 às 14:30 e rescindido em 20/01 usou 4 meses, devolve
-R$ 1.490 − 4 × R$ 149 = R$ 894 e mantém o acesso até 15/02 às 14:30.
+As regras de dinheiro da decisão 9 da ADR 0010 continuam. Até 7 dias depois
+de cada cobrança anual, o reembolso do termo é integral. Uma cobrança de
+upgrade desfeita até 7 dias depois dela volta inteira, só ela
+([ADR 0010, decisão de 31/10/2026](0010-guarda-em-camadas-e-custo-dos-planos.md#9-anual-reembolso-e-ciclo)).
+Depois disso, o cliente recebe o total pago menos os meses usados, o corrente
+contado inteiro, cada um pelo preço mensal cheio do tier em vigor nele,
+nunca negativo.
+
+Os meses contados passam a ser os da assinatura. Na rescisão fora dos 7
+dias, o acesso vai até o fim do mês corrente da assinatura, e não mais do mês
+civil. Um Intermediário anual iniciado em 15/10 às 14:30 UTC e rescindido em
+20/01 está no 4º mês, de 15/01 a 15/02 às 14:30 UTC. Ele devolve
+R$ 1.490 − 4 × R$ 149 = R$ 894 e mantém o acesso até 15/02 às 14:30 UTC.
 
 ### 4. Modelo do período de cota
 
 - `usagePlans.periodAnchor`, opcional, é o instante cujos aniversários
-  mensais abrem cada período de cota, em segundos inteiros. No cartão, é o
-  `billing_cycle_anchor` do Stripe; no Pix, a confirmação truncada ao
-  segundo. Sem âncora, o período é o mês civil UTC.
+  mensais abrem cada período de cota. Ele fica em milissegundos desde a
+  época, como o Convex guarda instantes, truncado ao segundo inteiro, porque
+  a âncora do Stripe é em segundos. No cartão, é o `billing_cycle_anchor` da
+  assinatura; no Pix, a âncora descrita na seção 1. Sem âncora, o período é
+  o mês civil UTC.
 - A chave do período depende só do início dele. Um início no dia 1, às
   00:00:00.000 UTC, tem a chave `AAAA-MM`; qualquer outro, o instante na
   forma exata de `Date.prototype.toISOString()`, `AAAA-MM-DDTHH:mm:ss.sssZ`,
@@ -95,69 +135,79 @@ R$ 1.490 − 4 × R$ 149 = R$ 894 e mantém o acesso até 15/02 às 14:30.
   alfabética das chaves canônicas é a cronológica.
 - `quotaPeriod(plano, instante)` devolve o mês civil do instante quando o
   plano não tem âncora ou o instante é anterior a ela. Nos outros casos,
-  devolve o mês da âncora que contém o instante, do k-ésimo ao (k+1)-ésimo
-  aniversário. Um instante anterior à âncora só aparece quando a linha lida
-  ainda não começou, como um plano agendado: até a âncora, a organização
+  devolve o mês da âncora que contém o instante, do aniversário mensal k − 1
+  ao aniversário k. Um instante anterior à âncora só aparece quando a linha
+  lida ainda não começou, como um plano agendado: até a âncora, a organização
   continua no regime civil em que já estava, sem chave ancorada.
 
-| Mudança                                                            | Âncora                                                                                         |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| Do Gratuito para um plano pago no meio do mês                      | Nova; a chave é nova e os contadores começam do zero                                           |
-| Renovação mensal, upgrade, downgrade, pagamento atrasado, rescisão | Mantida                                                                                        |
-| Upgrade desfeito em 7 dias                                         | Mantida                                                                                        |
-| Mensal para anual, assinatura nova ou início de termo anual        | Nova, no início da assinatura ou do termo                                                      |
-| Personalizado ou interno por `usage:assignPlan`                    | Nenhuma, por padrão; o operador pode passar uma âncora até o início do plano                   |
-| Personalizado comercial com o catálogo ligado                      | Obrigatória, por padrão o início do plano; o fim não passa do fim do período ancorado corrente |
-| Gratuito                                                           | Nunca tem                                                                                      |
+| Mudança                                                                      | Âncora                                                                                                                                                                     |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Do Gratuito para um plano pago no meio do mês                                | Nova; a chave é nova e os contadores começam do zero                                                                                                                       |
+| Renovação no cartão, ou pelo Pix no último mês do plano em vigor             | Mantida; pelo Pix, o plano novo começa no fim do anterior                                                                                                                  |
+| Upgrade, downgrade, pagamento atrasado, rescisão, upgrade desfeito em 7 dias | Mantida                                                                                                                                                                    |
+| Assinatura nova, cadeia nova de termos anuais, mensal para anual             | Nova, no início da assinatura ou do primeiro termo                                                                                                                         |
+| Personalizado ou interno por `usage:assignPlan`, a partir da fatia Q         | Catálogo desligado: nenhuma por padrão, e o operador pode passar uma até `startsAt`. Catálogo ligado: obrigatória, por padrão `startsAt`, e `endsAt` é um aniversário dela |
+| Gratuito                                                                     | Nunca tem                                                                                                                                                                  |
 
 Invariantes:
 
 1. O período de um contador é resolvido uma vez, na reserva, pelo plano lido
    na mesma transação, em vigor ou não. A liquidação usa o período gravado.
 2. Toda chave gravada é canônica.
-3. Sob uma âncora, os períodos de cota são contíguos e semiabertos, porque
-   todos saem da âncora original. O intervalo do 29/02, em
-   [Consequências](#consequências), é entre termos anuais, não entre
-   períodos de cota.
+3. Sob uma âncora, os períodos de cota são contíguos e semiabertos, e os
+   termos anuais da mesma cadeia também, porque todos saem da âncora
+   original.
 4. Uma linha paga do catálogo tem âncora até `startsAt`, e `endsAt` é um
    aniversário dela. Uma linha do Gratuito não tem âncora. A exigência de
    âncora em toda linha paga entra com o mensal no cartão (fatia 2a).
 5. A mesma âncora dá sempre os mesmos períodos.
 6. No cartão, a âncora é o `billing_cycle_anchor` da assinatura. Uma fatura
    mensal só concede o plano quando o período da linha é exatamente um mês
-   dessa âncora; senão vai à revisão com `INVOICE_UNEXPECTED`.
+   dessa âncora, e uma fatura anual, quando é exatamente um ano dela. Senão,
+   a fatura vai à revisão com `INVOICE_UNEXPECTED`.
 
 ## Consequências
 
-- Na decisão 9 da ADR 0010, ficam substituídos "o acesso vai até o fim do mês
-  civil corrente", nas duas vezes em que aparece; "no cartão, o anual começa
-  no dia 1 do mês seguinte; 'imediatamente' é só pelo Pix"; e "Mensal para
-  anual: começa no dia 1 do mês seguinte ou imediatamente". Valores, prazos e
+- Na decisão 9 da ADR 0010, fica substituído "no cartão, o anual começa no
+  dia 1 do mês seguinte; 'imediatamente' é só pelo Pix". A escolha entre o
+  dia 1 e o início imediato também deixa de existir: o Pix começa na
+  confirmação. Fica substituído "Mensal para anual: começa no dia 1 do mês
+  seguinte ou imediatamente, com cobrança cheia, à escolha do cliente": o
+  anual começa no pagamento, com cobrança cheia. Pelo desenho da seção 3,
+  "o acesso vai até o fim do mês civil corrente", nas duas vezes em que
+  aparece, passa a ser o fim do mês corrente da assinatura. Valores, prazos e
   a decisão 10 não mudam.
 - Nas políticas mensais da #556, em BILLING.md, ficam substituídos o mês
   civil UTC, a renovação no dia 1 e o item avulso com a mensalidade do mês
   corrente seguido de preço ancorado no dia 1. Continuam a primeira
   mensalidade integral, o upgrade pela diferença integral e o downgrade e o
   cancelamento na renovação.
+- Cada termo anual precisa conhecer a âncora da sua cadeia, gravada ou
+  derivada; as fatias 1b e 2b decidem como.
 - Os planos internos que já existem não têm âncora e continuam no mês civil.
-  A mudança no esquema só acrescenta campos, sem migração.
+  O esquema não exige migração.
 - O contrato público da REST, do SDK e do OpenAPI não muda, porque não expõe
-  o período. As funções Convex do console só ganham campos novos ou tornam
-  campos opcionais.
+  o período. As funções Convex do console mudam. Como o console não consegue
+  mais calcular a chave do período sozinho, `usage:overview` passa a receber
+  a chave do período e `asOf`, opcionais, e devolve o período com início e
+  fim e as chaves recentes. Os campos `period` da cobrança e do Pix ficam
+  opcionais, e o console deixa de lê-los como `AAAA-MM`.
 - A seção 5A dos [termos de uso 1.1](../termos/arquivo/termos-de-uso-2026-11-02.md)
   define o mês do plano como o mês civil, a renovação no dia 1, o anual no
-  dia 1 seguinte e o acesso até o fim do mês civil na rescisão. Uma versão
-  nova dos termos precisa entrar no console antes de o catálogo ou o anual
-  serem ligados.
-- As provas no Stripe de teste da
-  [#668](https://github.com/freecorps/freecorpsNFE-arquivo/issues/668) e da
-  #35 assumiram o início no dia 1. Elas precisam ser refeitas
-  ([ADR 0011](0011-entregas-graduais.md)), com relógios de teste em 31/01,
-  31/03 e 29/02 que confirmem que o Stripe ajusta o dia como esta ADR.
-- Um termo no cartão iniciado em 29/02 termina em 28/02, e a renovação começa
-  nesse dia. Se o Stripe voltar a cobrar em 29/02 no bissexto seguinte, a
-  cadeia fica um dia sem termo a cada quatro anos. Esse intervalo fica como
-  limite conhecido, documentado e não corrigido.
+  dia 1 seguinte e o acesso até o fim do mês civil na rescisão. Ela também
+  diz que a contratação recusada antes do início é cancelada sem cobrança;
+  com a cobrança na contratação, uma recusa da admissão depois do pagamento
+  vira reembolso manual. Ligar o catálogo ou o anual passa a esperar a
+  implementação desta ADR e uma versão nova dos termos no console.
+- Só a prova mensal da
+  [#668](https://github.com/freecorps/freecorpsNFE-arquivo/issues/668) e a
+  matriz de sandbox de BILLING.md foram executadas, ambas com início no
+  dia 1, e precisam ser refeitas
+  ([ADR 0011](0011-entregas-graduais.md)). O roteiro da #35, em
+  [Prova hospedada e ativação do anual](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35),
+  nunca rodou e precisa ser reescrito para este modelo antes de rodar. As
+  provas novas usam relógios de teste em 31/01, 31/03 e 29/02 para confirmar
+  que o Stripe ajusta o dia e renova os anos da âncora como esta ADR.
 
 ## Implementação
 
@@ -168,15 +218,19 @@ Não implementada. A ordem das fatias:
    comportamento. Num início no dia 1 às 00:00 UTC, o aniversário coincide
    com o mês civil, e os termos gravados continuam válidos.
 3. Fatia Q: modelo do período de cota (`periodAnchor`, chaves canônicas,
-   `quotaPeriod`), sem mudar comportamento. Os termos anuais passam a âncora;
-   os caminhos mensais ainda não.
-4. Fatia 1b: anual pelo Pix a partir da confirmação e guardas de termo por
-   instante.
-5. Fatia 1c: mensal pelo Pix nos aniversários.
-6. Fatia 2a: mensal no cartão cobrado na contratação, com as invariantes
-   4 e 6.
-7. Fatia 2b: anual no cartão cobrado na contratação, sem o Checkout
-   ancorado no dia 1.
+   `quotaPeriod`) nas cotas de uso, nas de capacidade (`capacityCore`) e na
+   retomada da captura (`captureProcessing`), sem mudar comportamento. Os
+   termos anuais passam a âncora; os caminhos mensais ainda não. A regra do
+   Personalizado começa a valer.
+4. Fatia 1b: anual pelo Pix a partir da confirmação, âncora da cadeia nos
+   termos e guardas de termo por instante.
+5. Fatia 1c: mensal pelo Pix nos aniversários; as concessões mensais pelo Pix
+   ganham âncora. Até a fatia 2a, as concessões mensais do cartão continuam
+   no mês civil.
+6. Fatia 2a: mensal no cartão renovado no aniversário, sem âncora no dia 1
+   nem item avulso, com as invariantes 4 e 6.
+7. Fatia 2b: anual no cartão cobrado na contratação, nos anos da âncora, sem
+   o Checkout ancorado no dia 1.
 8. Nova versão dos termos de uso.
 
 Cada fatia atualiza BILLING.md e USAGE.md na mesma PR.
@@ -185,8 +239,8 @@ Cada fatia atualiza BILLING.md e USAGE.md na mesma PR.
 
 O dono escolheu entre estas e as decisões acima em 03/11/2026.
 
-- Só o anual por aniversário, com o mensal e as cotas no mês civil, como na
-  primeira decisão do dia. Com a cota no mês civil, um pagamento em 20/11
-  cobre até 20/12 e dá duas cotas mensais, a de novembro e a de dezembro.
+- Cotas no mês civil com as assinaturas por aniversário. Uma mensalidade de
+  20/11 a 20/12 daria a cota de novembro e a de dezembro, e um anual iniciado
+  em 20/11 toca 13 meses civis.
 - Cota proporcional nos meses civis das pontas da assinatura. Com o período
   de cota igual ao mês pago, cada pagamento corresponde a uma cota inteira.
