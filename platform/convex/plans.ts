@@ -106,7 +106,7 @@ const termView = v.object({
   tier: paidTier,
   /** Upgrades: the tier from `fromPeriod`, the start of a term month, to the end of the term. */
   segments: v.array(v.object({ tier: paidTier, fromPeriod: v.number() })),
-  /** Its start, any instant: the card still starts on a 1st, the Pix at the confirmation. */
+  /** Its start, any instant: the card's payment or the Pix confirmation, or a renewal's turn. */
   firstPeriod: v.number(),
   /** Its end, and the date the card renews it. */
   endsAt: v.number(),

@@ -25,7 +25,6 @@ import { reserveUsage } from "../platform/convex/lib/usageCore";
 const OCT = Date.UTC(2026, 9, 10, 12);
 const NOV = Date.UTC(2026, 10, 1);
 const DEC = Date.UTC(2026, 11, 1);
-const JAN = Date.UTC(2027, 0, 1);
 /** Anniversaries of a monthly card signed at `OCT`, 10/10 at 12:00 UTC (ADR 0012, slice 2a). */
 const NOV_10 = Date.UTC(2026, 10, 10, 12);
 const DEC_10 = Date.UTC(2026, 11, 10, 12);
@@ -301,6 +300,74 @@ const cycleInvoice = (
   },
   ...fields,
 });
+const yearlyPriceOf = (tier: string) => (tier === "large" ? "price_large_year" : "price_int_year");
+/**
+ * The first invoice of an annual Checkout (ADR 0012, slice 2b): the whole year charged at the
+ * signing, the yearly line from `start`, the subscription's anchor, to the same day and time a
+ * year later. The marks carry no period: the term starts when it is paid.
+ */
+const annualStartInvoice = (
+  customer: string,
+  subscription: string,
+  organizationId: string,
+  {
+    tier = "intermediate",
+    amount = tier === "large" ? 499000 : 149000,
+    start = s(Date.now()) * 1000,
+    end = termEndsAt(start),
+    paidAt = Date.now(),
+  }: { tier?: string; amount?: number; start?: number; end?: number; paidAt?: number } = {},
+) => ({
+  customer,
+  amount_paid: amount,
+  amount_due: amount,
+  billing_reason: "subscription_create",
+  status_transitions: { paid_at: s(paidAt) },
+  parent: {
+    type: "subscription_details",
+    subscription_details: {
+      subscription,
+      metadata: {
+        organizationId,
+        kind: "start",
+        cycle: "annual",
+        tier,
+        grantCents: String(amount),
+      },
+    },
+  },
+  lines: {
+    data: [
+      {
+        amount,
+        period: { start: s(start), end: s(end) },
+        pricing: { type: "price_details", price_details: { price: yearlyPriceOf(tier) } },
+      },
+    ],
+  },
+});
+/** A yearly renewal: the line runs from `start`, an anniversary of `anchor`, for 12 months of it. */
+const annualCycleInvoice = (
+  customer: string,
+  subscription: string,
+  start: number,
+  { anchor = start, amount = 149000, price: priceId = "price_int_year", end = 0 } = {},
+) => ({
+  ...cycleInvoice(customer, subscription, start, {
+    amount_paid: amount,
+    amount_due: amount,
+    status_transitions: { paid_at: s(Date.now()) },
+  }),
+  lines: {
+    data: [
+      {
+        amount,
+        period: { start: s(start), end: s(end || termEndsAt(start, anchor)) },
+        pricing: { type: "price_details", price_details: { price: priceId } },
+      },
+    ],
+  },
+});
 
 async function fixture() {
   const t = platformTest();
@@ -575,55 +642,72 @@ describe("leitura do Stripe", () => {
     expect(read([])).toEqual({ monthly: PRICES, annual: {} });
   });
 
-  it("uma fatura anual compra o termo pelo annualCents e só com o preço anual conferido", () => {
+  it("uma fatura anual compra um ano exato da âncora pelo annualCents e só com o preço anual conferido", () => {
     const org = "org_1";
     const ANNUAL = {
       intermediate: { priceId: "price_int_year", productId: "prod_int_year" },
     };
+    // Signed on 31/01/2027 at 10:00:07 UTC: Stripe anchors the subscription and charges the
+    // first year there (ADR 0012, slice 2b).
+    const JAN_31 = Date.UTC(2027, 0, 31, 10, 0, 7);
+    const JAN_31_NEXT = Date.UTC(2028, 0, 31, 10, 0, 7);
+    const anchors: Record<string, number> = { sub_1: JAN_31 };
+    const grant = (
+      invoice: Parameters<typeof invoiceGrant>[0],
+      annual: Parameters<typeof invoiceGrant>[3] = ANNUAL,
+      at = anchors,
+      annualSubscriptions: string[] = [],
+    ) => invoiceGrant(invoice, PRICES, org, annual, annualSubscriptions, at);
     const start = readInvoice({
       id: "in_1",
-      ...startInvoice("cus_1", "sub_1", org, 149000),
+      ...annualStartInvoice("cus_1", "sub_1", org, { start: JAN_31, paidAt: JAN_31 }),
       status: "paid",
       currency: "brl",
-      status_transitions: { paid_at: s(OCT) },
     })!;
-    const annualStart = {
-      ...start,
-      subscriptionMetadata: { ...start.subscriptionMetadata, cycle: "annual", period: "2026-11" },
-      lines: [{ priceId: "price_int_year", periodStart: OCT, periodEnd: OCT, amount: 0 }],
-    };
-    expect(start.paidAt).toBe(OCT);
-    expect(invoiceGrant(annualStart, PRICES, org, ANNUAL)).toEqual({
+    expect(start.paidAt).toBe(JAN_31);
+    expect(grant(start)).toEqual({
       kind: "annual",
       tier: "intermediate",
-      period: "2026-11",
+      startsAt: JAN_31,
+      endsAt: JAN_31_NEXT,
+      anchor: JAN_31,
     });
-    // Marked annual, but no line at the verified yearly price: nothing shows it renews yearly.
-    expect(invoiceGrant({ ...annualStart, lines: [] }, PRICES, org, ANNUAL)).toEqual({
+    // A period mark, as the Checkouts before slice 2b set, names nothing: the line decides.
+    const marked = {
+      ...start,
+      subscriptionMetadata: { ...start.subscriptionMetadata, period: "2027-02" },
+    };
+    expect(grant(marked)).toMatchObject({ kind: "annual", startsAt: JAN_31 });
+    // Invariant 6, annual half: a line that is not one year of the anchor goes to a person. An
+    // anchor not read yet decides nothing: the invoice waits for the next reconciliation.
+    expect(grant(start, ANNUAL, {})).toEqual({ kind: "none", code: "ANCHOR_UNKNOWN" });
+    const line = start.lines[0]!;
+    for (const lines of [
+      [{ ...line, periodEnd: addMonths(JAN_31, 1) }],
+      [{ ...line, periodEnd: JAN_31_NEXT - 1000 }],
+      [{ ...line, periodStart: JAN_31 + 3600_000 }],
+    ])
+      expect(grant({ ...start, lines })).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    expect(grant(start, ANNUAL, { sub_1: JAN_31 - 1000 })).toEqual({
       kind: "review",
       code: "INVOICE_UNEXPECTED",
     });
-    expect(invoiceGrant(annualStart, PRICES, org)).toEqual({
-      kind: "review",
-      code: "PRICE_UNKNOWN",
-    });
+    // Marked annual, but no line at the verified yearly price: nothing shows it renews yearly.
+    expect(grant({ ...start, lines: [] })).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    expect(grant(start, {})).toEqual({ kind: "review", code: "PRICE_UNKNOWN" });
     expect(
-      invoiceGrant(
-        {
-          ...annualStart,
-          amountPaid: 14900,
-          subscriptionMetadata: { ...annualStart.subscriptionMetadata, grantCents: "14900" },
-        },
-        PRICES,
-        org,
-        ANNUAL,
-      ),
+      grant({
+        ...start,
+        amountPaid: 14900,
+        subscriptionMetadata: { ...start.subscriptionMetadata, grantCents: "14900" },
+      }),
     ).toEqual({ kind: "review", code: "AMOUNT_MISMATCH" });
     // The subscription renews at what its recurring line charges: it must be the cycle bought.
-    const line = (priceId: string) => [{ priceId, periodStart: NOV, periodEnd: DEC, amount: 0 }];
-    expect(invoiceGrant({ ...annualStart, lines: line("price_int") }, PRICES, org, ANNUAL)).toEqual(
-      { kind: "review", code: "INVOICE_UNEXPECTED" },
-    );
+    const monthlyLine = [{ ...line, priceId: "price_int" }];
+    expect(grant({ ...start, lines: monthlyLine })).toEqual({
+      kind: "review",
+      code: "INVOICE_UNEXPECTED",
+    });
     const monthlyStart = readInvoice({
       id: "in_3",
       ...startInvoice("cus_1", "sub_1", org, 14900),
@@ -635,12 +719,14 @@ describe("leitura do Stripe", () => {
         sub_1: monthlyStart.lines[0]!.periodStart,
       }),
     ).toMatchObject({ kind: "grant" });
-    expect(
-      invoiceGrant({ ...monthlyStart, lines: line("price_int_year") }, PRICES, org, ANNUAL),
-    ).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    const yearlyLine = [{ ...monthlyStart.lines[0]!, priceId: "price_int_year" }];
+    expect(invoiceGrant({ ...monthlyStart, lines: yearlyLine }, PRICES, org, ANNUAL)).toEqual({
+      kind: "review",
+      code: "INVOICE_UNEXPECTED",
+    });
     // A yearly price that no longer verifies is unknown by id, but its subscription is annual.
     expect(
-      invoiceGrant({ ...monthlyStart, lines: line("price_int_year") }, PRICES, org, {}, ["sub_1"]),
+      invoiceGrant({ ...monthlyStart, lines: yearlyLine }, PRICES, org, {}, ["sub_1"]),
     ).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
     const yearlySub = (price: Json | string) => ({
       data: [
@@ -658,30 +744,55 @@ describe("leitura do Stripe", () => {
         .annualIds,
     ).toEqual(["sub_1"]);
     expect(readSubscriptions(yearlySub("price_int_year"), "cus_1").annualIds).toEqual([]);
-    const renewal = readInvoice({
-      id: "in_2",
-      ...cycleInvoice("cus_1", "sub_1", NOV, { amount_paid: 149000 }),
-      status: "paid",
-      currency: "brl",
-    })!;
-    const yearly = { ...renewal, lines: [{ ...renewal.lines[0]!, priceId: "price_int_year" }] };
-    expect(invoiceGrant(yearly, PRICES, org, ANNUAL)).toEqual({
+    // A chain anchored on 29/02/2028 renews on 28/02/2029, 2030 and 2031 and on 29/02/2032,
+    // always counted from the anchor; a year counted from the previous anniversary drifts.
+    const FEB_29 = Date.UTC(2028, 1, 29, 10, 0, 7);
+    const leap = { sub_1: FEB_29 };
+    const renewal = (from: number, to: number) =>
+      readInvoice({
+        id: "in_2",
+        ...annualCycleInvoice("cus_1", "sub_1", from, { end: to }),
+        status: "paid",
+        currency: "brl",
+      })!;
+    const FEB_28_2031 = Date.UTC(2031, 1, 28, 10, 0, 7);
+    const FEB_29_2032 = Date.UTC(2032, 1, 29, 10, 0, 7);
+    expect(grant(renewal(FEB_28_2031, FEB_29_2032), ANNUAL, leap)).toEqual({
       kind: "annual",
       tier: "intermediate",
-      period: "2026-11",
+      startsAt: FEB_28_2031,
+      endsAt: FEB_29_2032,
+      anchor: FEB_29,
     });
-    expect(invoiceGrant(yearly, PRICES, org)).toEqual({ kind: "review", code: "PRICE_UNKNOWN" });
-    expect(invoiceGrant({ ...yearly, amountPaid: 14900 }, PRICES, org, ANNUAL)).toEqual({
-      kind: "review",
-      code: "AMOUNT_MISMATCH",
-    });
-    // The anchor must be the 1st at 00:00 UTC: an hour later is no term renewal.
-    const offAnchor = { ...yearly, lines: [{ ...yearly.lines[0]!, periodStart: NOV + 3600_000 }] };
-    expect(invoiceGrant(offAnchor, PRICES, org, ANNUAL)).toEqual({
+    expect(grant(renewal(FEB_28_2031, Date.UTC(2032, 1, 28, 10, 0, 7)), ANNUAL, leap)).toEqual({
       kind: "review",
       code: "INVOICE_UNEXPECTED",
     });
-    // The annual upgrade: a one-off payment marked annual, priced on the term when applied.
+    // Not a year of the anchor: 13 months in, or a month's line at the yearly price.
+    expect(
+      grant(
+        renewal(Date.UTC(2029, 2, 29, 10, 0, 7), Date.UTC(2030, 2, 29, 10, 0, 7)),
+        ANNUAL,
+        leap,
+      ),
+    ).toEqual({ kind: "review", code: "INVOICE_UNEXPECTED" });
+    // A card annual anchored on a 1st at 00:00 UTC, as before slice 2b, keeps renewing.
+    const legacy = renewal(NOV, Date.UTC(2027, 10, 1));
+    expect(grant(legacy, ANNUAL, { sub_1: Date.UTC(2025, 10, 1) })).toEqual({
+      kind: "annual",
+      tier: "intermediate",
+      startsAt: NOV,
+      endsAt: Date.UTC(2027, 10, 1),
+      anchor: Date.UTC(2025, 10, 1),
+    });
+    const yearly = renewal(JAN_31_NEXT, Date.UTC(2029, 0, 31, 10, 0, 7));
+    expect(grant(yearly)).toMatchObject({ kind: "annual", startsAt: JAN_31_NEXT });
+    expect(grant(yearly, {})).toEqual({ kind: "review", code: "PRICE_UNKNOWN" });
+    expect(grant({ ...yearly, amountPaid: 14900 })).toEqual({
+      kind: "review",
+      code: "AMOUNT_MISMATCH",
+    });
+    // The annual upgrade: a one-off payment marked annual, priced on the term month it names.
     const upgrade = readInvoice({
       id: "in_4",
       customer: "cus_1",
@@ -694,7 +805,7 @@ describe("leitura do Stripe", () => {
         kind: "upgrade",
         cycle: "annual",
         tier: "large",
-        period: "2027-02",
+        period: "2027-05-31T10:00:07.000Z",
         grantCents: "233333",
       },
     })!;
@@ -702,24 +813,22 @@ describe("leitura do Stripe", () => {
       ...ANNUAL,
       large: { priceId: "price_large_year", productId: "prod_large_year" },
     };
-    expect(invoiceGrant(upgrade, PRICES, org, LARGE)).toEqual({
+    expect(grant(upgrade, LARGE)).toEqual({
       kind: "annualUpgrade",
       tier: "large",
-      period: "2027-02",
+      period: "2027-05-31T10:00:07.000Z",
     });
     // Without the yearly price it moves the subscription to, it waits for a person.
-    expect(invoiceGrant(upgrade, PRICES, org, ANNUAL)).toEqual({
+    expect(grant(upgrade)).toEqual({ kind: "review", code: "PRICE_UNKNOWN" });
+    expect(
+      grant({ ...upgrade, metadata: { ...upgrade.metadata, period: undefined } }, LARGE),
+    ).toEqual({
       kind: "review",
-      code: "PRICE_UNKNOWN",
+      code: "AMOUNT_MISMATCH",
     });
     expect(
-      invoiceGrant(
-        { ...upgrade, metadata: { ...upgrade.metadata, cycle: undefined } },
-        PRICES,
-        org,
-        LARGE,
-      ),
-    ).toEqual({ kind: "upgrade", tier: "large", period: "2027-02" });
+      grant({ ...upgrade, metadata: { ...upgrade.metadata, cycle: undefined } }, LARGE),
+    ).toEqual({ kind: "upgrade", tier: "large", period: "2027-05-31T10:00:07.000Z" });
   });
 
   it("lê do evento só seletores e marca reembolso e contestação para revisão", () => {
@@ -2239,10 +2348,13 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
   });
 });
 
-describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => {
+describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 0012, fatia 2b)", () => {
   const OCT_1 = Date.UTC(2026, 9, 1);
+  /** A card annual signed at `OCT`, 10/10/2026 at 12:00 UTC: Stripe anchors it there. */
+  const YEAR = termEndsAt(OCT);
+  /** A card annual bought before slice 2b, anchored on 01/11/2025 at 00:00 UTC. */
+  const LEGACY = Date.UTC(2025, 10, 1);
   const CUSTOMER = "cus_annual_card";
-  const yearlyPrice = (tier: string) => (tier === "large" ? "price_large_year" : "price_int_year");
   let invoiceSeq = 0;
   const invoiceId = () => `in_annual_${String(++invoiceSeq).padStart(4, "0")}`;
   /** The Customer a card Checkout created, and its subscription at the yearly price. */
@@ -2252,6 +2364,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       yearlyPrices = YEARLY_PRICES as Json[],
       tier = "intermediate" as "intermediate" | "large",
       renewalTier = undefined as "intermediate" | "large" | undefined,
+      anchor = OCT,
     } = {},
   ) {
     f.fake.state.prices.push(...yearlyPrices);
@@ -2265,82 +2378,52 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         updatedAt: Date.now(),
       }),
     );
-    const sub = f.fake.subscribe(CUSTOMER, tier, termEndsAt(OCT_1));
+    const sub = f.fake.subscribe(CUSTOMER, tier, termEndsAt(anchor), anchor);
     // Stripe expands the item's price in a subscription: its lookup key says it is yearly.
     (sub.items.data[0] as Json).price = YEARLY_PRICES[tier === "large" ? 1 : 0];
     return sub;
   }
-  /** First invoice of an annual Checkout: a one-off item for the term, the yearly price at R$ 0. */
+  /** First invoice of an annual Checkout: the first year, charged at the signing, `OCT`. */
   const annualStart = (
     f: Fixture,
     subscription: string,
     {
-      period = "2026-10",
       tier = "intermediate",
-      amount = 149000,
+      amount = tier === "large" ? 499000 : 149000,
       paidAt = Date.now(),
+      start = OCT,
+      end = termEndsAt(start),
       organizationId = f.organizationId as string,
-      fields = {} as Json,
+      fields = {},
+    }: {
+      tier?: string;
+      amount?: number;
+      paidAt?: number;
+      start?: number;
+      end?: number;
+      organizationId?: string;
+      fields?: Json;
     } = {},
   ) =>
     f.fake.invoice({
       id: invoiceId(),
-      customer: CUSTOMER,
-      amount_paid: amount,
-      amount_due: amount,
-      billing_reason: "subscription_create",
-      status_transitions: { paid_at: s(paidAt) },
-      parent: {
-        type: "subscription_details",
-        subscription_details: {
-          subscription,
-          metadata: {
-            organizationId,
-            kind: "start",
-            cycle: "annual",
-            tier,
-            period,
-            grantCents: String(amount),
-          },
-        },
-      },
-      lines: {
-        data: [
-          {
-            amount,
-            period: { start: s(Date.now()), end: s(Date.now()) },
-            pricing: { type: "price_details", price_details: { price: "price_1OneOff" } },
-          },
-          {
-            amount: 0,
-            period: { start: s(Date.now()), end: s(Date.now()) + 1 },
-            pricing: { type: "price_details", price_details: { price: yearlyPrice(tier) } },
-          },
-        ],
-      },
+      ...annualStartInvoice(CUSTOMER, subscription, organizationId, {
+        tier,
+        amount,
+        start,
+        end,
+        paidAt,
+      }),
       ...fields,
     });
-  /** A yearly renewal: the line starts at the end of the term it follows. */
+  /** A yearly renewal: the line starts at an anniversary of `anchor`, the end of a term. */
   const annualRenewal = (
     subscription: string,
     start: number,
-    { amount = 149000, price: priceId = "price_int_year" } = {},
+    { amount = 149000, price: priceId = "price_int_year", anchor = OCT } = {},
   ) => ({
-    ...cycleInvoice(CUSTOMER, subscription, start, {
-      id: invoiceId(),
-      amount_paid: amount,
-      amount_due: amount,
-      status_transitions: { paid_at: s(Date.now()) },
-    }),
-    lines: {
-      data: [
-        {
-          amount,
-          period: { start: s(start), end: s(termEndsAt(start)) },
-          pricing: { type: "price_details", price_details: { price: priceId } },
-        },
-      ],
-    },
+    ...annualCycleInvoice(CUSTOMER, subscription, start, { anchor, amount, price: priceId }),
+    id: invoiceId(),
   });
   const sync = (f: Fixture) =>
     f.t.action(internal.billing.sync, { organizationId: f.organizationId });
@@ -2361,6 +2444,34 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     vi.advanceTimersByTime(at - Date.now());
     await f.t.finishInProgressScheduledFunctions();
   }
+  /** A card term bought before slice 2b, from 01/11/2025 to 01/11/2026, with its plan. */
+  const legacyTerm = (f: Fixture) =>
+    f.t.run(async (ctx) => {
+      const termId = await insertTerm(ctx, {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        firstPeriod: LEGACY,
+        endsAt: NOV,
+        source: "stripe",
+        references: ["in_annual_2025_first"],
+        paidCents: 149000,
+        purchasedAt: LEGACY,
+        segments: [],
+        state: "active",
+      });
+      await activateCatalogPlan(
+        ctx,
+        f.organizationId,
+        "intermediate",
+        OCT,
+        NOV,
+        0,
+        "operator",
+        "Anual sintético",
+        termId,
+      );
+      return termId;
+    });
   const DAY = 24 * 60 * 60 * 1000;
   const OPERATOR = "operador-sintetico";
   const operatorAction = (termId: Id<"platformPlanTerms">, key: string) => ({
@@ -2378,7 +2489,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       .sent(`/v1/subscriptions/${subscriptionId}`)
       .map((call) => Object.fromEntries(call.params));
 
-  it("começando agora, cria um termo ativo e concede o plano até o fim do termo, uma vez", async () => {
+  it("na contratação, cria um termo ativo da âncora e concede o plano até o fim dele, uma vez", async () => {
     const f = await fixture();
     const sub = await annualCard(f);
     const invoice = annualStart(f, sub.id);
@@ -2396,23 +2507,28 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       state: "active",
       source: "stripe",
       tier: "intermediate",
-      firstPeriod: OCT_1,
-      endsAt: termEndsAt(OCT_1),
+      firstPeriod: OCT,
+      endsAt: YEAR,
       references: [invoice.id],
+      stripeSubscriptionId: sub.id,
       paidCents: 149000,
       purchasedAt: OCT,
     });
+    // The first term starts on the anchor: it is its own, as the term records no other.
+    expect(term.anchor).toBeUndefined();
     expect(await f.plan()).toMatchObject({
       catalogTier: "intermediate",
       termId: term._id,
-      endsAt: termEndsAt(OCT_1),
+      startsAt: OCT,
+      endsAt: YEAR,
+      periodAnchor: OCT,
       version: 1,
     });
     expect(await grants(f)).toMatchObject([
       {
         invoiceId: invoice.id,
         state: "applied",
-        period: "2026-10",
+        period: "2026-10-10T12:00:00.000Z",
         termId: term._id,
         planVersion: 1,
       },
@@ -2420,69 +2536,26 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     // The yearly subscription is never moved to a monthly price.
     expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toEqual([]);
     expect((await f.billing()).account?.subscription).toMatchObject({ tier: "intermediate" });
-    // Another annual invoice for months the term covers: paid, so blocked for a person.
-    const twice = annualStart(f, sub.id, { period: "2026-11" });
+    // Another annual invoice for months the term covers: paid, so blocked for a person. Its
+    // subscription renews the term it bought, so nothing stops it.
+    const twice = annualStart(f, sub.id);
     await sync(f);
     expect((await grants(f))[1]).toMatchObject({
       invoiceId: twice.id,
       state: "blocked",
       code: "ANNUAL_TERM_ACTIVE",
     });
+    expect((await grants(f))[1]!.subscriptionStop).toBeUndefined();
     expect(await terms(f)).toHaveLength(1);
   });
 
-  it("começando no mês seguinte, agenda o termo e só troca o plano no dia 1", async () => {
+  it("um anual anterior à fatia 2b, ancorado no dia 1, renova no último mês: o termo seguinte fica agendado sem intervalo e sem nova reserva", async () => {
     const f = await fixture();
-    const sub = await annualCard(f);
-    annualStart(f, sub.id, { period: "2026-11" });
-    await sync(f);
-    const [term] = await terms(f);
-    expect(term).toMatchObject({ state: "scheduled", firstPeriod: NOV, endsAt: termEndsAt(NOV) });
-    expect(await grants(f)).toMatchObject([{ state: "applied", termId: term!._id }]);
-    expect(await f.plan()).toBeNull();
-    await runUntil(f, NOV);
-    expect(await terms(f)).toMatchObject([{ state: "active" }]);
-    expect(await f.plan()).toMatchObject({
-      catalogTier: "intermediate",
-      termId: term!._id,
-      startsAt: NOV,
-      endsAt: termEndsAt(NOV),
-    });
-  });
-
-  it("no último mês do termo, a renovação anual agenda o termo seguinte sem intervalo e sem nova reserva", async () => {
-    const f = await fixture();
-    const sub = await annualCard(f);
-    // November 2025 to November 2026, bought by card: October is its last month.
-    const firstPeriod = Date.UTC(2025, 10, 1);
-    const old = await f.t.run(async (ctx) => {
-      const termId = await insertTerm(ctx, {
-        organizationId: f.organizationId,
-        tier: "intermediate",
-        firstPeriod,
-        endsAt: NOV,
-        source: "stripe",
-        references: ["in_annual_2025_first"],
-        paidCents: 149000,
-        purchasedAt: firstPeriod,
-        segments: [],
-        state: "active",
-      });
-      await activateCatalogPlan(
-        ctx,
-        f.organizationId,
-        "intermediate",
-        OCT,
-        NOV,
-        0,
-        "operator",
-        "Anual sintético",
-        termId,
-      );
-      return termId;
-    });
+    const sub = await annualCard(f, { anchor: LEGACY });
+    const old = await legacyTerm(f);
     const before = await stock(f);
-    const renewal = f.fake.invoice(annualRenewal(sub.id, NOV));
+    // Paid in the old term's last month, a year of the anchor 01/11/2025 ahead.
+    const renewal = f.fake.invoice(annualRenewal(sub.id, NOV, { anchor: LEGACY }));
     await sync(f);
     // Its own previous term does not block the renewal.
     const renewed = (await terms(f)).find((term) => term._id !== old)!;
@@ -2490,7 +2563,8 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       state: "scheduled",
       source: "stripe",
       firstPeriod: NOV,
-      endsAt: termEndsAt(NOV),
+      anchor: LEGACY,
+      endsAt: Date.UTC(2027, 10, 1),
       references: [renewal.id],
     });
     expect(await grants(f)).toMatchObject([
@@ -2501,7 +2575,8 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     expect(await f.plan()).toMatchObject({
       termId: renewed._id,
       startsAt: NOV,
-      endsAt: termEndsAt(NOV),
+      endsAt: Date.UTC(2027, 10, 1),
+      periodAnchor: LEGACY,
       version: 2,
     });
     expect(await stock(f)).toEqual(before);
@@ -2514,26 +2589,29 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     await sync(f);
     // A year later, in the term's last month, the renewal is paid.
     vi.setSystemTime(Date.UTC(2027, 8, 15));
-    const renewal = f.fake.invoice(annualRenewal(sub.id, termEndsAt(OCT_1)));
+    const renewal = f.fake.invoice(annualRenewal(sub.id, YEAR));
     // The renewal's event first, then a late repeat of the first invoice's.
     await paid(f, renewal.id);
     await paid(f, first.id);
     await processEvents(f);
     await sync(f);
-    expect((await terms(f)).map((term) => [term.state, term.firstPeriod])).toEqual([
-      ["active", OCT_1],
-      ["scheduled", termEndsAt(OCT_1)],
+    expect((await terms(f)).map((term) => [term.state, term.firstPeriod, term.anchor])).toEqual([
+      ["active", OCT, undefined],
+      ["scheduled", YEAR, OCT],
     ]);
     expect((await grants(f)).map((grant) => [grant.invoiceId, grant.state])).toEqual([
       [first.id, "applied"],
       [renewal.id, "applied"],
     ]);
-    expect(await f.plan()).toMatchObject({ endsAt: termEndsAt(OCT_1), version: 1 });
+    expect(await f.plan()).toMatchObject({ endsAt: YEAR, version: 1 });
   });
 
   it.each([
     ["com valor diferente", "AMOUNT_MISMATCH", { amount: 148000 }],
     ["em outra moeda", "CURRENCY_MISMATCH", { fields: { currency: "usd" } }],
+    // Invariant 6, annual half: a month's line at the yearly price is no year of the anchor.
+    ["cuja linha não é um ano da âncora", "INVOICE_UNEXPECTED", { end: addMonths(OCT, 1) }],
+    ["com o id fora do formato de referência", "INVOICE_UNEXPECTED", { fields: { id: "in_1" } }],
   ] as const)("bloqueia a primeira fatura %s", async (_, blocked, options) => {
     const f = await fixture();
     const sub = await annualCard(f);
@@ -2560,22 +2638,31 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
             }))
           : YEARLY_PRICES,
       });
-      f.fake.invoice(annualRenewal(sub.id, OCT_1, { amount, price: priceId }));
+      f.fake.invoice(annualRenewal(sub.id, OCT, { amount, price: priceId }));
       await sync(f);
       expect(await grants(f)).toMatchObject([{ state: "blocked", code: blocked }]);
       expect(await terms(f)).toEqual([]);
     },
   );
 
+  it("bloqueia a renovação paga mais de um mês antes do ano que ela compra", async () => {
+    const f = await fixture();
+    const sub = await annualCard(f);
+    f.fake.invoice(annualRenewal(sub.id, YEAR));
+    await sync(f);
+    expect(await grants(f)).toMatchObject([{ state: "blocked", code: "INVOICE_UNEXPECTED" }]);
+    expect(await terms(f)).toEqual([]);
+  });
+
   it("sem os preços anuais no Stripe, o mensal continua e a fatura anual fica PRICE_UNKNOWN", async () => {
     const f = await fixture();
     const sub = await annualCard(f, { yearlyPrices: [] });
-    const monthlySub = f.fake.subscribe(CUSTOMER, "intermediate", NOV);
+    const monthlySub = f.fake.subscribe(CUSTOMER, "intermediate");
     f.fake.invoice({
       ...startInvoice(CUSTOMER, monthlySub.id, f.organizationId, 14900),
       id: invoiceId(),
     });
-    const annual = annualStart(f, sub.id, { period: "2026-11" });
+    const annual = annualStart(f, sub.id);
     await sync(f);
     expect((await grants(f)).map((grant) => [grant.state, grant.code ?? null])).toEqual([
       ["applied", null],
@@ -2589,18 +2676,45 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
   it("paga depois do primeiro mês do termo fica LATE_PAYMENT; paga a tempo e lida depois vale", async () => {
     const f = await fixture();
     const sub = await annualCard(f);
-    vi.setSystemTime(NOV + 2 * 86400_000);
-    annualStart(f, sub.id, { paidAt: NOV + 3600_000 });
+    vi.setSystemTime(NOV_10 + 2 * DAY);
+    annualStart(f, sub.id, { paidAt: NOV_10 + 3600_000 });
     await sync(f);
     expect(await grants(f)).toMatchObject([{ state: "blocked", code: "LATE_PAYMENT" }]);
     expect(await terms(f)).toEqual([]);
-    // Paid on October 31st, read only in November: the term is granted from now to its end.
-    const onTime = annualStart(f, sub.id, { paidAt: NOV - 3600_000 });
+    // Paid within the first term month, read only after it: granted from now to the term's end.
+    const onTime = annualStart(f, sub.id, { paidAt: NOV_10 - 3600_000 });
     await sync(f);
     expect(await terms(f)).toMatchObject([
-      { state: "active", firstPeriod: OCT_1, purchasedAt: NOV - 3600_000, references: [onTime.id] },
+      {
+        state: "active",
+        firstPeriod: OCT,
+        purchasedAt: NOV_10 - 3600_000,
+        references: [onTime.id],
+      },
     ]);
-    expect(await f.plan()).toMatchObject({ startsAt: Date.now(), endsAt: termEndsAt(OCT_1) });
+    expect(await f.plan()).toMatchObject({
+      startsAt: Date.now(),
+      endsAt: YEAR,
+      periodAnchor: OCT,
+    });
+  });
+
+  it("a fatura sem âncora conhecida espera a conferência seguinte, sem registro", async () => {
+    const f = await fixture();
+    const sub = await annualCard(f);
+    // A sync racing the completion: the subscription is not listed and shows no anchor yet.
+    f.fake.state.unlisted.push(sub.id);
+    const anchor = sub.billing_cycle_anchor;
+    delete (sub as Partial<typeof sub>).billing_cycle_anchor;
+    annualStart(f, sub.id);
+    await sync(f);
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "GET")).toHaveLength(1);
+    expect(await grants(f)).toEqual([]);
+    expect(await terms(f)).toEqual([]);
+    Object.assign(sub, { billing_cycle_anchor: anchor });
+    await sync(f);
+    expect(await grants(f)).toMatchObject([{ state: "applied" }]);
+    expect(await terms(f)).toMatchObject([{ state: "active", firstPeriod: OCT }]);
   });
 
   it("bloqueia a fatura que aponta outra organização; o anual de outra organização não bloqueia esta", async () => {
@@ -2630,10 +2744,10 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     expect(
       (await terms(f)).filter((term) => term.organizationId === f.organizationId),
     ).toMatchObject([{ state: "active", source: "stripe" }]);
-    expect(await f.plan()).toMatchObject({ endsAt: termEndsAt(OCT_1) });
+    expect(await f.plan()).toMatchObject({ endsAt: YEAR });
   });
 
-  it("com o interruptor anual desligado, a fatura paga vale; a recusa de admissão bloqueia", async () => {
+  it("com o interruptor anual desligado, a fatura paga vale e reserva a admissão; a recusa de admissão bloqueia", async () => {
     const f = await fixture();
     for (const [enabled, expectedVersion] of [
       [true, 1],
@@ -2644,10 +2758,13 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         expectedVersion,
         evidence: "synthetic-annual-switch",
       });
+    expect((await stock(f)).allocations).toEqual([]);
     const sub = await annualCard(f);
     annualStart(f, sub.id);
     await sync(f);
     expect(await terms(f)).toMatchObject([{ state: "active" }]);
+    // Reserved when the first invoice is granted, as the monthly (ADR 0012, section 1).
+    expect((await stock(f)).allocations.map(([tier]) => tier)).toEqual(["intermediate"]);
     // A first reservation after the admission window closed: blocked for a person.
     const g = await fixture();
     await g.t.run(async (ctx) => {
@@ -2659,6 +2776,114 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     await sync(g);
     expect(await grants(g)).toMatchObject([{ state: "blocked", code: "PLAN_UNAVAILABLE" }]);
     expect(await terms(g)).toEqual([]);
+    expect((await stock(g)).allocations).toEqual([]);
+  });
+
+  it("a primeira fatura anual bloqueada para a assinatura no Stripe, sem reembolso automático, e o console mostra a parada até ela acontecer", async () => {
+    const f = await fixture();
+    // The admission window closed between the Checkout and the payment: paid, but no term.
+    await f.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, { admissionsUntil: Date.now() - 1 });
+    });
+    const sub = await annualCard(f);
+    annualStart(f, sub.id);
+    await sync(f);
+    const [grant] = await grants(f);
+    expect(grant).toMatchObject({
+      state: "blocked",
+      code: "PLAN_UNAVAILABLE",
+      subscriptionStop: { subscriptionId: sub.id, state: "pending" },
+    });
+    const reviews = async () =>
+      (
+        await (
+          await person(f.t, f.organizationId, "owner")
+        ).query(api.billing.overview, { organizationId: f.organizationId })
+      ).reviews.map((row) => [row.source, row.code]);
+    expect(await reviews()).toEqual(
+      expect.arrayContaining([
+        ["grant", "PLAN_UNAVAILABLE"],
+        ["grant", "SUBSCRIPTION_STOP_PENDING"],
+      ]),
+    );
+    // Cancelled at once, before it charges the next year; the refund stays manual.
+    await runUntil(f, Date.now());
+    expect(sub.status).toBe("canceled");
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
+    expect(f.fake.state.calls.filter((call) => call.path.includes("refund"))).toEqual([]);
+    expect((await grants(f))[0]!.subscriptionStop).toMatchObject({ state: "done" });
+    expect(await reviews()).toEqual([["grant", "PLAN_UNAVAILABLE"]]);
+    // Repeats do nothing new.
+    await sync(f);
+    await f.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: f.organizationId,
+      grantId: grant!._id,
+      attempt: 0,
+    });
+    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
+    expect(await grants(f)).toHaveLength(1);
+
+    // Stripe stays down: retried, then flagged until the operator runs it again.
+    const g = await fixture();
+    await g.t.run(async (ctx) => {
+      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
+      await ctx.db.patch("platformPlanSettings", settings._id, { admissionsUntil: Date.now() - 1 });
+    });
+    const gSub = await annualCard(g);
+    annualStart(g, gSub.id);
+    await sync(g);
+    const [gGrant] = await grants(g);
+    g.fake.state.failNext = 1000;
+    await g.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: g.organizationId,
+      grantId: gGrant!._id,
+      attempt: 5,
+    });
+    g.fake.state.failNext = 0;
+    expect((await grants(g))[0]!.subscriptionStop).toMatchObject({ state: "failed" });
+    expect(gSub.status).toBe("active");
+    expect(
+      (
+        await (
+          await person(g.t, g.organizationId, "owner")
+        ).query(api.billing.overview, { organizationId: g.organizationId })
+      ).reviews.map((row) => row.code),
+    ).toContain("SUBSCRIPTION_STOP_FAILED");
+    await g.t.action(internal.billing.stopBlockedAnnual, {
+      organizationId: g.organizationId,
+      grantId: gGrant!._id,
+      attempt: 0,
+    });
+    expect(gSub.status).toBe("canceled");
+    expect((await grants(g))[0]!.subscriptionStop).toMatchObject({ state: "done" });
+  });
+
+  it("os jobs agendados pelo Checkout anual do dia 1 só registram e não fazem nada", async () => {
+    const f = await fixture();
+    const checkoutId = await f.t.run((ctx) =>
+      ctx.db.insert("billingCheckouts", {
+        organizationId: f.organizationId,
+        key: "legacy-annual-day-one",
+        kind: "start",
+        tier: "intermediate",
+        period: "2026-11",
+        grantCents: 149000,
+        cycle: "annual",
+        state: "complete",
+        subscriptionId: "sub_legacy_day_one",
+        admission: { state: "refused", code: "PLAN_UNAVAILABLE", at: Date.now(), stop: "pending" },
+        expiresAt: Date.now(),
+        requestedBy: "legacy",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }),
+    );
+    await f.t.mutation(internal.billing.recheckAnnualAdmission, { checkoutId });
+    const legacy = { organizationId: f.organizationId, checkoutId, attempt: 0 };
+    await f.t.mutation(internal.billing.retryAnnualStop, legacy);
+    await f.t.action(internal.billing.stopRefusedAnnual, legacy);
+    expect(f.fake.state.calls).toEqual([]);
   });
 
   it("depois do anual por cartão, a fatura mensal de um mês coberto continua bloqueada", async () => {
@@ -2672,57 +2897,36 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       { state: "applied" },
       { invoiceId: monthly.id, state: "blocked", code: "ANNUAL_TERM_ACTIVE" },
     ]);
-    expect(await f.plan()).toMatchObject({ endsAt: termEndsAt(OCT_1), version: 1 });
+    expect(await f.plan()).toMatchObject({ endsAt: YEAR, version: 1 });
   });
 
-  it("a renovação cobrada no aniversário concede o termo seguinte na hora, sem nova reserva", async () => {
+  it("um anual anterior à fatia 2b renova no aniversário da âncora do dia 1, na hora e sem nova reserva", async () => {
     const f = await fixture();
-    const sub = await annualCard(f);
-    // November 2025 to November 2026; Stripe charges the renewal at the anchor, an hour late.
-    const firstPeriod = Date.UTC(2025, 10, 1);
-    await f.t.run(async (ctx) => {
-      const termId = await insertTerm(ctx, {
-        organizationId: f.organizationId,
-        tier: "intermediate",
-        firstPeriod,
-        endsAt: NOV,
-        source: "stripe",
-        references: ["in_annual_2025_first"],
-        paidCents: 149000,
-        purchasedAt: firstPeriod,
-        segments: [],
-        state: "active",
-      });
-      await activateCatalogPlan(
-        ctx,
-        f.organizationId,
-        "intermediate",
-        OCT,
-        NOV,
-        0,
-        "operator",
-        "Anual sintético",
-        termId,
-      );
-    });
+    const sub = await annualCard(f, { anchor: LEGACY });
+    await legacyTerm(f);
     const before = await stock(f);
+    // Stripe charges the renewal at the anchor, an hour late.
     vi.setSystemTime(NOV + 3600_000);
-    const renewal = f.fake.invoice(annualRenewal(sub.id, NOV));
+    const renewal = f.fake.invoice(annualRenewal(sub.id, NOV, { anchor: LEGACY }));
     await sync(f);
     const renewed = (await terms(f)).find((term) => term.references[0] === renewal.id)!;
     expect(renewed).toMatchObject({
       state: "active",
       firstPeriod: NOV,
-      endsAt: termEndsAt(NOV),
+      anchor: LEGACY,
+      endsAt: Date.UTC(2027, 10, 1),
       purchasedAt: NOV + 3600_000,
     });
     expect(await f.plan()).toMatchObject({
       termId: renewed._id,
       startsAt: NOV + 3600_000,
-      endsAt: termEndsAt(NOV),
+      endsAt: Date.UTC(2027, 10, 1),
+      periodAnchor: LEGACY,
       version: 2,
     });
-    expect(await grants(f)).toMatchObject([{ state: "applied", planVersion: 2 }]);
+    expect(await grants(f)).toMatchObject([
+      { state: "applied", planVersion: 2, period: "2026-11" },
+    ]);
     expect(await stock(f)).toEqual(before);
   });
 
@@ -2740,7 +2944,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
   it("recusa o downgrade de uma assinatura anual", async () => {
     const f = await fixture();
     const sub = await annualCard(f, { tier: "large" });
-    annualStart(f, sub.id, { tier: "large", amount: 499000 });
+    annualStart(f, sub.id, { tier: "large" });
     await sync(f);
     expect(await terms(f)).toMatchObject([{ state: "active", tier: "large" }]);
     expect(
@@ -2771,7 +2975,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     // A monthly card subscription under a term bought by card still cannot resume.
     const g = await fixture();
     const { customer } = await startCard(g);
-    const monthly = g.fake.subscribe(customer, "intermediate", NOV);
+    const monthly = g.fake.subscribe(customer, "intermediate");
     g.fake.invoice(startInvoice(customer, monthly.id, g.organizationId, 14900));
     await g.t.action(internal.billing.sync, { organizationId: g.organizationId });
     expect(await renewal("cancel", g)).toBe("OK");
@@ -2800,13 +3004,13 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       insertTerm(ctx, {
         organizationId: f.organizationId,
         tier: "intermediate",
-        firstPeriod: OCT_1,
-        endsAt: termEndsAt(OCT_1),
+        firstPeriod: OCT,
+        endsAt: YEAR,
         source: "stripe",
         references: ["in_annual_other_sub"],
         stripeSubscriptionId: "sub_another_annual",
         paidCents: 149000,
-        purchasedAt: OCT_1,
+        purchasedAt: OCT,
         segments: [],
         state: "active",
       }),
@@ -2824,7 +3028,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     await annualCard(f, { yearlyPrices: [], renewalTier: "intermediate" });
     // Not the annual subscription: a monthly one at a monthly price retired in Stripe.
     f.fake.state.subscriptions.length = 0;
-    const sub = f.fake.subscribe(CUSTOMER, "intermediate", NOV);
+    const sub = f.fake.subscribe(CUSTOMER, "intermediate");
     (sub.items.data[0] as Json).price = "price_retired_monthly";
     await sync(f);
     expect(
@@ -2832,12 +3036,12 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     ).toEqual(["price_int"]);
   });
 
-  it("a primeira cobrança anual na âncora do dia 1, sem termo anterior, cria e ativa o termo", async () => {
+  it("a primeira cobrança de um anual anterior à fatia 2b, na âncora do dia 1, cria e ativa o termo", async () => {
     const f = await fixture();
-    const sub = await annualCard(f);
-    // The likely `next` route: no charge at the Checkout, the yearly price charged on the 1st.
+    const sub = await annualCard(f, { anchor: NOV });
+    // The day-1 route: no charge at the Checkout, the first year charged on the 1st.
     vi.setSystemTime(NOV + 3600_000);
-    const invoice = f.fake.invoice(annualRenewal(sub.id, NOV));
+    const invoice = f.fake.invoice(annualRenewal(sub.id, NOV, { anchor: NOV }));
     await sync(f);
     const [term] = await terms(f);
     expect(term).toMatchObject({
@@ -2847,7 +3051,12 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       references: [invoice.id],
       stripeSubscriptionId: sub.id,
     });
-    expect(await f.plan()).toMatchObject({ termId: term!._id, endsAt: termEndsAt(NOV) });
+    expect(term!.anchor).toBeUndefined();
+    expect(await f.plan()).toMatchObject({
+      termId: term!._id,
+      endsAt: termEndsAt(NOV),
+      periodAnchor: NOV,
+    });
   });
 
   it("começar agora com um plano mensal maior em vigor fica PLAN_UNAVAILABLE", async () => {
@@ -2861,28 +3070,6 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     expect(await grants(f)).toMatchObject([{ state: "blocked", code: "PLAN_UNAVAILABLE" }]);
     expect(await terms(f)).toEqual([]);
     expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV });
-  });
-
-  it.each([
-    [
-      "com o 1º mês depois do mês seguinte",
-      (f: Fixture, sub: string) => annualStart(f, sub, { period: "2026-12" }),
-    ],
-    [
-      "com o id fora do formato de referência",
-      (f: Fixture, sub: string) => annualStart(f, sub, { fields: { id: "in_1" } }),
-    ],
-    [
-      "de renovação paga mais de um mês antes",
-      (f: Fixture, sub: string) => f.fake.invoice(annualRenewal(sub, DEC)),
-    ],
-  ] as const)("bloqueia a fatura anual %s", async (_, invoice) => {
-    const f = await fixture();
-    const sub = await annualCard(f);
-    invoice(f, sub.id);
-    await sync(f);
-    expect(await grants(f)).toMatchObject([{ state: "blocked", code: "INVOICE_UNEXPECTED" }]);
-    expect(await terms(f)).toEqual([]);
   });
 
   it("não retoma a assinatura anual com um anual por Pix agendado para depois do termo dela", async () => {
@@ -2914,14 +3101,14 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
             start,
           })
           .catch((error: { data?: unknown }) => error.data),
-      ).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: termEndsAt(OCT_1) });
+      ).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: YEAR });
     // A Pix term scheduled after it, as one sold before that rule.
     await f.t.run((ctx) =>
       insertTerm(ctx, {
         organizationId: f.organizationId,
         tier: "intermediate",
-        firstPeriod: termEndsAt(OCT_1),
-        endsAt: termEndsAt(termEndsAt(OCT_1)),
+        firstPeriod: YEAR,
+        endsAt: termEndsAt(YEAR),
         source: "pix",
         references: ["pix-annual-after-card"],
         paidCents: 149000,
@@ -2982,16 +3169,18 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
   });
 
   describe("upgrade do Intermediário anual para o Grande anual", () => {
-    const FEB = Date.UTC(2027, 1, 10, 12);
-    const FEB_1 = Date.UTC(2027, 1, 1);
-    const END = termEndsAt(OCT_1);
+    /** Mid-February: the 5th term month, from 10/02 to 10/03 at 12:00 UTC. */
+    const FEB = Date.UTC(2027, 1, 15, 12);
+    const FEB_10 = Date.UTC(2027, 1, 10, 12);
+    const FEB_KEY = "2027-02-10T12:00:00.000Z";
+    const END = YEAR;
     const annualOn = (f: Fixture) =>
       f.t.mutation(internal.plans.configureAnnual, {
         enabled: true,
         expectedVersion: 1,
         evidence: "synthetic-annual-on",
       });
-    /** An Intermediário annual bought by card from October 2026, active, sale switch on. */
+    /** An Intermediário annual bought by card on 10/10/2026 at 12:00, active, sale switch on. */
     async function cardTerm() {
       const f = await fixture();
       await annualOn(f);
@@ -3019,7 +3208,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       f: Fixture,
       {
         amount = 233333,
-        period = "2027-02",
+        period = FEB_KEY,
         paidAt = Date.now(),
         organizationId = f.organizationId as string,
       } = {},
@@ -3052,29 +3241,40 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       });
     };
 
-    it("cobra a diferença no Checkout, sobe o plano, reserva o aporte e a renovação passa a Grande sem mudar a data", async () => {
+    it("cobra a diferença pelos meses do termo, sobe o plano desde o início do mês do termo, reserva o aporte e a renovação passa a Grande sem mudar a data", async () => {
       const { f, sub, first, term } = await cardTerm();
       expect(term).toMatchObject({ tier: "intermediate", stripeSubscriptionId: sub.id });
       expect(await stock(f)).toMatchObject({ custody: 10800 });
       vi.setSystemTime(FEB);
       const { url } = await upgradeCheckout(f);
       expect(url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-      // A one-off payment of the difference over the 8 months left, the current one whole.
+      // A one-off payment of the difference over the 8 term months left, the current one whole,
+      // counted from the anchor of 10/10 at 12:00, not from the civil month.
       expect(sessionParams(f)).toMatchObject({
         mode: "payment",
         customer: CUSTOMER,
         "line_items[0][price_data][currency]": "brl",
         "line_items[0][price_data][unit_amount]": "233333",
+        "line_items[0][price_data][product_data][name]":
+          "Mudança para Grande anual, do mês do plano anual iniciado em 10/02/2027 às 12:00 UTC ao fim do plano anual",
         "invoice_creation[enabled]": "true",
         "invoice_creation[invoice_data][metadata][kind]": "upgrade",
         "invoice_creation[invoice_data][metadata][cycle]": "annual",
         "invoice_creation[invoice_data][metadata][tier]": "large",
-        "invoice_creation[invoice_data][metadata][period]": "2027-02",
+        "invoice_creation[invoice_data][metadata][period]": FEB_KEY,
         "invoice_creation[invoice_data][metadata][grantCents]": "233333",
+        expires_at: String(s(FEB + DAY)),
       });
       expect(Object.keys(sessionParams(f))).not.toContain(
         "subscription_data[billing_cycle_anchor]",
       );
+      expect(
+        await (
+          await person(f.t, f.organizationId, "owner")
+        ).query(api.billing.overview, { organizationId: f.organizationId }),
+      ).toMatchObject({
+        checkout: { kind: "upgrade", cycle: "annual", periodStartsAt: FEB_10, period: FEB_KEY },
+      });
       // The browser return grants nothing.
       await sync(f);
       expect(await f.plan()).toMatchObject({ catalogTier: "intermediate" });
@@ -3087,23 +3287,24 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         _id: term._id,
         tier: "intermediate",
         endsAt: END,
-        segments: [{ tier: "large", fromPeriod: FEB_1 }],
+        segments: [{ tier: "large", fromPeriod: FEB_10 }],
         references: [first.id, invoice.id],
         paidCents: 149000 + 233333,
         purchasedAt: OCT,
-        upgrades: [{ fromTier: "intermediate", tier: "large", fromPeriod: FEB_1, paidAt: FEB }],
+        upgrades: [{ fromTier: "intermediate", tier: "large", fromPeriod: FEB_10, paidAt: FEB }],
       });
       expect(await f.plan()).toMatchObject({
         catalogTier: "large",
         termId: term._id,
         endsAt: END,
+        periodAnchor: OCT,
         version: 2,
       });
       expect((await grants(f)).at(-1)).toMatchObject({
         invoiceId: invoice.id,
         state: "applied",
         tier: "large",
-        period: "2027-02",
+        period: FEB_KEY,
         termId: term._id,
         planVersion: 2,
       });
@@ -3111,9 +3312,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       expect(await stock(f)).toMatchObject({ custody: 28000 });
       // The yearly subscription moves to the Grande yearly price once, without proration or
       // a new anchor: the renewal date stays and the next year is Grande.
-      expect(
-        f.fake.sent(`/v1/subscriptions/${sub.id}`).map((call) => Object.fromEntries(call.params)),
-      ).toEqual([
+      expect(switches(f, sub.id)).toEqual([
         {
           "items[0][id]": "si_1",
           "items[0][price]": "price_large_year",
@@ -3134,26 +3333,27 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       expect((await terms(f)).find((row) => row.references[0] === renewal.id)).toMatchObject({
         tier: "large",
         firstPeriod: END,
+        anchor: OCT,
         state: "active",
       });
       expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toHaveLength(1);
       expect(await grants(f)).toHaveLength(3);
     });
 
-    it("no último mês cobra um mês e ainda troca o preço da renovação", async () => {
+    it("no último mês do termo cobra um mês e ainda troca o preço da renovação", async () => {
       const { f, sub, term } = await cardTerm();
       vi.setSystemTime(Date.UTC(2027, 8, 20));
       await upgradeCheckout(f);
       expect(sessionParams(f)["line_items[0][price_data][unit_amount]"]).toBe("29166");
-      upgradePaid(f, { amount: 29166, period: "2027-09" });
+      upgradePaid(f, { amount: 29166, period: "2027-09-10T12:00:00.000Z" });
       await sync(f);
       expect(await terms(f)).toMatchObject([
-        { _id: term._id, segments: [{ tier: "large", fromPeriod: Date.UTC(2027, 8, 1) }] },
+        { _id: term._id, segments: [{ tier: "large", fromPeriod: Date.UTC(2027, 8, 10, 12) }] },
       ]);
       expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toHaveLength(1);
     });
 
-    it("recusa antes do Stripe: sem termo, termo Pix, Grande já em vigor, anual desligado, Checkout aberto e virada do mês", async () => {
+    it("recusa antes do Stripe: sem termo, termo Pix, Grande já em vigor, anual desligado, Checkout aberto e virada do mês do termo", async () => {
       const none = await fixture();
       await annualOn(none);
       none.fake.state.prices.push(...(YEARLY_PRICES as Json[]));
@@ -3175,7 +3375,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         const termId = await insertTerm(ctx, {
           organizationId: pix.organizationId,
           tier: "intermediate",
-          firstPeriod: OCT_1,
+          firstPeriod: OCT,
           endsAt: END,
           source: "pix",
           references: ["pix-annual-upgrade"],
@@ -3200,10 +3400,14 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
 
       const { f } = await cardTerm();
       expect(await code(upgradeCheckout(f, { tier: "intermediate" }))).toBe("PLAN_UNAVAILABLE");
-      // The last 45 minutes of the month: the price would change with the month.
+      // The last 45 minutes of the term month: the price would change with it.
+      vi.setSystemTime(NOV_10 - 30 * 60_000);
+      expect(await refusal(upgradeCheckout(f))).toEqual({
+        code: "PERIOD_CLOSING",
+        availableAt: NOV_10,
+      });
+      // The civil month turning means nothing to a term of the 10th.
       vi.setSystemTime(NOV - 30 * 60_000);
-      expect(await code(upgradeCheckout(f))).toBe("PERIOD_CLOSING");
-      vi.setSystemTime(OCT);
       await upgradeCheckout(f);
       expect(await code(upgradeCheckout(f, { key: "annual-upgrade-other" }))).toBe(
         "CHECKOUT_PENDING",
@@ -3212,7 +3416,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       expect(await code(upgradeCheckout(f))).toBe("OK");
       expect(
         await code(
-          f.owner.action(api.billing.checkout, {
+          (await person(f.t, f.organizationId, "owner")).action(api.billing.checkout, {
             organizationId: f.organizationId,
             tier: "large",
             key: "annual-upgrade-card",
@@ -3223,7 +3427,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       // An open Checkout keeps the Pix away.
       expect(
         await code(
-          f.owner.mutation(api.plans.requestPaid, {
+          (await person(f.t, f.organizationId, "owner")).mutation(api.plans.requestPaid, {
             organizationId: f.organizationId,
             tier: "large",
             key: "pix-upgrade-under-card",
@@ -3234,6 +3438,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       ).toBe("PAYMENT_METHOD_CARD");
       expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(1);
 
+      vi.setSystemTime(OCT);
       const off = await cardTerm();
       await off.f.t.mutation(internal.plans.configureAnnual, {
         enabled: false,
@@ -3245,7 +3450,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     });
 
     it("o pagamento que não confere fica para uma pessoa, sem termo nem plano alterados", async () => {
-      // Amount different from what the server prices for that month.
+      // Amount different from what the server prices for that term month.
       const wrong = await cardTerm();
       vi.setSystemTime(FEB);
       upgradePaid(wrong.f, { amount: 250000 });
@@ -3257,15 +3462,42 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       });
       expect(await terms(wrong.f)).toEqual([wrong.term]);
 
-      // Paid after the month it priced.
+      // Paid after the term month it priced, which ended on 10/03 at 12:00 UTC.
       vi.setSystemTime(OCT);
       const late = await cardTerm();
-      vi.setSystemTime(Date.UTC(2027, 2, 2));
-      upgradePaid(late.f, { period: "2027-02", paidAt: Date.UTC(2027, 2, 1, 1) });
+      vi.setSystemTime(Date.UTC(2027, 2, 12));
+      upgradePaid(late.f, { paidAt: Date.UTC(2027, 2, 10, 13) });
       await sync(late.f);
       expect((await grants(late.f)).at(-1)).toMatchObject({
         state: "blocked",
         code: "LATE_PAYMENT",
+      });
+      expect(await terms(late.f)).toEqual([late.term]);
+
+      // Priced in the term's last month and paid after the term ended: still late for its month.
+      vi.setSystemTime(OCT);
+      const ended = await cardTerm();
+      vi.setSystemTime(END + DAY);
+      upgradePaid(ended.f, {
+        amount: 29166,
+        period: "2027-09-10T12:00:00.000Z",
+        paidAt: END + 3600_000,
+      });
+      await sync(ended.f);
+      expect((await grants(ended.f)).at(-1)).toMatchObject({
+        state: "blocked",
+        code: "LATE_PAYMENT",
+      });
+
+      // A period that is not the start of a term month: the civil 1st of a term of the 10th.
+      vi.setSystemTime(OCT);
+      const civil = await cardTerm();
+      vi.setSystemTime(FEB);
+      upgradePaid(civil.f, { period: "2027-02" });
+      await sync(civil.f);
+      expect((await grants(civil.f)).at(-1)).toMatchObject({
+        state: "blocked",
+        code: "INVOICE_UNEXPECTED",
       });
 
       // The admission no longer holds the R$ 172 of custody: paid, blocked, nothing raised.
@@ -3342,19 +3574,15 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       const owner = await person(f.t, f.organizationId, "owner");
       const renewal = (change: "cancel" | "resume") =>
         owner.action(api.billing.changeRenewal, { organizationId: f.organizationId, change });
-      const switches = () =>
-        f.fake
-          .sent(`/v1/subscriptions/${sub.id}`)
-          .filter((call) => call.params.has("items[0][price]"))
-          .map((call) => Object.fromEntries(call.params));
+      const priceSwitches = () => switches(f, sub.id).filter((call) => "items[0][price]" in call);
       await renewal("cancel");
       await upgradeCheckout(f);
       upgradePaid(f);
       await sync(f);
       expect(await f.plan()).toMatchObject({ catalogTier: "large" });
-      expect(switches()).toEqual([]);
+      expect(priceSwitches()).toEqual([]);
       await renewal("resume");
-      expect(switches()).toEqual([
+      expect(priceSwitches()).toEqual([
         {
           "items[0][id]": "si_1",
           "items[0][price]": "price_large_year",
@@ -3387,16 +3615,21 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       await upgradeCheckout(f);
       const owner = await person(f.t, f.organizationId, "owner");
       // The same key answers the session it opened: a one-off payment, without an anchor.
-      expect(
-        await owner.mutation(internal.billing.prepareCheckout, {
-          organizationId: f.organizationId,
-          tier: "large",
-          key: "annual-upgrade-card",
-          livemode: false,
-          cycle: "annual",
-          start: "upgrade",
-        }),
-      ).toMatchObject({ kind: "upgrade", annual: true, anchor: null, grantCents: 29166 });
+      const prepared = await owner.mutation(internal.billing.prepareCheckout, {
+        organizationId: f.organizationId,
+        tier: "large",
+        key: "annual-upgrade-card",
+        livemode: false,
+        cycle: "annual",
+        start: "upgrade",
+      });
+      expect(prepared).toMatchObject({
+        kind: "upgrade",
+        annual: true,
+        period: "2027-09-10T12:00:00.000Z",
+        grantCents: 29166,
+      });
+      expect(prepared).not.toHaveProperty("anchor");
     });
 
     it("sem um termo do cartão elevado, a assinatura anual não troca de preço", async () => {
@@ -3438,6 +3671,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         catalogTier: "intermediate",
         termId: term._id,
         endsAt: END,
+        periodAnchor: OCT,
       });
       expect(await f.t.run((ctx) => ctx.db.query("billingAccounts").first())).toMatchObject({
         renewalTier: "intermediate",
@@ -3493,10 +3727,11 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
 
     it("desfeito depois do fim do termo, a renovação já cobrada no Grande não muda", async () => {
       const { f, sub, term } = await cardTerm();
-      const paidAt = Date.UTC(2027, 8, 25, 12);
+      // In the last term month, before the card closes 72 hours ahead of its end.
+      const paidAt = Date.UTC(2027, 9, 5, 12);
       vi.setSystemTime(paidAt);
       await upgradeCheckout(f);
-      const invoice = upgradePaid(f, { amount: 29166, period: "2027-09" });
+      const invoice = upgradePaid(f, { amount: 29166, period: "2027-09-10T12:00:00.000Z" });
       await sync(f);
       expect(switches(f, sub.id)).toHaveLength(1);
       vi.setSystemTime(END + 3600_000);
@@ -3539,8 +3774,9 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
   });
 
   describe("rescisão pelo suporte", () => {
-    const FEB_1 = Date.UTC(2027, 1, 1);
-    const END = termEndsAt(OCT_1);
+    /** The 4th term month of a term of 10/10 at 12:00 ends on 10/02 at 12:00 UTC. */
+    const FEB_10 = Date.UTC(2027, 1, 10, 12);
+    const END = YEAR;
     async function cardTerm() {
       const f = await fixture();
       const sub = await annualCard(f);
@@ -3550,7 +3786,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
     }
     const account = (f: Fixture) => f.t.run((ctx) => ctx.db.query("billingAccounts").first());
 
-    it("no 4º mês devolve R$ 894, cancela a assinatura no Stripe e nenhuma cobrança anual vira termo", async () => {
+    it("no 4º mês do termo devolve R$ 894, mantém o acesso até o fim desse mês, cancela a assinatura no Stripe e nenhuma cobrança anual vira termo", async () => {
       const { f, sub, term } = await cardTerm();
       vi.setSystemTime(Date.UTC(2027, 0, 15, 12));
       const result = await rescind(f, term._id);
@@ -3560,10 +3796,10 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
           withdrawal: false,
           usedMonths: 4,
           refundCents: 89400,
-          accessEndsAt: FEB_1,
+          accessEndsAt: FEB_10,
         },
       ]);
-      expect(await f.plan()).toMatchObject({ termId: term._id, endsAt: FEB_1 });
+      expect(await f.plan()).toMatchObject({ termId: term._id, endsAt: FEB_10 });
       // The server never refunds: the only Stripe write is the cancellation of the subscription.
       await runUntil(f, Date.now());
       expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
@@ -3636,7 +3872,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
       const invoice = renewed.f.fake.invoice(annualRenewal(renewed.sub.id, END));
       await sync(renewed.f);
       const next = (await terms(renewed.f)).find((row) => row.references[0] === invoice.id)!;
-      expect(next).toMatchObject({ state: "active", firstPeriod: END });
+      expect(next).toMatchObject({ state: "active", firstPeriod: END, anchor: OCT });
       vi.setSystemTime(END + 5 * DAY);
       expect(await rescind(renewed.f, next._id)).toMatchObject([
         { termId: next._id, withdrawal: true, refundCents: 149000, accessEndsAt: END + 5 * DAY },
@@ -3689,7 +3925,8 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
         await ctx.db.insert("platformPlanTerms", {
           ...first,
           firstPeriod: first.endsAt,
-          endsAt: termEndsAt(first.endsAt),
+          anchor: first.firstPeriod,
+          endsAt: termEndsAt(first.endsAt, first.firstPeriod),
           references: ["in_annual_renewal_synthetic"],
           rescission: { ...first.rescission!, after: _id },
         });
@@ -3710,8 +3947,11 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9)", () => 
   });
 });
 
-describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
+describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
   const OCT_1 = Date.UTC(2026, 9, 1);
+  /** Signed on 31/01/2027 at 10:00:07 UTC: the anchor of the chain. */
+  const JAN_31 = Date.UTC(2027, 0, 31, 10, 0, 7);
+  const JAN_31_2028 = Date.UTC(2028, 0, 31, 10, 0, 7);
   type Tier = "intermediate" | "large";
   async function annualOn(f: Fixture, { yearly = true } = {}) {
     await f.t.mutation(internal.plans.configureAnnual, {
@@ -3721,7 +3961,8 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     });
     if (yearly) f.fake.state.prices.push(...(YEARLY_PRICES as Json[]));
   }
-  const annualCheckout = (
+  /** A session lasts an hour: by default the owner signs in again, at the current time. */
+  const annualCheckout = async (
     f: Fixture,
     { tier = "intermediate" as Tier, key = "annual-card-key", owner = f.owner } = {},
   ) =>
@@ -3742,56 +3983,45 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       }),
     );
   /**
-   * Completing the session: nothing is due before the anchor, so Stripe completes it as
-   * `no_payment_required`, with no invoice, and creates the subscription at the yearly price.
+   * Paying the session: Stripe anchors the yearly subscription at the signing, truncated to the
+   * second, and charges the first year at once (`subscription_create`).
    */
-  function subscribeAnnual(f: Fixture, customer: string) {
+  function payAnnual(f: Fixture, customer: string, { tier = "intermediate" as Tier } = {}) {
+    const anchor = s(Date.now()) * 1000;
     const params = sentParams(f);
-    const anchor = Number(params["subscription_data[billing_cycle_anchor]"]) * 1000;
-    const sub = f.fake.subscribe(customer, "intermediate", anchor);
+    const sub = f.fake.subscribe(customer, tier, termEndsAt(anchor), anchor);
     (sub.items.data[0] as Json).price = f.fake.state.prices.find(
       (row) => row.id === params["line_items[0][price]"],
     );
-    for (const session of f.fake.state.sessions.values())
-      session.payment_status = "no_payment_required";
-    return { sub, params };
-  }
-  /** The first charge, on the anchor: a yearly line from the 1st of `start` (November). */
-  const firstCharge = (
-    f: Fixture,
-    customer: string,
-    subscription: string,
-    {
-      id = "in_annual_card_first",
-      price = "price_large_year",
-      amount = 499000,
-      start = NOV,
-      fields = {},
-    } = {},
-  ) =>
-    f.fake.invoice({
-      ...cycleInvoice(customer, subscription, start),
-      id,
-      amount_paid: amount,
-      amount_due: amount,
-      status_transitions: { paid_at: s(Date.now()) },
-      lines: {
-        data: [
-          {
-            amount,
-            period: { start: s(start), end: s(termEndsAt(start)) },
-            pricing: { type: "price_details", price_details: { price } },
-          },
-        ],
-      },
-      ...fields,
+    const invoice = f.fake.invoice({
+      id: `in_annual_${sub.id}`,
+      ...annualStartInvoice(customer, sub.id, f.organizationId, { tier, start: anchor }),
     });
+    return { sub, invoice };
+  }
   const terms = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanTerms").collect());
   const grants = (f: Fixture) => f.t.run((ctx) => ctx.db.query("billingGrants").collect());
   const sync = (f: Fixture) =>
     f.t.action(internal.billing.sync, { organizationId: f.organizationId });
   const customerOf = async (f: Fixture) =>
     (await f.t.run((ctx) => ctx.db.query("billingAccounts").first()))!.customerId;
+  const allocations = (f: Fixture) =>
+    f.t.run(async (ctx) =>
+      (await ctx.db.query("platformPlanAllocations").collect()).map((row) => [
+        row.organizationId,
+        row.tier,
+      ]),
+    );
+  const measure = (f: Fixture, key: string) =>
+    f.t
+      .run((ctx) => reserveUsage(ctx, f.organizationId, "sandbox", "attempts", key, 1, true))
+      .then((event) => event.period);
+  /** The admission window of the fixture closes at the end of 2027; later years reopen it. */
+  const admitUntil = (f: Fixture, admissionsUntil: number) =>
+    f.t.run(async (ctx) => {
+      const row = await ctx.db.query("platformPlanSettings").first();
+      await ctx.db.patch("platformPlanSettings", row!._id, { admissionsUntil });
+    });
   const term = (f: Fixture, state: "active" | "scheduled", firstPeriod: number) =>
     f.t.run((ctx) =>
       insertTerm(ctx, {
@@ -3808,7 +4038,8 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       }),
     );
 
-  it("não cobra nada agora, ancora no dia 1 seguinte e a cobrança desse dia concede o termo", async () => {
+  it("assinado em 31/01 às 10:00:07, cobra o ano na hora, vai até 31/01 seguinte e as cotas viram nos aniversários da âncora", async () => {
+    vi.setSystemTime(JAN_31 + 250);
     const f = await fixture();
     await annualOn(f);
     const { url } = await annualCheckout(f, { tier: "large" });
@@ -3818,11 +4049,10 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       organizationId: f.organizationId,
       kind: "start",
       tier: "large",
-      period: "2026-11",
       grantCents: "499000",
       cycle: "annual",
     };
-    // Only the yearly price: no one-off line, no trial.
+    // Only the yearly price: no anchor on a 1st, no proration, no one-off line, no trial.
     expect(sentParams(f)).toEqual({
       customer,
       client_reference_id: f.organizationId,
@@ -3830,13 +4060,10 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       "payment_method_types[0]": "card",
       success_url: expect.stringMatching(/\/usage\?cobranca=retorno$/),
       cancel_url: expect.stringMatching(/\/usage\?cobranca=cancelado$/),
-      expires_at: String(s(OCT + 24 * 3600_000)),
+      expires_at: String(s(JAN_31 + 250 + 24 * 3600_000)),
       mode: "subscription",
       "line_items[0][price]": "price_large_year",
       "line_items[0][quantity]": "1",
-      // The 1st of November at 00:00 UTC.
-      "subscription_data[billing_cycle_anchor]": String(s(NOV)),
-      "subscription_data[proration_behavior]": "none",
       ...Object.fromEntries(
         Object.entries(marks).flatMap(([name, value]) => [
           [`metadata[${name}]`, value],
@@ -3844,52 +4071,142 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
         ]),
       ),
     });
-    expect(await f.billing()).toMatchObject({
-      checkout: {
-        kind: "start",
-        tier: "large",
-        cycle: "annual",
-        period: "2026-11",
-        grantCents: 499000,
-      },
+    const open = (await f.billing()).checkout;
+    expect(open).toMatchObject({
+      kind: "start",
+      tier: "large",
+      cycle: "annual",
+      periodStartsAt: null,
+      grantCents: 499000,
     });
-    // Completed without payment and without an invoice: the session closes, nothing is weighed.
-    const { sub } = subscribeAnnual(f, customer);
+    expect(open).not.toHaveProperty("period");
+    // Paid: Stripe anchors the subscription at the signing and charges the year at once.
+    const { sub, invoice } = payAnnual(f, customer, { tier: "large" });
+    expect(sub.billing_cycle_anchor).toBe(s(JAN_31));
+    expect((await allocations(f)).length).toBe(0);
     await sync(f);
-    expect(await f.billing()).toMatchObject({
-      checkout: null,
-      account: { renewalTier: "large", subscription: { id: sub.id, annual: true } },
-    });
-    expect(await grants(f)).toEqual([]);
-    expect(await terms(f)).toEqual([]);
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toEqual([]);
-    // The closed slot is not `CHECKOUT_PENDING`; the yearly subscription that renews refuses.
-    expect(await code(annualCheckout(f, { key: "annual-card-again" }))).toBe(
-      "SUBSCRIPTION_RENEWING",
-    );
-    // On the anchor Stripe charges the first year. Even with its event lost, the check scheduled
-    // when the session completed reads it.
-    vi.advanceTimersByTime(NOV + 3600_000 - Date.now());
-    const first = firstCharge(f, customer, sub.id);
-    vi.advanceTimersByTime(2 * 3600_000);
-    await f.t.finishInProgressScheduledFunctions();
     const [created] = await terms(f);
     expect(created).toMatchObject({
       state: "active",
       source: "stripe",
       tier: "large",
-      firstPeriod: NOV,
-      endsAt: termEndsAt(NOV),
-      references: [first.id],
+      firstPeriod: JAN_31,
+      endsAt: JAN_31_2028,
+      references: [invoice.id],
       stripeSubscriptionId: sub.id,
       paidCents: 499000,
+      purchasedAt: JAN_31,
     });
     expect(await f.plan()).toMatchObject({
       catalogTier: "large",
       termId: created!._id,
-      endsAt: termEndsAt(NOV),
+      startsAt: JAN_31 + 250,
+      endsAt: JAN_31_2028,
+      periodAnchor: JAN_31,
+      version: 1,
     });
+    // The admission is reserved when the first invoice is granted, as the monthly.
+    expect(await allocations(f)).toEqual([[f.organizationId, "large"]]);
+    expect(await f.billing()).toMatchObject({
+      checkout: null,
+      subscriptionTerm: true,
+      annualBlocked: true,
+      account: { renewalTier: "large", subscription: { id: sub.id, annual: true } },
+    });
+    // The quota periods turn on the anchor's monthly anniversaries: 28/02, then 31/03.
+    expect(await measure(f, "january")).toBe("2027-01-31T10:00:07.000Z");
+    vi.setSystemTime(Date.UTC(2027, 1, 28, 10, 0, 7));
+    expect(await measure(f, "february")).toBe("2027-02-28T10:00:07.000Z");
+    vi.setSystemTime(Date.UTC(2027, 2, 31, 10, 0, 7));
+    expect(await measure(f, "march")).toBe("2027-03-31T10:00:07.000Z");
+    // Replayed by Stripe, by another event or by the reconciliation: nothing new.
+    for (const type of ["invoice.paid", "invoice.paid", "checkout.session.completed"])
+      await deliver(f, { type, data: { object: { id: invoice.id, customer } } });
+    await processEvents(f);
+    await sync(f);
+    expect(await terms(f)).toHaveLength(1);
+    expect(await grants(f)).toMatchObject([
+      { invoiceId: invoice.id, state: "applied", period: "2027-01-31T10:00:07.000Z" },
+    ]);
+    expect(await f.plan()).toMatchObject({ version: 1 });
     expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toEqual([]);
+    // On the anniversary Stripe renews the next year of the same anchor.
+    vi.setSystemTime(JAN_31_2028 + 3600_000);
+    const renewal = f.fake.invoice({
+      id: "in_annual_card_renewal",
+      ...annualCycleInvoice(customer, sub.id, JAN_31_2028, {
+        anchor: JAN_31,
+        amount: 499000,
+        price: "price_large_year",
+      }),
+    });
+    await sync(f);
+    const renewed = (await terms(f)).find((row) => row.references[0] === renewal.id)!;
+    expect(renewed).toMatchObject({
+      state: "active",
+      tier: "large",
+      firstPeriod: JAN_31_2028,
+      anchor: JAN_31,
+      endsAt: Date.UTC(2029, 0, 31, 10, 0, 7),
+    });
+    expect(await f.plan()).toMatchObject({
+      termId: renewed._id,
+      endsAt: Date.UTC(2029, 0, 31, 10, 0, 7),
+      periodAnchor: JAN_31,
+      version: 2,
+    });
+    expect(await allocations(f)).toEqual([[f.organizationId, "large"]]);
+  });
+
+  it("uma cadeia de 29/02/2028 renova em 28/02/2029, 2030 e 2031 e em 29/02/2032, sem deriva", async () => {
+    const at = (year: number, day: number) => Date.UTC(year, 1, day, 10, 0, 7);
+    const FEB_29 = at(2028, 29);
+    vi.setSystemTime(FEB_29);
+    const f = await fixture();
+    await admitUntil(f, Date.UTC(2040, 0, 1));
+    await annualOn(f);
+    await annualCheckout(f);
+    const customer = await customerOf(f);
+    const { sub } = payAnnual(f, customer);
+    await sync(f);
+    const turns = [FEB_29, at(2029, 28), at(2030, 28), at(2031, 28), at(2032, 29), at(2033, 28)];
+    expect(await terms(f)).toMatchObject([{ firstPeriod: FEB_29, endsAt: turns[1] }]);
+    for (let year = 1; year < 5; year++) {
+      vi.setSystemTime(turns[year]! + 3600_000);
+      // A year counted from the previous anniversary would end on 28/02/2032: no such term.
+      if (year === 3) {
+        f.fake.invoice({
+          id: "in_annual_leap_drifted",
+          ...annualCycleInvoice(customer, sub.id, turns[3]!, { end: at(2032, 28) }),
+        });
+        await sync(f);
+        expect((await grants(f)).at(-1)).toMatchObject({
+          invoiceId: "in_annual_leap_drifted",
+          state: "blocked",
+          code: "INVOICE_UNEXPECTED",
+        });
+      }
+      const invoice = f.fake.invoice({
+        id: `in_annual_leap_${year}`,
+        ...annualCycleInvoice(customer, sub.id, turns[year]!, { anchor: FEB_29 }),
+      });
+      await sync(f);
+      expect((await terms(f)).find((row) => row.references[0] === invoice.id)).toMatchObject({
+        state: "active",
+        firstPeriod: turns[year],
+        anchor: FEB_29,
+        endsAt: turns[year + 1],
+      });
+      expect(await f.plan()).toMatchObject({ endsAt: turns[year + 1], periodAnchor: FEB_29 });
+      if (year === 3) {
+        // The quota month after 28/02/2031 starts on 29/03, the anchor's day, not on 28/03.
+        vi.setSystemTime(Date.UTC(2031, 2, 29, 10, 0, 7) - 1);
+        expect(await measure(f, "february-2031")).toBe("2031-02-28T10:00:07.000Z");
+        vi.setSystemTime(Date.UTC(2031, 2, 29, 10, 0, 7));
+        expect(await measure(f, "march-2031")).toBe("2031-03-29T10:00:07.000Z");
+      }
+    }
+    expect(await terms(f)).toHaveLength(5);
   });
 
   it("uma primeira cobrança fora do esperado fica para uma pessoa; uma fatura de R$ 0, se vier, não compra nada", async () => {
@@ -3897,34 +4214,28 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     await annualOn(f);
     await annualCheckout(f);
     const customer = await customerOf(f);
-    const { sub } = subscribeAnnual(f, customer);
-    // Not expected with an anchor (still unproven in Stripe test mode), but harmless if it arrives.
+    const sub = f.fake.subscribe(customer, "intermediate", termEndsAt(OCT));
+    (sub.items.data[0] as Json).price = YEARLY_PRICES[0];
+    const first = annualStartInvoice(customer, sub.id, f.organizationId);
+    // Not expected, but harmless if it arrives.
+    f.fake.invoice({ ...first, id: "in_annual_card_zero", amount_paid: 0, amount_due: 0 });
+    // A first charge with another `billing_reason`, or a line that is not a year of the anchor:
+    // the money is held for a refund or a decision.
     f.fake.invoice({
-      id: "in_annual_card_zero",
-      customer,
-      amount_paid: 0,
-      amount_due: 0,
-      billing_reason: "subscription_create",
-      parent: {
-        type: "subscription_details",
-        subscription_details: { subscription: sub.id, metadata: sentMarks(f) },
-      },
+      ...first,
+      id: "in_annual_card_update",
+      billing_reason: "subscription_update",
+    });
+    f.fake.invoice({
+      ...annualStartInvoice(customer, sub.id, f.organizationId, { end: addMonths(OCT, 1) }),
+      id: "in_annual_card_month",
     });
     await sync(f);
-    expect(await grants(f)).toMatchObject([{ state: "skipped", code: "ZERO_AMOUNT" }]);
-    // A first charge with another `billing_reason`: the money is held for a refund or a decision.
-    vi.setSystemTime(NOV + 3600_000);
-    firstCharge(f, customer, sub.id, {
-      price: "price_int_year",
-      amount: 149000,
-      fields: { billing_reason: "subscription_update" },
-    });
-    await sync(f);
-    expect((await grants(f))[1]).toMatchObject({
-      invoiceId: "in_annual_card_first",
-      state: "blocked",
-      code: "INVOICE_UNEXPECTED",
-    });
+    expect((await grants(f)).map((grant) => [grant.invoiceId, grant.state, grant.code])).toEqual([
+      ["in_annual_card_zero", "skipped", "ZERO_AMOUNT"],
+      ["in_annual_card_update", "blocked", "INVOICE_UNEXPECTED"],
+      ["in_annual_card_month", "blocked", "INVOICE_UNEXPECTED"],
+    ]);
     expect(await terms(f)).toEqual([]);
     expect(await f.plan()).toBeNull();
   });
@@ -3954,9 +4265,9 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     expect(await annualCheckout(f)).toEqual({ url });
     expect(await code(annualCheckout(f, { key: "annual-card-after-off" }))).toBe("ANNUAL_DISABLED");
     expect(sessions(f)).toHaveLength(1);
-    expect(await f.t.run((ctx) => ctx.db.query("billingCheckouts").collect())).toMatchObject([
-      { cycle: "annual", period: "2026-11", grantCents: 149000, state: "open" },
-    ]);
+    const rows = await f.t.run((ctx) => ctx.db.query("billingCheckouts").collect());
+    expect(rows).toMatchObject([{ cycle: "annual", grantCents: 149000, state: "open" }]);
+    expect(rows[0]!.period).toBeUndefined();
   });
 
   it("recusa papel sem gestão, quem não é membro e outra organização", async () => {
@@ -3998,17 +4309,20 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
   });
 
   it.each([
-    ["um termo que cobre o mês seguinte", "active", OCT_1],
+    ["um termo em vigor", "active", OCT_1],
     ["um termo agendado", "scheduled", NOV],
-  ] as const)("recusa com %s", async (_, state, firstPeriod) => {
+  ] as const)("recusa com %s até o fim dele", async (_, state, firstPeriod) => {
     const f = await fixture();
     await annualOn(f);
     await term(f, state, firstPeriod);
-    expect(await code(annualCheckout(f))).toBe("ANNUAL_TERM_ACTIVE");
+    expect(await refusal(annualCheckout(f))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: termEndsAt(firstPeriod),
+    });
     expect(f.fake.state.calls).toEqual([]);
   });
 
-  it("recusa com Pix aguardando ou Checkout aberto; um plano mensal maior em vigor não impede", async () => {
+  it("recusa com Pix aguardando ou Checkout aberto", async () => {
     const f = await fixture();
     await annualOn(f);
     const pix = await f.owner.mutation(api.plans.requestPaid, {
@@ -4024,52 +4338,122 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     await startCard(f);
     expect(await code(annualCheckout(f))).toBe("CHECKOUT_PENDING");
     await f.owner.action(api.billing.abandonCheckout, { organizationId: f.organizationId });
-    // The current month keeps the larger plan; the annual Intermediate follows it.
-    await f.t.run((ctx) =>
-      activateCatalogPlan(ctx, f.organizationId, "large", OCT, NOV, 0, "operator", "Mensal"),
-    );
     expect(await code(annualCheckout(f))).toBe("OK");
     expect(sessions(f)).toHaveLength(2);
   });
 
-  it("um mensal maior que termina depois do dia 1 segura o anual menor até o fim dele", async () => {
+  it("sobre o mensal do cartão de tier igual, com a renovação cancelada, o anual é cobrado e o substitui na hora, com âncora nova; um anual menor espera o fim dele", async () => {
     const f = await fixture();
     await annualOn(f);
-    // The card Grande signed on 10/10 at 12:00 runs to 10/11 at 12:00, past the annual's 1st.
+    // The card Grande signed on 10/10 at 12:00 runs to 10/11 at 12:00.
     const { customer } = await startCard(f, "large");
-    const sub = f.fake.subscribe(customer, "large");
-    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 49900, "large"));
+    const monthly = f.fake.subscribe(customer, "large");
+    f.fake.invoice(startInvoice(customer, monthly.id, f.organizationId, 49900, "large"));
     await sync(f);
+    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV_10 });
+    // While the monthly renews, the customer cancels its renewal first; nothing is cancelled for
+    // them.
+    expect(await code(annualCheckout(f, { tier: "large", key: "annual-large-renewing" }))).toBe(
+      "SUBSCRIPTION_RENEWING",
+    );
+    expect(monthly.cancel_at_period_end).toBe(false);
     await f.owner.action(api.billing.changeRenewal, {
       organizationId: f.organizationId,
       change: "cancel",
     });
     const before = sessions(f).length;
-    // Its invoice on 01/11 would be blocked after the charge: one paid plan at a time, it waits.
+    // A smaller annual now would be a downgrade outside the renewal: it waits for the monthly.
     expect(await refusal(annualCheckout(f, { key: "annual-int-under-large" }))).toEqual({
       code: "PLAN_UNAVAILABLE",
       availableAt: NOV_10,
     });
     expect(sessions(f)).toHaveLength(before);
-    // The same tier, or a larger one, replaces the monthly on the 1st, as the ADR allows.
-    expect(await code(annualCheckout(f, { tier: "large", key: "annual-large-over-large" }))).toBe(
+    // Ten days later the Grande annual is charged and starts at once, with its own anchor.
+    const SIGNED = Date.UTC(2026, 9, 20, 9, 30, 15);
+    vi.setSystemTime(SIGNED);
+    const owner = await person(f.t, f.organizationId, "owner");
+    expect(
+      await code(annualCheckout(f, { tier: "large", key: "annual-large-over-large", owner })),
+    ).toBe("OK");
+    const { sub } = payAnnual(f, customer, { tier: "large" });
+    await sync(f);
+    const [created] = await terms(f);
+    expect(created).toMatchObject({
+      state: "active",
+      tier: "large",
+      firstPeriod: SIGNED,
+      endsAt: termEndsAt(SIGNED),
+      stripeSubscriptionId: sub.id,
+    });
+    // The term replaces the monthly now, without discount of the days left until 10/11.
+    expect(await f.plan()).toMatchObject({
+      catalogTier: "large",
+      termId: created!._id,
+      startsAt: SIGNED,
+      endsAt: termEndsAt(SIGNED),
+      periodAnchor: SIGNED,
+    });
+    expect((await grants(f)).map((grant) => [grant.state, grant.code ?? null])).toEqual([
+      ["applied", null],
+      ["applied", null],
+    ]);
+    // The monthly subscription ends at its period end; the annual one is the account's now.
+    expect(monthly.cancel_at_period_end).toBe(true);
+    expect(f.fake.sent(`/v1/subscriptions/${monthly.id}`, "DELETE")).toEqual([]);
+    expect(
+      (await owner.query(api.billing.overview, { organizationId: f.organizationId })).account
+        ?.subscription,
+    ).toMatchObject({ id: sub.id, annual: true });
+  });
+
+  it("sobre o mensal Pix de tier igual, o anual no cartão o substitui na hora; um mensal maior em vigor segura o anual menor com a data", async () => {
+    const f = await fixture();
+    await annualOn(f);
+    const request = await f.owner.mutation(api.plans.requestPaid, {
+      organizationId: f.organizationId,
+      tier: "intermediate",
+      key: "pix-monthly-before-annual",
+    });
+    await f.t.mutation(internal.plans.confirmPayment, {
+      requestId: request.id,
+      amountCents: 14900,
+      paymentReference: "synthetic-pix-monthly-annual",
+      actor: "operator",
+    });
+    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV_10 });
+    await annualCheckout(f);
+    const { sub } = payAnnual(f, await customerOf(f));
+    await sync(f);
+    const [created] = await terms(f);
+    expect(created).toMatchObject({
+      state: "active",
+      firstPeriod: OCT,
+      stripeSubscriptionId: sub.id,
+    });
+    expect(await f.plan()).toMatchObject({ termId: created!._id, endsAt: termEndsAt(OCT) });
+    // A Grande monthly in force, as one assigned by the operator: the Intermediário annual waits.
+    const g = await fixture();
+    await annualOn(g);
+    await g.t.run((ctx) =>
+      activateCatalogPlan(ctx, g.organizationId, "large", OCT, NOV, 0, "operator", "Mensal"),
+    );
+    expect(await refusal(annualCheckout(g))).toEqual({
+      code: "PLAN_UNAVAILABLE",
+      availableAt: NOV,
+    });
+    expect(await code(annualCheckout(g, { tier: "large", key: "annual-large-over-op" }))).toBe(
       "OK",
     );
   });
 
-  it("recusa com plano personalizado, na virada do mês e sem admissão", async () => {
+  it("recusa com plano personalizado, sem admissão e com o acesso de um termo rescindido", async () => {
     const f = await fixture();
     await annualOn(f);
-    const settings = (admissionsUntil: number) =>
-      f.t.run(async (ctx) => {
-        const row = await ctx.db.query("platformPlanSettings").first();
-        await ctx.db.patch("platformPlanSettings", row!._id, { admissionsUntil });
-      });
     // A first plan reserves stock: closed admissions refuse it, reopened ones sell it.
-    await settings(Date.now() - 1);
+    await admitUntil(f, Date.now() - 1);
     expect(await code(annualCheckout(f))).toBe("PLAN_UNAVAILABLE");
     expect(f.fake.state.calls).toEqual([]);
-    await settings(Date.UTC(2027, 11, 31));
+    await admitUntil(f, Date.UTC(2027, 11, 31));
     const custom = await f.t.run((ctx) =>
       ctx.db.insert("usagePlans", {
         organizationId: f.organizationId,
@@ -4085,23 +4469,54 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     );
     expect(await code(annualCheckout(f))).toBe("PLAN_UNAVAILABLE");
     await f.t.run((ctx) => ctx.db.delete("usagePlans", custom));
-    // 30 minutes before the 1st, the customer could not finish before the anchor.
-    vi.setSystemTime(NOV - 30 * 60_000);
-    const owner = await person(f.t, f.organizationId, "owner");
-    expect(await refusal(annualCheckout(f, { owner }))).toEqual({
-      code: "PERIOD_CLOSING",
+    // The month a rescinded term left is paid: a new annual waits for its end.
+    const termId = await f.t.run(async (ctx) => {
+      const id = await insertTerm(ctx, {
+        organizationId: f.organizationId,
+        tier: "intermediate",
+        firstPeriod: OCT_1,
+        endsAt: termEndsAt(OCT_1),
+        source: "pix",
+        references: ["pix-annual-rescinded"],
+        paidCents: 149000,
+        purchasedAt: OCT_1,
+        segments: [],
+        state: "active",
+      });
+      await activateCatalogPlan(
+        ctx,
+        f.organizationId,
+        "intermediate",
+        OCT_1,
+        termEndsAt(OCT_1),
+        0,
+        "operator",
+        "Anual sintético",
+        id,
+      );
+      return id;
+    });
+    await f.t.mutation(internal.plans.rescindTerm, {
+      termId,
+      key: "rescission-before-card-annual",
+      actor: "operador-sintetico",
+      reason: "Cliente pediu a rescisão ao suporte",
+    });
+    expect(await refusal(annualCheckout(f))).toEqual({
+      code: "PLAN_UNAVAILABLE",
       availableAt: NOV,
     });
-    expect(f.fake.state.calls).toEqual([]);
-    vi.setSystemTime(OCT);
-    expect(await code(annualCheckout(f, { owner }))).toBe("OK");
+    vi.setSystemTime(NOV);
+    expect(
+      await code(annualCheckout(f, { owner: await person(f.t, f.organizationId, "owner") })),
+    ).toBe("OK");
   });
 
-  it("recusa enquanto o cartão mensal renova; depois de “Não renovar”, o anual é vendido", async () => {
+  it("recusa enquanto o cartão mensal renova; depois de “Não renovar”, o anual é vendido sem período nas marcas", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
     await annualOn(f);
-    const sub = f.fake.subscribe(customer, "intermediate", NOV);
+    const sub = f.fake.subscribe(customer, "intermediate");
     f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
     await sync(f);
     expect(await code(annualCheckout(f))).toBe("SUBSCRIPTION_RENEWING");
@@ -4113,7 +4528,13 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       change: "cancel",
     });
     expect(await code(annualCheckout(f))).toBe("OK");
-    expect(sentMarks(f)).toMatchObject({ cycle: "annual", period: "2026-11" });
+    expect(sentMarks(f)).toEqual({
+      organizationId: f.organizationId,
+      kind: "start",
+      tier: "intermediate",
+      grantCents: "149000",
+      cycle: "annual",
+    });
   });
 
   it("o Checkout mensal não faz upgrade de uma assinatura anual", async () => {
@@ -4149,546 +4570,24 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     expect(f.fake.state.calls).toEqual([]);
   });
 
-  it("em dezembro ancora em 1º de janeiro do ano seguinte, e a cobrança desse dia vira o termo", async () => {
-    // Two hours before the year turns, on 31 December.
-    vi.setSystemTime(JAN - 2 * 3600_000);
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f, { tier: "large" });
-    expect(sentParams(f)).toMatchObject({
-      "subscription_data[billing_cycle_anchor]": String(s(JAN)),
-      "subscription_data[proration_behavior]": "none",
-      // The session ends before the anchor: past it, the anchor would be in the past.
-      expires_at: String(s(JAN - 5 * 60_000)),
-    });
-    expect(sentMarks(f)).toMatchObject({ period: "2027-01", cycle: "annual" });
-    const customer = await customerOf(f);
-    const { sub } = subscribeAnnual(f, customer);
-    await sync(f);
-    expect(await terms(f)).toEqual([]);
-    vi.advanceTimersByTime(JAN + 3600_000 - Date.now());
-    const first = firstCharge(f, customer, sub.id, { start: JAN });
-    vi.advanceTimersByTime(2 * 3600_000);
-    await f.t.finishInProgressScheduledFunctions();
-    expect(await terms(f)).toMatchObject([
-      {
-        state: "active",
-        tier: "large",
-        firstPeriod: JAN,
-        endsAt: Date.UTC(2028, 0, 1),
-        references: [first.id],
-      },
-    ]);
-    expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: Date.UTC(2028, 0, 1) });
-  });
-
-  it("a conclusão sem pagamento, reenviada com o interruptor desligado, não concede nem agenda outra conferência", async () => {
+  it("a sessão concluída não concede nada sem a fatura paga, nem agenda conferência própria", async () => {
     const f = await fixture();
     await annualOn(f);
     await annualCheckout(f);
-    const customer = await customerOf(f);
-    const { sub } = subscribeAnnual(f, customer);
-    const [session] = f.fake.state.sessions.values();
-    const completed = {
-      id: "evt_annual_completed",
-      type: "checkout.session.completed",
-      data: { object: { id: session!.id, customer, payment_status: "no_payment_required" } },
-    };
-    expect((await deliver(f, completed)).status).toBe(200);
-    await processEvents(f);
-    // The switch stops new sales; it does not undo one already made.
-    await f.t.mutation(internal.plans.configureAnnual, {
-      enabled: false,
-      expectedVersion: 2,
-      evidence: "synthetic-annual-off",
-    });
-    // The same event again, and the same completion seen through another event.
-    expect((await deliver(f, completed)).status).toBe(200);
-    expect(
-      (
-        await deliver(f, {
-          type: "customer.subscription.created",
-          data: { object: { id: sub.id, customer } },
-        })
-      ).status,
-    ).toBe(200);
-    await processEvents(f);
-    const events = await f.t.run((ctx) => ctx.db.query("billingEvents").collect());
-    expect(events.map((event) => event.state)).toEqual(["processed", "processed"]);
+    for (const session of f.fake.state.sessions.values()) session.status = "complete";
+    await sync(f);
     expect(await f.t.run((ctx) => ctx.db.query("billingCheckouts").collect())).toMatchObject([
-      { cycle: "annual", period: "2026-11", state: "complete" },
+      { cycle: "annual", state: "complete" },
     ]);
     expect(await grants(f)).toEqual([]);
     expect(await terms(f)).toEqual([]);
-    expect(await f.plan()).toBeNull();
-    const checks = await f.t.run(async (ctx) =>
-      (await ctx.db.system.query("_scheduled_functions").collect()).filter(
-        (job) => job.scheduledTime === NOV + 2 * 3600_000,
+    expect(await allocations(f)).toEqual([]);
+    const billingJobs = await f.t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect()).filter((job) =>
+        job.name.startsWith("billing"),
       ),
     );
-    expect(checks).toHaveLength(1);
-    // The money is taken on the 1st: the term is created even with the switch off.
-    vi.advanceTimersByTime(NOV + 3600_000 - Date.now());
-    firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
-    vi.advanceTimersByTime(2 * 3600_000);
-    await f.t.finishInProgressScheduledFunctions();
-    expect(await terms(f)).toMatchObject([
-      { state: "active", tier: "intermediate", firstPeriod: NOV },
-    ]);
-  });
-
-  /** Sells the annual Intermediate on 10 October and completes it without payment. */
-  async function soldAnnual(f: Fixture) {
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    const { sub } = subscribeAnnual(f, customer);
-    await sync(f);
-    return { customer, sub };
-  }
-  const fallbackChecks = (f: Fixture) =>
-    f.t.run(async (ctx) =>
-      (await ctx.db.system.query("_scheduled_functions").collect()).filter(
-        (job) => job.scheduledTime === NOV + 2 * 3600_000,
-      ),
-    );
-
-  const settingsPatch = (f: Fixture, fields: { admissionsUntil?: number; enabled?: boolean }) =>
-    f.t.run(async (ctx) => {
-      const row = await ctx.db.query("platformPlanSettings").first();
-      await ctx.db.patch("platformPlanSettings", row!._id, fields);
-    });
-  const stockOf = (f: Fixture) =>
-    f.t.run(async (ctx) => {
-      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
-      return {
-        files: settings.allocatedFilesBytes,
-        custody: settings.allocatedCustodyCents,
-        allocations: (await ctx.db.query("platformPlanAllocations").collect()).map((row) => [
-          row.organizationId,
-          row.tier,
-        ]),
-      };
-    });
-  const checkoutRow = async (f: Fixture) =>
-    (await f.t.run((ctx) => ctx.db.query("billingCheckouts").collect())).at(-1)!;
-  const rechecks = (f: Fixture) =>
-    f.t.run(async (ctx) =>
-      (await ctx.db.system.query("_scheduled_functions").collect()).filter(
-        (job) => job.name.includes("recheckAnnualAdmission") && job.state.kind === "pending",
-      ),
-    );
-  const reviewsOf = async (f: Fixture) =>
-    (
-      await (
-        await person(f.t, f.organizationId, "owner")
-      ).query(api.billing.overview, { organizationId: f.organizationId })
-    ).reviews.map((row) => [row.source, row.code]);
-  async function runUntil(f: Fixture, at: number) {
-    vi.advanceTimersByTime(at - Date.now());
-    await f.t.finishInProgressScheduledFunctions();
-  }
-  /** Sells the annual and closes the window before the customer completes the session. */
-  async function refusedAnnual(f: Fixture) {
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    await settingsPatch(f, { admissionsUntil: Date.now() });
-    const { sub } = subscribeAnnual(f, customer);
-    await sync(f);
-    return { customer, sub, checkoutId: (await checkoutRow(f))._id };
-  }
-
-  it("a conclusão reserva a admissão; fechada a janela e tomado o estoque depois, o dia 1 concede", async () => {
-    const f = await fixture();
-    expect((await stockOf(f)).allocations).toEqual([]);
-    const { customer, sub } = await soldAnnual(f);
-    // Reserved when the session completed, as the annual Pix `next` on its confirmation.
-    const held = await stockOf(f);
-    expect(held.allocations).toEqual([[f.organizationId, "intermediate"]]);
-    expect(held.custody).toBeGreaterThan(0);
-    expect(await checkoutRow(f)).toMatchObject({
-      state: "complete",
-      subscriptionId: sub.id,
-      admission: { state: "reserved" },
-    });
-    expect(await rechecks(f)).toMatchObject([{ scheduledTime: NOV - 6 * 3600_000 }]);
-    // A replay of the completion, by event or by a later reconciliation, reserves nothing more.
-    for (const type of ["checkout.session.completed", "customer.subscription.created"])
-      await deliver(f, { type, data: { object: { id: sub.id, customer } } });
-    await processEvents(f);
-    await sync(f);
-    expect(await stockOf(f)).toEqual(held);
-    expect(await rechecks(f)).toHaveLength(1);
-    expect(await fallbackChecks(f)).toHaveLength(1);
-    // The window closes and another organization takes all the stock left.
-    await settingsPatch(f, { admissionsUntil: Date.now() + 60_000 });
-    const other = await f.org("Outra organização");
-    await f.t.run(async (ctx) => {
-      const settings = (await ctx.db.query("platformPlanSettings").unique())!;
-      await ctx.db.insert("platformPlanAllocations", {
-        organizationId: other,
-        tier: "large",
-        filesBytes: settings.filesBytes - settings.allocatedFilesBytes,
-        databaseBytes: 0,
-        custodyCents: settings.custodyCents - settings.allocatedCustodyCents,
-        freeMonthlyCents: 0,
-        updatedAt: Date.now(),
-      });
-      await ctx.db.patch("platformPlanSettings", settings._id, {
-        allocatedFilesBytes: settings.filesBytes,
-        allocatedCustodyCents: settings.custodyCents,
-      });
-    });
-    // The recheck before the anchor finds the reservation held: nothing is cancelled.
-    await runUntil(f, NOV - 5 * 3600_000);
-    expect(await rechecks(f)).toEqual([]);
-    expect(sub.status).toBe("active");
-    expect((await checkoutRow(f)).admission).toMatchObject({ state: "reserved" });
-    vi.setSystemTime(NOV + 3600_000);
-    const first = firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
-    await sync(f);
-    expect(await grants(f)).toMatchObject([{ invoiceId: first.id, state: "applied" }]);
-    expect(await terms(f)).toMatchObject([{ state: "active", tier: "intermediate" }]);
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: termEndsAt(NOV) });
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toEqual([]);
-    expect(await reviewsOf(f)).toEqual([]);
-  });
-
-  it("recusada na conclusão: nada é reservado, a assinatura é cancelada antes da âncora e o console mostra a recusa", async () => {
-    const f = await fixture();
-    const { sub, checkoutId } = await refusedAnnual(f);
-    expect(await checkoutRow(f)).toMatchObject({
-      state: "complete",
-      subscriptionId: sub.id,
-      admission: { state: "refused", code: "PLAN_UNAVAILABLE", stop: "pending" },
-    });
-    expect((await stockOf(f)).allocations).toEqual([]);
-    expect(await rechecks(f)).toEqual([]);
-    // The cancellation runs at once, long before the anchor.
-    await runUntil(f, Date.now() + 1);
-    expect(sub.status).toBe("canceled");
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
-    expect((await checkoutRow(f)).admission).toMatchObject({ state: "refused", stop: "done" });
-    // Nothing renews any more.
-    expect(await f.billing()).toMatchObject({ account: { subscription: null } });
-    expect(await reviewsOf(f)).toEqual([["checkout", "PLAN_UNAVAILABLE"]]);
-    // Replays cancel nothing more and change nothing.
-    await f.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: f.organizationId,
-      checkoutId,
-      attempt: 0,
-    });
-    await sync(f);
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
-    expect((await checkoutRow(f)).admission).toMatchObject({ code: "PLAN_UNAVAILABLE" });
-    // Stripe charges nothing on the 1st; the fallback check finds nothing to weigh.
-    await runUntil(f, NOV + 3 * 3600_000);
-    expect(await grants(f)).toEqual([]);
-    expect(await terms(f)).toEqual([]);
-    // Shown through the first month, then gone.
-    expect(await reviewsOf(f)).toEqual([["checkout", "PLAN_UNAVAILABLE"]]);
-    vi.setSystemTime(DEC);
-    expect(await reviewsOf(f)).toEqual([]);
-  });
-
-  it.each([
-    ["o catálogo desligado", "PLANS_DISABLED"],
-    ["o uso acima do plano", "QUOTA_EXCEEDED"],
-  ] as const)(
-    "reconferida antes da âncora, %s cancela a assinatura sem cobrança",
-    async (_, denial) => {
-      const f = await fixture();
-      const { sub } = await soldAnnual(f);
-      // `plans:configure` refuses turning the catalog off; only a direct change does it. The
-      // usage outgrows the tier only under a larger plan in force, which the guards follow.
-      if (denial === "PLANS_DISABLED") await settingsPatch(f, { enabled: false });
-      else
-        await f.t.run((ctx) => ctx.db.patch("organizations", f.organizationId, { memberCount: 6 }));
-      await runUntil(f, NOV - 6 * 3600_000);
-      expect((await checkoutRow(f)).admission).toMatchObject({
-        state: "refused",
-        code: denial,
-        stop: "pending",
-      });
-      await runUntil(f, Date.now() + 1);
-      expect(sub.status).toBe("canceled");
-      expect(Date.now()).toBeLessThan(NOV);
-      expect(await reviewsOf(f)).toEqual([["checkout", denial]]);
-    },
-  );
-
-  it("o cancelamento que falha é repetido; esgotado ou chegada a âncora, fica para uma pessoa", async () => {
-    const f = await fixture();
-    const { sub } = await refusedAnnual(f);
-    // One failure: the retry 15 minutes later cancels it.
-    f.fake.state.failNext = 1;
-    await runUntil(f, Date.now() + 1);
-    expect(sub.status).toBe("active");
-    expect((await checkoutRow(f)).admission).toMatchObject({ stop: "pending" });
-    await runUntil(f, Date.now() + 15 * 60_000);
-    expect(sub.status).toBe("canceled");
-    expect((await checkoutRow(f)).admission).toMatchObject({ stop: "done" });
-
-    // Stripe stays down: the last retry flags it for a person.
-    vi.setSystemTime(OCT);
-    const g = await fixture();
-    const { sub: gSub, checkoutId: gCheckout } = await refusedAnnual(g);
-    g.fake.state.failNext = 1000;
-    await g.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: g.organizationId,
-      checkoutId: gCheckout,
-      attempt: 5,
-    });
-    expect((await checkoutRow(g)).admission).toMatchObject({ stop: "failed" });
-    g.fake.state.failNext = 0;
-    expect(await reviewsOf(g)).toEqual([["checkout", "SUBSCRIPTION_STOP_FAILED"]]);
-    // The operator runs it again from the start before the anchor: cancelled, flag gone.
-    await g.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: g.organizationId,
-      checkoutId: gCheckout,
-      attempt: 0,
-    });
-    expect(gSub.status).toBe("canceled");
-    expect(await reviewsOf(g)).toEqual([["checkout", "PLAN_UNAVAILABLE"]]);
-
-    // From the anchor on Stripe may have charged: nothing is cancelled automatically.
-    vi.setSystemTime(OCT);
-    const h = await fixture();
-    const { sub: hSub, checkoutId: hCheckout } = await refusedAnnual(h);
-    vi.setSystemTime(NOV);
-    await h.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: h.organizationId,
-      checkoutId: hCheckout,
-      attempt: 0,
-    });
-    expect(hSub.status).toBe("active");
-    expect(h.fake.sent(`/v1/subscriptions/${hSub.id}`, "DELETE")).toEqual([]);
-    expect(await reviewsOf(h)).toEqual([["checkout", "SUBSCRIPTION_STOP_FAILED"]]);
-    // A person settles it in Stripe and marks it.
-    await h.t.mutation(internal.billing.resolveReview, {
-      checkoutId: hCheckout,
-      actor: "operador-sintetico",
-    });
-    expect(await reviewsOf(h)).toEqual([]);
-  });
-
-  it("um cancelamento feito não volta a falhar quando a conferência seguinte falha na última tentativa", async () => {
-    const f = await fixture();
-    const { sub, checkoutId } = await refusedAnnual(f);
-    // The DELETE goes through; the read-back that follows it times out.
-    f.fake.state.failPaths = ["/v1/prices"];
-    await f.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: f.organizationId,
-      checkoutId,
-      attempt: 5,
-    });
-    expect(sub.status).toBe("canceled");
-    expect((await checkoutRow(f)).admission).toMatchObject({ stop: "done" });
-    // A late failure never reopens it.
-    await f.t.mutation(internal.billing.markAnnualStop, { checkoutId, stop: "failed" });
-    expect((await checkoutRow(f)).admission).toMatchObject({ stop: "done" });
-    f.fake.state.failPaths = [];
-    expect(await reviewsOf(f)).toEqual([["checkout", "PLAN_UNAVAILABLE"]]);
-  });
-
-  it("uma assinatura recusada que comprou um termo não é cancelada nem pede cancelamento", async () => {
-    const f = await fixture();
-    const { sub, checkoutId } = await refusedAnnual(f);
-    f.fake.state.failNext = 1000;
-    await f.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: f.organizationId,
-      checkoutId,
-      attempt: 5,
-    });
-    f.fake.state.failNext = 0;
-    expect(await reviewsOf(f)).toEqual([["checkout", "SUBSCRIPTION_STOP_FAILED"]]);
-    // The charge got through and became a term: the subscription now renews it.
-    await f.t.run((ctx) =>
-      insertTerm(ctx, {
-        organizationId: f.organizationId,
-        tier: "intermediate",
-        firstPeriod: NOV,
-        endsAt: termEndsAt(NOV),
-        source: "stripe",
-        references: ["in_refused_became_term"],
-        stripeSubscriptionId: sub.id,
-        paidCents: 149000,
-        purchasedAt: Date.now(),
-        segments: [],
-        state: "scheduled",
-      }),
-    );
-    expect(await reviewsOf(f)).toEqual([]);
-    await f.t.action(internal.billing.stopRefusedAnnual, {
-      organizationId: f.organizationId,
-      checkoutId,
-      attempt: 0,
-    });
-    expect(sub.status).toBe("active");
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toEqual([]);
-  });
-
-  it("uma organização encerrada antes da conclusão não reserva, e a recusa não cancela de novo", async () => {
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    const slug = (await f.t.run((ctx) => ctx.db.get("organizations", f.organizationId)))!.slug;
-    expect(
-      await code(
-        f.owner.mutation(api.organizationClosure.close, {
-          organizationId: f.organizationId,
-          confirmation: slug,
-        }),
-      ),
-    ).toBe("OK");
-    const { sub } = subscribeAnnual(f, customer);
-    await sync(f);
-    expect((await checkoutRow(f)).admission).toMatchObject({
-      state: "refused",
-      code: "ORGANIZATION_CLOSED",
-    });
-    expect((await stockOf(f)).allocations).toEqual([]);
-    await runUntil(f, Date.now() + 1);
-    expect(sub.status).toBe("canceled");
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toHaveLength(1);
-  });
-
-  it("a recusa some quando um Checkout anual seguinte é reservado", async () => {
-    const f = await fixture();
-    await refusedAnnual(f);
-    await runUntil(f, Date.now() + 1);
-    expect(await reviewsOf(f)).toEqual([["checkout", "PLAN_UNAVAILABLE"]]);
-    // The window opens again and the customer buys the annual once more.
-    await settingsPatch(f, { admissionsUntil: Date.UTC(2027, 11, 31) });
-    await annualCheckout(f, { key: "annual-card-again" });
-    subscribeAnnual(f, await customerOf(f));
-    await sync(f);
-    expect(await checkoutRow(f)).toMatchObject({ admission: { state: "reserved" } });
-    expect(await reviewsOf(f)).toEqual([]);
-  });
-
-  it("conclusão lida depois da âncora, na mesma conferência da cobrança: concedida, reserva sem reconferência", async () => {
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    vi.setSystemTime(NOV + 3600_000);
-    const { sub } = subscribeAnnual(f, customer);
-    const first = firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
-    await sync(f);
-    expect(await grants(f)).toMatchObject([{ invoiceId: first.id, state: "applied" }]);
-    expect(await terms(f)).toMatchObject([{ state: "active", stripeSubscriptionId: sub.id }]);
-    expect(await checkoutRow(f)).toMatchObject({ admission: { state: "reserved" } });
-    expect(await rechecks(f)).toEqual([]);
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toEqual([]);
-  });
-
-  it("conclusão lida depois da âncora com a cobrança bloqueada: nada é cancelado, fica para uma pessoa", async () => {
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    await settingsPatch(f, { admissionsUntil: NOV - 1 });
-    vi.setSystemTime(NOV + 3600_000);
-    const { sub } = subscribeAnnual(f, customer);
-    firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
-    await sync(f);
-    expect(await grants(f)).toMatchObject([{ state: "blocked", code: "PLAN_UNAVAILABLE" }]);
-    expect((await checkoutRow(f)).admission).toMatchObject({
-      state: "refused",
-      code: "PLAN_UNAVAILABLE",
-    });
-    await runUntil(f, Date.now() + 1);
-    expect(sub.status).toBe("active");
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toEqual([]);
-    expect((await checkoutRow(f)).admission).toMatchObject({ stop: "failed" });
-    expect((await reviewsOf(f)).toSorted((a, b) => a[0]!.localeCompare(b[0]!))).toEqual([
-      ["checkout", "SUBSCRIPTION_STOP_FAILED"],
-      ["grant", "PLAN_UNAVAILABLE"],
-    ]);
-    // `billing:resolveReview` takes exactly one pending item, a refused one, and an actor.
-    const checkoutId = (await checkoutRow(f))._id;
-    const grantId = (await grants(f))[0]!._id;
-    for (const args of [
-      { checkoutId, grantId, actor: "operador-sintetico" },
-      { checkoutId, actor: " " },
-      { actor: "operador-sintetico" },
-    ])
-      expect(await code(f.t.mutation(internal.billing.resolveReview, args))).toBe(
-        "INVALID_REQUEST",
-      );
-    await f.t.mutation(internal.billing.resolveReview, { checkoutId, actor: "operador-sintetico" });
-    expect(await reviewsOf(f)).toEqual([["grant", "PLAN_UNAVAILABLE"]]);
-    const g = await fixture();
-    await soldAnnual(g);
-    expect(
-      await code(
-        g.t.mutation(internal.billing.resolveReview, {
-          checkoutId: (await checkoutRow(g))._id,
-          actor: "operador-sintetico",
-        }),
-      ),
-    ).toBe("NOT_FOUND");
-  });
-
-  it("concluída a menos de seis horas da âncora, não agenda a reconferência", async () => {
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f);
-    const customer = await customerOf(f);
-    vi.setSystemTime(NOV - 3 * 3600_000);
-    subscribeAnnual(f, customer);
-    await sync(f);
-    expect(await checkoutRow(f)).toMatchObject({ admission: { state: "reserved" } });
-    expect(await rechecks(f)).toEqual([]);
-    expect(await fallbackChecks(f)).toHaveLength(1);
-  });
-
-  it("a reconferência não faz nada depois de “Não renovar” ou do encerramento", async () => {
-    const f = await fixture();
-    const { sub } = await soldAnnual(f);
-    await f.owner.action(api.billing.changeRenewal, {
-      organizationId: f.organizationId,
-      change: "cancel",
-    });
-    await settingsPatch(f, { enabled: false });
-    await runUntil(f, NOV - 5 * 3600_000);
-    expect((await checkoutRow(f)).admission).toMatchObject({ state: "reserved" });
-    expect(f.fake.sent(`/v1/subscriptions/${sub.id}`, "DELETE")).toEqual([]);
-    expect(await reviewsOf(f)).toEqual([]);
-
-    vi.setSystemTime(OCT);
-    const g = await fixture();
-    const { sub: gSub } = await soldAnnual(g);
-    const slug = (await g.t.run((ctx) => ctx.db.get("organizations", g.organizationId)))!.slug;
-    await g.owner.mutation(api.organizationClosure.close, {
-      organizationId: g.organizationId,
-      confirmation: slug,
-    });
-    await g.t.action(internal.billing.stopForClosure, {
-      organizationId: g.organizationId,
-      attempt: 0,
-    });
-    expect(gSub.status).toBe("canceled");
-    await runUntil(g, NOV - 5 * 3600_000);
-    expect((await checkoutRow(g)).admission).toMatchObject({ state: "reserved" });
-    // Only the closure's own DELETE; no refusal to show (a closed organization reads nothing).
-    expect(g.fake.sent(`/v1/subscriptions/${gSub.id}`, "DELETE")).toHaveLength(1);
-  });
-
-  it("o Checkout mensal concluído não reserva nem agenda a reconferência", async () => {
-    const f = await fixture();
-    const { customer } = await startCard(f);
-    f.fake.subscribe(customer, "intermediate", NOV);
-    await sync(f);
-    const row = await checkoutRow(f);
-    expect(row).toMatchObject({ state: "complete" });
-    expect(row.admission).toBeUndefined();
-    expect(row.subscriptionId).toBeUndefined();
-    expect((await stockOf(f)).allocations).toEqual([]);
-    expect(await rechecks(f)).toEqual([]);
+    expect(billingJobs).toEqual([]);
   });
 
   it("a visão do console diz se o anual está à venda e se a assinatura já comprou um termo", async () => {
@@ -4702,11 +4601,18 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       subscriptionTerm: false,
       annualBlocked: false,
     });
-    const { customer, sub } = await soldAnnual(f);
-    // Sold and not charged yet: cancelling gives up a year never paid.
+    await annualOn(f);
+    await annualCheckout(f);
+    const customer = await customerOf(f);
+    const { sub } = payAnnual(f, customer);
+    // The subscription exists before its first invoice is read: no term yet.
+    f.fake.state.invoices.length = 0;
+    await sync(f);
     expect(await view()).toMatchObject({ annualEnabled: true, subscriptionTerm: false });
-    vi.setSystemTime(NOV + 3600_000);
-    firstCharge(f, customer, sub.id, { price: "price_int_year", amount: 149000 });
+    f.fake.invoice({
+      id: `in_annual_${sub.id}`,
+      ...annualStartInvoice(customer, sub.id, f.organizationId),
+    });
     await sync(f);
     expect(await terms(f)).toMatchObject([{ state: "active", stripeSubscriptionId: sub.id }]);
     // The term holds a new annual on the card until it ends, its last month included: its own
@@ -4716,7 +4622,7 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       subscriptionTerm: true,
       annualBlocked: true,
     });
-    vi.setSystemTime(Date.UTC(2027, 9, 10, 12));
+    vi.setSystemTime(Date.UTC(2027, 9, 1));
     expect((await view()).annualBlocked).toBe(true);
     await f.t.mutation(internal.plans.configureAnnual, {
       enabled: false,
@@ -4724,88 +4630,8 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
       evidence: "synthetic-annual-off",
     });
     expect(await view()).toMatchObject({ annualEnabled: false, subscriptionTerm: true });
-    vi.setSystemTime(termEndsAt(NOV));
+    vi.setSystemTime(termEndsAt(OCT));
     expect((await view()).annualBlocked).toBe(false);
-  });
-
-  it("à espera da âncora, o Pix e o encerramento pelo operador são recusados; o do dono cancela a assinatura", async () => {
-    const f = await fixture();
-    const { sub } = await soldAnnual(f);
-    expect(
-      await code(
-        f.owner.mutation(api.plans.requestPaid, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "pix-while-annual-waits",
-        }),
-      ),
-    ).toBe("PAYMENT_METHOD_CARD");
-    expect(
-      await code(
-        f.t.mutation(internal.organizationClosure.closeByOperator, {
-          organizationId: f.organizationId,
-          actor: "operador-ficticio",
-          reason: "Encerramento sintético do teste",
-        }),
-      ),
-    ).toBe("PAID_PLAN");
-    // No term exists yet, so the owner may close; the closure cancels before anything is charged.
-    const slug = (await f.t.run((ctx) => ctx.db.get("organizations", f.organizationId)))!.slug;
-    expect(
-      await code(
-        f.owner.mutation(api.organizationClosure.close, {
-          organizationId: f.organizationId,
-          confirmation: slug,
-        }),
-      ),
-    ).toBe("OK");
-    await f.t.action(internal.billing.stopForClosure, {
-      organizationId: f.organizationId,
-      attempt: 0,
-    });
-    expect(sub.status).toBe("canceled");
-    expect(await terms(f)).toEqual([]);
-  });
-
-  it("“Não renovar” antes da âncora: nenhum termo, e o Pix volta a ser aceito", async () => {
-    const f = await fixture();
-    const { sub } = await soldAnnual(f);
-    await f.owner.action(api.billing.changeRenewal, {
-      organizationId: f.organizationId,
-      change: "cancel",
-    });
-    expect(sub.cancel_at_period_end).toBe(true);
-    expect(
-      await code(
-        f.owner.mutation(api.plans.requestPaid, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "pix-after-annual-cancel",
-        }),
-      ),
-    ).toBe("OK");
-    // Stripe ends the subscription at the anchor without charging; the fallback check finds nothing.
-    vi.advanceTimersByTime(NOV + 3 * 3600_000 - Date.now());
-    sub.status = "canceled";
-    await f.t.finishInProgressScheduledFunctions();
-    expect(await grants(f)).toEqual([]);
-    expect(await terms(f)).toEqual([]);
-  });
-
-  it("uma sessão anual que expira não agenda a conferência da âncora", async () => {
-    const f = await fixture();
-    await annualOn(f);
-    await annualCheckout(f);
-    for (const session of f.fake.state.sessions.values()) session.status = "expired";
-    await sync(f);
-    expect(await f.t.run((ctx) => ctx.db.query("billingCheckouts").collect())).toMatchObject([
-      { cycle: "annual", state: "expired" },
-    ]);
-    expect(await fallbackChecks(f)).toEqual([]);
-    // And the completed one schedules exactly one.
-    const g = await fixture();
-    await soldAnnual(g);
-    expect(await fallbackChecks(g)).toHaveLength(1);
   });
 
   it("o anual no cartão espera o fim de um termo Pix, mesmo no último mês dele", async () => {
@@ -4828,10 +4654,10 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     expect(termEndsAt(PIX_FIRST)).toBe(NOV);
     // A monthly card would renew into the term's months.
     expect(await code(startCard(f))).toBe("ANNUAL_TERM_ACTIVE");
-    // October is the Pix term's last month: an annual on the card, anchored on 01/11, would be a
-    // start deferred across payment methods (ADR 0012, one paid plan at a time). It waits.
+    // October is the Pix term's last month: the card annual, a new chain, waits for its end
+    // (ADR 0012, one paid plan at a time).
     await annualOn(f);
-    expect(await annualCheckout(f).catch((error: { data?: unknown }) => error.data)).toEqual({
+    expect(await refusal(annualCheckout(f))).toEqual({
       code: "ANNUAL_TERM_ACTIVE",
       availableAt: NOV,
     });
@@ -4847,8 +4673,7 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
 
   it("um termo Pix que termina no meio do mês segura o anual no cartão até o fim dele", async () => {
     const f = await fixture();
-    // 15/10/2026 14:30 to 15/10/2027 14:30 UTC: on 02/10/2027 the card annual would anchor on
-    // 01/11/2027, after a gap, sold while the Pix term still runs.
+    // 15/10/2026 14:30 to 15/10/2027 14:30 UTC.
     const PIX_START = Date.UTC(2026, 9, 15, 14, 30);
     await f.t.run((ctx) =>
       insertTerm(ctx, {
@@ -4867,9 +4692,10 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     await annualOn(f);
     vi.setSystemTime(Date.UTC(2027, 9, 2));
     const owner = await person(f.t, f.organizationId, "owner");
-    expect(
-      await annualCheckout(f, { owner }).catch((error: { data?: unknown }) => error.data),
-    ).toEqual({ code: "ANNUAL_TERM_ACTIVE", availableAt: Date.UTC(2027, 9, 15, 14, 30) });
+    expect(await refusal(annualCheckout(f, { owner }))).toEqual({
+      code: "ANNUAL_TERM_ACTIVE",
+      availableAt: Date.UTC(2027, 9, 15, 14, 30),
+    });
     expect(sessions(f)).toEqual([]);
   });
 });

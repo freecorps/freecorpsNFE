@@ -278,13 +278,16 @@ export function withoutLastUpgrade(term: Doc<"platformPlanTerms">) {
   return { upgrade, fields };
 }
 
-/** Whether the Stripe subscription `subscriptionId` bought a term scheduled or in force. */
+/**
+ * Whether the Stripe subscription `subscriptionId` bought a term scheduled or in force: it renews
+ * that term, so a blocked charge of it never cancels it (`billing:stopBlockedAnnual`).
+ */
 export async function subscriptionHasTerm(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   subscriptionId: string,
 ) {
-  for (const state of ["scheduled", "active"] as const) {
+  for (const state of HOLDING) {
     const terms = await ctx.db
       .query("platformPlanTerms")
       .withIndex("by_organizationId_and_state_and_endsAt", (q) =>

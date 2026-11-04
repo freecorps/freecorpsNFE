@@ -21,12 +21,13 @@ export const billingOpenInvoice = v.object({
 });
 export const checkoutKind = v.union(v.literal("start"), v.literal("upgrade"));
 /**
- * `reserved`: the stock of the tier is held for the organization from the session's completion.
- * `refused`: the admission's denial `code`; `stop` follows the cancellation of the subscription,
- * `failed` once the retries ran out or the anchor arrived first, for a person, who marks it
- * settled (`resolvedBy`, `billing:resolveReview`).
+ * Legacy, read by nothing since slice 2b of ADR 0012: the admission an annual start anchored on
+ * the next 1st recorded when its session completed. `reserved`: the stock of the tier was held
+ * from then. `refused`: the denial `code`, with `stop` following the cancellation of the
+ * subscription and `resolvedBy` the person who settled it. The annual is now charged at the
+ * signing and reserves when its first invoice is granted, as the monthly.
  */
-export const annualAdmission = v.union(
+const annualAdmission = v.union(
   v.object({ state: v.literal("reserved"), at: v.number() }),
   v.object({
     state: v.literal("refused"),
@@ -69,13 +70,13 @@ export const billingTables = {
     kind: checkoutKind,
     tier: paidTier,
     /**
-     * The canonical key (ADR 0012) of the period priced: an annual start's first month, the next
-     * one, or the quota period an upgrade raises. A monthly start has none since slice 2a: its
-     * month starts when it is paid. Rows before it hold the civil month, `AAAA-MM`.
+     * The canonical key (ADR 0012) of the period an upgrade raises: the monthly plan's quota
+     * period or the term month. A start has none, monthly since slice 2a and annual since slice
+     * 2b: it begins when it is paid. Rows before them hold the civil month, `AAAA-MM`.
      */
     period: v.optional(v.string()),
     grantCents: v.number(),
-    /** An annual Checkout (ADR 0010, decision 9): its term starts on the 1st of `period`. */
+    /** An annual Checkout (ADR 0010, decision 9): a term start or its upgrade. */
     cycle: v.optional(v.literal("annual")),
     state: v.union(
       v.literal("creating"),
@@ -85,13 +86,11 @@ export const billingTables = {
     ),
     sessionId: v.optional(v.string()),
     url: v.optional(v.string()),
-    /** The subscription a completed annual start created, read from its session. */
-    subscriptionId: v.optional(v.string()),
     /**
-     * The admission of a completed annual start: the reservation taken when the session
-     * completed, or the refusal, then or on the recheck before the anchor, with the cancellation
-     * of the subscription before Stripe charges (`billing:stopRefusedAnnual`).
+     * Legacy, written before slice 2b of ADR 0012: the subscription a completed annual start
+     * anchored on the next 1st created, and its admission (`annualAdmission`).
      */
+    subscriptionId: v.optional(v.string()),
     admission: v.optional(annualAdmission),
     expiresAt: v.number(),
     requestedBy: v.string(),
@@ -100,12 +99,7 @@ export const billingTables = {
   })
     .index("by_organizationId_and_key", ["organizationId", "key"])
     .index("by_organizationId_and_state", ["organizationId", "state"])
-    .index("by_sessionId", ["sessionId"])
-    .index("by_organizationId_and_admissionState_and_admissionStop", [
-      "organizationId",
-      "admission.state",
-      "admission.stop",
-    ]),
+    .index("by_sessionId", ["sessionId"]),
   /** Each paid invoice is weighed once: applied to the plan, skipped (covered) or blocked. */
   billingGrants: defineTable({
     organizationId: v.id("organizations"),
@@ -114,17 +108,29 @@ export const billingTables = {
     /**
      * The canonical key (ADR 0012) of the period bought: the start of a card month, which is an
      * anniversary of its subscription's anchor since slice 2a, the period an upgrade raised, or a
-     * term's first month. Null when the invoice bought nothing.
+     * term's start, an anniversary of that anchor since slice 2b. Null when the invoice bought
+     * nothing.
      */
     period: v.union(v.string(), v.null()),
     amountCents: v.number(),
     state: grantState,
     code: v.optional(v.string()),
     planVersion: v.optional(v.number()),
-    /** The annual term an applied annual invoice created; `period` is then its first month. */
+    /** The annual term an applied annual invoice created or raised; `period` is then its start. */
     termId: v.optional(v.id("platformPlanTerms")),
     /** Operator who settled a blocked grant (refund, manual plan), outside the platform. */
     resolvedBy: v.optional(v.string()),
+    /**
+     * A blocked first invoice of an annual subscription (slice 2b of ADR 0012): the year was
+     * charged but bought no term, so the subscription is cancelled before it charges again
+     * (`billing:stopBlockedAnnual`). `failed` once the retries ran out, for a person.
+     */
+    subscriptionStop: v.optional(
+      v.object({
+        subscriptionId: v.string(),
+        state: v.union(v.literal("pending"), v.literal("done"), v.literal("failed")),
+      }),
+    ),
     createdAt: v.number(),
   })
     .index("by_invoiceId", ["invoiceId"])

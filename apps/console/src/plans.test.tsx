@@ -490,7 +490,9 @@ it("the annual Pix request starts at the confirmation and sends the server only 
   expect(dialog.textContent).toContain("no mesmo dia e horário, em UTC");
   expect(dialog.textContent).not.toMatch(/dia 1 do mês seguinte, e o plano atual/);
   expect(within(dialog).queryByRole("radio")).toBeNull();
-  expect(dialog.textContent).toContain("No cartão, o anual começa sempre no dia 1 do mês seguinte");
+  expect(dialog.textContent).toContain(
+    "No cartão, o anual é contratado em Cobrança, cobrado e iniciado no pagamento",
+  );
   await click("Registrar pedido");
   expect(state.request).toHaveBeenCalledWith({
     organizationId: "org-one",
@@ -768,7 +770,7 @@ it.each([
   // The screen still showed Pix when the switch went off.
   ["PIX_DISABLED", "Assine pelo cartão em Cobrança"],
   ["SUBSCRIPTION_RENEWING", "Use “Cancelar renovação” antes de assinar o anual no cartão"],
-  ["PERIOD_CLOSING", "a mudança fecha na virada do mês"],
+  ["PERIOD_CLOSING", "a mudança fecha 45 minutos antes do fim de cada mês do plano anual"],
 ])("explains %s in Portuguese", async (refusal, text) => {
   state.data = annualOn();
   state.request.mockRejectedValueOnce(new ConvexError({ code: refusal }));

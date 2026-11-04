@@ -38,16 +38,9 @@ export function price(cents: number) {
   const digits = String(cents).padStart(3, "0");
   return formatBRL(`${digits.slice(0, -2)}.${digits.slice(-2)}`);
 }
-/** Billing periods are UTC months: the date shown is the UTC day, never the browser's. */
-export const utcDate = (ms: number) =>
-  `${new Date(ms).toLocaleDateString("pt-BR", { timeZone: "UTC" })}, 00:00 UTC`;
+/** An instant in UTC, never in the browser's time zone. */
 export const utcDateTime = (ms: number) =>
   `${new Date(ms).toLocaleString("pt-BR", { timeZone: "UTC" })} UTC`;
-/** The 1st, 00:00 UTC, of the month `offset` months from the one of `at`. */
-export function utcMonth(at: number, offset = 0) {
-  const date = new Date(at);
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + offset, 1);
-}
 /** The tier a term has in its last month, the one it renews at. */
 const lastTier = (term: Term) => term.segments.at(-1)?.tier ?? term.tier;
 const monthsLeft = (months: number) =>
@@ -69,7 +62,7 @@ export const annualMessages: Record<string, string> = {
   PAYMENT_METHOD_PIX:
     "Este plano anual foi pago por Pix, e a mudança de plano também é pelo Pix. Confira a situação atual.",
   SUBSCRIPTION_RENEWING:
-    "O cartão ainda renova a assinatura atual. Use “Cancelar renovação” antes de assinar o anual no cartão; o período já pago continua até o anual começar, no dia 1 seguinte, e é substituído por ele sem desconto.",
+    "O cartão ainda renova a assinatura atual. Use “Cancelar renovação” antes de assinar o anual no cartão; ele é cobrado e começa no pagamento, e substitui o período já pago sem desconto.",
 };
 /** Why a new annual by Pix waits (`annualStart.code`), before anything is asked. */
 const annualWaits: Record<string, string> = {
@@ -141,7 +134,7 @@ const planMessages: Record<string, string> = {
   SUBSCRIPTION_REQUIRED:
     "A assinatura anual por cartão deste plano não está mais ativa. Confira a cobrança.",
   PERIOD_CLOSING:
-    "Pelo cartão, a mudança fecha na virada do mês e nas últimas 72 horas do plano anual. Tente de novo a partir de 00:00 UTC do dia 1.",
+    "Pelo cartão, a mudança fecha 45 minutos antes do fim de cada mês do plano anual e nas últimas 72 horas do plano anual.",
 };
 
 export function Plans({ org, contextKey }: { org: Organization; contextKey: string }) {
@@ -800,8 +793,8 @@ function PlanCatalog({ org, data }: { org: Organization; data: PlansOverview }) 
             </p>
             <p>
               O pagamento por Pix é assistido. Aguarde as instruções pelo canal de atendimento. O
-              plano anual só começa após a confirmação do pagamento. No cartão, o anual começa
-              sempre no dia 1 do mês seguinte e é contratado em Cobrança.
+              plano anual só começa após a confirmação do pagamento. No cartão, o anual é contratado
+              em Cobrança, cobrado e iniciado no pagamento.
             </p>
           </>
         ) : selection !== "cancel" && selection !== "free" ? (

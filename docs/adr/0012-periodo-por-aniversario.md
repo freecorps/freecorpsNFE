@@ -1,9 +1,11 @@
 # Período por aniversário nas assinaturas e nas cotas pagas
 
 Data: 03/11/2026 · Status: **Aceita** pelo dono do projeto em 03/11/2026.
-**Não implementada:** até cada fatia de [Implementação](#implementação) ser
-publicada, o código segue o mês civil UTC descrito em
+**Implementada no código nas fatias 0 a 2b** de
+[Implementação](#implementação), descritas em
 [BILLING.md](../plataforma/BILLING.md) e [USAGE.md](../plataforma/USAGE.md).
+Ligar o catálogo ou o anual ainda espera a versão nova dos termos de uso e a
+[prova hospedada](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35).
 Esta ADR substitui pontos da
 [decisão 9 da ADR 0010](0010-guarda-em-camadas-e-custo-dos-planos.md#9-anual-reembolso-e-ciclo)
 e das políticas mensais da #556, listados em [Consequências](#consequências).
@@ -264,13 +266,15 @@ Invariantes:
   precisam ser refeitas
   ([ADR 0011](0011-entregas-graduais.md)). O roteiro da #35, em
   [Prova hospedada e ativação do anual](../plataforma/BILLING.md#prova-hospedada-e-ativação-do-anual-35),
-  nunca rodou e precisa ser reescrito para este modelo antes de rodar. As
+  foi reescrito para este modelo na fatia 2b e ainda não rodou. As
   provas novas usam relógios de teste em 31/01, 31/03 e 29/02 para confirmar
   que o Stripe ajusta o dia e renova os anos da âncora como esta ADR.
 
 ## Implementação
 
-Não implementada. A ordem das fatias:
+As fatias 0 a 2b estão implementadas no código. Ligar o catálogo ou o anual
+espera a fatia 8, os termos de uso 1.2, e a prova hospedada. A ordem das
+fatias:
 
 1. Fatia 0: esta ADR, só documentação.
 2. Fatia 1a: aritmética de aniversário nos termos anuais, sem mudar

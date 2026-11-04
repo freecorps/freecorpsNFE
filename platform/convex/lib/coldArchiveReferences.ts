@@ -244,6 +244,7 @@ export const ARCHIVE_TEXT_UNRELATED = [
   "billingEvents.objectId",
   "billingEvents.stripeEventId",
   "billingGrants.invoiceId",
+  "billingGrants.subscriptionStop.subscriptionId",
   "captureReleaseEvents.runId",
   "certificateAudit.result",
   "certificates.uploaderId",

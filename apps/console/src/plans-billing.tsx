@@ -9,15 +9,7 @@ import { useQuery } from "./convex-query";
 import { useAsyncAction } from "./async-action";
 import { ErrorBoundary } from "./route-errors";
 import { formatUtcInstant } from "./format";
-import {
-  annualMessages,
-  price,
-  refusalOf,
-  tierNames,
-  utcDate,
-  utcDateTime,
-  utcMonth,
-} from "./plans";
+import { annualMessages, price, refusalOf, tierNames, utcDateTime } from "./plans";
 import { Button, buttonClass } from "./ui/button";
 import { ConfirmDialog } from "./ui/dialog";
 import { Callout, Card, DescriptionList, StatusBadge } from "./ui/layout";
@@ -56,23 +48,17 @@ const reviewNames: Record<string, string> = {
   PRICE_UNKNOWN: "Pagamento por um preço que não confere com o catálogo",
   INVOICE_UNEXPECTED: "Pagamento por um período que não confere com a assinatura",
 };
-/** Why an annual start was refused before its anchor (`source: "checkout"`), nothing charged. */
-const annualRefusals: Record<string, string> = {
-  PLAN_UNAVAILABLE: "a contratação ficou indisponível",
-  PLANS_DISABLED: "a contratação de planos foi suspensa",
-  QUOTA_EXCEEDED: "o uso atual não cabe no plano",
-  CAPACITY_INVENTORY_REQUIRED: "o inventário de capacidade da organização está pendente",
-  ORGANIZATION_ARCHIVING: "o arquivamento ou a reativação da organização está em curso",
-  PLAN_CUSTOM: "a organização tem um plano personalizado",
-  ORGANIZATION_CLOSED: "a organização foi encerrada",
+/** The stop of the subscription of a blocked first annual charge (`source: "grant"`). */
+const grantStops: Record<string, string> = {
+  SUBSCRIPTION_STOP_PENDING:
+    "Cancelamento em andamento no Stripe da assinatura anual cuja cobrança não virou plano",
+  SUBSCRIPTION_STOP_FAILED:
+    "Cancelamento pendente no Stripe da assinatura anual cuja cobrança não virou plano",
 };
-function reviewName(item: { source: string; code: string }) {
-  if (item.source !== "checkout") return reviewNames[item.code] ?? "Pagamento em análise";
-  if (item.code === "SUBSCRIPTION_STOP_FAILED")
-    return "Cancelamento pendente no Stripe da assinatura anual recusada";
-  const reason = annualRefusals[item.code];
-  return `Plano anual por cartão recusado antes da cobrança${reason ? `: ${reason}` : ""}. A assinatura é cancelada e nada é cobrado`;
-}
+const reviewName = (item: { source: string; code: string }) =>
+  (item.source === "grant" ? grantStops[item.code] : undefined) ??
+  reviewNames[item.code] ??
+  "Pagamento em análise";
 const ended = ["canceled", "incomplete_expired"];
 
 /**
@@ -100,11 +86,10 @@ function failure(error: unknown) {
     PAYMENT_METHOD_PIX:
       "Há um plano pago por Pix em vigor ou uma renovação dele já paga. O cartão espera o fim dele.",
     CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
-    // Shared by both cases: the monthly upgrade closes 45 minutes before the renewal, with the
-    // date it reopens; the annual, which still starts on the 1st, 45 minutes before the month
-    // turns, even without a paid plan.
+    // The upgrade closes 45 minutes before the month of the plan turns, with the date it
+    // reopens, and the annual one also in the last 72 hours of the annual plan.
     PERIOD_CLOSING:
-      "Pelo cartão, a mudança de plano fecha 45 minutos antes da renovação, e o anual, 45 minutos antes de 00:00 UTC do dia 1.",
+      "Pelo cartão, a mudança de plano fecha 45 minutos antes da renovação ou do fim do mês do plano anual, e nas últimas 72 horas do plano anual.",
     SUBSCRIPTION_REQUIRED: "Não há assinatura por cartão nesta organização.",
     SUBSCRIPTION_CANCELLING:
       "A renovação está cancelada. Retome a renovação antes de mudar o plano.",
@@ -193,10 +178,15 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
   const renewal = data.account?.renewalTier ?? live?.tier ?? null;
   const method = live ? "Cartão, pelo Stripe" : current ? "Pix assistido" : "Nenhum";
   const blocked = !canManage || action.busy || !!data.checkout || data.pixPending;
-  // An annual subscription bills its first year on the anchor: until then it bought nothing, and
-  // the plan in force, if any, does not come from it.
-  const unpaidAnnual = !!live?.annual && !data.subscriptionTerm;
-  const nextMonth = utcMonth(Date.now(), 1);
+  // An annual subscription that bought no term: its charge is still being read, or it was
+  // blocked for the team. No paid months come from it.
+  const termless = !!live?.annual && !data.subscriptionTerm;
+  /**
+   * The monthly in force that a card annual of `tier` replaces at once, without discount: a
+   * catalog monthly, not a term's, of the same tier or below (ADR 0012, one paid plan at a time).
+   */
+  const replaces = (tier: PaidTier) =>
+    !!current && !data.plan?.annual && monthly[current] <= monthly[tier];
 
   async function confirm() {
     if (!pending) return "";
@@ -212,8 +202,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
         done: () =>
           setMessage(
             change === "cancel"
-              ? unpaidAnnual
-                ? "Renovação cancelada. A assinatura anual não será cobrada."
+              ? termless
+                ? "Renovação cancelada. A assinatura anual não cobra de novo."
                 : "Renovação cancelada. O período pago continua até o fim."
               : change === "resume"
                 ? "Renovação retomada."
@@ -288,15 +278,14 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
           },
           {
             term: "Próxima cobrança",
-            value:
-              renewing && live?.periodEnd && renewal
+            value: termless
+              ? "Nenhuma enquanto a cobrança anual está em confirmação ou em análise pela equipe: ela não concedeu um plano anual."
+              : renewing && live?.periodEnd && renewal
                 ? live.annual
-                  ? `${price(annual[renewal])} em ${utcDate(live.periodEnd)} (${tierNames[renewal]} anual, 12 meses)`
+                  ? `${price(annual[renewal])} em ${formatUtcInstant(live.periodEnd)} (${tierNames[renewal]} anual, 12 meses)`
                   : `${price(monthly[renewal])} em ${formatUtcInstant(live.periodEnd)} (${tierNames[renewal]})`
                 : live?.cancelAtPeriodEnd && live.periodEnd
-                  ? unpaidAnnual
-                    ? "Nenhuma. A assinatura anual não será cobrada."
-                    : `Nenhuma. O plano termina em ${live.annual ? utcDate(live.periodEnd) : formatUtcInstant(live.periodEnd)}`
+                  ? `Nenhuma. O plano termina em ${formatUtcInstant(live.periodEnd)}`
                   : "Nenhuma",
           },
           {
@@ -358,8 +347,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
         >
           {data.checkout.cycle === "annual" && data.checkout.kind === "upgrade"
             ? `${price(data.checkout.grantCents)} agora, pela mudança para o ${tierNames[data.checkout.tier]} anual até o fim do plano anual`
-            : data.checkout.cycle === "annual" && data.checkout.periodStartsAt !== null
-              ? `${tierNames[data.checkout.tier]} anual: nada agora, ${price(data.checkout.grantCents)} em ${utcDate(data.checkout.periodStartsAt)} por 12 meses`
+            : data.checkout.cycle === "annual"
+              ? `${tierNames[data.checkout.tier]} anual: ${price(data.checkout.grantCents)} agora, por 12 meses a partir do pagamento, com renovação anual no mesmo dia e horário`
               : `${tierNames[data.checkout.tier]}: ${price(data.checkout.grantCents)} agora${
                   data.checkout.kind === "start"
                     ? `, depois ${price(monthly[data.checkout.tier])} por mês, no dia e horário do pagamento`
@@ -373,9 +362,9 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
       ) : null}
       {canManage && data.annualEnabled && renewing && !live.annual ? (
         <p className="gestao-help">
-          Para assinar o anual no cartão, use “Cancelar renovação” antes. O mês pago continua até o
-          anual começar, no dia 1 seguinte, e é substituído por ele sem desconto dos dias restantes.
-          Um anual menor que o plano mensal em vigor espera o fim dele.
+          Para assinar o anual no cartão, use “Cancelar renovação” antes. O anual do mesmo plano ou
+          de um maior é cobrado e começa no pagamento, e substitui o mês pago sem desconto dos dias
+          restantes. Um anual menor que o plano mensal em vigor espera o fim dele.
         </p>
       ) : null}
       {canManage && data.annualEnabled && !live?.annual && data.annualBlocked ? (
@@ -493,7 +482,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
         }
         description={
           pending?.kind === "checkout" && pending.cycle === "annual"
-            ? `Nada é cobrado agora. Você será levado ao Stripe, e ${price(annual[pending.tier])} são cobrados em ${utcDate(nextMonth)}, início dos 12 meses. Até lá, o mês corrente segue no plano atual. Depois, a renovação é anual, na mesma data.${data.pixEnabled ? " Para começar agora, peça o anual por Pix em Escolha seu plano." : ""}`
+            ? `Você será levado ao Stripe. ${price(annual[pending.tier])} são cobrados no pagamento, e os 12 meses vão até o mesmo dia e horário do ano seguinte, em UTC.${replaces(pending.tier) ? ` O ${tierNames[current!]} mensal em vigor é substituído na hora, sem desconto dos dias restantes.` : ""} Depois, a renovação é anual, nesse dia e horário.`
             : pending?.kind === "checkout"
               ? live
                 ? `Você será levado ao Stripe para pagar a diferença integral do mês do plano${data.plan?.endsAt ? `, que termina em ${formatUtcInstant(data.plan.endsAt)}` : ""}. O plano muda quando o Stripe confirmar o pagamento, até essa mesma data, e a renovação passa a ser pelo novo plano.`
@@ -501,11 +490,11 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
               : pending?.kind === "abandon"
                 ? "O link de pagamento deixa de valer. Se o pagamento já tiver sido feito, ele continua valendo."
                 : pending?.kind === "renewal" && pending.change === "cancel"
-                  ? unpaidAnnual
-                    ? `Sem multa. A assinatura anual ainda não foi cobrada, e a primeira cobrança${live?.periodEnd ? `, em ${utcDate(live.periodEnd)},` : ""} não acontece. O plano atual não muda. Os documentos continuam guardados.`
-                    : live?.annual
-                      ? "Sem multa. Os meses pagos do plano anual continuam até o fim, sem reembolso. Para rescindir com reembolso, fale com o suporte. Os documentos continuam guardados."
-                      : "Sem multa. O período pago continua até o fim, sem reembolso proporcional. Os documentos continuam guardados."
+                  ? live?.annual
+                    ? termless
+                      ? "Sem multa. Esta assinatura anual não concedeu um plano anual: a cobrança está em confirmação ou em análise pela equipe, que decide o reembolso. A assinatura deixa de renovar. Os documentos continuam guardados."
+                      : "Sem multa. Os meses pagos do plano anual continuam até o fim, sem reembolso. Para rescindir com reembolso, fale com o suporte. Os documentos continuam guardados."
+                    : "Sem multa. O período pago continua até o fim, sem reembolso proporcional. Os documentos continuam guardados."
                   : pending?.kind === "renewal" && pending.change === "resume"
                     ? live?.annual
                       ? "A assinatura volta a renovar pelo anual no fim do período."
