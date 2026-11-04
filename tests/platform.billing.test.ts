@@ -1690,6 +1690,15 @@ describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
     expect(await f.plan()).toMatchObject({ endsAt: DEC_10, version: 2 });
   });
 
+  it("a fatura paga de uma assinatura que o Stripe não tem mais vai para revisão, sem esperar para sempre", async () => {
+    const f = await fixture();
+    const { customer } = await startCard(f);
+    f.fake.invoice(startInvoice(customer, "sub_gone_0000", f.organizationId, 14900));
+    await sync(f);
+    expect(await grants(f)).toEqual([["blocked", "INVOICE_UNEXPECTED", null]]);
+    expect(await f.plan()).toBeNull();
+  });
+
   it("a renovação cobrada abaixo de um upgrade cuja troca de preço não chegou fica para uma pessoa", async () => {
     const f = await fixture();
     const { customer } = await startCard(f);
@@ -4079,7 +4088,10 @@ describe("Checkout anual por cartão (ADR 0010, decisão 9)", () => {
     // 30 minutes before the 1st, the customer could not finish before the anchor.
     vi.setSystemTime(NOV - 30 * 60_000);
     const owner = await person(f.t, f.organizationId, "owner");
-    expect(await code(annualCheckout(f, { owner }))).toBe("PERIOD_CLOSING");
+    expect(await refusal(annualCheckout(f, { owner }))).toEqual({
+      code: "PERIOD_CLOSING",
+      availableAt: NOV,
+    });
     expect(f.fake.state.calls).toEqual([]);
     vi.setSystemTime(OCT);
     expect(await code(annualCheckout(f, { owner }))).toBe("OK");

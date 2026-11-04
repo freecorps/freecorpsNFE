@@ -463,7 +463,8 @@ export const prepareCheckout = internalMutation({
     // The annual still anchors on the next 1st until slice 2b: Stripe needs that anchor in the
     // future when the customer finishes paying, and its upgrade is priced by the civil month.
     const monthTurn = nextUsagePeriodStart(now);
-    if (annual && monthTurn - now < PERIOD_CLOSING_MARGIN) deny("PERIOD_CLOSING");
+    if (annual && monthTurn - now < PERIOD_CLOSING_MARGIN)
+      deny("PERIOD_CLOSING", { availableAt: monthTurn });
     const day = 24 * 60 * 60_000;
     // The annual sessions expire before the month turns; a monthly start, a day later.
     let expiresAt = annual ? Math.min(now + day, monthTurn - 5 * 60_000) : now + day;
@@ -1412,7 +1413,10 @@ async function syncOrganization(
     );
     // The list holds at most 10 subscriptions, and one created while it was read (a Checkout
     // completing) may be missing: an invoice's own subscription is then read by its id, so its
-    // anchor is known. One still unknown leaves the invoice for the next reconciliation.
+    // anchor is known. One that failed to load, or came without an anchor, leaves the invoice for
+    // the next reconciliation; one Stripe says is gone (404), or another customer's, never will
+    // anchor it, so it gets the anchor -1, which no line matches: the paid invoice goes to review
+    // (`INVOICE_UNEXPECTED`) instead of waiting forever.
     const missing = new Set(
       facts.flatMap((invoice) =>
         invoice.subscriptionId &&
@@ -1430,10 +1434,17 @@ async function syncOrganization(
           `/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
         );
       } catch (error) {
-        if (error instanceof StripeApiError && error.status === 404) continue;
+        if (error instanceof StripeApiError && error.status === 404) {
+          anchors.push({ subscriptionId, anchor: -1 });
+          continue;
+        }
         throw error;
       }
-      anchors.push(...readSubscriptions({ data: [body] }, target.customerId).anchors);
+      // Another customer's subscription never anchors this one's invoice.
+      const customer = typeof body.customer === "string" ? body.customer : null;
+      if (customer !== null && customer !== target.customerId)
+        anchors.push({ subscriptionId, anchor: -1 });
+      else anchors.push(...readSubscriptions({ data: [body] }, target.customerId).anchors);
     }
     const change = await ctx.runMutation(internal.billing.reconcile, {
       organizationId,
