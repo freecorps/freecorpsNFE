@@ -46,5 +46,15 @@ new RuleTester().run("no-wall-clock-in-tests", rule, {
         for (;;) { if (done()) break; await sleep(10); }`),
       errors: [{ messageId: "polling" }],
     },
+    {
+      ...test(`vi.useFakeTimers();
+        for (const attempt of [1, 2, 3]) { if (done()) break; await sleep(10); }`),
+      errors: [{ messageId: "polling" }],
+    },
+    {
+      ...test(`vi.useFakeTimers();
+        for (const key in pending) await delay(5);`),
+      errors: [{ messageId: "polling" }],
+    },
   ],
 });

@@ -54,6 +54,11 @@ new RuleTester().run("require-access-helper-in-convex-functions", rule, {
       await ctx.runQuery(internal.widgets.authorize, args);
       return ctx.runMutation(internal.widgets.save, args);
     } });`),
+    // Contexto desestruturado também é lido.
+    module(`export const list = query({ args: {}, handler: async ({ db, ...ctx }, args) => {
+      await requireMembership(ctx, args.organizationId);
+      return db.query("widgets").collect();
+    } });`),
     // Funções internas não são verificadas.
     module(`export const sweep = internalMutation({ args: {}, handler: async (ctx) => {
       for (const row of await ctx.db.query("widgets").collect()) await ctx.db.delete("widgets", row._id);
@@ -98,6 +103,32 @@ new RuleTester().run("require-access-helper-in-convex-functions", rule, {
         await requireMembership(ctx, args.organizationId);
         return data;
       } });`),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // `{ db }` desestruturado não escapa da regra.
+      ...module(
+        `export const list = query({ args: {}, handler: async ({ db }) => db.query("widgets").collect() });`,
+      ),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      ...module(
+        `export const run = action({ args: {}, handler: async ({ runQuery: read }, args) => read(internal.other.read, args) });`,
+      ),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // O alias repassado a uma função local continua sendo o contexto.
+      ...module(`async function rows(database) { return database.query("widgets").collect(); }
+      export const list = query({ args: {}, handler: async ({ db }) => rows(db) });`),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // Forma que a regra não lê reprova, em vez de passar calada.
+      ...module(
+        `export const list = query({ args: {}, handler: async ({ db: { query: q } }) => q("widgets").collect() });`,
+      ),
       errors: [{ messageId: "dataFirst" }],
     },
     {

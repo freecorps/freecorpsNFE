@@ -62,6 +62,9 @@ servidor as chama, e quem chama já conferiu.
 - **Checagem** é uma chamada a uma função de `checks` ou `wrappers` em
   `tooling/oxlint-plugin-freecorps/access-helpers.mjs`, importada ou do próprio
   módulo.
+- **Contexto** é o primeiro parâmetro do handler, inteiro (`ctx`) ou
+  desestruturado (`{ db }`, `{ runQuery: run }`); uma forma que a regra não lê,
+  como padrão aninhado, reprova.
 - **Toque em dado** é `ctx.db.query/insert/patch/replace/delete`,
   `ctx.db.system`, `ctx.runQuery/runMutation/runAction`, `ctx.scheduler`,
   `ctx.storage` ou qualquer função importada que receba `ctx`.
@@ -120,8 +123,8 @@ Teste não depende do relógio real. Num arquivo de teste sem
 - `Date.now()`, `performance.now()` e `new Date()` sem argumento;
 - `setTimeout` e `setInterval` globais ou de `node:timers/promises`.
 
-Em qualquer arquivo de teste, reprova o loop de polling: `while`, `do` ou
-`for` com `await` de uma espera (`sleep`, `delay`, timer ou
+Em qualquer arquivo de teste, reprova o loop de polling: `while`, `do`, `for`,
+`for…of` ou `for…in` com `await` de uma espera (`sleep`, `delay`, timer ou
 `new Promise((r) => setTimeout(r, n))`) dentro.
 
 | Em vez de                              | Use                                                                        |

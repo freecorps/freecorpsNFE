@@ -129,6 +129,32 @@ export default defineRule({
     }
 
     /**
+     * O contexto de um parâmetro: `ctx` inteiro (`names`) ou desestruturado (`aliases`, nome
+     * local → propriedade do contexto, como `{ db }` ou `{ runQuery: run }`). `null` quando a
+     * forma não é lida pela regra (chave calculada, padrão aninhado), que então reprova.
+     */
+    function contextOf(param) {
+      const empty = { names: new Set(), aliases: new Map() };
+      if (!param) return empty;
+      if (param.type === "AssignmentPattern") return contextOf(param.left);
+      if (param.type === "Identifier") return { names: new Set([param.name]), aliases: new Map() };
+      if (param.type !== "ObjectPattern") return null;
+      for (const property of param.properties) {
+        if (property.type === "RestElement" && property.argument.type === "Identifier") {
+          empty.names.add(property.argument.name);
+          continue;
+        }
+        const value =
+          property.value?.type === "AssignmentPattern" ? property.value.left : property.value;
+        if (property.type !== "Property" || property.computed || value?.type !== "Identifier")
+          return null;
+        empty.aliases.set(value.name, property.key.name ?? property.key.value);
+      }
+      return empty;
+    }
+    const UNREADABLE = "ctx numa forma que a regra não lê";
+
+    /**
      * `ctx.runQuery(internal.<este módulo>.fn, ...)` em que `fn` é uma função interna deste
      * arquivo cujo handler confere o acesso antes de tocar em dado.
      */
@@ -141,21 +167,24 @@ export default defineRule({
       const key = `internal:${name}`;
       if (!internals.has(name) || stack.has(key)) return false;
       const fn = handlerOf(internals.get(name));
-      const ctx = fn?.params[0];
-      if (ctx?.type !== "Identifier") return false;
-      return scan(fn, new Set([ctx.name]), new Set([...stack, key])).event?.kind === "check";
+      const ctx = fn && contextOf(fn.params[0]);
+      if (!ctx) return false;
+      return scan(fn, ctx, new Set([...stack, key])).event?.kind === "check";
     }
 
-    /** Primeiro evento decisivo do corpo de `fn`, com `ctxNames` sendo os nomes do contexto. */
-    function scan(fn, ctxNames, stack) {
+    /** Primeiro evento decisivo do corpo de `fn`, com `ctx` vindo de `contextOf`. */
+    function scan(fn, ctx, stack) {
       const state = { loaded: null };
+      const { names, aliases } = ctx;
       const isCtx = (node) => {
         const target = unwrap(node);
-        return target?.type === "Identifier" && ctxNames.has(target.name);
+        return (
+          target?.type === "Identifier" && (names.has(target.name) || aliases.has(target.name))
+        );
       };
       function classify(call) {
         const callee = unwrap(call.callee);
-        if (callee.type === "Identifier") {
+        if (callee.type === "Identifier" && !aliases.has(callee.name)) {
           const name = callee.name;
           const imported = imports.get(name);
           if ((imported && isCheckImport(imported)) || (!imported && ownChecks.has(name)))
@@ -165,9 +194,15 @@ export default defineRule({
             throw new Decided({ kind: "touch", what: `${name}(ctx)`, node: call });
           return;
         }
-        const path = memberPath(callee);
-        if (path?.length === 2 && locals.has(path.join("."))) return follow(path.join("."), call);
-        if (!path || !ctxNames.has(path[0])) {
+        const written = memberPath(callee);
+        if (written?.length === 2 && locals.has(written.join(".")))
+          return follow(written.join("."), call);
+        // `{ db }` desestruturado: `db.query(...)` é `ctx.db.query(...)`.
+        const path =
+          written && aliases.has(written[0])
+            ? ["ctx", aliases.get(written[0]), ...written.slice(1)]
+            : written;
+        if (!path || !(names.has(path[0]) || (written && aliases.has(written[0])))) {
           if (call.arguments.some(isCtx)) {
             const what = path ? `${path.join(".")}(ctx)` : "chamada com ctx";
             throw new Decided({ kind: "touch", what, node: call });
@@ -187,12 +222,20 @@ export default defineRule({
       function follow(name, call) {
         if (stack.has(name)) return;
         const target = locals.get(name);
-        const passed = new Set();
+        const passed = { names: new Set(), aliases: new Map() };
         call.arguments.forEach((argument, index) => {
+          const value = unwrap(argument);
+          if (value?.type !== "Identifier") return;
           const param = target.params[index];
-          if (isCtx(argument) && param?.type === "Identifier") passed.add(param.name);
+          if (names.has(value.name)) {
+            const inner = contextOf(param);
+            if (!inner) throw new Decided({ kind: "touch", what: UNREADABLE, node: call });
+            inner.names.forEach((n) => passed.names.add(n));
+            inner.aliases.forEach((prop, local) => passed.aliases.set(local, prop));
+          } else if (aliases.has(value.name) && param?.type === "Identifier")
+            passed.aliases.set(param.name, aliases.get(value.name));
         });
-        if (!passed.size) return;
+        if (!passed.names.size && !passed.aliases.size) return;
         const inner = scan(target, passed, new Set([...stack, name]));
         if (inner.event) throw new Decided(inner.event);
         if (inner.loaded && !state.loaded) state.loaded = inner.loaded;
@@ -255,9 +298,9 @@ export default defineRule({
     }
 
     function verdict(fn) {
-      const ctx = fn.params[0];
-      if (ctx?.type !== "Identifier") return { ok: true, checked: false };
-      const { event, loaded } = scan(fn, new Set([ctx.name]), new Set());
+      const ctx = contextOf(fn.params[0]);
+      if (!ctx) return { ok: false, messageId: "dataFirst", what: UNREADABLE, node: fn.params[0] };
+      const { event, loaded } = scan(fn, ctx, new Set());
       if (event?.kind === "check") return { ok: true, checked: true };
       if (event) return { ok: false, messageId: "dataFirst", what: event.what, node: event.node };
       if (loaded) return { ok: false, messageId: "noCheck", what: loaded.what, node: loaded.node };
@@ -352,10 +395,11 @@ export default defineRule({
             context.report({ node: program, messageId: "wrapperMissing", data: { fn: name } });
             continue;
           }
-          const ctx = fn.params[0];
-          if (ctx?.type !== "Identifier") continue;
+          const ctx = contextOf(fn.params[0]);
           ownChecks.delete(name);
-          const { event, loaded } = scan(fn, new Set([ctx.name]), new Set([name]));
+          const { event, loaded } = ctx
+            ? scan(fn, ctx, new Set([name]))
+            : { event: { kind: "touch", what: UNREADABLE, node: fn.params[0] }, loaded: null };
           ownChecks.add(name);
           if (event?.kind === "check") continue;
           const problem = event ?? loaded ?? { what: "nenhuma checagem", node: fn };

@@ -7,7 +7,7 @@ import { isTestFile, memberPath, unwrap } from "../lib/ast.mjs";
  * `new Date()` sem argumento e `setTimeout`/`setInterval` reais reprovam. Um
  * arquivo com `vi.useFakeTimers`, `vi.setSystemTime` ou `usePlatformEnvironment`
  * (que instala timers falsos) usa o relógio falso e passa. Loop de polling
- * (`while`/`for`/`do` com `await` de espera dentro) reprova sempre: use
+ * (`while`, `do` ou `for`, inclusive `for…of` e `for…in`, com `await` de espera dentro) reprova sempre: use
  * `vi.waitFor` ou `vi.waitUntil`. Benchmarks (`*.benchmark.test.ts`) medem tempo
  * de propósito e ficam de fora.
  */
@@ -15,7 +15,13 @@ const FAKE_CLOCK = /\bvi\.(useFakeTimers|setSystemTime)\s*\(|\busePlatformEnviro
 const TIMER_MODULES = new Set(["node:timers/promises", "timers/promises", "node:timers", "timers"]);
 const TIMERS = new Set(["setTimeout", "setInterval"]);
 const SLEEP_NAMES = /^(sleep|delay|wait|pause|nap)$/i;
-const LOOPS = new Set(["WhileStatement", "DoWhileStatement", "ForStatement"]);
+const LOOPS = new Set([
+  "WhileStatement",
+  "DoWhileStatement",
+  "ForStatement",
+  "ForOfStatement",
+  "ForInStatement",
+]);
 
 export default defineRule({
   meta: {
