@@ -8,6 +8,7 @@ import { components } from "../_generated/api";
 import { authComponent } from "../auth";
 import { requirePlatformEnvironment } from "../environment";
 import { closureOf, exportWindowOpen } from "./organizationClosure";
+import { clockOf } from "./clock";
 import { assertOrganizationHot } from "./coldArchiveCore";
 
 /**
@@ -66,7 +67,7 @@ export async function requireMembership(
   if (!organization) return deny();
   if (options.archived !== "allowed") await assertOrganizationHot(ctx, organizationId);
   const closure = await closureOf(ctx, organizationId);
-  if (closure && !(options.closed === "export" && exportWindowOpen(closure)))
+  if (closure && !(options.closed === "export" && exportWindowOpen(closure, clockOf(ctx))))
     return deny("ORGANIZATION_CLOSED");
   return { user, membership, organization, closure };
 }

@@ -49,7 +49,11 @@ const scope = { organizationId: v.id("organizations"), companyId: v.id("companie
  * A company as the console lists it: with the badge of its fiscal capture (#433), read in the
  * same query and bounded by the page (`boundedPagination`), never one subscription per row.
  */
-const listedCompany = companySummary.extend({ fiscalCapture: fiscalCaptureBadge });
+const listedCompany = companySummary.extend({
+  fiscalCapture: fiscalCaptureBadge,
+  /** With an `active` badge, when it turns `terms`: the console compares its clock (#45). */
+  fiscalCaptureTermsDeadline: v.union(v.number(), v.null()),
+});
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -61,7 +65,7 @@ export const list = query({
     const { membership } = await requireMembership(ctx, organizationId, { archived: "allowed" });
     const listed = async (company: Doc<"companies">) => ({
       ...summary(company),
-      fiscalCapture: await fiscalCaptureOf(ctx, membership, company),
+      ...(await fiscalCaptureOf(ctx, membership, company)),
     });
     if (companyCapabilities(membership.role).manage) {
       const result = await ctx.db
@@ -116,7 +120,7 @@ export const get = query({
     const company = access.company;
     return {
       ...summary(company),
-      fiscalCapture: await fiscalCaptureOf(ctx, membership, company),
+      ...(await fiscalCaptureOf(ctx, membership, company)),
       address: company.address,
       declaredAt: company.declaredAt,
       fieldSources: company.fieldSources,

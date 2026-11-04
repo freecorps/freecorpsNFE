@@ -40,6 +40,7 @@ import { CAPTURE_HOUR, releaseIntervalHours } from "./lib/captureValues";
 import { superviseCompany } from "./lib/captureSupervision";
 import { RELEASE_WITHDRAWN_EVENT } from "./lib/webhookAccess";
 import { emitEvent } from "./lib/webhookOutbox";
+import { clockOf } from "./lib/clock";
 
 const MAX_PROJECTS = 200;
 const MAX_KEYS_PER_PROJECT = 500;
@@ -52,7 +53,7 @@ const validInterval = (hours: number) => Number.isSafeInteger(hours) && hours >=
 async function activeOwnCertificate(ctx: QueryCtx, company: Doc<"companies">) {
   const head = await certificateHead(ctx, company._id);
   const cert = head?.activeId ? await ctx.db.get("certificates", head.activeId) : null;
-  return !!cert && ownCertificate(company, cert);
+  return !!cert && ownCertificate(company, cert, clockOf(ctx));
 }
 
 /**
@@ -268,7 +269,8 @@ const statusValue = v.object({
    * whether it passed, when the queries wait for the acceptance; `null` otherwise.
    */
   termsUpdate: v.union(
-    v.object({ version: v.string(), deadline: v.number(), expired: v.boolean() }),
+    // Whether `deadline` passed is the console's clock: a query never reads it (#45).
+    v.object({ version: v.string(), deadline: v.number() }),
     v.null(),
   ),
 });

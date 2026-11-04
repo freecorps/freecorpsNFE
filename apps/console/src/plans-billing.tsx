@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAction } from "convex/react";
+import { useMinute, useSettled } from "./product-components";
 import type { FunctionReturnType } from "convex/server";
 import { ConvexError } from "convex/values";
 import { api } from "../../../platform/convex/_generated/api";
@@ -127,7 +128,9 @@ export function PlanBilling({ org, contextKey }: { org: Organization; contextKey
   );
 }
 function BillingQuery({ org }: { org: Organization }) {
-  const data = useQuery(api.billing.overview, { organizationId: org.id });
+  // The server's query never reads the clock (#45): the page passes the minute.
+  const asOf = useMinute();
+  const data = useSettled(useQuery(api.billing.overview, { organizationId: org.id, asOf }), org.id);
   if (data === undefined)
     return (
       <p className="gestao-help" aria-busy="true">

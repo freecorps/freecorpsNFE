@@ -8,12 +8,17 @@ import { canManageProject } from "./projectAccess";
 import { requirePlatformEnvironment } from "../environment";
 import { environmentServed, organizationEnvironmentServed } from "./environmentAccess";
 import { closureOf, exportWindowOpen } from "./organizationClosure";
+import { clockOf } from "./clock";
 
 /**
- * Re-check the accepting actor, including epochs, even in workers and bearer tickets. A query
- * passes `now` from its caller and never reads the clock (#45).
+ * Re-check the accepting actor, including epochs, even in workers and bearer tickets. The
+ * worker's queries pass their caller's `now`; any other query never reads the clock (`clockOf`).
  */
-export async function exportAllowed(ctx: QueryCtx, job: Doc<"documentExports">, now = Date.now()) {
+export async function exportAllowed(
+  ctx: QueryCtx,
+  job: Doc<"documentExports">,
+  now: number | null = clockOf(ctx),
+) {
   requirePlatformEnvironment();
   // The destination job of an assisted export has no actor: no ticket is ever issued for it,
   // and it only runs where the organization does not exist (ADR 0009, §7).
@@ -111,12 +116,13 @@ export async function exportActor(ctx: QueryCtx, job: Doc<"documentExports">, ke
   }
   await exportAllowed(ctx, job);
 }
-export function summarizeExport(job: Doc<"documentExports">) {
+/** `now` is `null` in a query (`clockOf`): `exports.expire` persists `expired` at `expiresAt`. */
+export function summarizeExport(job: Doc<"documentExports">, now: number | null) {
   return {
     id: job._id,
     selection: job.selection,
     environment: job.environment,
-    state: job.expiresAt <= Date.now() ? ("expired" as const) : job.state,
+    state: now !== null && job.expiresAt <= now ? ("expired" as const) : job.state,
     createdAt: job.createdAt,
     expiresAt: job.expiresAt,
     parts: job.sequence,

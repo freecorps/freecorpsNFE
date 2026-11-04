@@ -97,7 +97,13 @@ await withLocalBrowser(root, "plans", async () => {
     return body.value;
   }
   const overview = () =>
-    rpc("query", "plans:overview", { organizationId, contextKey: "plans-browser" }, false);
+    rpc(
+      "query",
+      "plans:overview",
+      // The query never reads the clock (#45): the caller passes it, as the page does.
+      { organizationId, contextKey: "plans-browser", asOf: Date.now() },
+      false,
+    );
   const usage = () =>
     rpc(
       "query",

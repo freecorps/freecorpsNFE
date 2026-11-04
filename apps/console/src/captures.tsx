@@ -16,7 +16,7 @@ import {
 } from "./capture-messages";
 import { usageAudience } from "./usage-messages";
 import { useProductEnvironment } from "./product-environment";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useQuery } from "./convex-query";
@@ -1270,6 +1270,29 @@ function useSituationAnnouncement(
 }
 
 /**
+ * The stream as the panel shows it, with the deadlines the server returns instead of comparing
+ * them, because its query never reads the clock (#45); the console compares them with its own.
+ * From `termsDeadline` on, an active production stream waits for the new terms (#428,
+ * `CAPTURE_TERMS_PENDING`). From `certificateExpiresAt` on, the A1 reads expired, even before
+ * `certificates.expire` records it.
+ */
+function useStreamClock(stream: Stream | null | undefined): Stream | null | undefined {
+  const deadline = stream?.termsDeadline ?? null;
+  const expiresAt = stream?.certificateState === "active" ? stream.certificateExpiresAt : null;
+  const termsNow = useNow(deadline),
+    certificateNow = useNow(expiresAt);
+  const pending = deadline !== null && termsNow >= deadline;
+  const expired = expiresAt !== null && certificateNow >= expiresAt;
+  return useMemo(() => {
+    if (!stream || (!pending && !expired)) return stream;
+    const shown = expired ? { ...stream, certificateState: "expired" } : stream;
+    if (!pending) return shown;
+    const { notesQuota: _quota, ...rest } = shown;
+    return { ...rest, code: "CAPTURE_TERMS_PENDING", freecorpsCut: false };
+  }, [stream, pending, expired]);
+}
+
+/**
  * The capture tab (#432), in the environment chosen in the shell (ADR 0007, §1). Sandbox: the test
  * capture, and, while the company never used Produção but the deployment offers it, the card
  * that releases it; releasing moves the console to Produção. Produção: the company's release and
@@ -1289,14 +1312,18 @@ export function Captures({ org, companyId }: { org: Organization; companyId: Id<
   const { environment: chosen, offered, choose } = useProductEnvironment();
   // A production deployment (#50) keeps its own page: there is no Produção beside it.
   const inProduction = deployment.environment !== "production" && chosen === "production";
-  const productionStream = useQuery(
-    api.captures.get,
-    canRead && used && inProduction ? { ...ids, environment: "production" } : "skip",
+  const productionStream = useStreamClock(
+    useQuery(
+      api.captures.get,
+      canRead && used && inProduction ? { ...ids, environment: "production" } : "skip",
+    ),
   );
   // Each environment reads only its own stream.
-  const sandboxStream = useQuery(
-    api.captures.get,
-    canRead && !inProduction ? { ...ids, environment: "sandbox" } : "skip",
+  const sandboxStream = useStreamClock(
+    useQuery(
+      api.captures.get,
+      canRead && !inProduction ? { ...ids, environment: "sandbox" } : "skip",
+    ),
   );
   const message = useSituationAnnouncement([
     inProduction && production && (!used || productionStream !== undefined)

@@ -56,13 +56,14 @@ export const CAPTURE_TERMS_PENDING = "CAPTURE_TERMS_PENDING";
 /**
  * How the terms a release accepted stand against the current version: `null` when they are the
  * current one; otherwise the deadline to accept it (midnight in Brasília, `since` plus
- * `CAPTURE_TERMS_REACCEPT_DAYS`) and whether it passed. Unknown terms count as older.
+ * `CAPTURE_TERMS_REACCEPT_DAYS`). Unknown terms count as older. Whether the deadline passed is the
+ * caller's clock: a mutation's, or the console's for what it shows (#45).
  */
-export function termsStanding(accepted: string | null, now = Date.now()) {
+export function termsStanding(accepted: string | null) {
   if (accepted === CAPTURE_TERMS_VERSION) return null;
   const since = Date.parse(`${CAPTURE_TERMS_ARCHIVE[CAPTURE_TERMS_VERSION]!.since}T00:00:00-03:00`);
   const deadline = since + CAPTURE_TERMS_REACCEPT_DAYS * 86_400_000;
-  return { version: CAPTURE_TERMS_VERSION, deadline, expired: now >= deadline };
+  return { version: CAPTURE_TERMS_VERSION, deadline };
 }
 
 /**
@@ -87,15 +88,19 @@ export async function termsEvent(ctx: QueryCtx, release: Doc<"captureReleases">)
     : null;
 }
 
-/** Whether a released company's production queries wait for the current terms (#428). */
-export async function captureTermsExpired(
-  ctx: QueryCtx,
-  company: Doc<"companies">,
-  now = Date.now(),
-) {
+/**
+ * The deadline after which a released company's production queries wait for the current terms
+ * (#428), or `null` when its terms are current or it is not released.
+ */
+export async function captureTermsDeadline(ctx: QueryCtx, company: Doc<"companies">) {
   const release = await captureRelease(ctx, company);
-  if (!release?.released) return false;
-  return termsStanding((await termsEvent(ctx, release))?.terms ?? null, now)?.expired ?? false;
+  if (!release?.released) return null;
+  return termsStanding((await termsEvent(ctx, release))?.terms ?? null)?.deadline ?? null;
+}
+/** Whether a released company's production queries wait for the current terms (#428). */
+export async function captureTermsExpired(ctx: QueryCtx, company: Doc<"companies">, now: number) {
+  const deadline = await captureTermsDeadline(ctx, company);
+  return deadline !== null && now >= deadline;
 }
 
 /**
@@ -125,17 +130,20 @@ export async function captureRelease(ctx: QueryCtx, company: Doc<"companies">) {
   return release?.organizationId === company.organizationId ? release : null;
 }
 
-/** The company's own A1: active, with the company's CNPJ and still valid (ADR 0003). */
+/**
+ * The company's own A1: active, with the company's CNPJ and still valid (ADR 0003). A query
+ * passes `null` (`clockOf`): `certificates.expire`, scheduled for `notAfter`, ends `active`.
+ */
 export function ownCertificate(
   company: Doc<"companies">,
   cert: Doc<"certificates">,
-  now = Date.now(),
+  now: number | null,
 ) {
   return (
     cert.companyId === company._id &&
     cert.organizationId === company.organizationId &&
     cert.state === "active" &&
     cert.metadata?.cnpj === company.cnpj &&
-    cert.metadata.notAfter > now
+    (now === null || cert.metadata.notAfter > now)
   );
 }

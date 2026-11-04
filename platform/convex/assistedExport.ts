@@ -86,7 +86,7 @@ async function stillOwner(ctx: MutationCtx, request: Doc<"assistedExports">) {
 }
 async function openForExport(ctx: MutationCtx, organizationId: Id<"organizations">) {
   const closure = await closureOf(ctx, organizationId);
-  if (closure && !exportWindowOpen(closure)) deny("ORGANIZATION_CLOSED");
+  if (closure && !exportWindowOpen(closure, Date.now())) deny("ORGANIZATION_CLOSED");
 }
 
 const requestResult = v.object({

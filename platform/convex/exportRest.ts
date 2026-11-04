@@ -69,7 +69,7 @@ export const dispatch = internalMutation({
         target: job._id,
       });
       await ctx.scheduler.runAfter(0, internal.exports.expire, { exportId: job._id });
-      return JSON.stringify(summarizeExport({ ...job, state: "revoked" }));
+      return JSON.stringify(summarizeExport({ ...job, state: "revoked" }, Date.now()));
     }
     if (match![2] === "parts") {
       if (job.state !== "succeeded" || job.expiresAt <= Date.now()) return deny("NOT_FOUND");
@@ -86,7 +86,7 @@ export const dispatch = internalMutation({
         nextCursor: page.isDone ? null : page.continueCursor,
       });
     }
-    return JSON.stringify(summarizeExport(job));
+    return JSON.stringify(summarizeExport(job, Date.now()));
   },
 });
 export const route = jsonRoute({ notFound: "Exportação não encontrada." }, async (input) => {

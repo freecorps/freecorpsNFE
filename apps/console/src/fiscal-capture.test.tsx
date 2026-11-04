@@ -373,13 +373,14 @@ describe("intervalo sem desativar (#432)", () => {
 describe("novos termos para quem já liberou (#428)", () => {
   // 21/11/2026 00:00 in Brasília: the last day to accept is 20/11.
   const deadline = Date.UTC(2026, 10, 21, 3);
-  const update = (expired: boolean) => ({
+  // The server returns the deadline; the console compares it with its own clock (#45).
+  const update = () => ({
     state: "released",
-    termsUpdate: { version: "captura-fiscal-2026-10-22", deadline, expired },
+    termsUpdate: { version: "captura-fiscal-2026-10-22", deadline },
   });
   it("antes do prazo, avisa até quando aceitar; o gestor lê o texto e aceita", async () => {
     state.mutate.mockResolvedValue({ terms: "captura-fiscal-2026-10-22" });
-    show(update(false));
+    show(update());
     expect(screen.getByText("Novos termos da captura fiscal")).toBeTruthy();
     expect(screen.getByText(/até 20\/11\/2026; depois disso, as consultas/)).toBeTruthy();
     fireEvent.click(screen.getByText("Ler e aceitar os novos termos"));
@@ -396,8 +397,24 @@ describe("novos termos para quem já liberou (#428)", () => {
       terms: "captura-fiscal-2026-10-22",
     });
   });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.setSystemTime(new Date("2026-06-15T15:00:00Z"));
+  });
+  it("o aviso muda sozinho quando o prazo passa com a página aberta", () => {
+    vi.useFakeTimers({ now: deadline - 1_000 });
+    show(update());
+    expect(screen.getByText("Novos termos da captura fiscal")).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(1_100);
+    });
+    expect(
+      screen.getByText("Consultas à Receita pausadas até o aceite dos novos termos"),
+    ).toBeTruthy();
+  });
   it("depois do prazo, diz que as consultas esperam o aceite e o que continua", () => {
-    show(update(true));
+    vi.setSystemTime(deadline);
+    show(update());
     expect(
       screen.getByText("Consultas à Receita pausadas até o aceite dos novos termos"),
     ).toBeTruthy();
@@ -406,7 +423,7 @@ describe("novos termos para quem já liberou (#428)", () => {
     expect(screen.getByText("Captura fiscal ativa")).toBeTruthy();
   });
   it("sem papel de gestão, só o aviso", () => {
-    show({ ...update(false), canManage: false });
+    show({ ...update(), canManage: false });
     expect(
       screen.getByText("Somente Proprietário ou Administrador aceita os novos termos."),
     ).toBeTruthy();

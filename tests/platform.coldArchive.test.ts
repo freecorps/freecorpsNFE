@@ -392,6 +392,7 @@ it("denies unauthorized tenant reads and keeps other tenants hot", async () => {
   const outsider = await person(f.t, other.organizationId, "owner");
   await expect(
     outsider.query(api.plans.overview, {
+      asOf: Date.now(),
       organizationId: f.scope.organizationId,
       contextKey: "cold-test",
     }),

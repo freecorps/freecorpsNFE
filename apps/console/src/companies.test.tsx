@@ -482,6 +482,7 @@ describe("selo da captura fiscal (#433)", () => {
     kind: "declared",
     version: 1,
     fiscalCapture,
+    fiscalCaptureTermsDeadline: null,
   });
   const badge = (text: string) => screen.getByText(text, { selector: ".ui-badge" });
 
@@ -507,6 +508,25 @@ describe("selo da captura fiscal (#433)", () => {
     state.list = [listed("c6", "Sem captura", null)];
     render(<Companies org={org()} contextKey="k" />);
     expect(screen.queryByRole("columnheader", { name: "Captura fiscal" })).toBeNull();
+  });
+  it("o selo ativo passa a aguardar os novos termos quando o prazo vence (#428)", () => {
+    // The server returns the deadline; the console compares it with its own clock (#45).
+    vi.useFakeTimers({ now: new Date("2026-11-20T15:00:00Z") });
+    try {
+      state.list = [
+        { ...listed("c1", "Vencida", "active"), fiscalCaptureTermsDeadline: Date.now() - 1 },
+        { ...listed("c2", "Vencendo", "active"), fiscalCaptureTermsDeadline: Date.now() + 1_000 },
+      ];
+      render(<Companies org={org()} contextKey="k" />);
+      expect(screen.getAllByText("Captura fiscal aguardando novos termos")).toHaveLength(1);
+      expect(badge("Captura fiscal ativa")).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(1_100);
+      });
+      expect(screen.getAllByText("Captura fiscal aguardando novos termos")).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it("na lista, a linha abre a empresa e só a demonstração leva selo", () => {
     state.list = [

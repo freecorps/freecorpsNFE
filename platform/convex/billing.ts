@@ -140,8 +140,12 @@ const reviewItem = v.object({
   amountCents: v.union(v.number(), v.null()),
   createdAt: v.number(),
 });
+/**
+ * The card's billing. `asOf` is the console's clock, rounded to the minute: a query never reads
+ * the clock (#45). It only shapes what the page shows and enables; the mutations decide.
+ */
 export const overview = query({
-  args: scope,
+  args: { ...scope, asOf: v.number() },
   returns: v.object({
     card: v.boolean(),
     account: v.union(
@@ -218,7 +222,7 @@ export const overview = query({
     } catch {
       // Misconfigured card billing reads as unavailable; Pix, if switched on, keeps working.
     }
-    const now = Date.now();
+    const now = args.asOf;
     const current = await planFor(ctx, args.organizationId);
     const plan =
       current && current.startsAt <= now && !planEnded(current, now)
@@ -252,7 +256,7 @@ export const overview = query({
       (await termsInForce(ctx, args.organizationId, now)).some(
         (term) => term.stripeSubscriptionId === subscriptionId,
       );
-    const checkout = await openCheckout(ctx, args.organizationId, Date.now());
+    const checkout = await openCheckout(ctx, args.organizationId, now);
     const events = await ctx.db
       .query("billingEvents")
       .withIndex("by_organizationId_and_review", (q) =>

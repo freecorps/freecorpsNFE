@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAction, useMutation } from "convex/react";
+import { useMinute, useSettled } from "./product-components";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../platform/convex/_generated/api";
 import { ConvexError } from "convex/values";
@@ -157,7 +158,12 @@ export function Plans({ org, contextKey }: { org: Organization; contextKey: stri
   );
 }
 function PlansQuery({ org, contextKey }: { org: Organization; contextKey: string }) {
-  const data = useQuery(plansApi.overview, { organizationId: org.id, contextKey });
+  // The server's query never reads the clock (#45): the page passes the minute.
+  const asOf = useMinute();
+  const data = useSettled(
+    useQuery(plansApi.overview, { organizationId: org.id, contextKey, asOf }),
+    org.id,
+  );
   if (data === undefined)
     return (
       <p className="gestao-help" aria-busy="true">

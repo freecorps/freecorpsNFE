@@ -242,7 +242,7 @@ async function pixAnnualStart(
   if (plan?.catalogTier === "custom")
     return { start: null, code: "PLAN_UNAVAILABLE", availableAt: null };
   // One payment method at a time: a renewing card or an open Checkout would charge twice.
-  if (await cardBlocksPix(ctx, organizationId))
+  if (await cardBlocksPix(ctx, organizationId, now))
     return { start: null, code: "PAYMENT_METHOD_CARD", availableAt: null };
   const scheduled = await renewalWait(ctx, organizationId, now);
   if (scheduled) return scheduled;
@@ -364,7 +364,7 @@ async function pixMonthlyStart(
   const plan = await planFor(ctx, organizationId);
   if (plan?.catalogTier === "custom")
     return { start: null, code: "PLAN_UNAVAILABLE", availableAt: null };
-  if (await cardBlocksPix(ctx, organizationId))
+  if (await cardBlocksPix(ctx, organizationId, now))
     return { start: null, code: "PAYMENT_METHOD_CARD", availableAt: null };
   const scheduled = await renewalWait(ctx, organizationId, now);
   // The paid renewal keeps its own tier; the upgrade raises only the month in force.
@@ -562,8 +562,12 @@ export const refreshExpiry = internalMutation({
   },
 });
 
+/**
+ * The plans page. `asOf` is the console's clock, rounded to the minute: a query never reads the
+ * clock (#45). It only shapes what the page shows and enables; every mutation decides with its own.
+ */
 export const overview = query({
-  args: { ...scope, contextKey: v.string() },
+  args: { ...scope, contextKey: v.string(), asOf: v.number() },
   returns: v.object({
     enabled: v.boolean(),
     offers: v.array(offerValue),
@@ -686,7 +690,7 @@ export const overview = query({
       .unique();
     const enabled = settings?.enabled === true;
     const annualOnSale = annualOn(settings);
-    const now = Date.now();
+    const now = args.asOf;
     const monthlyStart = {
       intermediate: await monthlyStartView(ctx, args.organizationId, now, "intermediate"),
       large: await monthlyStartView(ctx, args.organizationId, now, "large"),
@@ -696,7 +700,7 @@ export const overview = query({
     const archive = await archiveStatus(ctx, args.organizationId);
     const canClaimFree =
       enabled &&
-      settings!.admissionsUntil > Date.now() &&
+      settings!.admissionsUntil > now &&
       membership.role === "owner" &&
       !plan &&
       !claim &&
@@ -708,7 +712,7 @@ export const overview = query({
         : {}),
       ...(enabled
         ? {
-            stock: await getCapacityUsage(ctx, args.organizationId),
+            stock: await getCapacityUsage(ctx, args.organizationId, now),
             archive: archive ? { state: archive.state, eligibleAt: archive.eligibleAt } : null,
           }
         : {}),
@@ -886,7 +890,7 @@ export const requestPaid = mutation({
     if (await pendingRequest(ctx, args.organizationId, now)) deny("PLAN_REQUEST_PENDING");
     // One payment method at a time: a renewing card or an open Checkout would charge twice, and
     // an annual term must never be created beside a card that still renews monthly.
-    if (await cardBlocksPix(ctx, args.organizationId)) deny("PAYMENT_METHOD_CARD");
+    if (await cardBlocksPix(ctx, args.organizationId, now)) deny("PAYMENT_METHOD_CARD");
     const plan = await planFor(ctx, args.organizationId);
     if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
     const offer = PLATFORM_PLANS[args.tier];
@@ -978,7 +982,7 @@ async function requestUpgrade(
   // The upgrade is paid as the term was: a card term by the card Checkout.
   if (term.source !== "pix") deny("PAYMENT_METHOD_CARD");
   if (await pendingRequest(ctx, args.organizationId, now)) deny("PLAN_REQUEST_PENDING");
-  if (await cardBlocksPix(ctx, args.organizationId)) deny("PAYMENT_METHOD_CARD");
+  if (await cardBlocksPix(ctx, args.organizationId, now)) deny("PAYMENT_METHOD_CARD");
   const plan = await planFor(ctx, args.organizationId);
   if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
   const month = termMonth(term, now);
