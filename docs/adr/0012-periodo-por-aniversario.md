@@ -86,15 +86,19 @@ R$ 1.490 − 4 × R$ 149 = R$ 894 e mantém o acesso até 15/02 às 14:30.
   `billing_cycle_anchor` do Stripe; no Pix, a confirmação truncada ao
   segundo. Sem âncora, o período é o mês civil UTC.
 - A chave do período depende só do início dele. Um início no dia 1, às
-  00:00:00.000 UTC, tem a chave `AAAA-MM`; qualquer outro, o instante em
-  ISO 8601 UTC, como `2026-11-15T14:30:00.000Z`. Só essas formas são
-  aceitas, e o ISO de um dia 1 à meia-noite é recusado. As linhas `AAAA-MM`
-  atuais continuam válidas, uma âncora no dia 1 às 00:00 dá as chaves de
-  hoje, e a ordem alfabética das chaves é a cronológica.
+  00:00:00.000 UTC, tem a chave `AAAA-MM`; qualquer outro, o instante na
+  forma exata de `Date.prototype.toISOString()`, `AAAA-MM-DDTHH:mm:ss.sssZ`,
+  como `2026-11-15T14:30:00.000Z`. Só essas duas formas são aceitas: outra
+  escrita do mesmo instante (sem milissegundos, com `+00:00`) e o ISO de um
+  dia 1 à meia-noite são recusados. As linhas `AAAA-MM` atuais continuam
+  válidas, uma âncora no dia 1 às 00:00 dá as chaves de hoje, e a ordem
+  alfabética das chaves canônicas é a cronológica.
 - `quotaPeriod(plano, instante)` devolve o mês civil do instante quando o
   plano não tem âncora ou o instante é anterior a ela. Nos outros casos,
   devolve o mês da âncora que contém o instante, do k-ésimo ao (k+1)-ésimo
-  aniversário.
+  aniversário. Um instante anterior à âncora só aparece quando a linha lida
+  ainda não começou, como um plano agendado: até a âncora, a organização
+  continua no regime civil em que já estava, sem chave ancorada.
 
 | Mudança                                                            | Âncora                                                                                         |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -111,7 +115,10 @@ Invariantes:
 1. O período de um contador é resolvido uma vez, na reserva, pelo plano lido
    na mesma transação, em vigor ou não. A liquidação usa o período gravado.
 2. Toda chave gravada é canônica.
-3. Sob uma âncora, os períodos são contíguos e semiabertos.
+3. Sob uma âncora, os períodos de cota são contíguos e semiabertos, porque
+   todos saem da âncora original. O intervalo do 29/02, em
+   [Consequências](#consequências), é entre termos anuais, não entre
+   períodos de cota.
 4. Uma linha paga do catálogo tem âncora até `startsAt`, e `endsAt` é um
    aniversário dela. Uma linha do Gratuito não tem âncora. A exigência de
    âncora em toda linha paga entra com o mensal no cartão (fatia 2a).
