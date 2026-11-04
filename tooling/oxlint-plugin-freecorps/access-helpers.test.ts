@@ -22,7 +22,7 @@ const exportsOf = (module: string) =>
     .sort();
 
 const accessModules = readdirSync(`${convex}lib`)
-  .filter((file) => /Access\.ts$/.test(file))
+  .filter((file) => file.endsWith("Access.ts"))
   .map((file) => `lib/${file.replace(/\.ts$/, "")}`)
   .sort();
 

@@ -2628,8 +2628,8 @@ it("um arquivo cujo outro dono não pode ser lido desfaz o lote e não apaga a l
   await f.t.run(async (ctx) => {
     const { _id, _creationTime, ...file } = (await ctx.db.query("importFiles").first())!;
     const {
-      _id: importId,
-      _creationTime: created,
+      _id: _importId,
+      _creationTime: _created,
       ...source
     } = (await ctx.db.query("imports").first())!;
     const gone = await ctx.db.insert("imports", source);

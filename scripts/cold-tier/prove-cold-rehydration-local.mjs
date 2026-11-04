@@ -35,7 +35,6 @@ import {
 } from "../lib/cold-tier-proof.mjs";
 import { r2Client } from "../lib/offsite-backup.mjs";
 import {
-  canonical,
   compactCatalog,
   createArchive,
   publishArchive,
@@ -70,7 +69,6 @@ const step = (name, value) => {
 let failed = false;
 let receipt;
 let cleanup = async () => {};
-const DAY = 86_400_000;
 const ARCHIVE_VARIABLES = { FNFE_COLD_ARCHIVE: "enabled" };
 
 try {

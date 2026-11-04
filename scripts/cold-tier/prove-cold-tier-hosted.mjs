@@ -54,6 +54,8 @@ if (process.argv.includes("--help")) {
 const root = repoRoot;
 const receiptPath = join(root, "docs/v1.0/evidence/689/receipts/hosted.json");
 const secrets = [];
+// A ordem padrão de sort(), por unidade de código, explícita.
+const byCodeUnit = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const report = {
   version: 1,
   issue: 689,
@@ -399,8 +401,8 @@ try {
     const references = await coldDocumentReferences(entries);
     const expected = Object.values(objects)
       .flatMap((o) => [o.contentKey, o.originalKey])
-      .sort();
-    assert.deepEqual(references.references.map((r) => r.key).sort(), expected);
+      .sort(byCodeUnit);
+    assert.deepEqual(references.references.map((r) => r.key).sort(byCodeUnit), expected);
     const reader = r2Client({
       accountId: COLD_ACCOUNT,
       bucket: COLD_BUCKET,
@@ -438,8 +440,8 @@ try {
     documentId: notes.old500.documentId,
   });
   assert.deepEqual(
-    [...queued].sort(),
-    [objects.old500.contentKey, objects.old500.originalKey].sort(),
+    [...queued].sort(byCodeUnit),
+    [objects.old500.contentKey, objects.old500.originalKey].sort(byCodeUnit),
   );
   const orphanKey = await call("action", "testing/coldTierProof:orphan", { organizationId });
   assert.ok(await bucket.head(orphanKey));
