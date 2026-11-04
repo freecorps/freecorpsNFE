@@ -63,6 +63,6 @@ if (record?.startedBySkill && !decision.keep) rmSync(recordFile, { force: true }
 const operation = readOperation(worktreePaths(root));
 if (decision.stop && operation.command === "dev" && operation.state === "interrupted")
   console.log(
-    "stop-dev: a trava do dev ficou sem dono. Confira com bun run worktree:status que nenhum processo deste worktree roda e peça a quem cuida do checkout para removê-la.",
+    "stop-dev: a trava do dev ficou sem dono. Rode bun run worktree:cleanup: ele encerra os filhos registrados desse dev e a libera.",
   );
 else if (decision.stop) console.log(`stop-dev: dev encerrado${forced ? " à força" : ""}.`);
