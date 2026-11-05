@@ -1104,7 +1104,8 @@ e-mail único, "manter ativa" com os papéis recusados e outra organização, o
 encerramento recusado antes do prazo, feito uma vez depois dele e seguido do
 expurgo antecipado, e o cancelamento por atividade ou por dado de Produção,
 inclusive a NF-e recebida com `tpAmb` 1 ou sem a marca (#108).
-`scripts/cold-tier/cold-archive.test.ts` usa age real quando instalado e uma fixture
+`scripts/cold-tier/cold-archive.test.ts` usa age real (pendente sem ele numa
+máquina local, obrigatório no CI) e uma fixture
 XML, compara ZIP/JSONL/metadados/bytes e recusa corrupção, inclusive a
 restauração sem as linhas da cerca. Na compactação do catálogo, com age real
 e o R2 simulado, cobre o objeto e o manifesto publicados, a recusa de

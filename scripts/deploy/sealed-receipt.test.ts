@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ageBinaries, hasAge as ageAvailable } from "../../tests/helpers/age";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import plan from "../../deploy/offsite-backup.json";
@@ -142,9 +143,8 @@ describe("recibo público e recibo cifrado dos workflows", () => {
     expect(ageEncrypt("texto", ["age1a"], { spawn: missing })).toBeNull();
   });
 
-  const age = process.env.AGE_BIN || "age";
-  const keygen = process.env.AGE_KEYGEN_BIN || "age-keygen";
-  const hasAge = spawnSync(age, ["--version"], { windowsHide: true }).status === 0;
+  const { age, keygen } = ageBinaries();
+  const hasAge = ageAvailable();
   it.skipIf(!hasAge)("com o age instalado, o custodiante decifra a resposta completa", () => {
     const directory = scratch();
     const identity = join(directory, "identity.txt");
