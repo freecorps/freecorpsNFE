@@ -362,7 +362,8 @@ O encerramento grava `organizationClosures` e vale na mesma transação: o
 console recusa as funções da organização com `ORGANIZATION_CLOSED`, as chaves
 de API passam a receber `INVALID_API_KEY` e as operações em andamento perdem
 o acesso. Em seguida, uma tarefa em lotes desativa projetos, revoga as chaves,
-desativa webhooks e monitores e revoga convites abertos.
+desativa webhooks e monitores e revoga convites abertos. Antes dessa tarefa,
+a conferência e o aceite de convite já recusam com `INVITATION_UNAVAILABLE`.
 
 Quando ninguém consegue entrar para encerrar (sobras sintéticas de teste de
 carga, organizações de teste), a Freecorps usa a função interna
