@@ -1819,6 +1819,32 @@ it("the history obeys the capture's access and the stream's organization (#433)"
   });
   expect(await owner.query(api.captures.history, companyScope(f))).toEqual([]);
 });
+it("accepted losses show only the stream's organization after a transfer", async () => {
+  const f = await fixture();
+  await f.command("activate");
+  const other = await fixture(f.t);
+  const owner = await person(f.t, f.scope.organizationId, "owner");
+  // One loss accepted by the organization the capture came from, one by the current one.
+  await f.t.run(async (ctx) => {
+    const stream = (await ctx.db.query("captureStreams").first())!;
+    const accepted = (organizationId: Id<"organizations">, from: string, reason: string) =>
+      ctx.db.insert("captureAudit", {
+        streamId: stream._id,
+        organizationId,
+        action: "history_limited",
+        actor: "system",
+        checkpoint: stream.checkpoint,
+        lost: { from, to: from, confirmedVersion: 1, reason },
+        createdAt: Date.now(),
+      });
+    await accepted(other.scope.organizationId, "1", "Justificativa da organização anterior");
+    await accepted(f.scope.organizationId, "2", "Justificativa da organização atual");
+  });
+  const view = await owner.query(api.captures.get, companyScope(f));
+  expect(view!.gap.accepted).toEqual([
+    expect.objectContaining({ from: "2", reason: "Justificativa da organização atual" }),
+  ]);
+});
 it("counts and lists the documents that arrived only as the summary (#433)", async () => {
   const f = await fixture();
   // A new session at each reading: the clock moves an hour at each query.

@@ -305,7 +305,11 @@ const rangeOf = (from: string, to: string) => ({
   to,
   count: Number(BigInt(to) - BigInt(from) + 1n),
 });
-/** Accepted losses shown in the console, newest first. */
+/**
+ * Accepted losses shown in the console, newest first: only rows of the stream's current
+ * organization, so a capture received by transfer does not show the reasons the organization it
+ * came from wrote, as in `history`.
+ */
 const ACCEPTED_SHOWN = 5;
 async function gapView(ctx: QueryCtx, stream: Doc<"captureStreams">) {
   const lost = await lostRange(ctx, stream);
@@ -320,7 +324,7 @@ async function gapView(ctx: QueryCtx, stream: Doc<"captureStreams">) {
     .take(ACCEPTED_SHOWN);
   const accepted = [];
   for (const row of rows) {
-    if (!row.lost) continue;
+    if (!row.lost || row.organizationId !== stream.organizationId) continue;
     const id = row.actor.startsWith("member:")
       ? ctx.db.normalizeId("memberships", row.actor.slice("member:".length))
       : null;
