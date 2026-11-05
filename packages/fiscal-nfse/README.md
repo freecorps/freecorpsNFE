@@ -149,6 +149,13 @@ Mensagens de assinatura nunca repetem material de chave. `DPS_SCHEMA_INVALID`
 e `EVENT_SCHEMA_INVALID` dizem o elemento e a regra do XSD que falharam; em
 `issue` e `cancel` viram desfecho `definitive` com `sent: false`.
 
+`signDps` e `signEvent` só assinam um XML com um único alvo, filho direto da
+raiz (`DPS/infDPS` ou `pedRegEvento/infPedReg`) e com o `Id` informado; outro
+formato é recusado com `SIGNATURE_TARGET_INVALID`. `verifySignature` devolve
+`false`, sem calcular digest nem conferir o `SignatureValue`, quando o XML não
+tem exatamente uma `Signature`, filha da raiz, com uma única `Reference` para
+o `Id` desse alvo e as transformações que o signer grava (enveloped e C14N).
+
 O subcaminho `@freecorps/fiscal-nfse/pure` exporta só o que não depende de
 Node (`node:zlib`, `xml-crypto`, `@xmldom`): `resolveRoute`, `ROUTE_RULES`,
 `ibsCbsRequirement`, `IBSCBS_RULES`, `subitemFromCTribNac`, `buildDpsId`, `dhBrasilia`, `hojeBrasilia`,
