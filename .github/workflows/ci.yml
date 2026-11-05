@@ -144,6 +144,22 @@ jobs:
           else
             echo "The artifact has no task cache; keeping main's"
           fi
+      # The cipher tests of the cold archive, the incremental backup and the
+      # sealed receipt run the real age, from the release and checksum the
+      # backup verifies. On PATH, not AGE_BIN: a test task receives only the
+      # variables Vite Task passes through. With CI=true a missing age fails
+      # those tests instead of skipping them (tests/helpers/age.ts).
+      - name: Install pinned age
+        if: steps.changes.outputs.mode == 'graph'
+        timeout-minutes: 2
+        env:
+          AGE_VERSION: v1.3.2
+          AGE_SHA256: cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10
+        run: |
+          curl -fsSL --retry 3 --retry-all-errors --max-time 60 -o "$RUNNER_TEMP/age.tar.gz" "https://github.com/FiloSottile/age/releases/download/$AGE_VERSION/age-$AGE_VERSION-linux-amd64.tar.gz"
+          echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
       # The graph in vite.config.ts: fiscal packages, REST contract, SDK and XML
       # consumer proofs, format/lint/types, tsc, one test task per area,
       # Wrangler tooling, validation console and auth proxy proof, in dependency

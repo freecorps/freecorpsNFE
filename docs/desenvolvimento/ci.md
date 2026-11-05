@@ -173,7 +173,12 @@ os testes de fato rodaram). O recibo é a saída guardada no cache: uma repetiç
 o restaura para as mesmas entradas. Ele não lê `revision.json`, que muda a cada
 commit. `ci:tests` junta os recibos em `tests.json`, sob a revisão do checkout,
 e reprova se uma área falta, falhou ou contou outro número de arquivos que os
-dela no checkout. `node scripts/ci/ci.mjs identity` apaga os recibos antes do
+dela no checkout. Com `CI=true`, a área reprova também quando pulou mais
+testes que o teto de `pendingBudget` em `scripts/lib/ci.mjs`, que registra o
+motivo de cada pendente aceito; área fora da lista aceita zero. Um `skipIf` ou
+`runIf` novo que pula no runner Linux entra nessa lista com o motivo, ou não
+aprova. Fora do CI o teto não vale: no Windows ou sem o `age`, outros testes
+ficam pendentes de propósito. `node scripts/ci/ci.mjs identity` apaga os recibos antes do
 grafo, e o passo `approve` só emite `tested_sha` com todas as áreas aprovadas
 nesse `tests.json`. O resumo do job mostra, por área, se ela executou neste
 checkout ou repetiu o resultado de qual run.
@@ -388,6 +393,14 @@ simuladas com `t.withIdentity`. Parsing e validação de NF-e têm testes em
 `packages/fiscal-nfe` (`bun run xml:test`), e a montagem e a assinatura da DPS
 NFS-e em `packages/fiscal-nfse` (`bun run nfse:test`). Nenhum desses testes
 comprova autorização ou emissão homologada.
+
+Os testes de cifra do arquivo frio, do backup incremental e do recibo selado
+cifram e decifram com o `age` real, achado por `hasAge` de
+`tests/helpers/age.ts` (`AGE_BIN` e `AGE_KEYGEN_BIN`, ou o PATH). Sem os dois
+binários eles ficam pendentes numa máquina local; com `CI=true`, o arquivo
+reprova. O `validate` instala no PATH a mesma versão e o mesmo checksum do
+`offsite-backup.yml`, porque a tarefa de testes do Vite Task não recebe
+`AGE_BIN`, e `tests/ci.age.test.ts` confere o passo.
 
 `platform/convex/publicSurface.test.ts` varre a superfície pública do Convex:
 descobre toda query, mutation e action pública de `platform/convex`, inclusive

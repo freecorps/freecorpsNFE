@@ -3,6 +3,7 @@ import {
   approvedTests,
   areaReceipt,
   collectTests,
+  pendingBudget,
   publicationSha,
   revision,
   sanitizeReport,
@@ -198,4 +199,48 @@ it("approves the checkout only with a passing receipt for every area under its r
   }
   // The whole-suite report of `ci:test` (schema 1) never approves the graph.
   expect(approvedTests(metadata, { ...report, schemaVersion: 1 })).toBe(false);
+});
+it("fails an area that skips more tests than its budget under CI, and only there", () => {
+  const ci = { CI: "true" };
+  // Every budget names an area of the graph, with a ceiling and the reason for it.
+  for (const [area, budget] of Object.entries(pendingBudget)) {
+    expect(areas).toContain(area);
+    expect(Number.isInteger(budget.max) && budget.max > 0, area).toBe(true);
+    expect(budget.reason.length, area).toBeGreaterThan(20);
+  }
+  const metadata = revision({}, {}, checked);
+  for (const area of areas) {
+    const max = pendingBudget[area]?.max ?? 0;
+    const at = { ...everyArea(), [area]: { ...passing(area), pending: max } };
+    const over = { ...everyArea(), [area]: { ...passing(area), pending: max + 1 } };
+    expect(collectTests(metadata, at, expected(), ci).result, area).toBe("passed");
+    const collected = collectTests(metadata, over, expected(), ci);
+    expect(collected.result, area).toBe("failed");
+    expect(collected.areas[area]).toMatchObject({ result: "failed", pending: max + 1 });
+    expect(approvedTests(metadata, collected)).toBe(false);
+    // On a developer machine (Windows, no age) the same receipt is not judged.
+    expect(collectTests(metadata, over, expected()).result, area).toBe("passed");
+  }
+  // The receipt itself fails, so the task cache never keeps a run over budget.
+  const raw = (file: string, skipped: number) => ({
+    success: true,
+    testResults: [
+      {
+        name: `/repo/${file}`,
+        assertionResults: [
+          { status: "passed" },
+          ...Array.from({ length: skipped }, () => ({ status: "skipped" })),
+        ],
+      },
+    ],
+  });
+  const platform = "platform/convex/example.test.ts";
+  expect(areaReceipt(raw(platform, 1), "/repo", "platform", 0, ci).result).toBe("failed");
+  expect(areaReceipt(raw(platform, 1), "/repo", "platform", 0, {}).result).toBe("passed");
+  const tooling = "scripts/example.test.ts";
+  const toolingMax = pendingBudget.tooling!.max;
+  expect(areaReceipt(raw(tooling, toolingMax), "/repo", "tooling", 0, ci).result).toBe("passed");
+  expect(areaReceipt(raw(tooling, toolingMax + 1), "/repo", "tooling", 0, ci).result).toBe(
+    "failed",
+  );
 });

@@ -1,10 +1,11 @@
 import { afterEach, expect, it } from "vite-plus/test";
 import { createHash } from "node:crypto";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ageBinaries, hasAge as ageAvailable } from "../../tests/helpers/age";
 import {
   ARCHIVE_SCHEMA_VERSION,
   assertIsolatedRestore,
@@ -62,8 +63,7 @@ const scratch = () => {
 afterEach(() => {
   for (const path of directories.splice(0)) rmSync(path, { recursive: true, force: true });
 });
-const hasAge =
-  spawnSync(process.env.AGE_BIN || "age", ["--version"], { windowsHide: true }).status === 0;
+const hasAge = ageAvailable();
 const original = readFileSync("tests/fixtures/nfe/4.00/summary-zero-number.xml");
 /** Numbering and capture rows of the minimal fence (ADR 0009, §3), as `materialize` sends them. */
 const fenceRows = [
@@ -199,8 +199,7 @@ function fixture(fence = false) {
   return { source, run, items, metadata, calls, store, objects };
 }
 function custody(dir: string) {
-  const age = process.env.AGE_BIN || "age",
-    keygen = process.env.AGE_KEYGEN_BIN || "age-keygen";
+  const { age, keygen } = ageBinaries();
   const identities = [join(dir, "one.key"), join(dir, "two.key")];
   const exec = (bin: string, args: string[]) =>
     execFileSync(bin, args, {

@@ -49,6 +49,31 @@ export function sanitizeReport(raw, root, metadata, exitCode) {
   };
 }
 
+/**
+ * Testes pendentes (pulados ou `todo`) que cada área aceita no CI, com o motivo.
+ * Área fora da lista aceita zero. Acima do teto a área reprova: um `skipIf` ou
+ * `runIf` novo não aprova em silêncio, como os testes de cifra sem o age
+ * (issue #109). O teto vale só com `CI=true`, no runner Linux; numa máquina
+ * Windows ou sem o age, outros testes ficam pendentes de propósito.
+ * @type {Record<string, { max: number, reason: string }>}
+ */
+export const pendingBudget = {
+  tooling: {
+    max: 3,
+    reason:
+      "Provas só do Windows: scripts/proofs/private-run-state.test.ts (1) e scripts/worktree/worktree-replace-file.test.ts (2)",
+  },
+  repository: {
+    max: 2,
+    reason:
+      "scripts/public-copy/public-tree.test.ts lê a denylist e as edições restritas do repositório privado, ausentes na cópia pública (2)",
+  },
+};
+
+/** O número de pendentes cabe no teto da área, ou o teto não vale fora do CI. */
+export const withinPendingBudget = (area, pending, env = {}) =>
+  env.CI !== "true" || pending <= (pendingBudget[area]?.max ?? 0);
+
 const counts = () => ({ files: 0, passed: 0, failed: 0, pending: 0 });
 const tally = (target, assertions = []) => {
   target.files++;
@@ -81,10 +106,14 @@ export function areaReceipt(raw, root, area, exitCode, env = {}) {
   return {
     schemaVersion: 1,
     area,
-    // Uma área que não rodou nenhum arquivo reprova aqui, antes de o Vite Task
-    // guardar o recibo.
+    // Uma área que não rodou nenhum arquivo, ou que pulou mais testes do que o
+    // teto dela no CI, reprova aqui, antes de o Vite Task guardar o recibo.
     result:
-      exitCode === 0 && raw.success === true && totals.failed === 0 && totals.files > 0
+      exitCode === 0 &&
+      raw.success === true &&
+      totals.failed === 0 &&
+      totals.files > 0 &&
+      withinPendingBudget(area, totals.pending, env)
         ? "passed"
         : "failed",
     ...totals,
@@ -103,15 +132,17 @@ const ranOn = (value) =>
 /**
  * `tests.json` do grafo: junta os recibos das áreas sob a revisão do checkout.
  * Passa só se toda área de `testProjects` tem recibo aprovado que contou
- * exatamente os arquivos que ela tem agora (`expectedFiles`). Área ausente,
- * reprovada, de outro esquema ou com outra contagem reprova o conjunto. Um
+ * exatamente os arquivos que ela tem agora (`expectedFiles`) e, com `CI=true`,
+ * não passou do teto de pendentes (`pendingBudget`). Área ausente, reprovada,
+ * de outro esquema, com outra contagem ou acima do teto reprova o conjunto. Um
  * recibo repetido do cache vale porque o Vite Task só o restaura para as
  * mesmas entradas e nunca guarda uma execução que falhou.
  * @param {Record<string, unknown>} metadata revision.json
  * @param {Record<string, any>} receipts recibo por área, ou ausente
  * @param {Record<string, number>} expectedFiles arquivos de teste por área
+ * @param {Record<string, string | undefined>} [env] ambiente; `CI` liga o teto de pendentes
  */
-export function collectTests(metadata, receipts, expectedFiles) {
+export function collectTests(metadata, receipts, expectedFiles, env = {}) {
   const suites = Object.fromEntries(reportSuites.map((name) => [name, counts()]));
   /**
    * @type {Record<string, { result: string, files?: number, passed?: number,
@@ -126,20 +157,22 @@ export function collectTests(metadata, receipts, expectedFiles) {
       areas[name] = { result: "missing" };
       continue;
     }
+    const pending = Number(receipt.pending) || 0;
     const valid =
       receipt.schemaVersion === 1 &&
       receipt.area === name &&
       receipt.result === "passed" &&
       receipt.failed === 0 &&
       receipt.files > 0 &&
-      receipt.files === expectedFiles[name];
+      receipt.files === expectedFiles[name] &&
+      withinPendingBudget(name, pending, env);
     if (!valid) passed = false;
     const entry = {
       result: valid ? "passed" : "failed",
       files: Number(receipt.files) || 0,
       passed: Number(receipt.passed) || 0,
       failed: Number(receipt.failed) || 0,
-      pending: Number(receipt.pending) || 0,
+      pending,
       ranOn: ranOn(receipt.ranOn),
     };
     areas[name] = entry;

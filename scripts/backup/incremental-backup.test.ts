@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { createHash } from "node:crypto";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ageBinaries, hasAge as ageAvailable } from "../../tests/helpers/age";
 import schema from "../../platform/convex/schema";
 import {
   backupMetrics,
@@ -32,8 +33,8 @@ import {
 } from "../lib/incremental-backup.mjs";
 
 const directories: string[] = [];
-const hasAge =
-  spawnSync(process.env.AGE_BIN ?? "age", ["--version"], { windowsHide: true }).status === 0;
+const hasAge = ageAvailable();
+const { age, keygen } = ageBinaries();
 const scratch = () => {
   const dir = mkdtempSync(join(tmpdir(), "fnfe-incremental-test-"));
   directories.push(dir);
@@ -277,27 +278,26 @@ describe("incremental archive", () => {
       const dir = scratch(),
         client = fakeR2();
       const identity = join(dir, "identity.key");
-      execFileSync(process.env.AGE_KEYGEN_BIN ?? "age-keygen", ["-o", identity], {
+      execFileSync(keygen, ["-o", identity], {
         stdio: "pipe",
         windowsHide: true,
       });
-      const recipient = execFileSync(process.env.AGE_KEYGEN_BIN ?? "age-keygen", ["-y", identity], {
+      const recipient = execFileSync(keygen, ["-y", identity], {
         encoding: "utf8",
         windowsHide: true,
       }).trim();
       const secondIdentity = join(dir, "second.key");
-      execFileSync(process.env.AGE_KEYGEN_BIN ?? "age-keygen", ["-o", secondIdentity], {
+      execFileSync(keygen, ["-o", secondIdentity], {
         stdio: "pipe",
         windowsHide: true,
       });
-      const secondRecipient = execFileSync(
-        process.env.AGE_KEYGEN_BIN ?? "age-keygen",
-        ["-y", secondIdentity],
-        { encoding: "utf8", windowsHide: true },
-      ).trim();
+      const secondRecipient = execFileSync(keygen, ["-y", secondIdentity], {
+        encoding: "utf8",
+        windowsHide: true,
+      }).trim();
       const livePlan = { ...plan, recipients: [{ recipient }, { recipient: secondRecipient }] };
       const crypt = (args: string[]) => {
-        execFileSync(process.env.AGE_BIN ?? "age", args, { stdio: "pipe", windowsHide: true });
+        execFileSync(age, args, { stdio: "pipe", windowsHide: true });
       };
       const encrypt = async (plain: string, cipher: string) => {
         crypt(["-e", "-r", recipient, "-r", secondRecipient, "-o", cipher, plain]);

@@ -15,10 +15,12 @@ import {
   approvedTests,
   areaReceipt,
   collectTests,
+  pendingBudget,
   revision,
   sanitizeReport,
   testEnvironment,
   publicationSha,
+  withinPendingBudget,
 } from "../lib/ci.mjs";
 import { areaFiles, areaProjects, testProjects } from "../lib/test-projects.mjs";
 import { acquireValidationLock, VALIDATION_LOCK_TOKEN } from "../lib/validation-lock.mjs";
@@ -163,12 +165,17 @@ try {
         if (existsSync(file)) receipts[name] = JSON.parse(readFileSync(file, "utf8"));
         expected[name] = areaFiles(name).length;
       }
-      const report = collectTests(metadata, receipts, expected);
+      const report = collectTests(metadata, receipts, expected, process.env);
       writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
       for (const [name, area] of Object.entries(report.areas))
         console.log(
           `${name}: ${area.result}` +
-            (area.result === "missing" ? "" : `, ${area.files} arquivos, ${area.passed} testes`) +
+            (area.result === "missing"
+              ? ""
+              : `, ${area.files} arquivos, ${area.passed} testes, ${area.pending} pendentes`) +
+            (area.result !== "missing" && !withinPendingBudget(name, area.pending, process.env)
+              ? ` (acima do teto de ${pendingBudget[name]?.max ?? 0} pendentes no CI)`
+              : "") +
             (area.ranOn?.sha && area.ranOn.sha !== metadata.checkedSha
               ? ` (repetido do run ${area.ranOn.runId}, que testou ${area.ranOn.sha.slice(0, 12)})`
               : ""),
@@ -197,7 +204,7 @@ try {
       for (const [name, counts] of Object.entries(report?.suites ?? {}))
         summary += `| ${name} | ${counts.files} | ${counts.passed} | ${counts.failed} | ${counts.pending} |\n`;
       if (report?.areas) {
-        summary += `\n| Área | Resultado | Arquivos | Testes | Origem |\n| --- | --- | --- | --- | --- |\n`;
+        summary += `\n| Área | Resultado | Arquivos | Testes | Pendentes (teto no CI) | Origem |\n| --- | --- | --- | --- | --- | --- |\n`;
         for (const [name, area] of Object.entries(report.areas)) {
           const origin =
             area.result === "missing"
@@ -207,7 +214,7 @@ try {
                 : area.ranOn.sha === data?.checkedSha
                   ? "executada neste checkout"
                   : `repetida do cache: run ${area.ranOn.runId}, \`${area.ranOn.sha.slice(0, 12)}\``;
-          summary += `| ${name} | ${area.result} | ${area.files ?? 0} | ${area.passed ?? 0} | ${origin} |\n`;
+          summary += `| ${name} | ${area.result} | ${area.files ?? 0} | ${area.passed ?? 0} | ${area.pending ?? 0} (${pendingBudget[name]?.max ?? 0}) | ${origin} |\n`;
         }
       }
       if (process.env.CI_CHANGES_MODE === "docs")
