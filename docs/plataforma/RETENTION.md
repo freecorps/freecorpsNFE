@@ -532,11 +532,22 @@ rearma a guarda perdida. Nenhum ensaio fora do `convex-test` foi executado.
 
 ### Organização sem Produção, decidido em 27/10/2026
 
-O Sandbox não tem validade fiscal. Em 27/10/2026, o mantenedor
-decidiu que uma organização que nunca teve dados de Produção
-não precisa da guarda: nada do que ela guardaria tem validade fiscal. Uma
-organização com qualquer dado de Produção segue a guarda inteira, como antes,
-inclusive para os dados do Sandbox.
+Em 27/10/2026, o mantenedor decidiu que uma organização que nunca teve dados
+de Produção não precisa da guarda: nada do que ela guardaria tem validade
+fiscal. Uma organização com qualquer dado de Produção segue a guarda inteira,
+como antes, inclusive para os dados do Sandbox.
+
+Em 04/11/2026, na #108, o mantenedor precisou a regra: o Sandbox tira a
+validade fiscal da emissão, que é simulada, mas não de uma NF-e real
+importada. O `tpAmb` do XML de uma nota importada no Sandbox pode ser 1, e o
+documento continua autêntico. Por isso uma nota recebida conta como Produção
+quando o próprio XML não declara homologação (`tpAmb` 2), seja qual for o
+ambiente em que está guardada. Os termos de uso vigentes
+(`termos-de-uso-2026-11-04`, seções 2 e 9 e item 11 da cláusula de
+operadora) ainda dizem que o Sandbox não
+tem efeito fiscal; a versão que os alinha fica para uma issue própria, porque
+abre o aviso de 30 dias a todos os clientes. Até lá, o código guarda mais do
+que os termos prometem, nunca menos.
 
 - **Regra.** Ao fim da janela de 30 dias, o expurgo do encerramento não muda
   e arma a guarda para o mesmo instante. Se a organização nunca teve
@@ -565,16 +576,32 @@ inclusive para os dados do Sandbox.
   `production` em documentos, importações, fluxos de captura, emissões,
   numeração DPS, simulações, operações, uso e totais e recibos REST e seus
   totais, cada um conferido com `.first()` no índice
-  `by_organizationId_and_environment`; nenhuma liberação da captura fiscal
-  concedida (`captureReleaseEvents`), nenhum gate da emissão em produção
+  `by_organizationId_and_environment`; nenhuma nota recebida (sem
+  `direction`) com `tpAmb` 1 ou sem a marca, cada caso conferido com
+  `.first()` no índice `by_organizationId_and_direction_and_tpAmb`; nenhuma
+  liberação da captura fiscal concedida (`captureReleaseEvents`), nenhum gate da emissão em produção
   (`issuanceGateEvents`), nenhum probe em `producao` (`issuanceProbeEvents`)
   e nenhum arquivo frio (`coldArchiveRuns`), que tira linhas das tabelas
   conferidas. Um arquivo frio iniciado depois da decisão também conta: antes
-  de cada lote, `early` confere `coldArchiveRuns`; se houver um, grava
-  `sandboxOnly` falso, registra `organization.sandbox-purge-stopped` uma vez
-  e deixa o resto para o prazo. Mais de 100 eventos de um desses históricos contam como
+  de cada lote, `early` confere `coldArchiveRuns` e as notas recebidas sem
+  homologação; se houver um ou outra, grava `sandboxOnly` falso, registra
+  `organization.sandbox-purge-stopped` uma vez, com `reason` `cold-archive`
+  ou `fiscal-document`, e deixa o resto para o prazo. A segunda conferência
+  cobre a decisão gravada antes da #108, que não lia o `tpAmb`; numa decisão
+  de hoje ela sempre passa, porque nada grava notas de uma organização
+  expurgada. Mais de 100 eventos de um desses históricos contam como
   Produção. Uma conexão Stripe de Produção só emite pelo gate da emissão,
   então o histórico do gate a cobre; a conexão em si é da classe `closure`.
+- **A marca da nota.** `fiscalDocuments.tpAmb` guarda o `tpAmb` que o XML
+  declara, na nota, no protocolo de autorização, no evento ou no recibo dele.
+  Cada versão gravada pela importação o escreve (`publishVersion`), também a
+  que não vira a versão publicada, como um original em conflito; "1" nunca é
+  trocado. Sem a marca ficam o resumo (`resNFe`), a NFS-e ABRASF importada e
+  as notas publicadas antes da #108, e nenhuma dessas é dada como
+  homologação. Não há preenchimento retroativo: uma organização com nota
+  antiga só perde o expurgo antecipado e segue a guarda. A NFS-e emitida
+  (`direction` `emitted`) fica fora da conferência: no Sandbox ela sai do
+  simulador, e em Produção já tem linha de Produção.
 - **Retenção legal.** Com retenção ativa, nada sai antes do prazo. Depois da
   liberação, a remoção vem na verificação seguinte, em até 7 dias.
 - **Encerramentos anteriores.** Um encerramento expurgado antes desta versão
@@ -607,14 +634,21 @@ inclusive para os dados do Sandbox.
   guarda nunca pare. As linhas da própria organização não impedem: ela sai
   inteira.
 - **Deploy.** Os índices `by_organizationId_and_environment` das onze tabelas
-  acima são preenchidos no deploy, que espera o preenchimento.
+  acima e `by_organizationId_and_direction_and_tpAmb` de `fiscalDocuments`
+  são preenchidos no deploy, que espera o preenchimento.
 
 A prova está em `platform/convex/closure.test.ts`: a organização só com
 Sandbox perde os dados fiscais, inclusive as linhas sem ambiente, mas não os
 registros de planos, pagamentos e capacidade, sem tocar outra organização;
 uma linha de Produção em uso, importações ou emissões, uma liberação da
 captura, um gate em produção, um probe em `producao`, mais de 100 eventos de
-gate ou um arquivo frio mantêm tudo até o prazo; a retenção segura a remoção
+gate, um arquivo frio, uma NF-e com `tpAmb` 1 ou uma nota sem a marca mantêm
+tudo até o prazo, e a nota real de outra organização não muda a decisão; a
+remoção antecipada chamada direto não remove a NF-e real, que sai na
+expiração do prazo; uma decisão de só Sandbox gravada antes da #108 para uma
+vez diante de uma nota sem marca (`platform/convex/importProcessing.test.ts`
+prova a marca: o `tpAmb` do XML, e "1" mantido diante de outro original que
+diz homologação); a retenção segura a remoção
 até a liberação; a remoção chamada direto não age em encerramento não
 concluído; o encerramento anterior à decisão perde os dados na verificação
 seguinte, em lotes; o sem decisão gravada a toma uma vez, perdendo os dados

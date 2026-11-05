@@ -273,3 +273,26 @@ export const historyResult = v.array(
     result: v.string(),
   }),
 );
+
+/**
+ * #108: the `tpAmb` a version's stored `result` declares, from the note, its authorization
+ * protocol, the event or its receipt: "1" when any of them says Produção, "2" when one says
+ * homologação and none Produção, null without either (a summary, an NFS-e, an unreadable result).
+ */
+export function declaredTpAmb(result: string): "1" | "2" | null {
+  let document: unknown;
+  try {
+    document = (JSON.parse(result) as { document?: unknown }).document;
+  } catch {
+    return null;
+  }
+  const at = (value: unknown, key: string): unknown =>
+    value !== null && typeof value === "object"
+      ? (value as Record<string, unknown>)[key]
+      : undefined;
+  const declared = [document, at(document, "protocol"), at(document, "receipt")].map((part) =>
+    at(part, "environment"),
+  );
+  if (declared.includes("1")) return "1";
+  return declared.includes("2") ? "2" : null;
+}

@@ -645,9 +645,29 @@ async function expireBatch(
 }
 
 /**
- * Decision of 27/10/2026: Sandbox has no fiscal validity. An organization that never had
- * Production holds nothing the guard exists for. Every guarded table with an environment has no
- * Production row; no capture release was ever granted and the issuance gate and the probe never
+ * #108, decided on 04/11/2026: a received note counts as Production unless its own XML says
+ * homologação (`tpAmb` "2"). The Sandbox environment only means the platform did not reach the
+ * fisco: an imported NF-e of `tpAmb` 1 is real wherever it is stored, and a note without the mark
+ * (a summary, a version from before #108, an ABRASF NFS-e) is not known to be a test one. Emitted
+ * NFS-e of a Sandbox come from the simulator; those of Production have a Production row.
+ */
+async function realDocument(ctx: QueryCtx, organizationId: Id<"organizations">) {
+  const received = (tpAmb: "1" | undefined) =>
+    ctx.db
+      .query("fiscalDocuments")
+      .withIndex("by_organizationId_and_direction_and_tpAmb", (q) =>
+        q.eq("organizationId", organizationId).eq("direction", undefined).eq("tpAmb", tpAmb),
+      )
+      .first();
+  const found = await Promise.all([received("1"), received(undefined)]);
+  return found.some((row) => row !== null);
+}
+
+/**
+ * Decision of 27/10/2026, narrowed by #108: an organization that never had Production holds
+ * nothing the guard exists for, since nothing it holds has fiscal validity. Every guarded table
+ * with an environment has no Production row; every received note says homologação
+ * (`realDocument`); no capture release was ever granted and the issuance gate and the probe never
  * reached production (bounded: more events than `EVENTS` count as Production). A Production
  * Stripe connection issues only through the issuance gate, so the gate history covers it.
  */
@@ -669,7 +689,7 @@ async function neverProduction(ctx: QueryCtx, organizationId: Id<"organizations"
     ctx.db.query("apiUsageEvents").withIndex(index, production).first(),
     ctx.db.query("apiUsageTotals").withIndex(index, production).first(),
   ]);
-  if (found.some((row) => row !== null)) return false;
+  if (found.some((row) => row !== null) || (await realDocument(ctx, organizationId))) return false;
   const org = (q: { eq(f: "organizationId", v: Id<"organizations">): IndexRange }) =>
     q.eq("organizationId", organizationId);
   const [released, gated, probed] = await Promise.all([
@@ -727,15 +747,23 @@ export const early = internalMutation({
       await ctx.db.patch("organizationClosures", closure._id, { sandboxOnly: only });
     }
     if (!only) return idle;
-    // A cold archive started after the decision moves rows away: stop, once, and leave the rest
-    // to the deadline.
+    // A cold archive started after the decision moves rows away, and a decision taken before
+    // #108 did not read the notes' own `tpAmb`: stop, once, and leave the rest to the deadline.
+    // Nothing writes notes of a purged organization, so a decision of today passes every batch.
     const archived = await ctx.db
       .query("coldArchiveRuns")
       .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
       .first();
-    if (archived) {
+    const real = !archived && (await realDocument(ctx, organizationId));
+    if (archived || real) {
       await ctx.db.patch("organizationClosures", closure._id, { sandboxOnly: false });
-      console.warn(JSON.stringify({ type: "organization.sandbox-purge-stopped", organizationId }));
+      console.warn(
+        JSON.stringify({
+          type: "organization.sandbox-purge-stopped",
+          organizationId,
+          reason: archived ? "cold-archive" : "fiscal-document",
+        }),
+      );
       return idle;
     }
     if ((await activeHolds(ctx, organizationId)).length) return idle;

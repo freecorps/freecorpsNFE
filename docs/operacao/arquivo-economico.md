@@ -483,8 +483,9 @@ da reidratação.
 - Organização aberta com plano pago: o aviso de 30 dias começa logo no fim
   do período pago (`endsAt`), sem renovação; atividade não conta. Fica um
   só mês quente depois do período pago, o do aviso (decisão de 29/10/2026).
-- Organização aberta que só usou Sandbox, pelo critério de `sandboxOnly`
-  (`fiscalGuard.ts`): inelegível, com `ARCHIVE_SANDBOX_ONLY` e sem run, para
+- Organização aberta sem Produção pelo critério de `sandboxOnly`
+  (`fiscalGuard.ts`), em que uma nota recebida sem homologação no próprio XML
+  conta como Produção (#108): inelegível, com `ARCHIVE_SANDBOX_ONLY` e sem run, para
   que o expurgo antecipado do encerramento continue a alcançá-la. Depois de
   90 dias sem atividade, a Freecorps a encerra, com aviso de 30 dias
   ([encerramento de organização só com Sandbox](#encerramento-de-organização-só-com-sandbox)).
@@ -585,7 +586,8 @@ bunx convex run sandboxClosure:notice '{"organizationId":"<id>","key":"<chave-un
 ```
 
 `notice` confere, na mesma transação: organização aberta, sem encerramento,
-só com Sandbox, sem plano pago em vigor (`SANDBOX_CLOSURE_PAID_PLAN`: plano
+só com Sandbox pelo critério de `sandboxOnly` (desde a #108, toda nota
+recebida declara homologação no próprio XML, `tpAmb` 2), sem plano pago em vigor (`SANDBOX_CLOSURE_PAID_PLAN`: plano
 não `free` ainda não terminado, pedido aguardando pagamento ou cartão
 renovando) e 90 dias sem atividade, com a atividade do Gratuito acima, em
 qualquer plano ou sem plano. Recusa com `SANDBOX_CLOSURE_PRODUCTION`,
@@ -598,9 +600,8 @@ as mesmas regras, estados e contagens do
 [aviso de organização aberta](#aviso-de-organização-aberta), pelo tipo
 `sandbox-closure-notice` no coletor local e pela linha
 `sandbox_closure_notice_delivery` no log fora de `sent`. A mensagem diz a
-organização, a data, o porquê (só Sandbox, 90 dias sem atividade), que os
-dados do Sandbox não têm validade fiscal e são apagados depois dos 30 dias
-de exportação, que a conta de cada pessoa continua, e o caminho de "Manter
+organização, a data, o porquê (nenhum documento com validade fiscal, 90 dias
+sem atividade), que os dados são apagados depois dos 30 dias de exportação, que a conta de cada pessoa continua, e o caminho de "Manter
 ativa" no console.
 
 Para o e-mail sem desfecho, o mesmo procedimento, com as funções próprias:
@@ -1101,7 +1102,8 @@ da origem com um destino novo.
 só com Sandbox: a elegibilidade com as recusas, o aviso idempotente e seu
 e-mail único, "manter ativa" com os papéis recusados e outra organização, o
 encerramento recusado antes do prazo, feito uma vez depois dele e seguido do
-expurgo antecipado, e o cancelamento por atividade ou por dado de Produção.
+expurgo antecipado, e o cancelamento por atividade ou por dado de Produção,
+inclusive a NF-e recebida com `tpAmb` 1 ou sem a marca (#108).
 `scripts/cold-tier/cold-archive.test.ts` usa age real quando instalado e uma fixture
 XML, compara ZIP/JSONL/metadados/bytes e recusa corrupção, inclusive a
 restauração sem as linhas da cerca. Na compactação do catálogo, com age real

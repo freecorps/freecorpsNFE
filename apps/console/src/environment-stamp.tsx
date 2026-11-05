@@ -5,14 +5,15 @@ const sandbox: Deployment = { environment: "sandbox", fiscalProduction: false, c
 
 /**
  * O selo do ambiente, igual na casca e no login. O texto diz o ambiente; a cor só acompanha.
- * Sandbox (atenção): sem validade fiscal, como sempre foi. Produção fiscal (destaque, o tom `info`
- * do sistema, distinto do sandbox): só no deployment marcado para emitir NFS-e, com notas que
- * valem. Produção sem emissão (alvos de captura, como o da #50) e produção ainda não confirmada
+ * Sandbox (atenção): a emissão é simulada e não tem validade fiscal. O selo fala da emissão, não
+ * das notas: uma NF-e real importada no Sandbox continua valendo (#108). Produção fiscal
+ * (destaque, o tom `info` do sistema, distinto do sandbox): só no deployment marcado para emitir
+ * NFS-e, com notas que valem. Produção sem emissão (alvos de captura, como o da #50) e produção ainda não confirmada
  * pelo servidor: neutro, sem afirmar nada sobre validade.
  *
  * No deployment sandbox que guarda também a captura fiscal (ADR 0007, §1), o selo diz o ambiente
  * escolhido na lateral (`chosen`): Produção no tom `info`, a marcação permanente do modo fiscal,
- * ou o Sandbox de sempre. Nunca "Sem validade fiscal" sobre notas reais.
+ * ou o Sandbox de sempre. Nunca "Sem validade fiscal" sobre notas, que podem ser reais.
  */
 export function EnvironmentStamp({
   label,
@@ -52,7 +53,7 @@ export function EnvironmentStamp({
   return (
     <>
       <StatusBadge tone="warning">Sandbox</StatusBadge>
-      <span>Sem validade fiscal{profile}</span>
+      <span>Emissão sem validade fiscal{profile}</span>
     </>
   );
 }

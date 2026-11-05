@@ -151,7 +151,9 @@ O indicador de ambiente (`environment-stamp.tsx`, só no shell do console)
 vem do deployment, pela query pública `deployment.current`. O texto diz o
 ambiente; a cor do selo só acompanha:
 
-- "Sandbox · Sem validade fiscal", em atenção (`warning`), como sempre foi.
+- "Sandbox · Emissão sem validade fiscal", em atenção (`warning`). O texto
+  fala da emissão simulada, não das notas: uma NF-e real importada no Sandbox
+  continua valendo (#108).
 - "Produção fiscal · Notas com validade fiscal", em destaque (`info`), só no
   deployment de produção fiscal da emissão (ADR 0004 §8).
 - "Produção · Sem emissão de NFS-e", neutro, num deployment de produção sem

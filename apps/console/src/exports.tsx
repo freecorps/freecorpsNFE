@@ -248,7 +248,7 @@ export function Exports({ org }: { org: Organization }) {
               Ambiente: {environmentNames[environment]}.{" "}
               {environment === "production"
                 ? "Documentos reais das empresas com captura fiscal, inclusive as já desativadas."
-                : "Documentos de teste, sem validade fiscal."}
+                : "Documentos importados no Sandbox e NFS-e do simulador."}
             </p>
           ) : null}
         </ConfirmDialog>

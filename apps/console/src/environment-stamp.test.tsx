@@ -17,8 +17,8 @@ const text = (chosen?: ProductEnvironment, deployment = sandbox) =>
 
 describe("selo do ambiente escolhido na lateral (ADR 0007, §1)", () => {
   it("nunca diz Sem validade fiscal sobre Produção", () => {
-    expect(text()).toBe("SandboxSem validade fiscal · Local");
-    expect(text("sandbox")).toBe("SandboxSem validade fiscal · Local");
+    expect(text()).toBe("SandboxEmissão sem validade fiscal · Local");
+    expect(text("sandbox")).toBe("SandboxEmissão sem validade fiscal · Local");
     expect(text("production")).toBe("ProduçãoNotas reais da captura fiscal · Local");
   });
   it("Produção leva o tom do modo fiscal; o Sandbox mantém o seu", () => {
@@ -37,7 +37,7 @@ describe("selo do ambiente escolhido na lateral (ADR 0007, §1)", () => {
     ).toBe("ProduçãoSem emissão de NFS-e · Local");
     // The build's hint is a sandbox until the server answers: the choice waits for it.
     expect(text("production", { ...sandbox, confirmed: false })).toBe(
-      "SandboxSem validade fiscal · Local",
+      "SandboxEmissão sem validade fiscal · Local",
     );
   });
 });
@@ -50,7 +50,7 @@ describe("selo sem rótulo de perfil (installation, #517)", () => {
       </p>,
     ).container.textContent;
   it("mostra só o que vem do deployment, sem separador sobrando", () => {
-    expect(bare(sandbox)).toBe("SandboxSem validade fiscal");
+    expect(bare(sandbox)).toBe("SandboxEmissão sem validade fiscal");
     expect(bare(sandbox, "production")).toBe("ProduçãoNotas reais da captura fiscal");
     expect(bare({ environment: "production", fiscalProduction: false, confirmed: true })).toBe(
       "ProduçãoSem emissão de NFS-e",

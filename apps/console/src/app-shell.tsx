@@ -169,7 +169,9 @@ export function EnvironmentBadge({
         ))}
       </div>
       <p className="app-env-card__detail" key={environment} aria-live="polite">
-        {environment === "production" ? "Notas reais da captura fiscal" : "Sem validade fiscal"}
+        {environment === "production"
+          ? "Notas reais da captura fiscal"
+          : "Emissão sem validade fiscal"}
         {label ? <span className="app-env-card__profile">{label}</span> : null}
       </p>
     </div>

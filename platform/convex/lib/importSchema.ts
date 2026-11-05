@@ -80,6 +80,12 @@ export const importTables = {
     // linked from `issuances.documentId`. It has no published `documents/1` version yet, so
     // listings, detail and downloads do not show it until the contract exposes the direction.
     direction: v.optional(v.literal("emitted")),
+    // #108: the `tpAmb` that the note's own XML declares, written by each published version
+    // (`importProcessing.publishVersion`); "1" is never replaced. A received note may be real
+    // whatever `environment` holds it, so the early purge reads this mark, never `environment`.
+    // Absent (a summary only, a version published before #108, an ABRASF NFS-e): not known to be
+    // homologação, so treated as real.
+    tpAmb: v.optional(v.union(v.literal("1"), v.literal("2"))),
     fiscalKey: v.string(),
     publishedVersionId: v.optional(v.id("documentVersions")),
     publicVersion: v.optional(v.number()),
@@ -115,7 +121,8 @@ export const importTables = {
       "environment",
       "completeness",
     ])
-    .index("by_organizationId_and_environment", ["organizationId", "environment"]),
+    .index("by_organizationId_and_environment", ["organizationId", "environment"])
+    .index("by_organizationId_and_direction_and_tpAmb", ["organizationId", "direction", "tpAmb"]),
   documentArtifacts: defineTable({
     ...archiveOriginFields,
     parentArtifactId: v.optional(v.id("documentArtifacts")),
