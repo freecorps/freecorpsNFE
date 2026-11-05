@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash, createHmac } from "node:crypto";
+import { createHash, createHmac, hkdfSync, timingSafeEqual } from "node:crypto";
 import { inflateRawSync } from "node:zlib";
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
@@ -70,12 +70,13 @@ export const objectKeys = (plan, id) => ({
 
 // Fingerprints let a restore prove custody matches the snapshot without storing key material.
 const fingerprint = (name, value) => sha256(`fnfe-custody:v1:${name}:${value}`);
+const custodyValue = (values, name) => {
+  const value = values instanceof Map ? values.get(name) : values[name];
+  assert.ok(typeof value === "string" && value.length > 0, `Custódia incompleta: ${name}`);
+  return value;
+};
 export function custodyFingerprints(values) {
-  const get = (name) => {
-    const value = values instanceof Map ? values.get(name) : values[name];
-    assert.ok(typeof value === "string" && value.length > 0, `Custódia incompleta: ${name}`);
-    return value;
-  };
+  const get = (name) => custodyValue(values, name);
   let ring;
   try {
     ring = JSON.parse(get("FNFE_PLATFORM_CERT_KEYS"));
@@ -116,6 +117,74 @@ export function verifyCustody(manifest, values) {
       `Custódia difere do snapshot: FNFE_PLATFORM_CERT_KEYS:${version}`,
     );
   return actual;
+}
+
+/**
+ * The age recipients are public, so a bucket writer can produce a coherent ciphertext and
+ * manifest. The manifest is authenticated with a key only the producer and the custodians hold:
+ * HKDF-SHA256 of two custody secrets that the snapshot job already reads from the source and
+ * that recovery already requires. The key and the secrets never leave this module.
+ */
+const manifestScheme = "hmac-sha256:fnfe-offsite-manifest:v1";
+function manifestMac(manifest, values) {
+  const part = (name) => {
+    const bytes = Buffer.from(custodyValue(values, name), "utf8"),
+      length = Buffer.alloc(4);
+    length.writeUInt32BE(bytes.length);
+    return Buffer.concat([length, bytes]);
+  };
+  const key = Buffer.from(
+    hkdfSync(
+      "sha256",
+      Buffer.concat([part("BETTER_AUTH_SECRET"), part("FNFE_WEBHOOK_MASTER_KEY")]),
+      Buffer.alloc(0),
+      "fnfe-offsite-manifest:v1",
+      32,
+    ),
+  );
+  const { authentication: _authentication, ...body } = manifest;
+  return createHmac("sha256", key).update(JSON.stringify(body)).digest();
+}
+export function authenticateManifest(manifest, values) {
+  assert.ok(!Object.hasOwn(manifest, "authentication"), "Manifesto já autenticado");
+  return {
+    ...manifest,
+    authentication: { scheme: manifestScheme, mac: manifestMac(manifest, values).toString("hex") },
+  };
+}
+/**
+ * Runs before recovery uses any size, hash or object from the manifest. A manifest without
+ * authentication predates it and is accepted only when the custodian names the ciphertext hash
+ * read from the producer's receipt in GitHub Actions; an invalid MAC is never accepted.
+ */
+export function verifyManifestAuthentication(manifest, values, acceptedCiphertextSha256) {
+  if (acceptedCiphertextSha256 !== undefined)
+    assert.match(
+      acceptedCiphertextSha256,
+      /^[a-f0-9]{64}$/,
+      "--accept-unauthenticated exige o sha256 da cifra do recibo",
+    );
+  if (!Object.hasOwn(manifest, "authentication")) {
+    assert.ok(
+      acceptedCiphertextSha256 !== undefined,
+      "Manifesto sem autenticação; confira o recibo do snapshot e use --accept-unauthenticated <sha256 da cifra>",
+    );
+    assert.ok(
+      manifest.ciphertext?.sha256 === acceptedCiphertextSha256,
+      "Cifra do manifesto difere do hash aceito",
+    );
+    return "accepted-unauthenticated";
+  }
+  const { scheme, mac } = manifest.authentication ?? {};
+  const expected = manifestMac(manifest, values);
+  assert.ok(
+    scheme === manifestScheme &&
+      typeof mac === "string" &&
+      /^[a-f0-9]{64}$/.test(mac) &&
+      timingSafeEqual(Buffer.from(mac, "hex"), expected),
+    "Manifesto com autenticação inválida",
+  );
+  return "verified";
 }
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {
@@ -418,6 +487,13 @@ export function backupFailure(error) {
     "BACKUP_CHECK_FAILED: consulte problems no recibo",
     "O diretório de recuperação precisa estar vazio",
     "Informe --identity e --custody",
+    "Manifesto já autenticado",
+    "--accept-unauthenticated exige o sha256 da cifra do recibo",
+    "Manifesto sem autenticação; confira o recibo do snapshot e use --accept-unauthenticated <sha256 da cifra>",
+    "Cifra do manifesto difere do hash aceito",
+    "Manifesto com autenticação inválida",
+    "--accept-unauthenticated só vale para fetch e rehearse",
+    "--accept-unauthenticated exige --snapshot <id> conferido no recibo",
     "Nenhum backup externo completo encontrado",
     "Snapshot decifrado difere do manifesto",
     "Conteúdo do snapshot difere do manifesto",

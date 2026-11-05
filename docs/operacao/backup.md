@@ -73,6 +73,8 @@ runner `blacksmith-2vcpu-ubuntu-2404`, em VM efêmera:
 5. Envia `snapshot.zip.age` ao R2, confere o tamanho e só então envia o
    `manifest.json`. Um manifesto presente marca uma cópia completa.
 
+O manifesto sai autenticado (ver [Autenticação do manifesto](#autenticação-do-manifesto)).
+
 O plaintext existe só no diretório temporário do runner, removido ao final.
 O runner não consegue decifrar cópias antigas: só os custodiantes têm as
 identidades.
@@ -81,6 +83,77 @@ Os objetos ficam em `elated-possum-295/snapshots/<início UTC>/`. O manifesto
 registra SHA do código, início do export, hashes e tamanhos do plaintext e da
 cifra, contagem e digest por tabela, storage, versões de chave exigidas e
 fingerprints da custódia. Ele não contém dados de documentos.
+
+### Autenticação do manifesto
+
+Os destinatários age são públicos: a cifra não prova quem produziu a cópia, e
+o manifesto não vale como prova de origem só por estar no bucket.
+
+O `snapshot` grava em cada manifesto o campo `authentication`, com um
+HMAC-SHA256 dos demais campos. A chave sai por HKDF-SHA256 de
+`BETTER_AUTH_SECRET` e `FNFE_WEBHOOK_MASTER_KEY`, com o rótulo
+`fnfe-offsite-manifest:v1`. O job já lê essas variáveis do deployment para os
+fingerprints, e os custodiantes já as guardam no cofre. Por isso nenhum
+segredo novo foi criado. A chave e os valores ficam só na memória do
+processo: não vão para o manifesto, para o recibo nem para o log.
+
+O `fetch` e o `rehearse` leem o cofre antes de baixar a cifra e recusam o
+manifesto sem `authentication` (`Manifesto sem autenticação`) ou com HMAC
+divergente (`Manifesto com autenticação inválida`). Essa conferência vem
+antes de usar tamanho, hash, objetos e digests. O recibo registra
+`manifestAuthentication: "verified"`.
+
+O `check` não tem o cofre e não confere a autenticação. Ele continua sendo o
+monitor de presença, prazo e integridade da cifra; um manifesto forjado passa
+por ele. A recusa acontece na recuperação. A coleta por referências também
+não confere: um manifesto forjado lá só acrescenta referências e faz reter
+objetos, nunca apagar.
+
+A rotação de `BETTER_AUTH_SECRET` ou `FNFE_WEBHOOK_MASTER_KEY` segue a regra
+do cofre: o valor anterior fica guardado enquanto houver cópia retida que
+dependa dele.
+
+#### Snapshots anteriores à autenticação
+
+Os snapshots gravados antes desta mudança não têm `authentication` e são
+recusados por padrão. Logo depois do merge, dispare um snapshot para que o
+mais recente já saia autenticado:
+
+```sh
+gh workflow run offsite-backup.yml -f job=snapshot
+# ao terminar
+gh workflow run offsite-backup.yml -f job=check
+```
+
+O recibo do `snapshot` registra `manifestAuthentication` com o esquema
+gravado, o que mostra que o manifesto saiu com o campo. Nem esse recibo nem
+o `check` conferem o HMAC: a prova de que ele confere com o cofre é o próximo
+`fetch` ou ensaio de um custodiante, com `manifestAuthentication: "verified"`
+no recibo da recuperação.
+
+Enquanto existirem cópias antigas, até 14 dias depois do merge, um
+custodiante só recupera uma delas por decisão explícita, conferida contra o
+recibo do produtor:
+
+1. No GitHub Actions, abra o run do `snapshot` que gerou a cópia (workflow
+   `Offsite backup`, branch `main`, job `Encrypted snapshot`, concluído com
+   sucesso) e baixe o artefato `offsite-backup-snapshot-<run>-<tentativa>`,
+   retido por 30 dias.
+2. No `snapshot.json`, confira `result: "passed"`, o `id` igual ao
+   `--snapshot` escolhido e anote `ciphertext.sha256` e `codeSha`.
+3. Rode o `fetch` ou o `rehearse` com `--snapshot <id>` e
+   `--accept-unauthenticated <ciphertext.sha256>`; a flag sem `--snapshot` é
+   recusada, para não cair no snapshot mais novo do bucket. O script só aceita o
+   manifesto sem autenticação se a cifra descrita nele tiver exatamente esse
+   hash, e recusa sempre um HMAC presente e divergente. O recibo registra
+   `manifestAuthentication: "accepted-unauthenticated"`.
+4. Confira que o `codeSha` do recibo de recuperação é o mesmo do recibo do
+   Actions antes de publicar código nesse SHA.
+
+A flag só vale para `fetch` e `rehearse`, que recuperam o deployment do
+site; a produção fiscal ainda não tem deployment nem cópias antigas. Sem
+recibo do Actions, a cópia antiga não tem prova de origem e não deve ser
+restaurada.
 
 O snapshot não contém código, variáveis de ambiente nem funções agendadas.
 O código vem do `codeSha` do manifesto; as variáveis, da custódia separada.
@@ -207,7 +280,8 @@ bun scripts/backup/backup-offsite.mjs fetch --out C:/recuperacao/d04 --identity 
 ```
 
 O `fetch` escolhe o manifesto mais recente, ou o informado em
-`--snapshot <início UTC>`. Ele confere a cifra, decifra, confere o plaintext,
+`--snapshot <início UTC>`. Ele lê o cofre, confere a
+[autenticação do manifesto](#autenticação-do-manifesto), a cifra, decifra, confere o plaintext,
 o CRC e o digest de cada tabela e o hash de cada arquivo. Também confere a
 custódia contra os fingerprints, abre todos os envelopes de certificado e
 todos os segredos de webhook. Se qualquer verificação falhar, apaga o que
@@ -328,8 +402,9 @@ deployment de nuvem.
   linha JSONL fica limitada a 16 MiB. O orçamento explícito pode chegar a
   8 GiB; o plano ativo usa 4 GiB. O ensaio local da #688 cobre
   2,25 GiB de arquivos, não prova o teto de 8 GiB nem o runner hospedado.
-- O monitor confere a cópia cifrada, não a decifra. Só o ensaio periódico
-  comprova que as identidades e o cofre continuam válidos.
+- O monitor confere a cópia cifrada, não a decifra nem confere a
+  autenticação do manifesto. Só a recuperação e o ensaio periódico comprovam
+  a origem do manifesto e que as identidades e o cofre continuam válidos.
 - Uma rotação de chave no Convex sem atualizar o cofre não dispara alerta.
   Depois de qualquer rotação, execute `fetch` contra o snapshot seguinte.
 - Em 07/10/2026, o código passou em um ensaio local com dados sintéticos do
@@ -398,7 +473,8 @@ O fluxo é:
    e cursor nulo. É obrigatório reconciliar o estoque antes de reativá-lo.
 7. Cifra o banco, verifica o roundtrip e envia a cifra. Confere novamente
    cada objeto referenciado e publica `manifest.json` por último. O manifesto
-   traz os hashes dos objetos necessários, nunca os IDs ou dados fiscais.
+   traz os hashes dos objetos necessários, nunca os IDs ou dados fiscais, e
+   sai [autenticado](#autenticação-do-manifesto) como no formato 1.
 
 O preflight e a resolução de referências não são uma transação com o
 snapshot Convex. A garantia é de completude verificada: uma corrida que
