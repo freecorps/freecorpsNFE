@@ -130,8 +130,13 @@ function crc32(buffer) {
 }
 const MAX32 = 0xffffffff;
 const u64 = (buffer, at) => Number(buffer.readBigUInt64LE(at));
-/** Reads every entry of a Convex export, which writes zip64 fields, and checks its CRC. */
-export function readZip(buffer) {
+/**
+ * Reads every entry of a Convex export, which writes zip64 fields, and checks its CRC.
+ * `maxBytes` caps the expanded total: the declared sizes are summed before anything is
+ * inflated, and no deflated entry may expand beyond its declared size.
+ */
+export function readZip(buffer, maxBytes) {
+  assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0, "Zip: limite de expansão inválido");
   // The EOCD sits within the last 22 bytes plus at most a 64 KiB comment.
   const end = buffer.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]), buffer.length - 22);
   assert.ok(end >= 0 && end >= buffer.length - 22 - 0xffff, "Snapshot não é um zip válido");
@@ -144,7 +149,10 @@ export function readZip(buffer) {
     count = u64(buffer, record + 32);
     offset = u64(buffer, record + 48);
   }
-  const entries = new Map();
+  const directoryStart = offset,
+    members = [],
+    names = new Set();
+  let total = 0;
   for (let i = 0; i < count; i++) {
     assert.equal(buffer.readUInt32LE(offset), 0x02014b50, "Diretório do zip corrompido");
     const method = buffer.readUInt16LE(offset + 10),
@@ -173,15 +181,41 @@ export function readZip(buffer) {
       size !== MAX32 && compressed !== MAX32 && local !== MAX32,
       `Zip64 incompleto: ${name}`,
     );
+    assert.ok(method === 0 || method === 8, `Compressão não suportada: ${name}`);
+    assert.ok(!names.has(name), `Entrada repetida: ${name}`);
+    names.add(name);
+    total += size;
+    assert.ok(total <= maxBytes, "Snapshot descompactado acima do limite do plano");
+    assert.ok(local + 30 <= directoryStart, `Entrada fora do arquivo: ${name}`);
     assert.equal(buffer.readUInt32LE(local), 0x04034b50, `Entrada corrompida: ${name}`);
     const start = local + 30 + buffer.readUInt16LE(local + 26) + buffer.readUInt16LE(local + 28);
-    const raw = buffer.subarray(start, start + compressed);
-    assert.ok(method === 0 || method === 8, `Compressão não suportada: ${name}`);
-    const data = method === 0 ? Buffer.from(raw) : inflateRawSync(raw);
-    assert.ok(data.length === size && crc32(data) === crc, `CRC divergente: ${name}`);
-    assert.ok(!entries.has(name), `Entrada repetida: ${name}`);
-    entries.set(name, data);
+    assert.ok(start + compressed <= directoryStart, `Entrada fora do arquivo: ${name}`);
+    members.push({ name, method, crc, size, local, start, end: start + compressed });
     offset += 46 + nameLength + extra + comment;
+  }
+  // Names sharing compressed bytes would expand the same member more than once.
+  const byPosition = members.toSorted((a, b) => a.local - b.local);
+  for (let i = 1; i < byPosition.length; i++)
+    assert.ok(
+      byPosition[i].local >= byPosition[i - 1].end,
+      `Entradas sobrepostas: ${byPosition[i].name}`,
+    );
+  const entries = new Map();
+  for (const { name, method, crc, size, start, end: stop } of members) {
+    const raw = buffer.subarray(start, stop);
+    let data;
+    try {
+      // Inflation stops past the declared size; zlib needs a positive bound for empty entries.
+      data =
+        method === 0
+          ? Buffer.from(raw)
+          : inflateRawSync(raw, { maxOutputLength: Math.max(size, 1) });
+    } catch (error) {
+      if (error?.code !== "ERR_BUFFER_TOO_LARGE") throw error;
+      throw new Error(`Entrada expande além do tamanho declarado: ${name}`);
+    }
+    assert.ok(data.length === size && crc32(data) === crc, `CRC divergente: ${name}`);
+    entries.set(name, data);
   }
   return entries;
 }
@@ -408,6 +442,8 @@ export function backupFailure(error) {
     "Zip64 sem localizador",
     "Zip64 corrompido",
     "Diretório do zip corrompido",
+    "Zip: limite de expansão inválido",
+    "Snapshot descompactado acima do limite do plano",
     "Snapshot sem índice de tabelas",
     "Credenciais R2 ausentes",
     "Objeto R2 acima do limite",
@@ -548,6 +584,18 @@ export function backupFailure(error) {
     ],
     ["CRC divergente:", "BACKUP_ZIP_CRC_MISMATCH: preserve o export e confira sua integridade"],
     ["Entrada repetida:", "BACKUP_ZIP_ENTRY_DUPLICATED: confira as entradas do export"],
+    [
+      "Entrada fora do arquivo:",
+      "BACKUP_ZIP_ENTRY_OUT_OF_BOUNDS: preserve o export e confira sua integridade",
+    ],
+    [
+      "Entradas sobrepostas:",
+      "BACKUP_ZIP_ENTRY_OVERLAP: preserve o export e confira sua integridade",
+    ],
+    [
+      "Entrada expande além do tamanho declarado:",
+      "BACKUP_ZIP_ENTRY_OVERSIZED: preserve o export e confira sua integridade",
+    ],
     [
       "Arquivo repetido no snapshot:",
       "BACKUP_STORAGE_DUPLICATED: confira o inventário do snapshot",

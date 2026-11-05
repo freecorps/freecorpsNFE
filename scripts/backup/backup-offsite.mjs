@@ -245,7 +245,7 @@ async function snapshot(receipt) {
     // Checked before reading: the limit exists to avoid loading an oversized export.
     assert.ok(statSync(zip).size <= plan.maxSnapshotBytes, "Snapshot acima do limite do plano");
     const plain = readFileSync(zip);
-    const entries = readZip(plain);
+    const entries = readZip(plain, plan.maxSnapshotBytes);
     receipt.metrics.observed.databaseJsonlBytes = [...entries]
       .filter(([name]) => name.endsWith("/documents.jsonl"))
       .reduce((sum, [, data]) => sum + data.length, 0);
@@ -661,7 +661,7 @@ async function recover(directory, receipt) {
   unlinkSync(cipherPath);
   const plain = readFileSync(zip);
   assert.equal(sha256(plain), manifest.plaintext.sha256, "Snapshot decifrado difere do manifesto");
-  const entries = readZip(plain),
+  const entries = readZip(plain, plan.maxSnapshotBytes),
     summary = snapshotSummary(entries);
   assert.deepEqual(summary.digests, manifest.digests, "Conteúdo do snapshot difere do manifesto");
   const custody = await openCustody(manifest, entries, options.custody);
@@ -827,7 +827,7 @@ async function rehearse(receipt) {
         ? await diskSummary(
             await extractZip(reexport, join(scratch, "reexport"), plan.maxSnapshotBytes),
           )
-        : snapshotSummary(readZip(readFileSync(reexport)));
+        : snapshotSummary(readZip(readFileSync(reexport), plan.maxSnapshotBytes));
     const differences = Object.keys({ ...manifest.digests, ...restored.digests }).filter(
       (name) => manifest.digests[name] !== restored.digests[name],
     );

@@ -319,7 +319,11 @@ deployment de nuvem.
 ## Limites
 
 - O formato 1 ainda lê o export inteiro em memória, mantém o preflight de
-  64 MiB por tabela e recusa plano acima de 1 GiB. O formato 2 processa ZIP, arquivos, cifra e JSONL em fluxo; ordena
+  64 MiB por tabela e recusa plano acima de 1 GiB. Na leitura, soma os
+  tamanhos declarados antes de descompactar e recusa o ZIP quando a soma
+  expandida passa de `maxSnapshotBytes`. Também recusa a entrada que expande
+  além do tamanho declarado e nomes que apontam para bytes comprimidos
+  sobrepostos. O formato 2 processa ZIP, arquivos, cifra e JSONL em fluxo; ordena
   digests em blocos de 8 MiB e mescla até 16 blocos por vez em disco. Cada
   linha JSONL fica limitada a 16 MiB. O orçamento explícito pode chegar a
   8 GiB; o plano ativo usa 4 GiB. O ensaio local da #688 cobre
