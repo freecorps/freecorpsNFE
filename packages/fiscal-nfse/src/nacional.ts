@@ -17,9 +17,10 @@
  * Rejeições de negócio chegam como 4xx com JSON { erros: [...] }; o adaptador
  * nunca lança por status HTTP.
  */
+import { DOMParser } from "@xmldom/xmldom";
 import { NfseError } from "./errors.js";
 import { buildDps } from "./build.js";
-import type { DpsInput } from "./dps.js";
+import { NFSE_NS, type DpsInput } from "./dps.js";
 import { EVENTO_CANCELAMENTO, buildCancelEvent, type CancelEventInput } from "./events.js";
 import { signDps, signEvent, type SignerKeys } from "./signer.js";
 import {
@@ -410,10 +411,70 @@ function issueLocalFailure(error: unknown, dpsId: string | null): IssueOutcome {
   };
 }
 
-/** `tpAmb` declarado no XML já montado; o alvo precisa corresponder a ele. */
-function declaredTpAmb(xml: string): number {
-  const match = /<tpAmb>([12])<\/tpAmb>/.exec(xml);
-  return match ? Number(match[1]) : 0;
+interface SignedTarget {
+  root: "DPS" | "pedRegEvento";
+  element: "infDPS" | "infPedReg";
+  code: "DPS_ID_MISMATCH" | "EVENT_ID_MISMATCH";
+  message: string;
+}
+
+const DPS_TARGET: SignedTarget = {
+  root: "DPS",
+  element: "infDPS",
+  code: "DPS_ID_MISMATCH",
+  message: "O XML da DPS não corresponde ao Id informado.",
+};
+const EVENT_TARGET: SignedTarget = {
+  root: "pedRegEvento",
+  element: "infPedReg",
+  code: "EVENT_ID_MISMATCH",
+  message: "O XML do evento não corresponde à NFS-e informada.",
+};
+
+/**
+ * Lê o XML já montado e devolve o `tpAmb` do elemento que vai ao fisco
+ * (`DPS/infDPS` ou `pedRegEvento/infPedReg`) depois de conferir que o `Id`
+ * dele é o esperado. A conferência é sobre o documento parseado, não sobre o
+ * texto: comentário, CDATA ou elemento fora do alvo não a satisfazem. Recusa
+ * XML malformado, DTD, encoding diferente de UTF-8 e documento com mais de um
+ * alvo. Sem um `tpAmb` único e
+ * válido no alvo, devolve 0, que nenhum ambiente aceita.
+ */
+function signedTargetTpAmb(xml: string, target: SignedTarget, expectedId: string): number {
+  const refuse = (): never => {
+    throw new NfseError(target.code, target.message);
+  };
+  // Outro parser leria o mesmo texto de outro jeito com encoding diferente de
+  // UTF-8 ou com DTD (valores padrão de atributo): ficam de fora.
+  const encoding = /^<\?xml[^>]*?\sencoding\s*=\s*["']([^"']*)["']/.exec(xml)?.[1];
+  if (encoding !== undefined && encoding.toUpperCase() !== "UTF-8") return refuse();
+  let doc: ReturnType<DOMParser["parseFromString"]>;
+  try {
+    // O xmldom tolera como aviso o que um parser estrito recusa.
+    doc = new DOMParser({
+      errorHandler: { warning: refuse, error: refuse, fatalError: refuse },
+    }).parseFromString(xml, "text/xml");
+  } catch {
+    return refuse();
+  }
+  const root = doc.documentElement;
+  if (doc.doctype || !root || root.namespaceURI !== NFSE_NS || root.localName !== target.root)
+    return refuse();
+  const elements = doc.getElementsByTagNameNS("*", target.element);
+  const element = elements[0];
+  if (
+    elements.length !== 1 ||
+    !element ||
+    element.parentNode !== root ||
+    element.namespaceURI !== NFSE_NS ||
+    element.getAttribute("Id") !== expectedId
+  )
+    return refuse();
+  const tpAmb = Array.from(element.childNodes)
+    .filter((node): node is Element => node.nodeType === 1)
+    .filter((child) => child.namespaceURI === NFSE_NS && child.localName === "tpAmb");
+  const value = tpAmb.length === 1 ? tpAmb[0]!.textContent : null;
+  return value === "1" || value === "2" ? Number(value) : 0;
 }
 
 /**
@@ -427,9 +488,7 @@ async function submitDps(input: SignedDps, ctx: NfseQueryContext): Promise<Issue
     endpoint = resolveEndpoint(ctx.target);
     if (!DPS_ID.test(input.dpsId))
       throw new NfseError("DPS_ID_INVALID", "Id da DPS fora do formato de 45 caracteres.");
-    if (!input.signedDpsXml.includes(`Id="${input.dpsId}"`))
-      throw new NfseError("DPS_ID_MISMATCH", "O XML da DPS não corresponde ao Id informado.");
-    checkEnvironment(endpoint, declaredTpAmb(input.signedDpsXml));
+    checkEnvironment(endpoint, signedTargetTpAmb(input.signedDpsXml, DPS_TARGET, input.dpsId));
   } catch (error) {
     return issueLocalFailure(error, input.dpsId);
   }
@@ -647,15 +706,12 @@ async function submitCancelEvent(
     endpoint = resolveEndpoint(ctx.target);
     if (!/^\d{50}$/.test(input.chNFSe))
       throw new NfseError("EVENT_FIELD_INVALID", "chNFSe deve ter 50 dígitos.");
-    if (
-      input.eventId !== `PRE${input.chNFSe}${EVENTO_CANCELAMENTO}` ||
-      !input.signedEventXml.includes(`Id="${input.eventId}"`)
-    )
-      throw new NfseError(
-        "EVENT_ID_MISMATCH",
-        "O XML do evento não corresponde à NFS-e informada.",
-      );
-    checkEnvironment(endpoint, declaredTpAmb(input.signedEventXml));
+    if (input.eventId !== `PRE${input.chNFSe}${EVENTO_CANCELAMENTO}`)
+      throw new NfseError(EVENT_TARGET.code, EVENT_TARGET.message);
+    checkEnvironment(
+      endpoint,
+      signedTargetTpAmb(input.signedEventXml, EVENT_TARGET, input.eventId),
+    );
   } catch (error) {
     return cancelLocalFailure(error, input.eventId);
   }

@@ -135,10 +135,14 @@ type NfseTransport = (req: NfseHttpRequest) => Promise<NfseHttpResponse>;
 `issue` e `cancel` montam, assinam e enviam numa chamada. `submitDps` e
 `submitCancelEvent` enviam um XML já montado (e assinado) pelo chamador, sem
 remontar nem reassinar: é o caminho da plataforma, que persiste o XML antes do
-primeiro envio e reenvia o mesmo texto depois de uma reconciliação. Eles
-conferem o Id contra o XML, a chave do evento e o `tpAmb` declarado contra o
-alvo antes de enviar (`DPS_ID_MISMATCH`, `EVENT_ID_MISMATCH`,
-`ENVIRONMENT_MISMATCH`, com `sent: false`).
+primeiro envio e reenvia o mesmo texto depois de uma reconciliação. Antes de
+enviar, eles fazem o parse do XML e conferem o elemento que vai ao fisco
+(`DPS/infDPS` ou `pedRegEvento/infPedReg`): o `Id` dele contra o informado, a
+chave do evento e o `tpAmb` dele contra o alvo. Comentário ou elemento fora do
+alvo não contam; XML malformado, com DTD, com encoding diferente de UTF-8 ou
+com mais de um alvo é recusado
+(`DPS_ID_MISMATCH`, `EVENT_ID_MISMATCH`, `ENVIRONMENT_MISMATCH`, com
+`sent: false`).
 
 Erros de entrada lançam `NfseError` com `code` estável e mensagem em pt-BR.
 Mensagens de assinatura nunca repetem material de chave. `DPS_SCHEMA_INVALID`

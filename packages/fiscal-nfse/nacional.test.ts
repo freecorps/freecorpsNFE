@@ -192,6 +192,53 @@ describe("issue", () => {
     expect(requests).toHaveLength(0);
   });
 
+  it("submitDps confere Id e tpAmb no infDPS parseado, não no texto", async () => {
+    const { requests, transport } = recorder();
+    const issued = await nacional.issue(
+      { dps: nationalInput },
+      ctx(recorder(authorized()).transport),
+    );
+    const xml = issued.signedDpsXml!;
+    const dpsId = issued.dpsId!;
+    const submit = (signedDpsXml: string, id = dpsId) =>
+      nacional.submitDps({ dpsId: id, signedDpsXml }, { transport, target: SEFIN });
+    const refused = (code: string) => ({ kind: "definitive", code, sent: false });
+
+    // O Id esperado só aparece num comentário; o infDPS enviado é de outra DPS.
+    const other = buildDpsId({ ...nationalInput, nDPS: 43 });
+    expect(await submit(xml.replace("<DPS ", `<!-- Id="${other}" --><DPS `), other)).toMatchObject(
+      refused("DPS_ID_MISMATCH"),
+    );
+    // O tpAmb esperado só aparece fora do infDPS; o enviado é de produção.
+    const production = xml.replace("<tpAmb>2</tpAmb>", "<tpAmb>1</tpAmb>");
+    expect(await submit(production.replace("<DPS ", "<!--<tpAmb>2</tpAmb>--><DPS "))).toMatchObject(
+      refused("ENVIRONMENT_MISMATCH"),
+    );
+    expect(
+      await submit(production.replace("</DPS>", '<x:tpAmb xmlns:x="urn:x">2</x:tpAmb></DPS>')),
+    ).toMatchObject(refused("ENVIRONMENT_MISMATCH"));
+    // Mais de um alvo, alvo fora da raiz DPS e XML malformado.
+    expect(
+      await submit(xml.replace("</DPS>", `<infDPS Id="${dpsId}"><tpAmb>2</tpAmb></infDPS></DPS>`)),
+    ).toMatchObject(refused("DPS_ID_MISMATCH"));
+    expect(
+      await submit(xml.replaceAll("<DPS ", "<NFSe ").replace("</DPS>", "</NFSe>")),
+    ).toMatchObject(refused("DPS_ID_MISMATCH"));
+    expect(await submit(xml.replace("</DPS>", ""))).toMatchObject(refused("DPS_ID_MISMATCH"));
+    // Atributo sem aspas: o xmldom só avisa; um parser estrito recusa.
+    expect(await submit(xml.replace(`Id="${dpsId}"`, `Id=${dpsId}`))).toMatchObject(
+      refused("DPS_ID_MISMATCH"),
+    );
+    // DTD e encoding diferente de UTF-8 mudam o que outro parser lê.
+    expect(await submit(xml.replace("<DPS ", "<!DOCTYPE DPS []><DPS "))).toMatchObject(
+      refused("DPS_ID_MISMATCH"),
+    );
+    expect(await submit(xml.replace('encoding="UTF-8"', 'encoding="UTF-7"'))).toMatchObject(
+      refused("DPS_ID_MISMATCH"),
+    );
+    expect(requests).toHaveLength(0);
+  });
+
   it("Campinas envia na base nova (guia de 18/09/2026) com RSA-SHA1", async () => {
     const { requests, transport } = recorder(authorized());
     const outcome = await nacional.issue({ dps: campinasInput }, ctx(transport, CAMPINAS));
@@ -644,6 +691,52 @@ describe("cancel", () => {
       ),
     ).toMatchObject({ kind: "definitive", code: "EVENT_ID_MISMATCH", sent: false });
     expect(requests).toHaveLength(1);
+  });
+
+  it("submitCancelEvent confere Id e tpAmb no infPedReg parseado, não no texto", async () => {
+    const { requests, transport } = recorder();
+    const other = "4".repeat(50);
+    const signed = await nacional.cancel(
+      { event: { ...event, chNFSe: other } },
+      ctx(recorder({ status: 201, body: "{}" }).transport),
+    );
+    const xml = signed.signedEventXml!;
+    const eventId = `PRE${CHAVE}101101`;
+    const submit = (signedEventXml: string, chNFSe = CHAVE, id = eventId) =>
+      nacional.submitCancelEvent(
+        { eventId: id, chNFSe, signedEventXml },
+        { transport, target: SEFIN },
+      );
+
+    // O Id da NFS-e informada só aparece num comentário; o evento é de outra nota.
+    expect(
+      await submit(xml.replace("<pedRegEvento ", `<!-- Id="${eventId}" --><pedRegEvento `)),
+    ).toMatchObject({ kind: "definitive", code: "EVENT_ID_MISMATCH", sent: false });
+    // O tpAmb esperado só aparece num comentário; o pedido enviado é de produção.
+    const production = xml.replace("<tpAmb>2</tpAmb>", "<tpAmb>1</tpAmb>");
+    expect(
+      await submit(
+        production.replace("<pedRegEvento ", "<!--<tpAmb>2</tpAmb>--><pedRegEvento "),
+        other,
+        signed.eventId!,
+      ),
+    ).toMatchObject({ kind: "definitive", code: "ENVIRONMENT_MISMATCH", sent: false });
+    // Mais de um alvo, raiz trocada e XML malformado.
+    const own = (signedEventXml: string) => submit(signedEventXml, other, signed.eventId!);
+    const refusedEvent = { kind: "definitive", code: "EVENT_ID_MISMATCH", sent: false };
+    expect(
+      await own(
+        xml.replace(
+          "</pedRegEvento>",
+          `<infPedReg Id="${signed.eventId}"><tpAmb>2</tpAmb></infPedReg></pedRegEvento>`,
+        ),
+      ),
+    ).toMatchObject(refusedEvent);
+    expect(
+      await own(xml.replace("<pedRegEvento ", "<DPS ").replace("</pedRegEvento>", "</DPS>")),
+    ).toMatchObject(refusedEvent);
+    expect(await own(xml.replace("</infPedReg>", ""))).toMatchObject(refusedEvent);
+    expect(requests).toHaveLength(0);
   });
 
   it("2xx sem XML do evento ainda é sucesso", async () => {
