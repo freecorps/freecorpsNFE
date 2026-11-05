@@ -1462,6 +1462,102 @@ describe("acesso, isolamento e gates", () => {
     ).not.toBe("OK");
   });
 
+  it("chave revogada depois da preparação não marca nem envia a DPS", async () => {
+    const f = await fixture();
+    const accepted = await f.t.mutation(internal.issuance.request, {
+      ...f.keyWhere,
+      keyHash: f.keyHash,
+      idempotencyKey: "revogada",
+      input: domestic(),
+    });
+    const operationId = accepted.issuance.operationId;
+    const token = await claimOperation(f.t, operationId);
+    expect(await f.t.mutation(internal.issuanceProcessing.prepareIssue, token)).toMatchObject({
+      state: "processing",
+      allowed: true,
+    });
+    await f.t.run((ctx) => ctx.db.patch("apiKeys", f.scope.keyId, { revokedAt: Date.now() }));
+    expect(await f.t.mutation(internal.issuanceProcessing.markSubmitted, token)).toBe("lost");
+    const after = await f.t.run(async (ctx) => ({
+      op: (await ctx.db.get("operations", operationId))!,
+      issuance: (await ctx.db.get("issuances", accepted.issuance.id as Id<"issuances">))!,
+      events: await ctx.db.query("issuanceEvents").collect(),
+    }));
+    // Nothing left, so nothing is uncertain: a retry is a plain attempt, not a reconciliation.
+    expect(after.op).toMatchObject({
+      state: "paused",
+      code: "ACCESS_REVOKED",
+      stage: "ready",
+      uncertain: false,
+    });
+    expect(after.issuance).toMatchObject({ state: "processing", submissions: 0 });
+    expect(after.events.map((event) => event.kind)).not.toContain("submitted");
+  });
+
+  it("a tentativa do worker com a chave revogada antes do envio não transmite a DPS", async () => {
+    const f = await fixture();
+    const accepted = await f.t.mutation(internal.issuance.request, {
+      ...f.keyWhere,
+      keyHash: f.keyHash,
+      idempotencyKey: "revogada-no-worker",
+      input: domestic(),
+    });
+    // The key falls inside the attempt, after the preparation and right before the send.
+    const original = fiscalBuild.buildDps;
+    const revocation: Promise<unknown>[] = [];
+    vi.spyOn(fiscalBuild, "buildDps").mockImplementation((...args) => {
+      if (revocation.length === 0)
+        revocation.push(
+          f.t.run((ctx) => ctx.db.patch("apiKeys", f.scope.keyId, { revokedAt: Date.now() })),
+        );
+      return original(...args);
+    });
+    const send = vi.spyOn(nacional, "submitDps");
+    try {
+      const op = await drive(f.t, accepted.issuance.operationId);
+      await Promise.all(revocation);
+      expect(fiscalBuild.buildDps).toHaveBeenCalled();
+      expect(send).not.toHaveBeenCalled();
+      expect(op).toMatchObject({ state: "paused", code: "ACCESS_REVOKED", uncertain: false });
+      expect(await simulation(f.t, accepted.issuance.dpsId)).toBeNull();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("membro rebaixado depois da preparação não marca nem envia o cancelamento", async () => {
+    const f = await fixture();
+    const accepted = await request(f, "base", domestic());
+    await drive(f.t, accepted.issuance.operationId);
+    const requested = await cancel(f, "cancelar", accepted.issuance.id, "Serviço em duplicidade");
+    const operationId = requested.issuance.cancellation!.operationId;
+    const token = await claimOperation(f.t, operationId);
+    expect(await f.t.mutation(internal.issuanceProcessing.prepareCancel, token)).toMatchObject({
+      state: "processing",
+      allowed: true,
+    });
+    await f.t.run(async (ctx) => {
+      const op = (await ctx.db.get("operations", operationId))!;
+      await ctx.db.patch("memberships", op.sourceMembershipId!, { role: "viewer" });
+    });
+    expect(await f.t.mutation(internal.issuanceProcessing.markCancelSubmitted, token)).toBe("lost");
+    const after = await f.t.run(async (ctx) => ({
+      op: (await ctx.db.get("operations", operationId))!,
+      cancellation: (await ctx.db.query("issuanceCancellations").unique())!,
+      issuance: (await ctx.db.get("issuances", accepted.issuance.id as Id<"issuances">))!,
+      events: await ctx.db.query("issuanceEvents").collect(),
+    }));
+    expect(after.op).toMatchObject({
+      state: "paused",
+      code: "ACCESS_REVOKED",
+      stage: "ready",
+      uncertain: false,
+    });
+    expect(after.cancellation).toMatchObject({ state: "processing", submissions: 0 });
+    expect(after.events.map((event) => event.kind)).not.toContain("cancel_submitted");
+    expect(after.issuance.state).toBe("authorized");
+  });
+
   it("o gate de produção só é avaliado depois do acesso e não vaza o seu estado", async () => {
     const f = await fixture();
     const other = await fixture(f.t);

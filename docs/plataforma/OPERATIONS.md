@@ -93,7 +93,11 @@ recuperação criar outra geração. Pausar invalida a geração e cancela traba
 pendente; uma chamada externa que já começou pode terminar.
 
 As etapas persistidas são ready, calling, response e checkpoint. A mutation
-`beginEffect` revalida acesso antes de passar para calling. O executor recebe
+`beginEffect` revalida acesso antes de passar para calling, e `recordOutcome`,
+`checkpoint` e `publish` revalidam de novo antes de gravar, com ou sem
+certificado. Acesso perdido em qualquer desses passos pausa com
+`ACCESS_REVOKED` sem publicar: uma chave revogada entre o checkpoint e a
+publicação deixa a operação parada em checkpoint, sem recibos. O executor recebe
 operationId, generation, fence e request. O reconciliador recebe o mesmo
 contrato e deve consultar o efeito anterior, sem retransmitir implicitamente.
 
