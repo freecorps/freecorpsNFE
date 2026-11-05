@@ -341,6 +341,37 @@ it.each(["expired", "revoked", "issuer-removed", "issuer-role-changed"] as const
     ).rejects.toThrow("INVITATION_UNAVAILABLE");
   },
 );
+it("recusa o convite pendente de uma organização encerrada antes da revogação em lotes", async () => {
+  const t = setup(),
+    org = await organization(t),
+    recipient = await actor(t);
+  const invitation = await invite(t, org.owner, org, recipient, "admin");
+  await org.owner.client.mutation(api.organizationClosure.close, {
+    organizationId: org.organizationId,
+    confirmation: org.slug,
+  });
+  // The revocation batch has not run: the invitation is still pending in the database.
+  expect((await t.run((ctx) => ctx.db.get("invitations", invitation.invitationId)))!.status).toBe(
+    "pending",
+  );
+  await expect(
+    recipient.client.action(api.invitations.preview, { token: invitation.token }),
+  ).rejects.toThrow("INVITATION_UNAVAILABLE");
+  await expect(
+    recipient.client.action(api.invitations.accept, { token: invitation.token }),
+  ).rejects.toThrow("INVITATION_UNAVAILABLE");
+  await t.run(async (ctx) => {
+    const memberships = await ctx.db
+      .query("memberships")
+      .withIndex("by_organizationId_and_authUserId", (q) =>
+        q.eq("organizationId", org.organizationId).eq("authUserId", recipient.userId),
+      )
+      .collect();
+    expect(memberships).toHaveLength(0);
+    expect((await ctx.db.get("organizations", org.organizationId))!.memberCount).toBe(1);
+    expect((await ctx.db.get("invitations", invitation.invitationId))!.status).toBe("pending");
+  });
+});
 it("revokes all private queries and mutations on removal, including previously read contexts", async () => {
   const t = setup(),
     org = await organization(t),

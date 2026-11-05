@@ -85,8 +85,8 @@ servidor. Nenhum código de convite aparece na auditoria ou nos DTOs de lista.
    código ainda só em memória; uma recarga o perde e basta abrir o link de
    novo. Quem preferir cola o código num campo de texto visível. A pessoa
    confere organização/papel e confirma. A mutation de consumo revalida
-   identidade, e-mail normalizado, prazo de 72 horas, estado pendente e
-   concessão do emissor. O código continua de uso único e não é registrado
+   identidade, e-mail normalizado, prazo de 72 horas, estado pendente,
+   concessão do emissor e ausência de encerramento da organização. O código continua de uso único e não é registrado
    em log, URL, `localStorage` ou `sessionStorage`.
 5. O aceite e a criação/reativação do membership ocorrem juntos. Uma segunda
    tentativa não consome novamente. Convite nunca sobrescreve membro ativo.

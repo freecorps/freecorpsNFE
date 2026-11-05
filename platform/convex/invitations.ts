@@ -26,6 +26,7 @@ import {
   requireRoleGrant,
   requireUser,
 } from "./lib/organizationAccess";
+import { closureOf } from "./lib/organizationClosure";
 import { invitationStatus, membershipRole } from "./lib/organizationValues";
 
 const lifetime = 72 * 60 * 60_000;
@@ -67,6 +68,8 @@ async function eligible(ctx: QueryCtx, tokenHash: string, asOf: number) {
     return deny("INVITATION_UNAVAILABLE");
   const organization = await ctx.db.get("organizations", invitation.organizationId);
   if (!organization) return deny("INVITATION_UNAVAILABLE");
+  // The closure revokes open invitations in a later batch; until then the record itself refuses.
+  if (await closureOf(ctx, organization._id)) return deny("INVITATION_UNAVAILABLE");
   return { user, invitation, organization };
 }
 
