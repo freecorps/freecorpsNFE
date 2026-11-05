@@ -23,7 +23,8 @@ afirmação e as decisões ficam em `docs/v1.0/`:
 | `captura-fiscal-2026-10-22`          | 22/10/2026, PR #406 (`a4ec90c`) | `46dfca81f3c7413e2001d76c011417a9fd03a1f4bb3a863af7e7811a37379daa` | Atual                     |
 | `termos-de-uso-2026-11-01`           | 01/11/2026 (#428)               | `9473250bf91250e3bb6091f01eb1f6e05b6e5259a440027bd7761b3de23e1e3b` | Substituída em 02/11/2026 |
 | `termos-de-uso-2026-11-02`           | 02/11/2026 (#142)               | `3d0ebb439785d879900f7822b6d7bfa2480737ea0acdf8824db6498f85ba5984` | Substituída em 04/11/2026 |
-| `termos-de-uso-2026-11-04`           | 04/11/2026 (ADR 0012)           | `41a617856f796a8d6219d04eb4a5260effc3eb59669d6146c483ca7f2f130748` | Atual                     |
+| `termos-de-uso-2026-11-04`           | 04/11/2026 (ADR 0012)           | `41a617856f796a8d6219d04eb4a5260effc3eb59669d6146c483ca7f2f130748` | Substituída em 05/11/2026 |
+| `termos-de-uso-2026-11-05`           | 05/11/2026 (#169)               | `6454cb58aab5a4608b3971ca3d564ebc13132d4cf7aca1cca14ef638ca15f726` | Atual                     |
 | `politica-de-privacidade-2026-11-01` | 01/11/2026 (#428)               | `02742f6e09412c1120dfde651216ce4c4c9c601a63fd453aaf3109dd04a3a899` | Atual                     |
 
 O texto de `captura-fiscal-2026-10-22` é o mesmo desde que entrou no console.
@@ -155,6 +156,17 @@ aprovou o texto em 03/11/2026
 ([decisão](../v1.0/TERMS-DRAFT.md#decisão-de-03112026)); as organizações
 aceitam a 1.2 até 04/12/2026, meia-noite de Brasília, inclusive as que ainda
 não tinham aceitado a 1.1.
+
+A versão 1.3, `termos-de-uso-2026-11-05`, entra no console em 05/11/2026. Ela
+alinha os termos à guarda da NF-e real importada no Sandbox (#108, #169): a
+seção 2 diz que o Sandbox tira o efeito fiscal da emissão simulada, não da
+NF-e importada; a seção 9 e o item 11 da cláusula de operadora dizem que uma
+nota recebida conta como dado de Produção, mesmo guardada no Sandbox, salvo
+quando o XML a declara emitida em homologação; e o parágrafo "Organização só
+com Sandbox" segue esse critério. O resto do texto é o da 1.2
+([decisão](../v1.0/TERMS-DRAFT.md#decisão-de-04112026)). As organizações
+aceitam a 1.3 até 05/12/2026, meia-noite de Brasília, inclusive as que ainda
+não tinham aceitado a 1.2.
 
 Cada versão é um arquivo `arquivo/termos-de-uso-AAAA-MM-DD.md`, imutável, no
 subconjunto aceito pelo console, e o servidor guarda a versão, o SHA-256 e a
