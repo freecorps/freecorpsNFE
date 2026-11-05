@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import { parseNfe, processNfe } from "./src/index";
 import { scanMarkup } from "./src/markup";
@@ -23,8 +24,20 @@ describe("scanMarkup", () => {
     expect(decodeXml(encode(xml))).toBe(xml);
     expect(scanMarkup(`<r>${hidden}</r>`, LIMITS)).toBe("limit");
   });
+  it("reads a processing instruction up to its first `?>`", () => {
+    const hidden = "<b/>".repeat(4);
+    expect(scanMarkup(`<?pi <a><a><a> <!-- ?><r/>`, { depth: 1, nodes: 1 })).toBeNull();
+    expect(scanMarkup(`<r><?pi <!--?>${hidden}<!----></r>`, { depth: 2, nodes: 4 })).toBe("limit");
+    const xml = readFileSync(new URL("./fixtures/minimal.xml", import.meta.url), "utf8");
+    expect(parseNfe(xml.replace("<NFe", "<?note a < b?><NFe")).number).toBe("000000001");
+  });
+  it("counts elements whose name starts with a character JavaScript calls space", () => {
+    expect(scanMarkup("<r><﻿/>< /></r>", { depth: 1, nodes: 3 })).toBeNull();
+    expect(scanMarkup("<﻿>".repeat(3), { depth: 2, nodes: 3 })).toBe("limit");
+  });
   it.each([
     ["an unclosed comment", "<a><!-- </a>"],
+    ["an unclosed processing instruction", "<a><?pi </a>"],
     ["an unclosed CDATA section", "<a><![CDATA[ </a>"],
     ["an unclosed tag", "<a><b"],
     ["an unclosed attribute value", '<a x="1></a>'],
@@ -35,8 +48,9 @@ describe("scanMarkup", () => {
   });
 });
 
-// Um regex recomeçava em cada `<` depois de uma falha: esses arquivos no limite
-// de bytes ocupavam a importação por minutos. A varredura recusa todos na
+// Com o regex que recomeçava em cada `<` depois de uma falha, esses arquivos no
+// limite de bytes ocupavam a importação por minutos; o custo linear foi medido
+// na PR, não aqui. Aqui fica o desfecho nas três entradas: a recusa na
 // primeira abertura sem fechamento.
 describe.each([
   ["comments", "<!--"],

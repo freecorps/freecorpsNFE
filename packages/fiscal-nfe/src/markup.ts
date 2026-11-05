@@ -2,9 +2,10 @@ export type MarkupLimits = { readonly depth: number; readonly nodes: number };
 
 /**
  * Conta profundidade e elementos antes de um parser tocar o XML, numa passada
- * só. Comentários e CDATA não contam; `<!` e `<?` também não. Cada caractere é
- * lido uma vez: um regex que recomeçava em cada `<` depois de uma falha ficava
- * quadrático com milhares de aberturas sem fechamento ou de aspas abertas.
+ * só. Comentários, CDATA, instruções de processamento e `<!` não contam. Cada
+ * caractere é lido uma vez: um regex que recomeçava em cada `<` depois de uma
+ * falha ficava quadrático com milhares de aberturas sem fechamento ou de aspas
+ * abertas.
  *
  * Devolve `"malformed"` para o que nenhum XML bem formado tem (seção ou tag sem
  * fechamento, `<` dentro de tag fora de aspas, tag sem nome) e `"limit"` quando
@@ -19,7 +20,11 @@ export function scanMarkup(xml: string, limits: MarkupLimits): "malformed" | "li
       end = sectionEnd(xml, at + 4, "-->");
     } else if (xml.startsWith("<![CDATA[", at)) {
       end = sectionEnd(xml, at + 9, "]]>");
-    } else if (xml[at + 1] === "!" || xml[at + 1] === "?") {
+    } else if (xml[at + 1] === "?") {
+      // A instrução de processamento termina no primeiro `?>`, como no parser:
+      // um `<` ou `<!--` dentro dela não é tag nem comentário.
+      end = sectionEnd(xml, at + 2, "?>");
+    } else if (xml[at + 1] === "!") {
       end = at + 1;
     } else {
       const closing = xml[at + 1] === "/";
@@ -45,7 +50,9 @@ function sectionEnd(xml: string, from: number, close: string): number {
 
 // Posição logo depois do `>` da tag cujo nome começa em `from`, ou -1.
 function tagEnd(xml: string, from: number): number {
-  if (from >= xml.length || /[\s<>!?/]/u.test(xml[from]!)) return -1;
+  // Só os quatro espaços do XML: o `\s` do JS inclui U+FEFF e U+1680, que podem
+  // começar um nome de elemento.
+  if (from >= xml.length || /[ \t\r\n<>!?/]/u.test(xml[from]!)) return -1;
   for (let at = from + 1; at < xml.length; at++) {
     const c = xml[at];
     if (c === ">") return at + 1;

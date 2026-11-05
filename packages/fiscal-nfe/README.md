@@ -133,8 +133,8 @@ Aceita UTF-8 estrito, com BOM opcional, e namespaces por URI, inclusive prefixos
 Rejeita DTD, entidades declaradas, outras instruções de processamento e encoding
 incompatível. Limites: 2 MiB, profundidade 64, 50.000 elementos e 990 itens.
 A contagem de profundidade e elementos lê o texto uma vez, antes de qualquer
-parser, e recusa como `XML_MALFORMED` comentário, CDATA, tag ou valor de
-atributo sem fechamento.
+parser, e recusa como `XML_MALFORMED` comentário, CDATA, instrução de
+processamento, tag ou valor de atributo sem fechamento.
 Schemas vêm exclusivamente do catálogo em memória; `schemaLocation` recebido
 nunca determina download ou leitura de arquivo.
 
