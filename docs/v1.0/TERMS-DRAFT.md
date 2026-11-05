@@ -1,8 +1,10 @@
-> **Versão 1.2 publicada em 04/11/2026.** O texto em vigor é o arquivo
+> **Versão 1.3 publicada em 05/11/2026.** O texto em vigor é o arquivo
+> [`termos-de-uso-2026-11-05.md`](../termos/arquivo/termos-de-uso-2026-11-05.md),
+> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. A 1.2,
 > [`termos-de-uso-2026-11-04.md`](../termos/arquivo/termos-de-uso-2026-11-04.md),
-> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. A 1.1,
+> foi publicada em 04/11/2026 (ADR 0012), a 1.1,
 > [`termos-de-uso-2026-11-02.md`](../termos/arquivo/termos-de-uso-2026-11-02.md),
-> foi publicada em 02/11/2026 (#142), e a 1.0,
+> em 02/11/2026 (#142), e a 1.0,
 > [`termos-de-uso-2026-11-01.md`](../termos/arquivo/termos-de-uso-2026-11-01.md),
 > em 01/11/2026 (#428). Cada arquivo é a única cópia do seu
 > texto: o console mostra a versão em vigor no aceite e nas páginas públicas
@@ -120,3 +122,23 @@ pedia uma versão nova dos termos
 
 A versão 1.2 entrou no console em 04/11/2026, com o aviso e os 30 dias da
 seção 11: as organizações aceitam até 04/12/2026.
+
+## Decisão de 04/11/2026
+
+Na #108, o mantenedor decidiu que uma NF-e importada no Sandbox com `tpAmb`
+1 no XML conta como Produção para a guarda, e a plataforma passou a guardá-la
+([RETENTION.md](../plataforma/RETENTION.md#organização-sem-produção-decidido-em-27102026)).
+A versão 1.2 ainda dizia que o Sandbox não tem efeito fiscal; a #169 pede a
+versão 1.3, que muda só isto:
+
+- **Seção 2.** O Sandbox tira o efeito fiscal da emissão de NFS-e, que é
+  simulada, não da NF-e importada, que não perde a validade que tiver.
+- **Seção 9, primeiro parágrafo.** Uma nota recebida conta como dado de
+  Produção, mesmo guardada no Sandbox, salvo quando o XML a declara emitida
+  em homologação.
+- **Seção 9, "Organização só com Sandbox".** O mesmo critério; o texto diz
+  que nenhum documento da organização tem validade fiscal.
+- **Cláusula de operadora, item 11.** Remete ao critério da seção 9.
+
+A publicação segue a seção 11: aviso por e-mail e no console, e 30 dias para
+o aceite, até 05/12/2026.

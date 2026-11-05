@@ -542,12 +542,11 @@ validade fiscal da emissão, que é simulada, mas não de uma NF-e real
 importada. O `tpAmb` do XML de uma nota importada no Sandbox pode ser 1, e o
 documento continua autêntico. Por isso uma nota recebida conta como Produção
 quando o próprio XML não declara homologação (`tpAmb` 2), seja qual for o
-ambiente em que está guardada. Os termos de uso vigentes
-(`termos-de-uso-2026-11-04`, seções 2 e 9 e item 11 da cláusula de
-operadora) ainda dizem que o Sandbox não
-tem efeito fiscal; a versão que os alinha fica para uma issue própria, porque
-abre o aviso de 30 dias a todos os clientes. Até lá, o código guarda mais do
-que os termos prometem, nunca menos.
+ambiente em que está guardada. Os termos de uso 1.3
+(`termos-de-uso-2026-11-05`, #169) dizem o mesmo nas seções 2 e 9 e no item
+11 da cláusula de operadora. Até o aceite de cada organização, vale a versão
+que ela aceitou, que ainda diz que o Sandbox não tem efeito fiscal; o código
+guarda mais do que essa versão promete, nunca menos.
 
 - **Regra.** Ao fim da janela de 30 dias, o expurgo do encerramento não muda
   e arma a guarda para o mesmo instante. Se a organização nunca teve

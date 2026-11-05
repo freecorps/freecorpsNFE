@@ -8,8 +8,10 @@
  *
  * The first version entered the console on 01/11/2026 (#428); 1.1, on 02/11/2026, drops the
  * retired ABRASF NFS-e import from section 1 (#142); 1.2, on 04/11/2026, moves the paid plans and
- * their quotas to the subscription month and drops Pix from section 5A (ADR 0012). Publishing a
- * new one adds the file,
+ * their quotas to the subscription month and drops Pix from section 5A (ADR 0012); 1.3, on
+ * 05/11/2026, says in sections 2 and 9 and in item 11 of the operator clause that a NF-e imported
+ * into Sandbox keeps its fiscal validity and counts as Production for the guard (#169). Publishing
+ * a new one adds the file,
  * its line here and the new current version, in the same change, and that change is deployed the
  * same day: `since` starts the 30 days of notice (docs/termos/README.md).
  */
@@ -26,6 +28,10 @@ export const TERMS_OF_USE_ARCHIVE: Readonly<Record<string, { sha256: string; sin
     sha256: "41a617856f796a8d6219d04eb4a5260effc3eb59669d6146c483ca7f2f130748",
     since: "2026-11-04",
   },
+  "termos-de-uso-2026-11-05": {
+    sha256: "6454cb58aab5a4608b3971ca3d564ebc13132d4cf7aca1cca14ef638ca15f726",
+    since: "2026-11-05",
+  },
 };
 /** Version an owner accepts in the console, at the organization's creation and after each change. */
-export const TERMS_OF_USE_VERSION: string | null = "termos-de-uso-2026-11-04";
+export const TERMS_OF_USE_VERSION: string | null = "termos-de-uso-2026-11-05";
