@@ -242,7 +242,7 @@ describe("incremental archive", () => {
     const extracted = await extractZip(zip, join(dir, "extract"), maxBytes);
     for (const [name, path] of entries)
       expect(await readFile(extracted.get(name)!)).toEqual(await readFile(path));
-    expect(readZip(await readFile(zip)).size).toBe(entries.size);
+    expect(readZip(await readFile(zip), maxBytes).size).toBe(entries.size);
     await expect(extractZip(zip, join(dir, "small"), 5)).rejects.toThrow(/limite/);
     const corrupt = await readFile(zip);
     corrupt[corrupt.indexOf("artifact")]! ^= 1;
@@ -355,7 +355,7 @@ describe("incremental archive", () => {
         decrypt: async (from: string, to: string) =>
           crypt(["-d", "-i", secondIdentity, "-o", to, from]),
       });
-      const restoredEntries = readZip(await readFile(restored));
+      const restoredEntries = readZip(await readFile(restored), maxBytes);
       expect(restoredEntries.get(`_storage/${metadata._id}`)).toEqual(bytes);
       expect(restoredEntries.get("_storage/another_id")).toEqual(bytes);
       expect(

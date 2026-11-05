@@ -48,6 +48,7 @@ const raw = {
   ],
 };
 const plan = backupPlan(raw, release);
+const zipLimit = plan.maxSnapshotBytes;
 
 it("keeps the in-memory format 1 capped when larger format 2 budgets are supported", () => {
   expect(() => backupPlan({ ...raw, maxSnapshotBytes: 2 * 1024 ** 3 }, release)).toThrow(
@@ -282,6 +283,19 @@ function zip(files: Record<string, Buffer | string>, method = 8, zip64 = false) 
   locator.writeBigUInt64LE(BigInt(offset + directory.length), 8);
   return Buffer.concat([...locals, directory, record, locator, end]);
 }
+// Adds central entries to a zip, so names can point at bytes another entry already owns.
+function withCentral(base: Buffer, extra: Buffer[]) {
+  const directoryAt = base.readUInt32LE(base.length - 6),
+    count = base.readUInt16LE(base.length - 12),
+    directory = Buffer.concat([base.subarray(directoryAt, base.length - 22), ...extra]),
+    end = Buffer.from(base.subarray(base.length - 22));
+  end.writeUInt16LE(count + extra.length, 8);
+  end.writeUInt16LE(count + extra.length, 10);
+  end.writeUInt32LE(directory.length, 12);
+  return Buffer.concat([base.subarray(0, directoryAt), directory, end]);
+}
+const centralOf = (archive: Buffer) =>
+  archive.subarray(archive.readUInt32LE(archive.length - 6), archive.length - 22);
 const blob = Buffer.from("<nfeProc/>");
 const storageMeta = (id: string, bytes: Buffer) =>
   JSON.stringify({ _id: id, sha256: createHash("sha256").update(bytes).digest("base64") });
@@ -365,7 +379,7 @@ describe("snapshot integrity", () => {
       [8, false],
       [8, true],
     ] as const) {
-      const summary = snapshotSummary(readZip(zip(exportFiles(), method, zip64)));
+      const summary = snapshotSummary(readZip(zip(exportFiles(), method, zip64), zipLimit));
       expect(summary.tables).toEqual({ documents: 2, "_components/betterAuth/user": 1 });
       expect(summary.storage).toEqual({ files: 1, bytes: blob.length });
       expect(Object.keys(summary.digests).sort()).toEqual([
@@ -376,15 +390,17 @@ describe("snapshot integrity", () => {
     }
   });
   it("compares table content independently of row order", () => {
-    const a = snapshotSummary(readZip(zip(exportFiles())));
+    const a = snapshotSummary(readZip(zip(exportFiles()), zipLimit));
     const b = snapshotSummary(
       readZip(
         zip(exportFiles({ "documents/documents.jsonl": '{"_id":"b","n":2}\n{"_id":"a","n":1}\n' })),
+        zipLimit,
       ),
     );
     const c = snapshotSummary(
       readZip(
         zip(exportFiles({ "documents/documents.jsonl": '{"_id":"a","n":1}\n{"_id":"b","n":3}\n' })),
+        zipLimit,
       ),
     );
     expect(b.digests).toEqual(a.digests);
@@ -394,30 +410,72 @@ describe("snapshot integrity", () => {
     const good = zip(exportFiles(), 0);
     const flipped = Buffer.from(good);
     flipped[good.indexOf("<nfeProc/>")] ^= 1;
-    expect(() => readZip(flipped)).toThrow(/CRC/);
-    expect(() => readZip(good.subarray(0, good.length - 30))).toThrow(/zip/);
+    expect(() => readZip(flipped, zipLimit)).toThrow(/CRC/);
+    expect(() => readZip(good.subarray(0, good.length - 30), zipLimit)).toThrow(/zip/);
     // A trailing comment moves the EOCD; one beyond the 64 KiB limit is not a zip.
     const withComment = Buffer.concat([good, Buffer.alloc(100)]);
     withComment.writeUInt16LE(100, good.length - 2);
-    expect(readZip(withComment).size).toBe(readZip(good).size);
-    expect(() => readZip(Buffer.concat([good, Buffer.alloc(70_000)]))).toThrow(/zip/);
+    expect(readZip(withComment, zipLimit).size).toBe(readZip(good, zipLimit).size);
+    expect(() => readZip(Buffer.concat([good, Buffer.alloc(70_000)]), zipLimit)).toThrow(/zip/);
     expect(() =>
-      snapshotSummary(readZip(zip(exportFiles({ "_storage/kg1": "<nfeProc/ >" })))),
+      snapshotSummary(readZip(zip(exportFiles({ "_storage/kg1": "<nfeProc/ >" })), zipLimit)),
     ).toThrow(/Arquivo divergente/);
     const files: Record<string, string> = exportFiles();
     delete files["_storage/kg1"];
-    expect(() => snapshotSummary(readZip(zip(files)))).toThrow(/Arquivo ausente/);
+    expect(() => snapshotSummary(readZip(zip(files), zipLimit))).toThrow(/Arquivo ausente/);
+  });
+
+  it("bounds the expanded total before inflating any entry", () => {
+    expect(readZip(zip({ a: Buffer.alloc(zipLimit) }), zipLimit).get("a")).toHaveLength(zipLimit);
+    expect(() => readZip(zip({ a: Buffer.alloc(zipLimit + 1) }), zipLimit)).toThrow(
+      /acima do limite/,
+    );
+    const zeros = Buffer.alloc(600);
+    expect(() => readZip(zip({ a: zeros, b: zeros }), zipLimit)).toThrow(/acima do limite/);
+    // A zip64 size beyond any budget is refused before its member is read.
+    const huge = zip({ a: zeros }, 8, true);
+    huge.writeBigUInt64LE(2n ** 60n, huge.indexOf(Buffer.from([0x50, 0x4b, 1, 2])) + 46 + 1 + 4);
+    expect(() => readZip(huge, zipLimit)).toThrow(/acima do limite/);
+    expect(() => readZip(zip(exportFiles()), 0)).toThrow(/limite de expansão/);
+  });
+
+  it("refuses names that share compressed bytes or point outside the archive", () => {
+    // Same member under another name.
+    const single = zip({ "a/x": Buffer.alloc(100) }),
+      alias = Buffer.from(centralOf(single));
+    alias.write("b/x", 46);
+    expect(() => readZip(withCentral(single, [alias]), zipLimit)).toThrow(
+      /Entradas sobrepostas: b\/x/,
+    );
+    // A member hidden inside another one's stored bytes, at a different offset.
+    const inner = zip({ b: Buffer.alloc(100) }),
+      outer = zip({ a: inner.subarray(0, inner.readUInt32LE(inner.length - 6)) }, 0),
+      nested = Buffer.from(centralOf(inner));
+    nested.writeUInt32LE(30 + "a".length, 42);
+    expect(() => readZip(withCentral(outer, [nested]), zipLimit)).toThrow(
+      /Entradas sobrepostas: b/,
+    );
+    const outside = zip({ a: "x" }),
+      at = outside.readUInt32LE(outside.length - 6);
+    outside.writeUInt32LE(0x7fffffff, at + 42);
+    expect(() => readZip(outside, zipLimit)).toThrow(/Entrada fora do arquivo: a/);
+  });
+
+  it("stops an entry that expands beyond its declared size", () => {
+    const lying = zip({ a: Buffer.alloc(1024 ** 2) });
+    lying.writeUInt32LE(10, lying.readUInt32LE(lying.length - 6) + 24);
+    expect(() => readZip(lying, zipLimit)).toThrow(/além do tamanho declarado: a/);
   });
 
   it("finds storage files exported with a contentType extension", () => {
     const files: Record<string, string> = exportFiles({ "_storage/kg1.xml": blob.toString() });
     delete files["_storage/kg1"];
-    expect(snapshotSummary(readZip(zip(files))).storage).toEqual({
+    expect(snapshotSummary(readZip(zip(files), zipLimit)).storage).toEqual({
       files: 1,
       bytes: blob.length,
     });
     expect(() =>
-      snapshotSummary(readZip(zip(exportFiles({ "_storage/kg1.xml": blob.toString() })))),
+      snapshotSummary(readZip(zip(exportFiles({ "_storage/kg1.xml": blob.toString() })), zipLimit)),
     ).toThrow(/Arquivo repetido/);
   });
 });
@@ -496,6 +554,7 @@ describe("custody", () => {
             }) + "\n",
         }),
       ),
+      zipLimit,
     );
     const [envelope] = certificateEnvelopes(entries);
     expect(certificateEnvelopes(entries)).toHaveLength(1);
