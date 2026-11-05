@@ -9,6 +9,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { archiveStatus } from "./lib/coldArchiveCore";
 import { patchFiscal, releaseStoredFile } from "./lib/capacityCore";
+import { moveOriginalCold } from "./lib/originalStore";
 import { storageHolders } from "./lib/storageHolders";
 import { storedRef } from "./lib/documentContentPlan";
 import { coldConfig, contentObjectKey, originalObjectKey } from "./lib/coldObjects";
@@ -666,19 +667,7 @@ export const attachOriginal = internalMutation({
       return false;
     const upload = args.runId ? await rehydratedUpload(ctx, args.runId, args.storageId) : null;
     if (args.runId && !upload) return false;
-    await patchFiscal(
-      ctx,
-      "documentArtifacts",
-      artifact._id,
-      {
-        storageId: undefined,
-        objectKey: args.objectKey,
-        objectSha256: args.objectSha256,
-        objectSize: args.objectSize,
-      },
-      false,
-      !!args.runId,
-    );
+    await moveOriginalCold(ctx, artifact._id, args, !!args.runId);
     const file = artifact.fileId ? await ctx.db.get("importFiles", artifact.fileId) : null;
     const released = file?.storageId === args.storageId;
     if (released) await ctx.db.patch("importFiles", file._id, { storageId: undefined });

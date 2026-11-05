@@ -1,4 +1,5 @@
 import { insertFiscal, patchFiscal } from "./lib/capacityCore";
+import { linkOriginal } from "./lib/originalStore";
 import { readStoredContent } from "./lib/documentContentRead";
 import {
   clearInlineContent,
@@ -153,7 +154,7 @@ export const stage = internalMutation({
         }));
       if (artifact.documentId && artifact.documentId !== documentId)
         return deny("DOCUMENT_CONFLICT");
-      await patchFiscal(ctx, "documentArtifacts", artifact._id, { documentId });
+      await linkOriginal(ctx, artifact._id, { documentId });
     }
     const versionId = await insertFiscal(ctx, "documentVersions", {
       artifactId: artifact._id,

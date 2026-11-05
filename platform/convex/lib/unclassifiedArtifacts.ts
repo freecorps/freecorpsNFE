@@ -1,6 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { patchFiscal } from "./capacityCore";
+import { linkOriginal } from "./originalStore";
 
 /**
  * What an artifact without a document came from: its import file, the operation that read it and
@@ -45,7 +45,7 @@ export async function syncNfseBatch(ctx: MutationCtx, artifactId: Id<"documentAr
   if (artifact.source !== "imported-xml") return;
   const batch = !(await unclassifiedOrigin(ctx, artifact)).listed;
   if (batch !== !!artifact.nfseBatch)
-    await patchFiscal(ctx, "documentArtifacts", artifact._id, {
+    await linkOriginal(ctx, artifact._id, {
       nfseBatch: batch ? true : undefined,
     });
 }

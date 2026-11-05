@@ -4,6 +4,7 @@ import { CAPTURE_HOUR, captureProcessingTask } from "./captureValues";
 import { continueOperation } from "./operationCore";
 import { PROCESSOR_VERSION } from "./importValues";
 import { deny } from "./organizationAccess";
+import { linkOriginal } from "./originalStore";
 
 /**
  * Gap recovery of a capture stream (#419). NT 2014.002 v1.40 numbers each actor's documents
@@ -145,9 +146,7 @@ export async function admitEnvelope(
     false,
   );
   await ctx.db.patch("captureEnvelopes", envelope._id, { operationId });
-  await ctx.db.patch("documentArtifacts", envelope.artifactId, {
-    processingOperationId: operationId,
-  });
+  await linkOriginal(ctx, envelope.artifactId, { processingOperationId: operationId });
 }
 
 /**

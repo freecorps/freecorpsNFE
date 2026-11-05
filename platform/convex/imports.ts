@@ -1,10 +1,10 @@
 import {
-  insertFiscal,
   ensureCapacityReady,
   reserveCapacity,
   checkCapacity,
   capacityPolicy,
 } from "./lib/capacityCore";
+import { insertOriginal } from "./lib/originalStore";
 import { v, type Infer } from "convex/values";
 import {
   mutation,
@@ -403,7 +403,7 @@ export async function confirmFile(
     return deny("INVALID_FILE");
   await commitUsage(ctx, batch.organizationId, "imports", String(fileId));
   await commitUsage(ctx, batch.organizationId, "bytes", String(fileId));
-  const artifactId = await insertFiscal(ctx, "documentArtifacts", {
+  const artifactId = await insertOriginal(ctx, {
     organizationId: batch.organizationId,
     projectId: batch.projectId,
     companyId: batch.companyId,
