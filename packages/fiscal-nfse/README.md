@@ -246,7 +246,14 @@ formatDecimal(value: string, places?: number): string
   desligada. A marca aparece no cabeçalho, no rodapé de cada página e em
   diagonal, em transparência.
 - **Valores** saem do texto decimal do XML (`formatDecimal`), sem ponto
-  flutuante.
+  flutuante. O XML não tem limite de tamanho prévio, então valores,
+  alíquota e quebra de linha custam tempo linear no tamanho do texto: o
+  agrupamento de milhares e a limpeza dos zeros da alíquota percorrem o
+  texto uma vez. A quebra (`src/lineBreak.ts`, fora das entradas do
+  pacote) mede cada palavra uma vez, a junção com a anterior em poucos
+  caracteres e, se a palavra for maior que a linha, cada caractere
+  sozinho e com o anterior. As linhas são as mesmas de medir cada
+  candidata com o kerning do pdf-lib.
 - **Determinismo.** Sem data de criação nem produtor: o mesmo XML e as mesmas
   opções dão os mesmos bytes. O pacote não consulta o relógio.
 - **Texto.** A descrição longa continua em páginas seguintes, em vez de ser
