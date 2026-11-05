@@ -7,6 +7,17 @@ import { MAX_PFX_BYTES, MAX_PASSWORD_BYTES } from "./certificateValues";
 function fail(code: string): never {
   throw new Error(code);
 }
+/** Iterations allowed for one key derivation (MAC or bag cipher). */
+const MAX_ITERATIONS = 100_000;
+/** All bag ciphers together: the key, the certificates and some slack. */
+const MAX_CIPHER_ITERATIONS = 3 * MAX_ITERATIONS;
+function iterations(node: forge.asn1.Asn1 | undefined) {
+  const raw = node?.type === forge.asn1.Type.INTEGER ? node.value : undefined;
+  if (typeof raw !== "string" || raw.length > 4) return fail("CERTIFICATE_INVALID");
+  const count = Array.from(raw).reduce((n, c) => n * 256 + c.charCodeAt(0), 0);
+  if (count < 1 || count > MAX_ITERATIONS) fail("CERTIFICATE_INVALID");
+  return count;
+}
 // Bound KDF work before node-forge processes attacker-controlled PKCS#12 parameters.
 function inspect(node: forge.asn1.Asn1, depth = 0, budget = { nodes: 0 }) {
   if (++budget.nodes > 12000 || depth > 32) fail("CERTIFICATE_INVALID");
@@ -18,21 +29,14 @@ function inspect(node: forge.asn1.Asn1, depth = 0, budget = { nodes: 0 }) {
     values[1]?.type === forge.asn1.Type.OCTETSTRING &&
     values[2]?.type === forge.asn1.Type.INTEGER &&
     typeof values[2].value === "string"
-  ) {
-    const raw = values[2].value;
-    const iterations = Array.from(raw).reduce((n, c) => n * 256 + c.charCodeAt(0), 0);
-    if (raw.length > 4 || iterations < 1 || iterations > 100_000) fail("CERTIFICATE_INVALID");
-  }
+  )
+    iterations(values[2]);
   if (
     values[0]?.type === forge.asn1.Type.OCTETSTRING &&
     values[1]?.type === forge.asn1.Type.INTEGER &&
     typeof values[1].value === "string"
-  ) {
-    const value = values[1].value;
-    if (value.length > 4) fail("CERTIFICATE_INVALID");
-    const iterations = Array.from(value).reduce((n, c) => n * 256 + c.charCodeAt(0), 0);
-    if (iterations < 1 || iterations > 100_000) fail("CERTIFICATE_INVALID");
-  }
+  )
+    iterations(values[1]);
   for (const child of values) {
     inspect(child, depth + 1, budget);
     // PKCS#12 wraps its authenticated safe in an OCTET STRING.
@@ -49,6 +53,33 @@ function inspect(node: forge.asn1.Asn1, depth = 0, budget = { nodes: 0 }) {
       }
       inspect(inner, depth + 1, budget);
     }
+  }
+}
+type Pbe = {
+  getCipher: (oid: string, params: forge.asn1.Asn1, password: string) => unknown;
+};
+const pbe = (forge.pki as unknown as { pbe: Pbe }).pbe;
+const children = (node: forge.asn1.Asn1 | undefined) =>
+  Array.isArray(node?.value) ? node.value : [];
+/** Encrypted SafeContents and shrouded key bags only reveal their parameters
+ * after the layer around them is decrypted, out of reach of `inspect`. forge
+ * asks `pki.pbe.getCipher` for every bag cipher, so each derivation is
+ * checked there, before the key is derived. The parse is synchronous, so the
+ * wrapper never sees another caller. */
+function boundedDerivations<T>(run: () => T): T {
+  const getCipher = pbe.getCipher;
+  let total = 0;
+  pbe.getCipher = (oid, params, password) => {
+    // PBES2 nests PBKDF2-params; PKCS#12 PBE params are salt and iterations.
+    const kdf = oid === forge.pki.oids.pkcs5PBES2 ? children(children(params)[0])[1] : params;
+    total += iterations(children(kdf)[1]);
+    if (total > MAX_CIPHER_ITERATIONS) fail("CERTIFICATE_INVALID");
+    return getCipher.call(pbe, oid, params, password);
+  };
+  try {
+    return run();
+  } finally {
+    pbe.getCipher = getCipher;
   }
 }
 function identity(cert: forge.pki.Certificate): string {
@@ -92,7 +123,9 @@ function readCertificate(pfx: Buffer, password: Buffer) {
   try {
     const asn = forge.asn1.fromDer(pfx.toString("binary"));
     inspect(asn);
-    const parsed = forge.pkcs12.pkcs12FromAsn1(asn, true, password.toString("utf8"));
+    const parsed = boundedDerivations(() =>
+      forge.pkcs12.pkcs12FromAsn1(asn, true, password.toString("utf8")),
+    );
     const keys = [forge.pki.oids.pkcs8ShroudedKeyBag, forge.pki.oids.keyBag].flatMap(
       (bagType) => parsed.getBags({ bagType })[bagType] ?? [],
     );

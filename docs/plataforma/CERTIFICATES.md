@@ -27,7 +27,9 @@ chave privada correspondente, prazo, uso de assinatura/autenticação de
 cliente, RSA de pelo menos 2048 bits e CNPJ completo no OID `2.16.76.1.3.3`.
 O valor desse `otherName` é aceito como `OCTET STRING` ou `PrintableString`,
 os tipos do DOC-ICP-04, e também como `UTF8String` ou `IA5String`.
-CN não prova identidade. Derivação no PFX é limitada a 100 mil iterações.
+CN não prova identidade. Cada derivação de chave no PFX, inclusive a dos
+bags que só aparecem depois de decifrar o conteúdo, é limitada a 100 mil
+iterações, e as cifras dos bags somam no máximo 300 mil.
 Validação offline não comprova cadeia ICP-Brasil nem consulta CRL/OCSP.
 Ativação fiscal real continua na validação fiscal real e captura NF-e.
 
