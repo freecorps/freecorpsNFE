@@ -961,7 +961,10 @@ pedido em vez de consultar.
   assinatura, `signed: false`), `nfse` (XML autorizado), `danfse` (PDF),
   `cancel-request` (pedido de evento) e `cancel-event` (XML do evento
   devolvido, quando houver). Cada um com SHA-256 e tamanho, baixável por
-  `GET /v1/issuances/{id}/artifacts/{artifactId}`.
+  `GET /v1/issuances/{id}/artifacts/{artifactId}`. O download conta em
+  `downloadsBytes` antes de entregar o arquivo, como o do original de documento
+  ([USAGE.md](USAGE.md#estoque-e-tráfego)); com a cota esgotada, a resposta é a
+  recusa de cota e nenhum byte sai.
 - **DANFSe.** Gerado na mesma tentativa que recebe a NFS-e autorizada (envio
   ou recuperação por consulta), a partir do XML que será preservado, por
   `renderDanfse` de `@freecorps/fiscal-nfse/danfse`

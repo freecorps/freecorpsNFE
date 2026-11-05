@@ -19,6 +19,7 @@ import {
   type IssuanceView,
 } from "./lib/issuanceValues";
 import { currentRow } from "./lib/coldArchiveCurrent";
+import { chargeDownload } from "./lib/capacityCore";
 
 /**
  * Public REST of the NFS-e issuance (ADR 0004, phase 2): `/v1/issuances`. The API key gives the
@@ -127,10 +128,16 @@ export const read = internalQuery({
 
 /**
  * Authorizes one preserved artifact (XML or DANFSe PDF) of the issuance. A mutation, so the key expiry is checked against
- * the clock on every download; the route calls it again after reading the bytes.
+ * the clock on every download; the route calls it again after reading the bytes. With `transferKey`, the first call
+ * charges the file to the organization's download bytes, like the other downloads, before any byte is served.
  */
 export const artifact = internalMutation({
-  args: { ...keyFields, issuanceId: v.string(), artifactId: v.string() },
+  args: {
+    ...keyFields,
+    issuanceId: v.string(),
+    artifactId: v.string(),
+    transferKey: v.optional(v.string()),
+  },
   returns: v.object({ storageId: v.id("_storage"), kind: v.string() }),
   handler: async (ctx, args) => {
     const scope = await keyScope(ctx, args);
@@ -139,6 +146,8 @@ export const artifact = internalMutation({
     const row = await currentRow(ctx, scope.organizationId, "issuanceArtifacts", args.artifactId);
     if (!row || row.issuanceId !== issuance._id || row.organizationId !== scope.organizationId)
       return deny("NOT_FOUND");
+    if (args.transferKey)
+      await chargeDownload(ctx, scope.organizationId, row.storageId, args.transferKey);
     return { storageId: row.storageId, kind: row.kind };
   },
 });
@@ -204,7 +213,10 @@ export const route = jsonRoute(
         issuanceId: decoded(download[1]!),
         artifactId: decoded(download[2]!),
       };
-      const found = await ctx.runMutation(internal.issuanceRest.artifact, args);
+      const found = await ctx.runMutation(internal.issuanceRest.artifact, {
+        ...args,
+        transferKey: crypto.randomUUID(),
+      });
       const blob = await ctx.storage.get(found.storageId);
       if (!blob) return deny("ORIGINAL_UNAVAILABLE");
       // Access may have been revoked while the bytes were read.
