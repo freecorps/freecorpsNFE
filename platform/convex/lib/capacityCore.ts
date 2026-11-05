@@ -545,30 +545,33 @@ async function fiscalOwner(
   }
   return deny("NOT_FOUND");
 }
+/**
+ * The tables `insertFiscal` and `patchFiscal` write. The XML originals' rows are not among them:
+ * `lib/originalStore.ts` is their only writer, so nothing rewrites an original's hash (#110).
+ */
+type FiscalWriteTable = Exclude<FiscalTable, "documentArtifacts">;
+/** The same refusal at runtime, for a caller that cast its way past the type. */
+function refuseOriginals(table: FiscalTable) {
+  if (table === "documentArtifacts") throw new Error("ORIGINAL_WRITER");
+}
 /** Domain writes and their logical byte deltas commit or roll back together. */
-export async function insertFiscal<T extends FiscalTable>(
+export async function insertFiscal<T extends FiscalWriteTable>(
   ctx: MutationCtx,
   table: T,
   value: WithoutSystemFields<Doc<T>>,
   enforce = true,
 ): Promise<Id<T>> {
+  refuseOriginals(table);
   const id = await ctx.db.insert(table, value);
   const record = (await ctx.db.get<FiscalTable>(table, id))!;
-  await trackDatabaseRecord(
-    ctx,
-    await fiscalOwner(ctx, record),
-    table,
-    id,
-    record,
-    enforce && table !== "documentArtifacts",
-  );
+  await trackDatabaseRecord(ctx, await fiscalOwner(ctx, record), table, id, record, enforce);
   return id;
 }
 /**
  * `restoringInventory`: the write belongs to the rehydration of ADR 0009 (the cold stage of ADR
  * 0010, C2), so it is tracked while the organization is `restoring`, as the rehydration's own rows.
  */
-export async function patchFiscal<T extends FiscalTable>(
+export async function patchFiscal<T extends FiscalWriteTable>(
   ctx: MutationCtx,
   table: T,
   id: Id<T>,
@@ -576,6 +579,7 @@ export async function patchFiscal<T extends FiscalTable>(
   enforce = true,
   restoringInventory = false,
 ) {
+  refuseOriginals(table);
   await ctx.db.patch(table, id, value);
   const record = (await ctx.db.get<FiscalTable>(table, id))!;
   await trackDatabaseRecord(
@@ -584,7 +588,7 @@ export async function patchFiscal<T extends FiscalTable>(
     table,
     id,
     record,
-    enforce && table !== "documentArtifacts",
+    enforce,
     restoringInventory,
   );
 }

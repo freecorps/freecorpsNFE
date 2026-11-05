@@ -1,5 +1,4 @@
 import {
-  insertFiscal,
   reserveCapacity,
   trackStoredFile,
   releaseCapacity,
@@ -8,6 +7,7 @@ import {
   ensureCapacityReady,
   capacityEvent,
 } from "./lib/capacityCore";
+import { insertOriginal } from "./lib/originalStore";
 import { v } from "convex/values";
 import { internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -545,7 +545,7 @@ export const envelope = internalMutation({
         args.storageId,
         batch.usageKey ? `capture:${batch.usageKey}` : undefined,
       );
-      const artifactId = await insertFiscal(ctx, "documentArtifacts", {
+      const artifactId = await insertOriginal(ctx, {
         organizationId: current.op.organizationId,
         projectId: current.op.projectId,
         companyId: current.op.companyId,
