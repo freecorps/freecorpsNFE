@@ -57,10 +57,14 @@ export function quantize(value: ExactDecimal, scale: number, rounding: Rounding)
   return digits(quotient, scale);
 }
 export function add(left: ExactDecimal, right: ExactDecimal): ExactDecimal {
+  // Valida os dois operandos antes de usar a escala: uma escala forjada no
+  // objeto serializado viraria expoente de `10n **` antes da recusa.
+  const leftCoefficient = parts(left);
+  const rightCoefficient = parts(right);
   const scale = Math.max(left.scale, right.scale);
   const coefficient =
-    parts(left) * 10n ** BigInt(scale - left.scale) +
-    parts(right) * 10n ** BigInt(scale - right.scale);
+    leftCoefficient * 10n ** BigInt(scale - left.scale) +
+    rightCoefficient * 10n ** BigInt(scale - right.scale);
   return decimal(digits(coefficient, scale));
 }
 /**

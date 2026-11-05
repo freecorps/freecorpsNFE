@@ -50,6 +50,13 @@ describe("exact decimal public contract", () => {
     expect(() => quantize({ ...decimal("1"), coefficient: "2" }, 2, "reject")).toThrow(
       "DECIMAL_INVALID",
     );
+    // A escala forjada seria expoente de `10n **`: a recusa vem antes da conta,
+    // em qualquer operando, e não como RangeError do bigint.
+    for (const scale of [2 ** 31, Number.MAX_SAFE_INTEGER, Number.NaN, 1.5, -1]) {
+      const forged = { ...decimal("1"), scale };
+      expect(() => add(decimal("1"), forged)).toThrow("DECIMAL_INVALID");
+      expect(() => add(forged, decimal("1"))).toThrow("DECIMAL_INVALID");
+    }
     for (const value of ["1e3", "NaN", "Infinity", "1,23", "9".repeat(41), "1." + "1".repeat(21)])
       expect(() => decimal(value)).toThrow();
     expect(normalizeCnpj("12ABC34501DE35")).toBe("12ABC34501DE35");
