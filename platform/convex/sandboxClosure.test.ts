@@ -75,6 +75,52 @@ const production = (
     startedAt: at,
   });
 
+/**
+ * #108: a received NF-e held in Sandbox, with the `tpAmb` its XML declared; absent, unmarked.
+ * `emitted`: an NFS-e of the Sandbox simulator instead, which carries no mark. The company and
+ * the note carry the organization's old date, so they are not activity.
+ */
+const note = (
+  t: PlatformTest,
+  organizationId: Id<"organizations">,
+  tpAmb?: "1" | "2" | "emitted",
+) =>
+  t.run(async (ctx) => {
+    const at = Date.now() - 200 * ARCHIVE_DAY;
+    const companyId = await ctx.db.insert("companies", {
+      organizationId,
+      cnpj: "11222333000181",
+      name: "Empresa sintética",
+      address: {
+        street: "Rua sintética",
+        number: "1",
+        complement: "",
+        district: "Centro",
+        city: "Cidade",
+        state: "SP",
+        postalCode: "01000000",
+      },
+      kind: "declared",
+      declaredBy: "synthetic",
+      declaredAt: at,
+      fieldSources: { name: "declared", address: "declared" },
+      version: 1,
+      createdAt: at,
+      updatedAt: at,
+    });
+    return ctx.db.insert("fiscalDocuments", {
+      organizationId,
+      companyId,
+      environment: "sandbox",
+      ...(tpAmb === "emitted"
+        ? { model: "nfse" as const, direction: "emitted" as const }
+        : { model: "55" as const, ...(tpAmb ? { tpAmb } : {}) }),
+      fiscalKey: "35261011222333000181550010000000011000000010",
+      completeness: 1,
+      createdAt: at,
+    });
+  });
+
 const notice = (t: PlatformTest, organizationId: Id<"organizations">, key = "sandbox-notice-1") =>
   t.mutation(internal.sandboxClosure.notice, { organizationId, key });
 const row = (t: PlatformTest, noticeId: Id<"sandboxClosureNotices">) =>
@@ -227,8 +273,9 @@ describe("E-mail do aviso", () => {
       siteUrl: "https://console.example.invalid/app",
     });
     expect(mail.subject).toBe("A organização Sandbox será encerrada a partir de 26/11/2026");
-    expect(mail.text).toContain("só tem dados de Sandbox e está há 90 dias sem atividade");
-    expect(mail.text).toContain("não têm validade fiscal");
+    expect(mail.text).toContain(
+      "não tem documento com validade fiscal e está há 90 dias sem atividade",
+    );
     expect(mail.text).toContain("exportação fica disponível por 30 dias");
     expect(mail.text).toContain("A conta de cada pessoa continua");
     expect(mail.text).toContain('"Manter ativa"');
@@ -394,6 +441,37 @@ describe("Encerramento pela Freecorps", () => {
     await expect(
       t.mutation(internal.sandboxClosure.close, { noticeId, version: 2 }),
     ).resolves.toEqual({ state: "cancelled", cancelled: "activity" });
+  });
+
+  it("NF-e importada no Sandbox com tpAmb 1 ou sem marca conta como Produção; com tpAmb 2, não (#108)", async () => {
+    const t = platformTest();
+    for (const [key, tpAmb] of [
+      ["real", "1"],
+      ["unmarked", undefined],
+    ] as const) {
+      const organizationId = await organization(t);
+      await note(t, organizationId, tpAmb);
+      await expect(notice(t, organizationId, `sandbox-notice-${key}`), key).rejects.toThrow(
+        "SANDBOX_CLOSURE_PRODUCTION",
+      );
+    }
+    // Homologação notes and the simulator's NFS-e, with no mark, keep it Sandbox-only.
+    const homologation = await organization(t);
+    await note(t, homologation, "2");
+    await note(t, homologation, "emitted");
+    await expect(notice(t, homologation, "sandbox-notice-homologation")).resolves.toBeDefined();
+  });
+
+  it("organização que recebe uma NF-e real durante o aviso não é encerrada", async () => {
+    const t = platformTest();
+    const organizationId = await organization(t);
+    const noticeId = await notice(t, organizationId);
+    vi.advanceTimersByTime(30 * ARCHIVE_DAY);
+    await note(t, organizationId, "1");
+    await expect(
+      t.mutation(internal.sandboxClosure.close, { noticeId, version: 1 }),
+    ).resolves.toEqual({ state: "cancelled", cancelled: "production" });
+    expect(await closure(t, organizationId)).toBeNull();
   });
 
   it("organização que ganha dados de Produção durante o aviso não é encerrada", async () => {

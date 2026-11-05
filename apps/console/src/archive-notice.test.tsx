@@ -129,10 +129,9 @@ describe("Aviso de encerramento de organização só com Sandbox (ADR 0009, deci
     const notice = screen.getByRole("status");
     expect(notice.textContent).toContain("encerrada a partir de 26/11/2026");
     expect(notice.textContent).toContain(
-      "Esta organização só tem dados de Sandbox e está sem uso há 90 dias.",
+      "Esta organização não tem documento com validade fiscal e está sem uso há 90 dias.",
     );
-    expect(notice.textContent).toContain("não têm validade fiscal");
-    expect(notice.textContent).toContain("eles são apagados");
+    expect(notice.textContent).toContain("os dados são apagados");
     expect(notice.textContent).toContain("A conta de cada pessoa continua.");
     expect(notice.textContent).toContain("Um proprietário ou administrador pode manter");
     expect(screen.queryByRole("button", { name: "Manter ativa" })).toBeNull();

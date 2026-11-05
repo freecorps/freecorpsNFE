@@ -10,7 +10,11 @@ import { processNfe } from "../../packages/fiscal-nfe/src/index";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
 import { modules } from "./convex-modules";
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-export async function fixture(overrides: typeof modules = {}) {
+/** `bytes`: the XML imported, the corpus' authorized note unless given. */
+export async function fixture(
+  overrides: typeof modules = {},
+  bytes: Uint8Array = xmlFixture("invoice-authorized"),
+) {
   const t = convexTest(schema, { ...modules, ...overrides });
   register(t);
   const secret = `fnfe_${"a".repeat(43)}`,
@@ -19,7 +23,6 @@ export async function fixture(overrides: typeof modules = {}) {
     keyHash,
     suffix: crypto.randomUUID(),
   });
-  const bytes = xmlFixture("invoice-authorized");
   const model = processNfe(bytes).normalized!.document;
   if (model.kind !== "invoice") throw new Error();
   await t.run(async (ctx) => {

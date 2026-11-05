@@ -229,7 +229,8 @@ conteúdo que eles ficam indisponíveis até a reativação.
 ## Organização só com Sandbox
 
 Uma organização aberta que nunca teve dados de Produção, pelo critério de
-`sandboxOnly` do encerramento, não vai para o arquivo: a Freecorps a encerra
+`sandboxOnly` do encerramento, em que uma nota recebida conta como Produção
+quando o próprio XML não declara homologação (#108), não vai para o arquivo: a Freecorps a encerra
 (ADR 0009, decisão 2 de 29/10/2026). Depois de 90 dias sem atividade, com a
 mesma atividade do aviso de arquivamento do Gratuito e em qualquer plano ou
 sem plano, a Freecorps cria um aviso de 30 dias em `sandboxClosureNotices`,
@@ -241,9 +242,9 @@ plano aguardando pagamento ou assinatura de cartão renovando não recebe aviso.
 - **Console.** `sandboxClosure.status`, lida por qualquer membro ativo,
   devolve o aviso pendente (`noticeId`, `closeAt`) e `canAct` para owners e
   admins; sem aviso, `null`. O console mostra, em todas as páginas da
-  organização, a data a partir da qual ela será encerrada, em Brasília, que os
-  dados do Sandbox não têm validade fiscal e são apagados depois do
-  encerramento e que a conta de cada pessoa continua.
+  organização, a data a partir da qual ela será encerrada, em Brasília, que
+  ela não tem documento com validade fiscal, que os dados são apagados depois
+  do encerramento e que a conta de cada pessoa continua.
 - **Manter ativa.** Owner ou admin escolhe "Manter ativa" no aviso
   (`sandboxClosure.keepActive`, com o `noticeId` visto). O aviso termina
   (`kept_active`), a organização registra atividade e

@@ -456,9 +456,9 @@ export function sandboxClosureMail(notice: {
   return {
     subject: `A organização ${notice.organization} será encerrada a partir de ${date}`,
     text: [
-      `A organização ${notice.organization} só tem dados de Sandbox e está há ${SANDBOX_IDLE_DAYS} dias sem atividade na Freecorps Fiscal. A partir de ${date}, a Freecorps vai encerrá-la.`,
+      `A organização ${notice.organization} não tem documento com validade fiscal e está há ${SANDBOX_IDLE_DAYS} dias sem atividade na Freecorps Fiscal. A partir de ${date}, a Freecorps vai encerrá-la.`,
       "",
-      `Os dados do Sandbox não têm validade fiscal. Depois do encerramento, a exportação fica disponível por ${exportDays} dias; em seguida, a organização e os dados do Sandbox são apagados. A conta de cada pessoa continua.`,
+      `Depois do encerramento, a exportação fica disponível por ${exportDays} dias; em seguida, a organização e os dados dela são apagados. A conta de cada pessoa continua.`,
       "",
       `Para manter a organização ativa, um proprietário ou administrador escolhe "Manter ativa" no aviso do console: ${link}`,
       "",

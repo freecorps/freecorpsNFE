@@ -464,7 +464,7 @@ describe("gate e indicador de ambiente", () => {
       { environment: "sandbox", fiscalProduction: false, confirmed: false },
     ] as const)
       expect(stamp(deployment, "Local").innerHTML).toBe(
-        '<span class="ui-badge ui-badge--warning">Sandbox</span><span>Sem validade fiscal · Local</span>',
+        '<span class="ui-badge ui-badge--warning">Sandbox</span><span>Emissão sem validade fiscal · Local</span>',
       );
   });
 });

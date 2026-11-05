@@ -121,6 +121,51 @@ describe("Elegibilidade de organização aberta (decisões de 29/10/2026)", () =
       expect(await run(t, organizationId)).toBeNull();
     },
   );
+
+  it("organização só com Sandbox que guarda uma NF-e real recebe o aviso do arquivo (#108)", async () => {
+    const t = platformTest();
+    const organizationId = await organization(t, { sandboxOnly: true });
+    const idle = Date.now() - 100 * ARCHIVE_DAY;
+    await t.run(async (ctx) => {
+      const companyId = await ctx.db.insert("companies", {
+        organizationId,
+        cnpj: "11222333000181",
+        name: "Empresa sintética",
+        address: {
+          street: "Rua sintética",
+          number: "1",
+          complement: "",
+          district: "Centro",
+          city: "Cidade",
+          state: "SP",
+          postalCode: "01000000",
+        },
+        kind: "declared",
+        declaredBy: "synthetic",
+        declaredAt: idle,
+        fieldSources: { name: "declared", address: "declared" },
+        version: 1,
+        createdAt: idle,
+        updatedAt: idle,
+      });
+      await ctx.db.insert("fiscalDocuments", {
+        organizationId,
+        companyId,
+        environment: "sandbox",
+        model: "55",
+        tpAmb: "1",
+        fiscalKey: "35261011222333000181550010000000011000000010",
+        completeness: 1,
+        createdAt: idle,
+      });
+    });
+    // A real note is kept by the guard, so the archive, not the Sandbox closure, takes it.
+    await notice(t, organizationId);
+    expect(await run(t, organizationId)).toMatchObject({
+      state: "notice",
+      reason: "free_inactive",
+    });
+  });
 });
 
 describe("Aviso por e-mail aos proprietários e administradores", () => {

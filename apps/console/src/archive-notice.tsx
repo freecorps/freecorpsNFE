@@ -232,10 +232,10 @@ export function SandboxClosureCallout({
         actions={action}
       >
         <p>
-          Esta organização só tem dados de Sandbox e está sem uso há 90 dias. A partir de {date}, a
-          Freecorps vai encerrá-la. Os dados do Sandbox não têm validade fiscal: depois do
-          encerramento, a exportação fica disponível por 30 dias e, em seguida, eles são apagados. A
-          conta de cada pessoa continua.
+          Esta organização não tem documento com validade fiscal e está sem uso há 90 dias. A partir
+          de {date}, a Freecorps vai encerrá-la. Depois do encerramento, a exportação fica
+          disponível por 30 dias e, em seguida, os dados são apagados. A conta de cada pessoa
+          continua.
         </p>
         <p>
           {standing.canAct

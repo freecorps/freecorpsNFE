@@ -147,14 +147,14 @@ describe("shell do console", () => {
     renderShell();
     const badge = document.querySelector(".app-env");
     expect(badge?.getAttribute("title")).toBe("Desenvolvimento local · Versão abcdef1");
-    expect(badge?.textContent).toBe("SandboxSem validade fiscal · Desenvolvimento local");
+    expect(badge?.textContent).toBe("SandboxEmissão sem validade fiscal · Desenvolvimento local");
   });
 
   it("sem perfil (installation, #517), o indicador mostra só o deployment e a versão", () => {
     renderShell(undefined, undefined, null);
     const badge = document.querySelector(".app-env");
     expect(badge?.getAttribute("title")).toBe("Versão abcdef1");
-    expect(badge?.textContent).toBe("SandboxSem validade fiscal");
+    expect(badge?.textContent).toBe("SandboxEmissão sem validade fiscal");
   });
 
   it("sem organização: marca, destinos gerais, ambiente e o menu da conta com tema e saída", () => {
@@ -311,7 +311,7 @@ describe("shell do console", () => {
     const production = within(group).getByRole("radio", { name: "Produção" });
     // Opens in the Sandbox: nobody lands in Produção without choosing it.
     expect(sandbox.getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText("Sem validade fiscal")).toBeTruthy();
+    expect(screen.getByText("Emissão sem validade fiscal")).toBeTruthy();
     fireEvent.click(production);
     expect(production.getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText("Notas reais da captura fiscal")).toBeTruthy();

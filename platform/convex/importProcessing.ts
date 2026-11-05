@@ -37,7 +37,7 @@ import {
   writerRetryDelay,
   versionContentSource,
 } from "./lib/documentContentWriter";
-import { DOCUMENT_CONTENT_MIME } from "./lib/documentValues";
+import { declaredTpAmb, DOCUMENT_CONTENT_MIME } from "./lib/documentValues";
 
 export const load = internalMutation({
   args: claimFields,
@@ -389,6 +389,11 @@ async function publishVersion(
         ? await ctx.db.get("documentArtifacts", current.artifactId)
         : null;
       const artifact = (await ctx.db.get("documentArtifacts", version.artifactId))!;
+      // #108: every version marks the note, published or not: a conflicting or duplicate original
+      // that says Produção is still a real note the organization holds.
+      const declared = version.result === undefined ? null : declaredTpAmb(version.result);
+      const tpAmb = doc.tpAmb === "1" ? "1" : (declared ?? doc.tpAmb);
+      if (tpAmb !== doc.tpAmb) await patchFiscal(ctx, "fiscalDocuments", doc._id, { tpAmb });
       if (
         !current ||
         version.completeness > doc.completeness ||

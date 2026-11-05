@@ -212,7 +212,7 @@ it("no Sandbox na lateral, com a Produção oferecida, a exportação é do Sand
   render(<Exports org={org(true)} />);
   fireEvent.click(screen.getByRole("button", { name: "Exportar organização" }));
   expect(
-    screen.getByText(/Ambiente: Sandbox\. Documentos de teste, sem validade fiscal\./),
+    screen.getByText(/Ambiente: Sandbox\. Documentos importados no Sandbox e NFS-e do simulador\./),
   ).toBeTruthy();
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar exportação" }));

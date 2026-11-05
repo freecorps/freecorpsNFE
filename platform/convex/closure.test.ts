@@ -2242,7 +2242,14 @@ it("remove depois do encerramento os dados fiscais de uma organização que nunc
   await seedWithoutEnvironment(f, owner.membershipId);
   const before = await snapshot(f);
   const other = await twin(f);
+  // A real note of another organization decides nothing here (#108).
+  await f.t.run(async (ctx) => {
+    for (const row of await ctx.db.query("fiscalDocuments").collect())
+      if (row.organizationId === other.organizationId)
+        await ctx.db.patch("fiscalDocuments", row._id, { tpAmb: "1" });
+  });
   const untouched = await rest(f, before);
+  expect((await f.t.run((ctx) => ctx.db.get("fiscalDocuments", f.documentId)))!.tpAmb).toBe("2");
   const closure = await closeAndPurge(f, owner);
   const after = await snapshot(f);
   // Plans, payments and capacity stay for their own deadline.
@@ -2320,6 +2327,11 @@ it("com qualquer sinal de Produção, a guarda conserva tudo até o prazo, como 
         }),
       ),
     gate: (f: Fixture) => gate(f, true),
+    // #108: an imported NF-e whose XML says Produção, and one not known to be homologação.
+    real: (f: Fixture) =>
+      f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "1" })),
+    unmarked: (f: Fixture) =>
+      f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: undefined })),
     // More history than one read covers counts as Production, even without a production event.
     events: async (f: Fixture) => {
       for (let i = 0; i < 101; i++) await gate(f, false);
@@ -2399,6 +2411,77 @@ it("com qualquer sinal de Produção, a guarda conserva tudo até o prazo, como 
     });
     expect(await counts(f, conserved), name).toEqual(kept);
   }
+});
+
+it("uma NF-e importada com tpAmb 1 no Sandbox não sai na remoção antecipada, chamada direto", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "1" }));
+  const kept = await counts(f, conserved);
+  const closure = await closeAndPurge(f, owner);
+  expect(closure.sandboxOnly).toBe(false);
+  expect(await f.t.mutation(internal.fiscalGuard.early, { closureId: closure._id })).toEqual({
+    done: true,
+    removed: 0,
+  });
+  expect(await counts(f, conserved)).toEqual(kept);
+  expect(await f.t.run((ctx) => ctx.db.get("fiscalDocuments", f.documentId))).not.toBeNull();
+});
+
+it("a NF-e com tpAmb 1 do Sandbox fica até o prazo da guarda e sai na expiração final", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "1" }));
+  const closure = await closeAndPurge(f, owner);
+  vi.setSystemTime(fiscalGuardUntil(closure.requestedAt) - 1);
+  await f.t.mutation(internal.fiscalGuard.expire, {
+    closureId: closure._id,
+    generation: closure.generation,
+  });
+  expect(await f.t.run((ctx) => ctx.db.get("fiscalDocuments", f.documentId))).not.toBeNull();
+  vi.setSystemTime(fiscalGuardUntil(closure.requestedAt));
+  const current = (await closureOf(f))!;
+  await f.t.mutation(internal.fiscalGuard.expire, {
+    closureId: current._id,
+    generation: current.generation,
+  });
+  await settleNow(f);
+  expect((await closureOf(f))!.expiredAt).toBeDefined();
+  expect(await f.t.run((ctx) => ctx.db.get("fiscalDocuments", f.documentId))).toBeNull();
+});
+
+it("uma decisão de só Sandbox tomada antes da #108 para uma vez diante de uma NF-e real", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  const organizationId = f.scope.organizationId;
+  await f.t.mutation(internal.fiscalGuard.hold, {
+    organizationId,
+    reference: "anterior-108",
+    responsible: "operacao-sintetica",
+    reviewAt: Date.now() + 400 * DAY,
+  });
+  const closure = await closeAndPurge(f, owner);
+  expect(closure.sandboxOnly).toBe(true);
+  // The note as it was before #108: no mark, under a decision already recorded.
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: undefined }));
+  await f.t.mutation(internal.fiscalGuard.release, { organizationId, reference: "anterior-108" });
+  const kept = await counts(f, conserved);
+  const warn = vi.spyOn(console, "warn");
+  for (let i = 0; i < 2; i++) {
+    const current = (await closureOf(f))!;
+    await f.t.mutation(internal.fiscalGuard.expire, {
+      closureId: current._id,
+      generation: current.generation,
+    });
+  }
+  const stopped = warn.mock.calls
+    .map(([line]) => String(line))
+    .filter((line) => line.includes("organization.sandbox-purge-stopped"));
+  warn.mockRestore();
+  expect(stopped).toHaveLength(1);
+  expect(JSON.parse(stopped[0]!)).toMatchObject({ reason: "fiscal-document" });
+  expect((await closureOf(f))!.sandboxOnly).toBe(false);
+  expect(await counts(f, conserved)).toEqual(kept);
 });
 
 it("uma retenção legal ativa segura a remoção antecipada, que vem na verificação depois da liberação", async () => {
