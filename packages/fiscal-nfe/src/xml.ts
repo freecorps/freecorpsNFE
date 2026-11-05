@@ -1,5 +1,6 @@
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import { XmlDocument, ParseOption } from "libxml2-wasm";
+import { scanMarkup } from "./markup.js";
 
 export const NFE_NS = "http://www.portalfiscal.inf.br/nfe";
 export const DS_NS = "http://www.w3.org/2000/09/xmldsig#";
@@ -38,18 +39,9 @@ export function decodeXml(bytes: Uint8Array): string {
   if (encoding && !/^utf-8$/i.test(encoding)) return fail("XML_ENCODING_UNSUPPORTED");
   if (/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) return fail("XML_UNSAFE");
   if (/<\?(?!xml\s)/i.test(xml)) return fail("XML_PROCESSING_INSTRUCTION_UNSUPPORTED");
-  let depth = 0,
-    nodes = 0;
-  const markup = xml.replace(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>/g, "");
-  for (const m of markup.matchAll(/<\/?[^!?/\s<>](?:[^"'<>]|"[^"]*"|'[^']*')*>/gu)) {
-    const tag = m[0];
-    if (tag.startsWith("</")) depth--;
-    else {
-      nodes++;
-      if (!tag.endsWith("/>")) depth++;
-    }
-    if (depth > LIMITS.depth || nodes > LIMITS.nodes) return fail("XML_LIMIT_EXCEEDED");
-  }
+  const scan = scanMarkup(xml, LIMITS);
+  if (scan === "malformed") return fail("XML_MALFORMED");
+  if (scan === "limit") return fail("XML_LIMIT_EXCEEDED");
   let doc: XmlDocument | undefined;
   try {
     doc = XmlDocument.fromString(xml, parseOptions);

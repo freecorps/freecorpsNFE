@@ -1,4 +1,5 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
+import { scanMarkup } from "./markup.js";
 
 export const MAX_XML_BYTES = 2 * 1024 * 1024;
 export type XmlErrorCode =
@@ -63,18 +64,9 @@ export function parseNfe(xml: string): NfeDocument {
     return fail("XML_TOO_LARGE");
   if (/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) return fail("XML_UNSAFE");
   // Bound nesting before either parser touches untrusted input.
-  let depth = 0,
-    nodes = 0;
-  const markup = xml.replace(/<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>/g, "");
-  for (const match of markup.matchAll(/<\/?[^!?/\s<>](?:[^"'<>]|"[^"]*"|'[^']*')*>/gu)) {
-    const tag = match[0];
-    if (tag.startsWith("</")) depth--;
-    else {
-      nodes++;
-      if (!tag.endsWith("/>")) depth++;
-    }
-    if (depth > 64 || nodes > 50_000) return fail("XML_UNSAFE");
-  }
+  const scan = scanMarkup(xml, { depth: 64, nodes: 50_000 });
+  if (scan === "malformed") return fail("XML_MALFORMED");
+  if (scan === "limit") return fail("XML_UNSAFE");
   if (XMLValidator.validate(xml) !== true) return fail("XML_MALFORMED");
   let parsed: Node;
   try {
