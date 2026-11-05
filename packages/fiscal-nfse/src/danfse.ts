@@ -20,6 +20,7 @@ import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } 
 import QRCode from "qrcode";
 import { BACEN_CURRENCY, NFSE_NS } from "./dps.js";
 import { fail } from "./errors.js";
+import { breakLines } from "./lineBreak.js";
 
 /** Origem do documento quando não é produção: muda o texto da marca. */
 export type DanfseMark = "simulated" | "restricted";
@@ -136,18 +137,39 @@ const fmtCep = (d: string) => (/^\d{8}$/.test(d) ? `${d.slice(0, 5)}-${d.slice(5
 /** Chave em grupos de 10 para conferência manual. */
 const fmtChave = (c: string) => c.replace(/(\d{10})(?=\d)/g, "$1 ");
 
+/**
+ * "1234567" → "1.234.567". Laço em grupos de três a partir da esquerda: o valor vem do XML sem
+ * limite de tamanho, e uma regex com lookahead revarreria o resto do número em cada posição.
+ */
+function groupThousands(digits: string): string {
+  const head = digits.length % 3 || 3;
+  let grouped = digits.slice(0, head);
+  for (let i = head; i < digits.length; i += 3) grouped += `.${digits.slice(i, i + 3)}`;
+  return grouped;
+}
+
 /** "1234.5" → "1.234,50": texto decimal, sem ponto flutuante. */
 export function formatDecimal(value: string, places = 2): string {
   const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
   if (!match) return value;
   const [, sign, int, frac = ""] = match;
-  const grouped = int!.replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const grouped = groupThousands(int!.replace(/^0+(?=\d)/, ""));
   const decimals = frac.length >= places ? frac : frac.padEnd(places, "0");
   return `${sign}${grouped}${decimals ? `,${decimals}` : ""}`;
 }
 const brl = (value: string) => `R$ ${formatDecimal(value)}`;
-/** Alíquota com as casas do XML, sem zeros à direita além de duas. */
-const percent = (value: string) => `${formatDecimal(value.replace(/(\.\d\d\d*?)0+$/, "$1"), 2)}%`;
+/**
+ * Alíquota com as casas do XML, sem zeros à direita além de duas: "2.5000" → "2,50%". Só as
+ * casas depois do último ponto, se forem todas dígitos, perdem zeros; o resto passa intacto.
+ * Percorre o texto uma vez, em vez de uma regex preguiçosa que recua a cada casa.
+ */
+function percent(value: string): string {
+  const dot = value.lastIndexOf(".");
+  const frac = value.slice(dot + 1);
+  let end = frac.length;
+  if (dot >= 0 && /^\d+$/.test(frac)) while (end > 2 && frac[end - 1] === "0") end--;
+  return `${formatDecimal(value.slice(0, dot + 1) + frac.slice(0, end), 2)}%`;
+}
 /** "2026-10-08T12:00:00-03:00" → "08/10/2026 12:00:00 (-03:00)". */
 function dateTime(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}:\d{2}:\d{2})([+-]\d{2}:\d{2}|Z)?)?/.exec(value);
@@ -293,28 +315,7 @@ function encoder(font: PDFFont) {
 }
 
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const lines: string[] = [];
-  let current = "";
-  for (const word of text.replace(/\s+/g, " ").trim().split(" ")) {
-    // Palavra maior que a linha: corta em pedaços que cabem.
-    let rest = word;
-    while (font.widthOfTextAtSize(rest, size) > maxWidth && rest.length > 1) {
-      let cut = rest.length - 1;
-      while (cut > 1 && font.widthOfTextAtSize(rest.slice(0, cut), size) > maxWidth) cut--;
-      if (current) lines.push(current);
-      lines.push(rest.slice(0, cut));
-      current = "";
-      rest = rest.slice(cut);
-    }
-    const candidate = current ? `${current} ${rest}` : rest;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) current = candidate;
-    else {
-      if (current) lines.push(current);
-      current = rest;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
+  return breakLines(text, maxWidth, size / 1000, (part) => font.widthOfTextAtSize(part, 1000));
 }
 
 /** Módulos do QR desenhados como retângulos: vetorial, sem PNG embutido. */
