@@ -12,6 +12,7 @@ import { validateCertificate, certificateTlsPem } from "./certificateValidation"
 import {
   syntheticCertificate,
   legacySyntheticCertificate,
+  encryptedSafeCertificate,
 } from "../../../tests/helpers/certificates";
 import { createSecureContext } from "node:tls";
 const context = { organizationId: "org-a", companyId: "company-a", id: "cert-a", version: 1 };
@@ -139,6 +140,27 @@ it("refuses an attacker-controlled excessive MAC work factor before deriving key
   );
   const pfx = Buffer.from(forge.asn1.toDer(p12).getBytes(), "binary");
   expect(() => validateCertificate(pfx, material.password, "00000000000191")).toThrow(
+    "CERTIFICATE_INVALID",
+  );
+});
+it("bounds the work factor of bags that only appear after the outer decryption", () => {
+  const nested = encryptedSafeCertificate(2048);
+  expect(validateCertificate(nested.pfx, nested.password, "00000000000191").cnpj).toBe(
+    "00000000000191",
+  );
+  const heavy = encryptedSafeCertificate(100_001);
+  expect(() => validateCertificate(heavy.pfx, heavy.password, "00000000000191")).toThrow(
+    "CERTIFICATE_INVALID",
+  );
+});
+it("bounds the iterations of all bag ciphers together", () => {
+  const several = encryptedSafeCertificate(2048, [2048, 2048, 2048]);
+  expect(validateCertificate(several.pfx, several.password, "00000000000191").cnpj).toBe(
+    "00000000000191",
+  );
+  // Each count is allowed alone; together they pass the budget at the last one.
+  const over = encryptedSafeCertificate(2048, [2048, 100_000, 100_000, 100_000]);
+  expect(() => validateCertificate(over.pfx, over.password, "00000000000191")).toThrow(
     "CERTIFICATE_INVALID",
   );
 });
