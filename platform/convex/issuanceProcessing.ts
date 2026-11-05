@@ -14,7 +14,7 @@ import {
 } from "./lib/issuanceCore";
 import { rejectionItem } from "./lib/issuanceValues";
 import { recordAudit } from "./lib/operationalAudit";
-import { activeClaim, type Claim } from "./lib/operationCore";
+import { activeClaim, executionAllowed, pauseOperation, type Claim } from "./lib/operationCore";
 import { claimFields } from "./lib/operationValues";
 import { recordUsage } from "./lib/usageCore";
 // Usage keys use the issuance's first ID (ADR 0009, §5, item 5): the same after a rehydration.
@@ -35,6 +35,19 @@ async function claimed(ctx: MutationCtx, claim: Claim) {
     .withIndex("by_operationId", (q) => q.eq("operationId", op._id))
     .unique();
   return issuance ? { op, issuance } : null;
+}
+/**
+ * Pause of a send refused before it left (`markSubmitted`, `markCancelSubmitted`). The executor
+ * is already in `calling`, which `pauseOperation` reads as an effect that may have left; this one
+ * did not, so the operation goes back to `ready` and stays uncertain only if an earlier send did.
+ */
+async function pauseRevoked(ctx: MutationCtx, op: Doc<"operations">, submittedBefore: boolean) {
+  await ctx.db.patch("operations", op._id, { stage: "ready" });
+  await pauseOperation(
+    ctx,
+    { ...op, stage: "ready", uncertain: op.uncertain || submittedBefore },
+    "ACCESS_REVOKED",
+  );
 }
 async function claimedCancellation(ctx: MutationCtx, claim: Claim) {
   const op = await activeClaim(ctx, claim);
@@ -295,11 +308,15 @@ export const saveDps = internalMutation({
 /** Durable mark written before each transmission: from here on, only reconciliation repeats it. */
 /**
  * Marks a submission right before it leaves, and decides in the same transaction whether it may:
- * the transport still allowed (`transportAllowed`) and, for a resend (`submissions > 0`), the
- * production gate on (`productionResendAllowed`). The answer is never a memory of the attempt:
+ * the source still authorized, with its key or member, grant and certificate
+ * (`executionAllowed`), the transport still allowed (`transportAllowed`) and, for a resend
+ * (`submissions > 0`), the production gate on (`productionResendAllowed`). The certificate the
+ * worker opened at the start of the attempt is used only after this answer. The answer is never a
+ * memory of the attempt:
  *
  * - `submit`: marked; the DPS may be sent.
- * - `lost`: the claim is gone or the issuance left `processing`; nothing written.
+ * - `lost`: the claim is gone, the issuance left `processing`, or the source lost its authority
+ *   and the operation paused with `ACCESS_REVOKED`; nothing marked.
  * - `blocked`: something was submitted before and this send is not allowed now; nothing written,
  *   and the issuance keeps reconciling (`ISSUANCE_RESEND_BLOCKED`).
  * - `rejected`: nothing was ever submitted and the policy closed; rejected for good here.
@@ -315,6 +332,10 @@ export const markSubmitted = internalMutation({
   handler: async (ctx, claim) => {
     const found = await claimed(ctx, claim);
     if (!found || found.issuance.state !== "processing") return "lost";
+    if (!(await executionAllowed(ctx, found.op))) {
+      await pauseRevoked(ctx, found.op, found.issuance.submissions > 0);
+      return "lost";
+    }
     const { issuance } = found;
     const allowed =
       (await transportAllowed(ctx, issuance, "issue")) &&
@@ -598,9 +619,10 @@ export const saveCancelEvent = internalMutation({
 });
 
 /**
- * Marks a cancellation submission right before it leaves, with the transport still allowed in
- * the same transaction (the cancellation rule: deployment and list, not the gate). The persisted
- * event is idempotent by its Id, so a resend needs nothing more. Answers as `markSubmitted`.
+ * Marks a cancellation submission right before it leaves, with the source still authorized and
+ * the transport still allowed in the same transaction (the cancellation rule: deployment and
+ * list, not the gate). The persisted event is idempotent by its Id, so a resend needs nothing
+ * more. Answers as `markSubmitted`.
  */
 export const markCancelSubmitted = internalMutation({
   args: claimFields,
@@ -613,6 +635,10 @@ export const markCancelSubmitted = internalMutation({
   handler: async (ctx, claim) => {
     const found = await claimedCancellation(ctx, claim);
     if (!found || found.cancellation.state !== "processing") return "lost";
+    if (!(await executionAllowed(ctx, found.op))) {
+      await pauseRevoked(ctx, found.op, found.cancellation.submissions > 0);
+      return "lost";
+    }
     if (!(await transportAllowed(ctx, found.issuance, "cancel"))) {
       if (found.cancellation.submissions > 0) return "blocked";
       await rejectCancellation(ctx, found, TRANSPORT_DISABLED, []);

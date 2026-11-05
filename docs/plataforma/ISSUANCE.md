@@ -382,7 +382,12 @@ cuja concessão tem só `documents:import` precisa receber `documents:issue` e
 e operações feitas antes da #206; no console, pessoas com acesso à empresa as
 veem sem concessão. Uma operação antiga ainda
 na fila de um projeto sem o escopo para com `ACCESS_REVOKED` antes de
-transmitir; editar os escopos da concessão não muda a época dela, então a
+transmitir. A conferência se repete na transação que marca o envio
+(`markSubmitted` e `markCancelSubmitted` em `issuanceProcessing.ts`): chave
+revogada, concessão retirada, membro rebaixado ou A1 inutilizável depois da
+preparação pausam a operação com `ACCESS_REVOKED`, sem marcar nem transmitir,
+mesmo com o certificado já aberto pela tentativa; sem envio anterior, ela não
+fica incerta. Editar os escopos da concessão não muda a época dela, então a
 retentativa manual retoma a mesma operação depois da concessão.
 
 ## API REST

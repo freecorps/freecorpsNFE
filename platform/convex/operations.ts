@@ -403,7 +403,9 @@ export const publish = internalMutation({
   handler: async (ctx, args) => {
     const op = await activeClaim(ctx, args);
     if (!op || op.stage !== "checkpoint") return false;
-    if (op.certificate && !(await executionAllowed(ctx, op))) {
+    // Publication is a final effect of its own (the import's document, the capture's
+    // continuation): the authority is read again here, with or without a certificate.
+    if (!(await executionAllowed(ctx, op))) {
       await pauseOperation(ctx, op, "ACCESS_REVOKED");
       return false;
     }

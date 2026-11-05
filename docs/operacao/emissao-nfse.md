@@ -447,6 +447,12 @@ transação que marca o envio; com ele desligado, nada sai
 (`ISSUANCE_RESEND_BLOCKED`). O que fazer nesse caso está em
 [Cortar a emissão](#cortar-a-emissão).
 
+**Acesso perdido antes do envio.** `markSubmitted` e
+`issuanceProcessing.markCancelSubmitted` conferem também, na mesma transação,
+a origem da operação: chave, membro ou conexão, concessão do projeto e A1.
+Sem ela, a operação pausa com `ACCESS_REVOKED` antes de transmitir, mesmo com
+o certificado já aberto pela tentativa.
+
 **Probe e verificação, só leitura.** `internal.issuanceProbe.verify` e
 `internal.issuanceProbe.verifyIssued` (`platform/convex/issuanceProbe.ts`)
 leem a Sefin e o ADN de produção com o A1 da empresa. Fazem só `GET`, para os

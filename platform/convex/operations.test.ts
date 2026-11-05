@@ -216,6 +216,27 @@ it("publicação revertida não deixa evento ou consumo parcial", async () => {
   expect(observed.receipts).toHaveLength(0);
   expect(await f.t.mutation(internal.operations.publish, token)).toBe(true);
 });
+it("chave revogada entre o checkpoint e a publicação pausa sem publicar, mesmo sem certificado", async () => {
+  const f = await fixture(),
+    token = await claim(f);
+  await f.t.mutation(internal.operations.beginEffect, token);
+  await f.t.mutation(internal.operations.recordOutcome, {
+    ...token,
+    outcome: { kind: "success", response: "persisted" },
+  });
+  expect(await f.t.mutation(internal.operations.checkpoint, token)).toBe(true);
+  expect((await inspect(f)).operation?.certificate).toBeUndefined();
+  await f.t.run((ctx) => ctx.db.patch("apiKeys", f.scope.keyId, { revokedAt: Date.now() }));
+  expect(await f.t.mutation(internal.operations.publish, token)).toBe(false);
+  const observed = await inspect(f);
+  expect(observed.operation).toMatchObject({
+    state: "paused",
+    stage: "checkpoint",
+    code: "ACCESS_REVOKED",
+  });
+  expect(observed.receipts).toHaveLength(0);
+  expect(await f.t.mutation(internal.operations.publish, token)).toBe(false);
+});
 it("mesma chave em outro projeto da organização reserva outra operação sem ampliar leitura", async () => {
   const f = await fixture();
   const otherHash = await hashApiKey(`fnfe_${"c".repeat(43)}`);
