@@ -445,8 +445,9 @@ function signedTargetTpAmb(xml: string, target: SignedTarget, expectedId: string
     throw new NfseError(target.code, target.message);
   };
   // Outro parser leria o mesmo texto de outro jeito com encoding diferente de
-  // UTF-8 ou com DTD (valores padrão de atributo): ficam de fora.
-  const encoding = /^<\?xml[^>]*?\sencoding\s*=\s*["']([^"']*)["']/.exec(xml)?.[1];
+  // UTF-8 ou com DTD (valores padrão de atributo): ficam de fora. O BOM pode
+  // preceder a declaração.
+  const encoding = /^﻿?\s*<\?xml[^>]*?\sencoding\s*=\s*["']([^"']*)["']/.exec(xml)?.[1];
   if (encoding !== undefined && encoding.toUpperCase() !== "UTF-8") return refuse();
   let doc: ReturnType<DOMParser["parseFromString"]>;
   try {

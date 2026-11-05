@@ -236,6 +236,9 @@ describe("issue", () => {
     expect(await submit(xml.replace('encoding="UTF-8"', 'encoding="UTF-7"'))).toMatchObject(
       refused("DPS_ID_MISMATCH"),
     );
+    expect(await submit(`﻿${xml.replace('encoding="UTF-8"', 'encoding="UTF-7"')}`)).toMatchObject(
+      refused("DPS_ID_MISMATCH"),
+    );
     expect(requests).toHaveLength(0);
   });
 
