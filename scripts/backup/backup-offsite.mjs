@@ -27,6 +27,7 @@ import {
   backupMetrics,
   measureBackupPhase,
   byCodeUnit,
+  authenticateManifest,
   certificateEnvelopes,
   custodyFingerprints,
   evaluateBackups,
@@ -38,6 +39,7 @@ import {
   snapshotId,
   snapshotSummary,
   verifyCustody,
+  verifyManifestAuthentication,
   webhookSecrets,
 } from "../lib/offsite-backup.mjs";
 import { extractZip, fileDigest, writeZip } from "../lib/offsite-backup-zip.mjs";
@@ -214,9 +216,9 @@ async function snapshot(receipt) {
       "/api/query",
       { path: "_system/cli/queryEnvironmentVariables", args: {}, format: "json" },
     );
-    const custody = custodyFingerprints(
-      new Map(environment.value.map(({ name, value }) => [name, value])),
-    );
+    // Source custody stays in memory: fingerprints go to the manifest, the MAC key nowhere.
+    const sourceCustody = new Map(environment.value.map(({ name, value }) => [name, value]));
+    const custody = custodyFingerprints(sourceCustody);
     const zip = join(workdir, "snapshot.zip");
     const inventory = await sourceInventory();
     receipt.preflight = preflight({
@@ -292,23 +294,26 @@ async function snapshot(receipt) {
     receipt.metrics.observed.snapshotCiphertextBytes = cipher.length;
     const id = snapshotId(new Date(startedAt)),
       keys = objectKeys(plan, id);
-    const manifest = {
-      format: 1,
-      id,
-      deployment: plan.deployment,
-      codeSha: before.sha,
-      snapshotStartedAt: startedAt,
-      exportedAt,
-      plaintext: { sha256: sha256(plain), bytes: plain.length },
-      ciphertext: { sha256: sha256(cipher), bytes: cipher.length },
-      recipients: plan.recipients,
-      tables: summary.tables,
-      storage: summary.storage,
-      digests: summary.digests,
-      requiredCertificateKeyVersions: required,
-      custody,
-      runner: { sha: git("rev-parse", "HEAD"), run: process.env.GITHUB_RUN_ID ?? null },
-    };
+    const manifest = authenticateManifest(
+      {
+        format: 1,
+        id,
+        deployment: plan.deployment,
+        codeSha: before.sha,
+        snapshotStartedAt: startedAt,
+        exportedAt,
+        plaintext: { sha256: sha256(plain), bytes: plain.length },
+        ciphertext: { sha256: sha256(cipher), bytes: cipher.length },
+        recipients: plan.recipients,
+        tables: summary.tables,
+        storage: summary.storage,
+        digests: summary.digests,
+        requiredCertificateKeyVersions: required,
+        custody,
+        runner: { sha: git("rev-parse", "HEAD"), run: process.env.GITHUB_RUN_ID ?? null },
+      },
+      sourceCustody,
+    );
     await client.put(keys.snapshot, cipher, "application/octet-stream");
     const stored = await client.head(keys.snapshot);
     assert.equal(stored?.size, cipher.length, "Cópia enviada difere do arquivo cifrado");
@@ -326,6 +331,7 @@ async function snapshot(receipt) {
       uploadedAt: new Date().toISOString(),
       plaintextBytes: plain.length,
       ciphertext: manifest.ciphertext,
+      manifestAuthentication: manifest.authentication.scheme,
       tables: Object.keys(summary.tables).length,
       documents: Object.values(summary.tables).reduce((a, b) => a + b, 0),
       storage: summary.storage,
@@ -398,14 +404,13 @@ async function incrementalSnapshot(receipt) {
       storage: retained,
       maxBytes: plan.maxSnapshotBytes,
     });
-    const custody = custodyFingerprints(
-      new Map(
-        (await sourceQuery("_system/cli/queryEnvironmentVariables", {})).map(({ name, value }) => [
-          name,
-          value,
-        ]),
-      ),
+    const sourceCustody = new Map(
+      (await sourceQuery("_system/cli/queryEnvironmentVariables", {})).map(({ name, value }) => [
+        name,
+        value,
+      ]),
     );
+    const custody = custodyFingerprints(sourceCustody);
     const verifier = join(workdir, "verifier.key"),
       recipients = join(workdir, "recipients.txt");
     tool(ageKeygen, ["-o", verifier]);
@@ -523,25 +528,28 @@ async function incrementalSnapshot(receipt) {
     receipt.metrics.observed.snapshotZipBytes = statSync(zip).size;
     await encrypt(zip, cipher);
     receipt.metrics.observed.snapshotCiphertextBytes = statSync(cipher).size;
-    const manifest = {
-      format: 2,
-      id,
-      deployment: plan.deployment,
-      codeSha: before.sha,
-      snapshotStartedAt: startedAt,
-      exportedAt,
-      plaintext: await fileDigest(zip),
-      ciphertext: await fileDigest(cipher),
-      recipients: plan.recipients,
-      ...summary,
-      objects: [...objects.values()].map(({ reused: _reused, ...proof }) => proof),
-      coldArchives,
-      ...(coldDocuments ? { coldDocuments } : {}),
-      invalidatedExports,
-      requiredCertificateKeyVersions: required,
-      custody,
-      runner: { sha: git("rev-parse", "HEAD"), run: process.env.GITHUB_RUN_ID ?? null },
-    };
+    const manifest = authenticateManifest(
+      {
+        format: 2,
+        id,
+        deployment: plan.deployment,
+        codeSha: before.sha,
+        snapshotStartedAt: startedAt,
+        exportedAt,
+        plaintext: await fileDigest(zip),
+        ciphertext: await fileDigest(cipher),
+        recipients: plan.recipients,
+        ...summary,
+        objects: [...objects.values()].map(({ reused: _reused, ...proof }) => proof),
+        coldArchives,
+        ...(coldDocuments ? { coldDocuments } : {}),
+        invalidatedExports,
+        requiredCertificateKeyVersions: required,
+        custody,
+        runner: { sha: git("rev-parse", "HEAD"), run: process.env.GITHUB_RUN_ID ?? null },
+      },
+      sourceCustody,
+    );
     await measureBackupPhase(receipt.metrics, "publication", () =>
       publishIncremental({
         plan,
@@ -558,6 +566,7 @@ async function incrementalSnapshot(receipt) {
       snapshotStartedAt: new Date(startedAt).toISOString(),
       exportMs: exportedAt - startedAt,
       ciphertext: manifest.ciphertext,
+      manifestAuthentication: manifest.authentication.scheme,
       storage: summary.storage,
       invalidatedExports,
       objects: objects.size,
@@ -616,9 +625,7 @@ function outsideCheckout(path) {
   assert.deepEqual(readdirSync(directory), [], "O diretório de recuperação precisa estar vazio");
   return directory;
 }
-async function openCustody(manifest, entries, custodyPath) {
-  const { readEnvFile } = await recoveryHelpers();
-  const values = readEnvFile(resolve(custodyPath));
+async function openCustody(manifest, entries, values) {
   verifyCustody(manifest, values);
   const { certificateKeyring, decryptCertificate } =
     await import("../../platform/convex/lib/certificateCrypto.ts");
@@ -645,6 +652,8 @@ async function openCustody(manifest, entries, custodyPath) {
 /** Custodian side: needs only R2 read access, an age identity and the separate key custody. */
 async function recover(directory, receipt) {
   assert.ok(options.identity && options.custody, "Informe --identity e --custody");
+  const { readEnvFile } = await recoveryHelpers();
+  const values = readEnvFile(resolve(options.custody));
   const client = storage();
   const snapshots = await listSnapshots(client);
   const id =
@@ -652,7 +661,14 @@ async function recover(directory, receipt) {
     snapshots.find(([, parts]) => parts["manifest.json"] && parts["snapshot.zip.age"])?.[0];
   assert.ok(id, "Nenhum backup externo completo encontrado");
   const manifest = await readManifest(client, id);
-  if (manifest.format === 2) return recoverIncremental(directory, receipt, client, manifest);
+  // Before any size, hash or object from the manifest is trusted.
+  receipt.manifestAuthentication = verifyManifestAuthentication(
+    manifest,
+    values,
+    options["accept-unauthenticated"],
+  );
+  if (manifest.format === 2)
+    return recoverIncremental(directory, receipt, client, manifest, values);
   const cipherPath = join(directory, "snapshot.zip.age"),
     zip = join(directory, "snapshot.zip");
   writeFileSync(cipherPath, await verifiedCiphertext(client, manifest), { mode: 0o600 });
@@ -664,7 +680,7 @@ async function recover(directory, receipt) {
   const entries = readZip(plain, plan.maxSnapshotBytes),
     summary = snapshotSummary(entries);
   assert.deepEqual(summary.digests, manifest.digests, "Conteúdo do snapshot difere do manifesto");
-  const custody = await openCustody(manifest, entries, options.custody);
+  const custody = await openCustody(manifest, entries, values);
   Object.assign(receipt, {
     id,
     codeSha: manifest.codeSha,
@@ -681,7 +697,7 @@ async function recover(directory, receipt) {
   return { manifest, zip, custody: custody.values };
 }
 
-async function recoverIncremental(directory, receipt, client, manifest) {
+async function recoverIncremental(directory, receipt, client, manifest, values) {
   const scratch = mkdtempSync(join(directory, "incremental-")),
     zip = join(directory, "snapshot.zip");
   try {
@@ -711,7 +727,7 @@ async function recoverIncremental(directory, receipt, client, manifest) {
     const sensitive = new Map();
     for (const name of ["certificates/documents.jsonl", "webhookEndpoints/documents.jsonl"])
       if (entries.has(name)) sensitive.set(name, readFileSync(entries.get(name)));
-    const custody = await openCustody(manifest, sensitive, options.custody);
+    const custody = await openCustody(manifest, sensitive, values);
     Object.assign(receipt, {
       format: 2,
       id: manifest.id,
@@ -946,6 +962,15 @@ const receipt = { mode, startedAtMs: Date.now() };
 const receiptStart = performance.now();
 try {
   plan = loadPlan();
+  if (options["accept-unauthenticated"] !== undefined) {
+    if (mode !== "fetch" && mode !== "rehearse")
+      throw new Error("--accept-unauthenticated só vale para fetch e rehearse");
+    // The custodian names the copy checked against the receipt; the newest listed one may not be it.
+    assert.ok(
+      options.snapshot,
+      "--accept-unauthenticated exige --snapshot <id> conferido no recibo",
+    );
+  }
   Object.assign(receipt, { deployment: plan.deployment, bucket: plan.bucket });
   if (mode === "snapshot") {
     receipt.metrics = backupMetrics(plan.incremental?.version === 2 ? 2 : 1);

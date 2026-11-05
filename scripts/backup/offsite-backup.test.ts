@@ -4,7 +4,9 @@ import { readFileSync } from "node:fs";
 import { crc32, deflateRawSync } from "node:zlib";
 import assert from "node:assert/strict";
 import ts from "typescript";
+import { spawnSync } from "node:child_process";
 import {
+  authenticateManifest,
   backupPlan,
   backupFailure,
   backupMetrics,
@@ -19,12 +21,14 @@ import {
   snapshotSummary,
   snapshotTime,
   verifyCustody,
+  verifyManifestAuthentication,
   webhookSecrets,
 } from "../lib/offsite-backup.mjs";
 import { incrementalPlan } from "../lib/incremental-backup.mjs";
 import { releaseTarget } from "../lib/platform-release.mjs";
 import { productionTarget } from "../lib/issuance-gate.mjs";
 import { backendRequest } from "../lib/validation.mjs";
+import { repoRoot } from "../lib/repo-root.mjs";
 import {
   decryptCertificate,
   encryptCertificate,
@@ -563,6 +567,109 @@ describe("custody", () => {
     expect(webhookSecrets(entries)).toEqual([
       { cipher: `${iv.toString("hex")}:${Buffer.from(data).toString("hex")}`, context: "w1:2" },
     ]);
+  });
+});
+
+describe("manifest authentication", () => {
+  const custody = new Map(Object.entries(custodyValues));
+  const unsigned = {
+    format: 2,
+    id: "2026-11-05T03-00-00Z",
+    deployment: plan.deployment,
+    codeSha: "1".repeat(40),
+    plaintext: { sha256: "2".repeat(64), bytes: 10 },
+    ciphertext: { sha256: "3".repeat(64), bytes: 20 },
+    objects: [{ key: "k", plaintext: { sha256: "4".repeat(64), bytes: 1 } }],
+    custody: custodyFingerprints(custodyValues),
+  };
+  // Stored as the producers write it: compact (format 2) or indented (format 1).
+  const stored = (manifest: object, indent?: number) =>
+    JSON.parse(JSON.stringify(manifest, null, indent));
+
+  it("verifies the producer's MAC with the custody and keeps key material out of the manifest", () => {
+    const manifest = authenticateManifest(unsigned, custody);
+    expect(manifest.authentication.scheme).toBe("hmac-sha256:fnfe-offsite-manifest:v1");
+    expect(JSON.stringify(manifest)).not.toMatch(/s{40}|a{64}/);
+    expect(verifyManifestAuthentication(stored(manifest), custody)).toBe("verified");
+    expect(verifyManifestAuthentication(stored(manifest, 2), custodyValues)).toBe("verified");
+    expect(() => authenticateManifest(manifest, custody)).toThrow("Manifesto já autenticado");
+  });
+
+  it("refuses a coherent manifest written without the custody keys", () => {
+    // Recipients are public: a bucket writer can encrypt a snapshot and describe it exactly.
+    const forged = { ...unsigned, ciphertext: { sha256: "5".repeat(64), bytes: 21 } };
+    const genuine = authenticateManifest(unsigned, custody);
+    const otherKeys = { ...custodyValues, BETTER_AUTH_SECRET: "t".repeat(40) };
+    for (const manifest of [
+      { ...forged, authentication: genuine.authentication },
+      authenticateManifest(forged, otherKeys),
+      authenticateManifest(forged, { ...custodyValues, FNFE_WEBHOOK_MASTER_KEY: "e".repeat(64) }),
+      { ...forged, authentication: { ...genuine.authentication, scheme: "none" } },
+      { ...forged, authentication: { scheme: genuine.authentication.scheme, mac: "0" } },
+      { ...forged, authentication: null },
+      { ...genuine, objects: [] },
+    ])
+      expect(() => verifyManifestAuthentication(stored(manifest), custody)).toThrow(
+        "Manifesto com autenticação inválida",
+      );
+    // An explicit acceptance of a legacy copy never overrides an invalid MAC.
+    expect(() =>
+      verifyManifestAuthentication(
+        stored({ ...forged, authentication: genuine.authentication }),
+        custody,
+        "5".repeat(64),
+      ),
+    ).toThrow("Manifesto com autenticação inválida");
+  });
+
+  it("separates the two custody secrets in the key", () => {
+    const shifted = (auth: string, webhook: string) =>
+      authenticateManifest(unsigned, {
+        ...custodyValues,
+        BETTER_AUTH_SECRET: auth,
+        FNFE_WEBHOOK_MASTER_KEY: webhook,
+      }).authentication.mac;
+    expect(shifted("ab", "c")).not.toBe(shifted("a", "bc"));
+    expect(() =>
+      authenticateManifest(unsigned, { ...custodyValues, FNFE_WEBHOOK_MASTER_KEY: "" }),
+    ).toThrow(/FNFE_WEBHOOK_MASTER_KEY/);
+  });
+
+  it("accepts a manifest without MAC only for the ciphertext hash named by the custodian", () => {
+    expect(() => verifyManifestAuthentication(stored(unsigned), custody)).toThrow(
+      /Manifesto sem autenticação/,
+    );
+    expect(() => verifyManifestAuthentication(stored(unsigned), custody, "5".repeat(64))).toThrow(
+      "Cifra do manifesto difere do hash aceito",
+    );
+    expect(() => verifyManifestAuthentication(stored(unsigned), custody, "3")).toThrow(
+      "--accept-unauthenticated exige o sha256 da cifra do recibo",
+    );
+    expect(verifyManifestAuthentication(stored(unsigned), custody, "3".repeat(64))).toBe(
+      "accepted-unauthenticated",
+    );
+  });
+
+  it.each([
+    ["check", "--accept-unauthenticated só vale para fetch e rehearse"],
+    ["fetch", "--accept-unauthenticated exige --snapshot <id> conferido no recibo"],
+  ])("refuses %s with --accept-unauthenticated before any credential", (mode, error) => {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/backup/backup-offsite.mjs", mode, "--accept-unauthenticated", "3".repeat(64)],
+      {
+        cwd: repoRoot,
+        env: { PATH: process.env.PATH ?? "", SYSTEMROOT: process.env.SYSTEMROOT ?? "" },
+        encoding: "utf8",
+        timeout: 60_000,
+      },
+    );
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout.trim().split("\n").at(-1)!)).toMatchObject({
+      mode,
+      result: "failed",
+      error,
+    });
   });
 });
 
