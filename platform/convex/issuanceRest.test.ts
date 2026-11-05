@@ -15,6 +15,8 @@ import {
   type PlatformTest,
 } from "../../tests/helpers/platform";
 import { hashApiKey } from "./lib/apiKeyCrypto";
+import { capacityTotal } from "./lib/capacityCore";
+import { PLATFORM_PLANS } from "./lib/planCatalog";
 import { encryptCertificate } from "./lib/certificateCrypto";
 import { syntheticCertificate } from "../../tests/helpers/certificates";
 import { signApiRequest } from "../auth-transport";
@@ -474,6 +476,55 @@ describe("leitura, lista e artefatos", () => {
       `/v1/issuances/${view.id}/artifacts/${view.artifacts[0]!.id}?companyId=${f.scope.companyId}&x=1`,
     );
     expect(await errorCode(extra)).toBe("400:INVALID_REQUEST");
+  });
+
+  it("debita cada download na cota de bytes e recusa quando ela se esgota, sem entregar bytes", async () => {
+    const f = await fixture();
+    const a = await issue(f, "xml-cota");
+    await drive(f.t, a.issuance.operationId);
+    const view = routes.getIssuance.output.parse(await (await get(f, a.issuance.id)).json()).data;
+    const nfse = view.artifacts.find((artifact) => artifact.kind === "nfse")!;
+    // A synthetic plan whose monthly download allowance holds exactly one copy of the NFS-e.
+    await f.t.run(async (ctx) => {
+      await ctx.db.insert("platformPlanSettings", {
+        key: "platform",
+        enabled: true,
+        version: 1,
+        filesBytes: 1e12,
+        databaseBytes: 1e12,
+        custodyCents: 1e9,
+        freeMonthlyCents: 1e9,
+        allocatedFilesBytes: 0,
+        allocatedDatabaseBytes: 0,
+        allocatedCustodyCents: 0,
+        allocatedFreeMonthlyCents: 0,
+        admissionsUntil: Date.now() + 86400000,
+        evidence: "synthetic-issuance-download-quota",
+        updatedAt: Date.now(),
+      });
+      await ctx.db.insert("usagePlans", {
+        organizationId: f.scope.organizationId,
+        catalogTier: "free",
+        name: "Prova",
+        startsAt: 0,
+        endsAt: null,
+        limits: PLATFORM_PLANS.free.limits,
+        concurrency: 1,
+        capacity: { ...PLATFORM_PLANS.free.capacity, downloadsBytes: nfse.size },
+        version: 1,
+        updatedAt: Date.now(),
+      });
+    });
+    const path = `/v1/issuances/${view.id}/artifacts/${nfse.id}?companyId=${f.scope.companyId}`;
+    const served = await f.call(path);
+    expect(served.status).toBe(200);
+    expect((await served.arrayBuffer()).byteLength).toBe(nfse.size);
+    const used = () =>
+      f.t.run((ctx) => capacityTotal(ctx, f.scope.organizationId, "downloadsBytes", Date.now()));
+    expect(await used()).toMatchObject({ committed: nfse.size, reserved: 0 });
+    const refused = await f.call(path);
+    expect(await errorCode(refused)).toBe("429:RATE_LIMITED");
+    expect(await used()).toMatchObject({ committed: nfse.size, reserved: 0 });
   });
 });
 
