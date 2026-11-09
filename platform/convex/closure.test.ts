@@ -2591,6 +2591,41 @@ it("uma NF-e recusada de homologação não segura a remoção antecipada, e um 
     expect(await f.t.run((ctx) => ctx.db.get("documentArtifacts", artifact._id))).toBeNull();
 });
 
+it("os limites da leitura dos originais recusados contam como Produção, e o original sem versão também", async () => {
+  /** `artifacts` unmarked originals without a document, each with `versions` refusals of a non-NF-e root. */
+  const decide = async (artifacts: number, versions: number) => {
+    const f = await fixture(),
+      owner = await actor(f);
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" });
+      const original = (await ctx.db.query("documentArtifacts").first())!;
+      const { _id, _creationTime, documentId, ...artifact } = original;
+      const {
+        _id: v,
+        _creationTime: c,
+        documentId: d,
+        ...version
+      } = (await ctx.db.query("documentVersions").first())!;
+      for (let i = 0; i < artifacts; i++) {
+        const artifactId = await ctx.db.insert("documentArtifacts", artifact);
+        for (let n = 0; n < versions; n++)
+          await ctx.db.insert("documentVersions", {
+            ...version,
+            artifactId,
+            code: "XML_NAMESPACE_UNSUPPORTED",
+            kind: "unknown",
+          });
+      }
+    });
+    return (await closeAndPurge(f, owner)).sandboxOnly;
+  };
+  expect(await decide(1, 10)).toBe(true);
+  expect(await decide(1, 11)).toBe(false);
+  expect(await decide(1, 0)).toBe(false);
+  expect(await decide(100, 1)).toBe(true);
+  expect(await decide(101, 1)).toBe(false);
+});
+
 it("um original recusado sem a marca, de antes dela, para uma decisão de só Sandbox já gravada", async () => {
   const f = await fixture(),
     owner = await actor(f);
