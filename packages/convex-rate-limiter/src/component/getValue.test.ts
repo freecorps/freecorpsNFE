@@ -98,3 +98,21 @@ describe.each(["token bucket", "fixed window"] as const)("getValue %s", (kind) =
     });
   });
 });
+
+describe("getValue sampleShards", () => {
+  const config = { kind: "token bucket" as const, rate: 10, period: Second, shards: 4 };
+
+  test.each([0, -1, 1.5])("refuses %s with a clear error", async (sampleShards) => {
+    const t = convexTest(schema, modules);
+    await expect(
+      t.query(api.lib.getValue, { name: "sampled", config, sampleShards }),
+    ).rejects.toThrowError("sampleShards must be a positive integer");
+  });
+
+  test("clamps to the number of shards", async () => {
+    const t = convexTest(schema, modules);
+    const all = await t.query(api.lib.getValue, { name: "sampled", config, sampleShards: 4 });
+    const more = await t.query(api.lib.getValue, { name: "sampled", config, sampleShards: 10 });
+    expect(more.value).toBe(all.value);
+  });
+});

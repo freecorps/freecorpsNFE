@@ -28,7 +28,9 @@ export const DAY = 24 * HOUR;
 export const WEEK = 7 * DAY;
 
 export function isRateLimitError(error: unknown): error is { data: RateLimitError } {
-  return error instanceof ConvexError && (error as any).data["kind"] === "RateLimited";
+  if (!(error instanceof ConvexError)) return false;
+  const data: unknown = error.data;
+  return typeof data === "object" && data !== null && "kind" in data && data.kind === "RateLimited";
 }
 
 /**

@@ -390,3 +390,39 @@ describe.each([1, 2, 3, 4] as const)("sharding: %s", (shards) => {
     });
   }
 });
+
+describe("throws with reserve", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("a reservation succeeds instead of throwing", async () => {
+    const t = convexTest(schema, modules);
+    const config = { kind: "token bucket" as const, rate: 1, period: Minute };
+    const args = { name: "reserved", config, reserve: true, throws: true };
+    await t.run(async (ctx) => {
+      const first = await checkRateLimitOrThrow(ctx.db, args);
+      expect(first.status).toEqual({ ok: true, retryAfter: undefined });
+      for (const { value, ts, shard } of first.updates)
+        await ctx.db.insert("rateLimits", { name: "reserved", value, ts, shard });
+      // No token left: the call reserves the next one and says when to run.
+      const second = await checkRateLimitOrThrow(ctx.db, args);
+      expect(second.status.ok).toBe(true);
+      expect(second.status.retryAfter).toBe(Minute);
+    });
+  });
+
+  test("a refusal beyond maxReserved still throws", async () => {
+    const t = convexTest(schema, modules);
+    const config = { kind: "token bucket" as const, rate: 1, period: Minute, maxReserved: 1 };
+    await t.run(async (ctx) => {
+      await ctx.db.insert("rateLimits", { name: "full", value: -1, ts: Date.now(), shard: 0 });
+      await expect(
+        checkRateLimitOrThrow(ctx.db, { name: "full", config, reserve: true, throws: true }),
+      ).rejects.toThrowError(ConvexError);
+    });
+  });
+});

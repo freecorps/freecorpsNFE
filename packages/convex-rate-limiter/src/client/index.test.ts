@@ -13,3 +13,10 @@ test("isRateLimitError", () => {
   ).toBe(true);
   expect(isRateLimitError(new ConvexError({ kind: "foo" }))).toBe(false);
 });
+
+test("isRateLimitError is false for a ConvexError without object data", () => {
+  expect(isRateLimitError(new ConvexError(undefined as never))).toBe(false);
+  expect(isRateLimitError(new ConvexError(null as never))).toBe(false);
+  expect(isRateLimitError(new ConvexError("RateLimited"))).toBe(false);
+  expect(isRateLimitError(new Error("RateLimited"))).toBe(false);
+});
