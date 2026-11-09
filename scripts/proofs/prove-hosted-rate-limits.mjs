@@ -25,7 +25,12 @@ assert.ok(typeof credential.adminKey === "string" && credential.adminKey.length 
 for (const name of ["CONVEX_DEPLOY_KEY", "CONVEX_SELF_HOSTED_URL", "CONVEX_SELF_HOSTED_ADMIN_KEY"])
   assert.ok(!process.env[name], `Remove inherited ${name}`);
 
-const health = await (await fetch(`${target.api}/health`, { redirect: "error" })).json();
+const healthResponse = await fetch(`${target.api}/health`, {
+  redirect: "error",
+  signal: AbortSignal.timeout(30_000),
+});
+assert.equal(healthResponse.status, 200, `Health HTTP ${healthResponse.status}`);
+const health = await healthResponse.json();
 assert.equal(health.sha, expectedSha, "Production does not serve the expected SHA");
 assert.equal(health.status, "ok");
 assert.equal(health.appEnv, "installation");
@@ -188,17 +193,32 @@ try {
 } finally {
   report.resetBudgets = 0;
   report.leftPartitioned = 0;
+  // One failed reset must not leave the other synthetic budgets in production: keep going and
+  // name the ones left behind, so they can be reset by hand.
+  report.cleanupFailures = [];
   for (const budget of budgets) {
-    await call("resetRateLimit", { name: budget.name, key: budget.key });
-    report.resetBudgets++;
-    // Without its partitions row, the budget no longer reads the partitioned layout.
-    if ((await call("getValue", budget)).shard === -1) report.leftPartitioned++;
+    try {
+      await call("resetRateLimit", { name: budget.name, key: budget.key });
+      report.resetBudgets++;
+      // Without its partitions row, the budget no longer reads the partitioned layout.
+      if ((await call("getValue", budget)).shard === -1) report.leftPartitioned++;
+    } catch (error) {
+      report.cleanupFailures.push({
+        name: budget.name,
+        key: budget.key ?? null,
+        error: error.message,
+      });
+    }
   }
-  if (report.leftPartitioned) {
+  if (report.leftPartitioned || report.cleanupFailures.length) {
     report.result = "failed";
     process.exitCode = 1;
   }
-  report.runtime = (await logs(cursor)).entries;
+  try {
+    report.runtime = (await logs(cursor)).entries;
+  } catch (error) {
+    report.runtimeError = error.message;
+  }
   report.finishedAt = new Date().toISOString();
   mkdirSync(".ci-results/hosted-rate-limits", { recursive: true });
   writeFileSync(
@@ -212,6 +232,7 @@ try {
       concurrent: report.concurrent,
       resetBudgets: report.resetBudgets,
       leftPartitioned: report.leftPartitioned,
+      cleanupFailures: report.cleanupFailures,
       error: report.error,
     }),
   );
