@@ -36,8 +36,13 @@ Mantemos Better Auth `1.6.33` fixado, sem retornar a versões anteriores para
 contornar o erro. Bun aplica o patch pelo `patchedDependencies` e pelo lockfile.
 O build do console no CI verifica a compatibilidade sem casts no aplicativo.
 
-Remover o patch quando uma versão publicada do componente corrigir essa
-declaração, após rodar o build do console e os testes de autenticação.
+A 0.13.0 do componente, publicada em 04/11/2026, já traz as duas correções:
+o tipo `AuthClient` passa a ser estrutural, e o índice `lastRequest` está em
+`src` e `dist`. Ela exige `better-auth >=1.7.16 <1.8`, e a plataforma fixa a
+1.6.33. Por decisão da #142, o patch fica até a migração para Better Auth 1.7;
+essa migração sobe o componente para a 0.13.0 e retira o patch na mesma PR,
+depois do build do console, dos testes de autenticação e da consulta de
+limpeza de OBSERVABILITY.md.
 
 ## Arquivos guardados por actions no convex-test
 
@@ -55,9 +60,12 @@ query ou mutation, a gravação abre a própria transação e espera a trava. S�
 testes usam o pacote; o runtime do Convex não muda.
 `platform/convex/convexTestStorage.test.ts` segura a trava com uma mutation
 enquanto uma action guarda um arquivo e falha sem o patch com o mesmo erro do
-CI. A 0.0.67, a mais recente em 03/11/2026, ainda tem o defeito. Remover o
-patch quando uma versão publicada decidir pelo contexto de quem grava, depois
-de rodar esse teste sem ele.
+CI. A 0.0.67, a mais recente em 03/11/2026, ainda tem o defeito. A correção,
+com um teste que a reproduz, foi proposta em
+[convex/convex-test#189](https://github.com/convex/convex-test/pull/189)
+(#142). Remover o patch quando uma versão publicada trouxer essa correção ou
+outra que decida pelo contexto de quem grava, depois de rodar esse teste sem
+ele.
 
 ## Revisão a cada atualização
 
@@ -73,15 +81,14 @@ data, o rate-limiter deixou de ser patch: o código, com as mudanças, foi para
 [packages/convex-rate-limiter](../packages/convex-rate-limiter/README.md),
 que também guarda as regras de mudança e rollback dos contadores.
 
-| Pacote                    | Por que permanece                                                                | Próxima revisão                                                  | Prova antes de retirar ou portar                                                              |
-| ------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `@convex-dev/better-auth` | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza   | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso |
-| `convex-test`             | O arquivo guardado por uma action entra na transação de outra função concorrente | Versão publicada que decida pelo contexto de quem grava          | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`              |
+| Pacote                    | Por que permanece                                                                | Próxima revisão                                            | Prova antes de retirar ou portar                                                              |
+| ------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `@convex-dev/better-auth` | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza   | Migração para Better Auth 1.7 com o componente 0.13.0      | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso |
+| `convex-test`             | O arquivo guardado por uma action entra na transação de outra função concorrente | Versão publicada com convex/convex-test#189 ou equivalente | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`              |
 
-O índice `lastRequest` não tem equivalente no Better Auth publicado. Retirar a
-correção de tipos não retira o patch: ele só sai quando o componente trouxer o
-índice ou a limpeza deixar de depender dele, e o índice nunca pode sumir do
-schema publicado enquanto a rotina o consulta.
+Ao retirar o patch do Better Auth, confira que o índice `lastRequest` continua
+no schema publicado: a rotina de limpeza o consulta, e ele nunca pode sumir
+enquanto ela depender dele.
 
 ## Cache do console
 
@@ -100,11 +107,14 @@ de:
   que já não está em `subs`, para a liberação tardia de uma página não fechar
   nada duas vezes.
 
-`convex-helpers` fica fixado em versão exata (`0.1.127`) em `apps/console` e
+`convex-helpers` fica fixado em versão exata (`0.1.129`) em `apps/console` e
 `platform`. Ao atualizar, `bun run platform:check` confere os nomes e tipos, e
 `apps/console/src/query-cache.test.tsx` confere o comportamento: desmontar o
 cache fecha as assinaturas ociosas e as mostradas sem timer pendente, e a
 mudança de membership, a revogação, a saída, a reconexão e a troca de
 organização fecham as da organização na hora. Se a biblioteca passar a
 oferecer encerramento público do cache, troque o acesso interno por ele com os
-mesmos testes.
+mesmos testes. A 0.1.134, a mais recente em 09/11/2026, ainda não oferece; o
+pedido ao `convex-helpers` está redigido na
+[#142](https://github.com/freecorps/freecorpsNFE/issues/142#issuecomment-6752925926),
+para o mantenedor abrir.
