@@ -17,7 +17,9 @@ patches, restrições de runtime e declarações de compatibilidade.
 
 Distinga a versão instalada para desenvolvimento da faixa suportada para
 consumidores. Ao adicionar ou mover uma entrada, leia
-[manifest-roles.md](manifest-roles.md).
+[manifest-roles.md](manifest-roles.md). A versão declarada segue a política
+de [DEPENDENCIAS.md](../../../docs/DEPENDENCIAS.md#versões-nos-manifests):
+exata, salvo exceção justificada ali.
 
 Uma alteração pode ficar no pacote proprietário se não afetar runtime,
 compilador, patches, configuração ou ferramentas compartilhadas. Nos demais

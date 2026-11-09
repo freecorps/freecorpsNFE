@@ -17,7 +17,7 @@
     "@freecorps/fiscal-nfe": "workspace:*",
     "@freecorps/fiscal-nfse": "workspace:*",
     "better-auth": "1.6.33",
-    "convex": "^1.48.0",
+    "convex": "1.48.0",
     "convex-helpers": "0.1.129",
     "fflate": "0.8.3",
     "postal-mime": "4.1.4"
