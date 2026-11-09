@@ -52,18 +52,19 @@ export async function insertOriginal(
 
 /** What may change on an original's row without touching the original itself. */
 export type OriginalLinks = Partial<
-  Pick<Artifact, "documentId" | "nfseBatch" | "processingOperationId">
+  Pick<Artifact, "documentId" | "nfseBatch" | "processingOperationId" | "tpAmb">
 >;
 export async function linkOriginal(
   ctx: MutationCtx,
   id: Id<"documentArtifacts">,
   links: OriginalLinks,
 ) {
-  const { documentId, nfseBatch, processingOperationId } = links;
+  const { documentId, nfseBatch, processingOperationId, tpAmb } = links;
   await ctx.db.patch("documentArtifacts", id, {
     ...("documentId" in links ? { documentId } : {}),
     ...("nfseBatch" in links ? { nfseBatch } : {}),
     ...("processingOperationId" in links ? { processingOperationId } : {}),
+    ...("tpAmb" in links ? { tpAmb } : {}),
   });
   await track(ctx, id);
 }

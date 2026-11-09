@@ -32,6 +32,7 @@ const OUTSIDE_PRODUCTION_TABLES: Record<string, string> = {
 /** Tables with `tpAmb` (#108), and where the decision reads them. */
 const TP_AMB_TABLES: Record<string, string> = {
   fiscalDocuments: "`realDocument` reads every received note",
+  documentArtifacts: "`realOriginal` reads every imported original without a document",
 };
 
 /** Tables whose rows have `field`, in any member of a union. */

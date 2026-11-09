@@ -80,6 +80,7 @@ export const stage = internalMutation({
     ...claimFields,
     artifactId: v.id("documentArtifacts"),
     fiscalKey: v.union(v.string(), v.null()),
+    tpAmb: v.optional(v.union(v.literal("1"), v.literal("2"))),
     code: v.string(),
     kind: v.string(),
     completeness: v.number(),
@@ -155,6 +156,11 @@ export const stage = internalMutation({
       if (artifact.documentId && artifact.documentId !== documentId)
         return deny("DOCUMENT_CONFLICT");
       await linkOriginal(ctx, artifact._id, { documentId });
+    } else if (args.tpAmb && artifact.source === "imported-xml" && artifact.tpAmb !== "1") {
+      // #108 for a refused note: the fiscal guard reads the mark on the original
+      // (`fiscalGuard.realOriginal`). "1" stays, like the document's.
+      if (artifact.tpAmb !== args.tpAmb)
+        await linkOriginal(ctx, artifact._id, { tpAmb: args.tpAmb });
     }
     const versionId = await insertFiscal(ctx, "documentVersions", {
       artifactId: artifact._id,

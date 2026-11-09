@@ -286,6 +286,24 @@ export function declaredTpAmb(result: string): "1" | "2" | null {
   } catch {
     return null;
   }
+  return declaredOf(document);
+}
+
+/**
+ * The same answer from the bytes of a file the parser refused before a normalized document (an
+ * NFC-e, an NF-e 3.10, an unsupported event, another encoding): every `tpAmb` element, read as
+ * text, since the tag is ASCII in any encoding an NF-e uses. "1" wins, as above.
+ */
+export function scannedTpAmb(bytes: Uint8Array): "1" | "2" | null {
+  const text = new TextDecoder("latin1").decode(bytes);
+  const found = new Set(
+    Array.from(text.matchAll(/<(?:[\w.-]+:)?tpAmb\s*>\s*([12])\s*<\//g), (match) => match[1]),
+  );
+  return found.has("1") ? "1" : found.has("2") ? "2" : null;
+}
+
+/** The same answer read from a normalized document, before it is stored. */
+export function declaredOf(document: unknown): "1" | "2" | null {
   const at = (value: unknown, key: string): unknown =>
     value !== null && typeof value === "object"
       ? (value as Record<string, unknown>)[key]

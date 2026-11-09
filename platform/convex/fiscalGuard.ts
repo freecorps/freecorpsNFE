@@ -19,8 +19,12 @@ const BATCH = 200;
 const TEXT = 200;
 // Holders of one stored file read per table before deleting it; more keeps the file.
 const SHARED = 20;
-// Release, gate and probe events read to prove an organization never had Production.
+// Release, gate and probe events read to prove an organization never had Production; also the
+// imported originals without a document and without a mark, and the versions of each one.
 const EVENTS = 100;
+const VERSIONS = 10;
+// Parser outcomes of a file whose root is not an NF-e one: the only refusals known to hold no note.
+const NOT_NFE = new Set(["XML_NAMESPACE_UNSUPPORTED", "XML_SOURCE_INVALID"]);
 // About half of a mutation's limits for one early batch; the rest stays for the guard check.
 const EARLY_LIMITS = {
   documentsRead: 16_000,
@@ -660,7 +664,39 @@ async function realDocument(ctx: QueryCtx, organizationId: Id<"organizations">) 
       )
       .first();
   const found = await Promise.all([received("1"), received(undefined)]);
-  return found.some((row) => row !== null);
+  return found.some((row) => row !== null) || (await realOriginal(ctx, organizationId));
+}
+
+/**
+ * The same rule for an imported file refused without a document: its original is real when the
+ * XML says Produção (`documentArtifacts.tpAmb` "1"). One without the mark is not known to be a test
+ * one (a summary, a file refused before the mark, one the parser could not read) unless every
+ * version found a root outside the NF-e namespace (`NOT_NFE`), and neither is one whose
+ * processing never wrote a version. An accepted NFS-e batch, whose notes have documents, and a
+ * captured original, which comes only through a capture release, are left to those reads.
+ * Bounded: more unmarked originals than `EVENTS`, of any source, or versions of one than
+ * `VERSIONS`, count as real.
+ */
+async function realOriginal(ctx: QueryCtx, organizationId: Id<"organizations">) {
+  const refused = (tpAmb: "1" | undefined) =>
+    ctx.db
+      .query("documentArtifacts")
+      .withIndex("by_organizationId_and_documentId_and_tpAmb", (q) =>
+        q.eq("organizationId", organizationId).eq("documentId", undefined).eq("tpAmb", tpAmb),
+      );
+  if (await refused("1").first()) return true;
+  const unmarked = await refused(undefined).take(EVENTS + 1);
+  if (unmarked.length > EVENTS) return true;
+  for (const artifact of unmarked) {
+    if (artifact.source !== "imported-xml" || artifact.nfseBatch) continue;
+    const versions = await ctx.db
+      .query("documentVersions")
+      .withIndex("by_artifactId", (q) => q.eq("artifactId", artifact._id))
+      .take(VERSIONS + 1);
+    if (versions.length === 0 || versions.length > VERSIONS) return true;
+    if (versions.some((version) => !NOT_NFE.has(version.code))) return true;
+  }
+  return false;
 }
 
 /**
@@ -760,7 +796,8 @@ export const early = internalMutation({
     }
     if (!only) return idle;
     // A cold archive started after the decision moves rows away, and a decision taken before
-    // #108 did not read the notes' own `tpAmb`: stop, once, and leave the rest to the deadline.
+    // #108 did not read the notes' own `tpAmb`, nor one taken before the mark of refused originals
+    // (`realOriginal`) read those: stop, once, and leave the rest to the deadline.
     // Nothing writes notes of a purged organization, so a decision of today passes every batch.
     const archived = await ctx.db
       .query("coldArchiveRuns")

@@ -4,7 +4,7 @@ import { fixture } from "../../tests/helpers/export-fixture";
 import { fixture as xmlFixture } from "../../tests/helpers/nfe-corpus";
 import { usePlatformEnvironment } from "../../tests/helpers/platform";
 import { internal } from "./_generated/api";
-import { declaredTpAmb } from "./lib/documentValues";
+import { declaredTpAmb, scannedTpAmb } from "./lib/documentValues";
 
 /**
  * #108: each published version marks its note with the `tpAmb` of its own XML, so the fiscal
@@ -85,4 +85,15 @@ it("lê o tpAmb da nota, do protocolo e do evento, e nada de um resumo ou de tex
   expect(declaredTpAmb(result({ kind: "summary", key: "x" }))).toBeNull();
   expect(declaredTpAmb(result({ kind: "service-invoice" }))).toBeNull();
   expect(declaredTpAmb("{")).toBeNull();
+});
+
+it("lê o tpAmb dos bytes de um arquivo recusado, com prefixo, outra codificação ou sem a marca", () => {
+  const bytes = (text: string) => new TextEncoder().encode(text);
+  expect(scannedTpAmb(homologation)).toBe("2");
+  expect(scannedTpAmb(production)).toBe("1");
+  expect(scannedTpAmb(bytes("<a><tpAmb>2</tpAmb><nfe:tpAmb> 1 </nfe:tpAmb></a>"))).toBe("1");
+  const latin1 = '<?xml version="1.0" encoding="ISO-8859-1"?><NFe><tpAmb>2</tpAmb>Ã</NFe>';
+  expect(scannedTpAmb(Uint8Array.from(latin1, (c) => c.charCodeAt(0)))).toBe("2");
+  expect(scannedTpAmb(bytes("<nota><tpAmb>3</tpAmb></nota>"))).toBeNull();
+  expect(scannedTpAmb(bytes("texto"))).toBeNull();
 });
