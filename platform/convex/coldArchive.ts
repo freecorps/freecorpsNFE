@@ -31,7 +31,6 @@ import { sandboxOnly } from "./fiscalGuard";
 import { releaseDatabaseRecord, releaseStoredFile } from "./lib/capacityCore";
 import { storageHolders } from "./lib/storageHolders";
 import { activeTerm } from "./lib/planTerms";
-import { scheduledPixRenewal } from "./lib/billingCore";
 import { hasMovingNotes } from "./coldTier";
 
 const runArgs = { runId: v.id("coldArchiveRuns"), version: v.number() };
@@ -60,8 +59,6 @@ async function eligible(ctx: MutationCtx, orgId: Id<"organizations">) {
   if (await hasMovingNotes(ctx, orgId)) throw new Error("ARCHIVE_COLD_TIER_MOVING");
   // A paid annual term, in force or scheduled, keeps the organization hot (ADR 0010, decision 9).
   if (await activeTerm(ctx, orgId, now)) throw new Error("ARCHIVE_PAID_ACTIVE");
-  // So does a monthly Pix renewal already paid, scheduled or waiting for the team (ADR 0012).
-  if (await scheduledPixRenewal(ctx, orgId, now)) throw new Error("ARCHIVE_PAID_ACTIVE");
   const closure = await ctx.db
     .query("organizationClosures")
     .withIndex("by_organizationId", (q) => q.eq("organizationId", orgId))

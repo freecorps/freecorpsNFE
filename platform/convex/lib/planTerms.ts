@@ -1,7 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
-  TERM_MONTHS,
   assertTermShape,
   remainingMonths,
   rescissionCents,
@@ -35,10 +34,6 @@ export const chainAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" |
 /** The term month holding `at` (`termMonthAt`, counted from the chain's anchor). */
 export const termMonth = (term: TermClock, at: number) =>
   termMonthAt(term.firstPeriod, at, chainAnchor(term));
-
-/** The start of the term's last month: a Pix renewal may be asked from it (ADR 0012). */
-export const termLastMonth = (term: TermClock) =>
-  termMonthStart(term.firstPeriod, TERM_MONTHS - 1, chainAnchor(term));
 
 const span = (term: TermClock) => ({
   startsAt: term.firstPeriod,

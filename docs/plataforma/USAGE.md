@@ -55,34 +55,24 @@ fatia Q da ADR implementou o modelo do período em
   (leituras REST, downloads, exportações e bytes de exportação).
 - **Quem tem âncora.** As linhas concedidas por um termo anual levam a
   âncora da cadeia do termo (`platformPlanTerms.anchor`, ou o início dele),
-  truncada ao segundo. O anual pelo Pix começa na confirmação desde a fatia
-  1b: confirmado em 13/10/2026 às 14:30:07, tem os períodos
-  `2026-10-13T14:30:07.000Z`, `2026-11-13T14:30:07.000Z` e assim por
-  diante, e a renovação mantém a âncora: numa cadeia de 29/02/2028, o termo
-  renovado começa em 28/02/2029, porque fevereiro não tem dia 29, e o
-  período seguinte começa em 29/03/2029, não em 28/03. O anual no cartão
-  começa na contratação desde a fatia 2b, e a âncora da cadeia é o
-  `billing_cycle_anchor` da assinatura: assinado em 31/01/2027 às 10:00:07
-  UTC, tem os períodos `2027-01-31T10:00:07.000Z`,
-  `2027-02-28T10:00:07.000Z`, `2027-03-31T10:00:07.000Z` e assim por diante,
-  e os termos renovados mantêm essa âncora
-  ([BILLING.md](BILLING.md#fatura-anual-do-cartão)). Um anual no cartão
-  anterior à 2b começa no dia 1 às 00:00 UTC, e as chaves dele continuam
-  `AAAA-MM`. O mensal pelo Pix tem âncora
-  desde a fatia 1c: a confirmação de um mês novo, truncada ao segundo, e a
-  renovação e o upgrade mantêm a da cadeia, inclusive entre o mensal e o
-  anual ([BILLING.md](BILLING.md#mensal-por-pix)). Confirmado em 31/01/2027
-  às 10:00:07 UTC e renovado, ele tem os períodos
-  `2027-01-31T10:00:07.000Z`, `2027-02-28T10:00:07.000Z` e
-  `2027-03-31T10:00:07.000Z`. O mensal no cartão tem âncora desde a fatia
-  2a: o `billing_cycle_anchor` da assinatura, que o Stripe põe na
+  truncada ao segundo. O anual no cartão começa na contratação desde a
+  fatia 2b, e a âncora da cadeia é o `billing_cycle_anchor` da assinatura:
+  assinado em 31/01/2027 às 10:00:07 UTC, tem os períodos
+  `2027-01-31T10:00:07.000Z`, `2027-02-28T10:00:07.000Z`,
+  `2027-03-31T10:00:07.000Z` e assim por diante, e os termos renovados
+  mantêm essa âncora ([BILLING.md](BILLING.md#fatura-anual-do-cartão)):
+  numa cadeia de 29/02/2028, o termo renovado começa em 28/02/2029, porque
+  fevereiro não tem dia 29, e o período seguinte começa em 29/03/2029, não
+  em 28/03. Um anual no cartão anterior à 2b começa no dia 1 às 00:00 UTC, e
+  as chaves dele continuam `AAAA-MM`. O mensal no cartão tem âncora desde a
+  fatia 2a: o `billing_cycle_anchor` da assinatura, que o Stripe põe na
   contratação, e cada fatura concede só um mês exato dela
   ([BILLING.md](BILLING.md#período-da-fatura-mensal)); a assinatura de
-  31/01/2027 às 10:00:07 UTC tem os mesmos períodos do exemplo do Pix. Uma
+  31/01/2027 às 10:00:07 UTC tem os mesmos períodos do exemplo do anual. Uma
   assinatura do cartão anterior à 2a tem a âncora no dia 1 às 00:00 UTC, e as
   linhas que ela concede ficam nas chaves `AAAA-MM`. As ativações mensais do
-  Pix pedidas antes da 1c, e as do cartão concedidas antes da 2a, não têm
-  âncora e seguem no mês civil até o fim delas. O Gratuito nunca tem. O
+  cartão concedidas antes da 2a não têm âncora e seguem no mês civil até o
+  fim delas. O Gratuito nunca tem. O
   Personalizado segue
   [Plano e autorização](#plano-e-autorização). Uma linha que substitui outra
   não herda a âncora dela; os contadores já gravados ficam na chave antiga.
@@ -241,36 +231,30 @@ O [catálogo e suas hipóteses comerciais](PLATFORM-PLAN-PROPOSAL.md) define
 Gratuito permanente, Intermediário de R$ 149/mês, Grande de R$ 499/mês e
 Personalizado por orçamento. A política começa desligada. O console permite
 ativar o Gratuito ou contratar um plano pago quando o operador habilita
-admissões com inventário e orçamento da empresa. Desde 03/11/2026 a venda nova
-é só pelo cartão ([cobrança](BILLING.md)); o pedido por Pix descrito abaixo só
-vale com o [interruptor do Pix](BILLING.md#interruptor-do-pix) ligado, e
-desligado ele responde `PIX_DISABLED`. Não há atribuição automática no cadastro.
+admissões com inventário e orçamento da empresa. Os planos pagos são vendidos
+só pelo cartão, pelo Stripe ([cobrança](BILLING.md)); o Pix assistido saiu do
+código em 09/11/2026 (#125). Não há atribuição automática no cadastro.
 
-O pedido pago mantém o plano atual e não reserva o orçamento global. O servidor
-confere disponibilidade, a mensalidade integral e a diferença de upgrade; o
-mês pelo Pix corre de aniversário a aniversário
-([BILLING.md](BILLING.md#mensal-por-pix)).
-A equipe verifica novamente capacidade e caixa antes de instruir o Pix; a
-confirmação interna confere referência, valor e versão e reserva os recursos
-na mesma transação da ativação. Se o orçamento se esgotar, a ativação recusa;
-pagamento recebido exige conciliação ou devolução pelo atendimento. Nenhuma
-chamada pública confirma pagamento. Cancelar pedido não muda plano nem cotas.
-Pelo Pix, a renovação é um novo pedido, feito com o plano em vigor, que
-começa no fim dele, sem débito automático. Personalizado
-usa `usage:assignPlan`, com cotas finitas e condições comerciais auditadas.
+O Checkout não muda o plano atual nem reserva o orçamento global. O servidor
+confere disponibilidade, a mensalidade integral e a diferença de upgrade, e o
+mês corre de aniversário a aniversário da contratação
+([BILLING.md](BILLING.md#contratação-e-ciclo)). Só a fatura paga, lida de
+volta do Stripe, ativa o plano e reserva os recursos na mesma transação; se o
+orçamento se esgotar, a fatura fica bloqueada, e o pagamento recebido exige
+conciliação ou devolução pelo atendimento. Nenhuma chamada pública confirma
+pagamento. Personalizado usa `usage:assignPlan`, com cotas finitas e
+condições comerciais auditadas.
 
 Cada ativação de plano de catálogo (`activateCatalogPlan`, em
 `platform/convex/lib/planCore.ts`) copia para `usagePlans` as cotas e a
 capacidade de `planCatalog.ts` daquele momento, e os limites de empresas,
 membros e integrações leem essa cópia. Uma mudança no catálogo chega a uma
-organização na ativação seguinte: o mês pago seguinte, por cartão ou Pix, ou
-um upgrade. O mês já ativado mantém o que foi vendido. Por exemplo, um
+organização na ativação seguinte: o mês pago seguinte ou um upgrade. O mês já ativado mantém o que foi vendido. Por exemplo, um
 Intermediário ativado com 3 empresas passa a 5 no mês seguinte. O Gratuito não
 vence e não é reativado, então mantém a cópia até outra ativação. A ativação
 que vem de um termo anual também grava `termId`. Quando um termo anual se
 sobrepõe ao período do plano mensal, a ativação mensal é recusada com
-`ANNUAL_TERM_ACTIVE`: Pix (`plans:requestPaid`, `plans:confirmPayment`) e
-`plans:claimFree`; `usage:assignPlan` é recusado quando um termo cobre o
+`ANNUAL_TERM_ACTIVE`, como em `plans:claimFree`; `usage:assignPlan` é recusado quando um termo cobre o
 instante atual. O cartão mensal é recusado enquanto houver qualquer termo
 em vigor, mesmo agendado para depois, com a data em que o último termina
 ([BILLING.md](BILLING.md#plano-anual)).
@@ -652,7 +636,7 @@ com cotas e capacidade finitas, preço, custos base/estresse, aporte e referênc
 de pagamento. Recusa organização encerrada e, do congelamento à remoção e
 durante a reidratação, responde `ORGANIZATION_ARCHIVING`; uma organização já
 arquivada recebe plano ([ADR 0009, §2](../adr/0009-custodia-fria-de-organizacoes-abertas.md#2-a-organização-continua-aberta)). Os planos de catálogo
-usam `plans:claimFree` ou confirmação administrativa de `plans:requestPaid`;
+usam `plans:claimFree` ou a fatura paga do cartão;
 o membro não escolhe os números das cotas nem confirma o próprio pagamento.
 Com a política desligada, a atribuição assistida anterior continua disponível.
 Recebe organização, nome, `startsAt`, `endsAt`, limites de

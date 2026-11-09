@@ -312,7 +312,7 @@ describe("âncora dos termos anuais", () => {
         tier: "intermediate",
         firstPeriod,
         endsAt: termEndsAt(firstPeriod),
-        source: "pix",
+        source: "stripe",
         references: ["synthetic-annual-term"],
         paidCents: PLATFORM_PLANS.intermediate.annualCents,
         purchasedAt: firstPeriod,

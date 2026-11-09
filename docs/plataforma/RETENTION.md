@@ -560,7 +560,7 @@ guarda mais do que essa versão promete, nunca menos.
   Sandbox. Ficam até o prazo os registros da própria Freecorps sobre planos,
   pagamentos, capacidade e aceite dos termos de uso, que servem às obrigações
   dela e não dependem do ambiente: `usagePlans`, `usagePlanAudit`,
-  `termsOfUseAcceptances`, `platformPlanRequests`, `platformPlanTerms`,
+  `termsOfUseAcceptances`, `platformPlanTerms`,
   `platformPlanReceipts`, `platformPlanAllocations`, `platformFreeClaims`,
   `billingAccounts`, `billingCheckouts`, `billingGrants`, `billingEvents`,
   `capacityAccounts`, `capacityEvents` e `capacityTotals`. Os rastreadores

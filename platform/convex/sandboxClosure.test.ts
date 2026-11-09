@@ -177,7 +177,7 @@ describe("Elegibilidade da organização só com Sandbox", () => {
         tier: "intermediate",
         firstPeriod: Date.UTC(2026, 10, 1),
         endsAt: termEndsAt(Date.UTC(2026, 10, 1)),
-        source: "pix",
+        source: "stripe",
         references: ["synthetic-sandbox-term"],
         paidCents: 149000,
         purchasedAt: Date.now(),

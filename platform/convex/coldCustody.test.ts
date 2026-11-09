@@ -8,7 +8,6 @@ import { PLATFORM_PLANS } from "./lib/planCatalog";
 import { PURGE_ARCHIVE_WAIT } from "./organizationClosure";
 import { actor, fixture } from "../../tests/helpers/export-fixture";
 import {
-  enablePix,
   person,
   platformTest,
   syntheticApiKey,
@@ -423,7 +422,6 @@ describe("Organização arquivada: o que continua permitido (ADR 0009, §2)", ()
       admissionsUntil: NOW + DAY,
       evidence: "synthetic-cold-custody",
     });
-    await enablePix(f.t);
     await f.t.run((ctx) =>
       ctx.db.insert("usagePlans", {
         organizationId: f.scope.organizationId,
@@ -573,7 +571,6 @@ describe("Plano e encerramento em custódia (ADR 0009, §2)", () => {
       admissionsUntil: NOW + DAY,
       evidence: "synthetic-cold-custody",
     });
-    await enablePix(t);
     const organizationId = await t.run((ctx) =>
       ctx.db.insert("organizations", {
         name: "Custódia",
@@ -595,10 +592,11 @@ describe("Plano e encerramento em custódia (ADR 0009, §2)", () => {
     const p = await planOrganization();
     await p.t.run((ctx) => ctx.db.patch("coldArchiveRuns", p.runId, { state }));
     await expect(
-      p.owner.mutation(api.plans.requestPaid, {
+      p.owner.mutation(internal.billing.prepareCheckout, {
         organizationId: p.organizationId,
         tier: "intermediate",
         key: "synthetic-request-1",
+        livemode: false,
       }),
     ).rejects.toThrow("ORGANIZATION_ARCHIVING");
     await expect(
@@ -609,12 +607,13 @@ describe("Plano e encerramento em custódia (ADR 0009, §2)", () => {
   it.each(["notice", "archived"] as State[])("contratar plano em %s é aceito", async (state) => {
     const p = await planOrganization();
     await p.t.run((ctx) => ctx.db.patch("coldArchiveRuns", p.runId, { state }));
-    const request = await p.owner.mutation(api.plans.requestPaid, {
+    const checkout = await p.owner.mutation(internal.billing.prepareCheckout, {
       organizationId: p.organizationId,
       tier: "intermediate",
       key: "synthetic-request-1",
+      livemode: false,
     });
-    expect(request.amountCents).toBe(PLATFORM_PLANS.intermediate.monthlyCents);
+    expect(checkout.grantCents).toBe(PLATFORM_PLANS.intermediate.monthlyCents);
   });
 
   it.each(["deleting", "restoring"] as State[])(

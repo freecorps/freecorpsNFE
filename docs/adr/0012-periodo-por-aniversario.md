@@ -10,6 +10,9 @@ descritas em [BILLING.md](../plataforma/BILLING.md) e
 Esta ADR substitui pontos da
 [decisão 9 da ADR 0010](0010-guarda-em-camadas-e-custo-dos-planos.md#9-anual-reembolso-e-ciclo)
 e das políticas mensais da #556, listados em [Consequências](#consequências).
+Desde 09/11/2026 o Pix assistido não está mais no código (#125): o cartão é a
+única forma de pagamento, e as regras de Pix abaixo ficam só como registro da
+decisão ([BILLING.md](../plataforma/BILLING.md)).
 
 ## Contexto
 

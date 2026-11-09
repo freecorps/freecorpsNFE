@@ -56,7 +56,7 @@ await withLocalBrowser(root, "plans", async () => {
     site,
     convexUrl: urls.cloud,
     deploymentName: config.deploymentName,
-    dataset: "one synthetic account and organization per run; synthetic payment; no fiscal calls",
+    dataset: "one synthetic account and organization per run; no payment; no fiscal calls",
     result: "running",
     step: "preparation",
     scenarios: [],
@@ -254,7 +254,7 @@ await withLocalBrowser(root, "plans", async () => {
       "Expected one local settings row at most",
     );
     const prior = settings.page[0];
-    const configured = await rpc("mutation", "plans:configure", {
+    await rpc("mutation", "plans:configure", {
       enabled: true,
       expectedVersion: prior?.version ?? 0,
       filesBytes: Math.max(
@@ -276,12 +276,6 @@ await withLocalBrowser(root, "plans", async () => {
       admissionsUntil: Date.now() + 24 * 60 * 60 * 1000,
       evidence: "Synthetic local browser journey; no real company funds or payment",
     });
-    // The journey pays by assisted Pix, off by default.
-    await rpc("mutation", "plans:configurePix", {
-      enabled: true,
-      expectedVersion: configured,
-      evidence: "Synthetic local browser journey; Pix confirmed by the operator",
-    });
     await page.getByRole("button", { name: "Ativar gratuito", exact: true }).waitFor();
     await capture("02-catalog-desktop");
     step("activate-free-ui");
@@ -298,92 +292,24 @@ await withLocalBrowser(root, "plans", async () => {
     await capture("03-free-active-desktop");
     report.scenarios.push("free-activated-ui-and-persisted-with-100-imports-no-expiry");
 
-    step("request-intermediate-ui");
-    await page.getByRole("button", { name: "Solicitar Intermediário", exact: true }).click();
-    assert.match(await dialog.innerText(), /R\$\s*149,00/);
-    await capture("04-intermediate-confirm-desktop");
-    await dialog.getByRole("button", { name: "Registrar pedido", exact: true }).click();
-    await dialog.waitFor({ state: "hidden" });
-    await page.getByText("Aguardando pagamento", { exact: true }).waitFor();
-    const pending = await overview();
-    assert.equal(pending.request.state, "awaiting_payment");
-    assert.equal(pending.request.amountCents, 14900);
-    assert.deepEqual(pending.subscription, free.subscription);
-    assert.deepEqual((await usage()).plan, freeUsage.plan);
-    await page.getByRole("heading", { name: "Gratuito", exact: true }).waitFor();
-    await capture("05-intermediate-pending-desktop");
-    report.scenarios.push("intermediate-14900-awaiting-payment-keeps-exact-free-plan-and-quotas");
-
-    step("confirm-synthetic-payment-local-only");
-    await rpc("mutation", "plans:confirmPayment", {
-      requestId: pending.request.id,
-      amountCents: 14900,
-      paymentReference: `synthetic-browser-${runId}`,
-      actor: "local-browser-test",
-    });
-    // No reload: subscription must update the visible plan after server confirmation.
-    await page.getByRole("heading", { name: "Intermediário", exact: true }).waitFor();
-    assert.equal(await page.getByText("Plano vigente", { exact: true }).isVisible(), true);
+    step("paid-tiers-by-card-ui");
+    // The paid tiers are sold only by card, in Cobrança (#125): nothing to ask for here.
     assert.equal(
-      await page
-        .getByText(
-          "Pedido registrado. Aguarde as instruções de pagamento pelo canal de atendimento.",
-          { exact: true },
-        )
-        .count(),
-      0,
+      await page.getByText("Assine pelo cartão em Cobrança.", { exact: true }).count(),
+      2,
     );
-    const active = await waitForQuery(
-      overview,
-      (data) => data.subscription?.tier === "intermediate" && !data.request,
-    );
-    const activeUsage = await usage();
-    report.activatedPlan = {
-      tier: active.subscription.tier,
-      version: activeUsage.plan.version,
-      imports: activeUsage.plan.limits.imports,
-      largeQuoteCents: active.pricesCents.large,
-    };
-    assert.equal(activeUsage.plan.limits.imports, 1000);
-    assert.equal(activeUsage.plan.version, freeUsage.plan.version + 1);
-    assert.equal(active.pricesCents.large, 35000);
-    await capture("06-intermediate-active-desktop");
-    report.scenarios.push(
-      "synthetic-internal-payment-activates-intermediate-live-and-1000-imports",
-    );
-
-    step("upgrade-server-quote-ui");
-    await page.getByRole("button", { name: "Solicitar Grande", exact: true }).click();
-    assert.match(await dialog.innerText(), /R\$\s*350,00/);
-    assert.match(await dialog.innerText(), /Valor da diferença/);
-    await capture("07-upgrade-350-confirm-desktop");
-    await dialog.getByRole("button", { name: "Registrar pedido", exact: true }).click();
-    await dialog.waitFor({ state: "hidden" });
-    await page.getByText("Aguardando pagamento", { exact: true }).waitFor();
-    const upgrade = await overview();
-    assert.equal(upgrade.request.amountCents, active.pricesCents.large);
-    assert.deepEqual((await usage()).plan, activeUsage.plan);
-    report.scenarios.push(
-      "upgrade-ui-and-persisted-request-match-server-35000-quote-no-extra-quota",
-    );
-    await page.setViewportSize({ width: 390, height: 844 });
-    await capture("08-upgrade-pending-mobile");
-    step("cancel-pending-ui");
-    await page.getByRole("button", { name: "Cancelar pedido", exact: true }).click();
-    await capture("09-cancel-confirm-mobile");
-    await dialog.getByRole("button", { name: "Confirmar cancelamento", exact: true }).click();
-    await dialog.waitFor({ state: "hidden" });
-    await page.getByText("Pedido cancelado. O plano atual foi mantido.", { exact: true }).waitFor();
-    assert.equal((await overview()).request, null);
-    assert.deepEqual((await usage()).plan, activeUsage.plan);
-    await capture("10-cancelled-mobile");
-    report.scenarios.push("upgrade-cancelled-through-ui-keeps-exact-intermediate-plan-and-quotas");
+    assert.equal(await page.getByRole("button", { name: /^Solicitar/ }).count(), 0);
+    assert.equal(await page.getByText(/Pix/).count(), 0);
+    assert.deepEqual((await overview()).subscription, free.subscription);
+    assert.deepEqual((await usage()).plan, freeUsage.plan);
+    await capture("04-paid-tiers-by-card-desktop");
+    report.scenarios.push("paid-tiers-point-to-card-billing-and-keep-exact-free-plan-and-quotas");
 
     step("direct-route-reload-mobile");
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
-    await page.getByRole("heading", { name: "Intermediário", exact: true }).waitFor();
-    assert.equal(await page.getByText("Aguardando pagamento", { exact: true }).count(), 0);
-    await capture("11-reloaded-mobile");
+    await page.getByRole("heading", { name: "Gratuito", exact: true }).waitFor();
+    await capture("05-reloaded-mobile");
     report.scenarios.push("direct-usage-route-reload-mobile-390-no-horizontal-overflow-and-axe");
     assert.equal(report.rateLimits.length, 0, "No rate-limited responses expected");
     report.sourceHashesAfter = fingerprint();

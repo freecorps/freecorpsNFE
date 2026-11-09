@@ -633,8 +633,8 @@ não devolve as tarifas da cobrança original.
 O upgrade de R$ 350 é cobrança avulsa: ≈ R$ 14,36 de cartão, sem Billing, e
 eventual tarifa de Invoicing pela fatura pós-compra. Esses valores cabem na
 dedução hipotética de 15% da memória acima, que soma tributos e pagamento; a
-parcela de tributos não foi medida. O Pix assistido não tem tarifa de
-intermediário, mas custa conferência manual. Repasse em BRL, com prazo a
+parcela de tributos não foi medida. Não há Pix: a venda é só pelo cartão
+desde 03/11/2026 (#125). Repasse em BRL, com prazo a
 conferir na conta. A fatura do Stripe não é NFS-e; a nota da mensalidade sai
 pelo processo fiscal próprio da Freecorps ([BILLING.md](BILLING.md#tarifas-e-tratamento-fiscal)).
 Nada disso altera `paid-plans.mjs`, que continua com a dedução agregada.

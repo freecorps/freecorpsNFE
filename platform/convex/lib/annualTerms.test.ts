@@ -387,7 +387,7 @@ describe("a term that continues a chain counts from its anchor (ADR 0012, sectio
       endsAt: Date.UTC(2030, 1, 28, 9, 15),
       paidCents: intermediate.annualCents,
       purchasedAt: Date.UTC(2029, 0, 30),
-      references: ["pix-chain-renewal"],
+      references: ["in_chain_renewal"],
       segments: [{ tier: "large" as const, fromPeriod: Date.UTC(2029, 2, 29, 9, 15) }],
     };
     expect(() => assertTermShape(shape)).not.toThrow();

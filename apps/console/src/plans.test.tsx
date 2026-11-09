@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { getFunctionName } from "convex/server";
 import { ConvexError, type GenericId } from "convex/values";
 import type { Organization } from "./organizations";
@@ -11,8 +11,6 @@ const state = vi.hoisted(() => ({
   queryError: null as unknown,
   queries: [] as Array<{ name: string; args: unknown }>,
   claim: vi.fn(),
-  request: vi.fn(),
-  cancel: vi.fn(),
   checkout: vi.fn(),
 }));
 vi.mock("./convex-query", () => ({
@@ -26,8 +24,6 @@ vi.mock("convex/react", () => ({
   useMutation: (fn: Parameters<typeof getFunctionName>[0]) => {
     const name = getFunctionName(fn);
     if (name === "plans:claimFree") return state.claim;
-    if (name === "plans:requestPaid") return state.request;
-    if (name === "plans:cancelRequest") return state.cancel;
     throw new Error(`Unexpected mutation: ${name}`);
   },
   useAction: (fn: Parameters<typeof getFunctionName>[0]) => {
@@ -37,7 +33,6 @@ vi.mock("convex/react", () => ({
   },
 }));
 const org = { id: "org-one", slug: "equipe", name: "Equipe", role: "owner" } as Organization;
-const requestId = "request-one" as GenericId<"platformPlanRequests">;
 function overview(): PlansOverview {
   return {
     enabled: true,
@@ -67,35 +62,10 @@ function overview(): PlansOverview {
       },
     })),
     subscription: null,
-    request: null,
     availability: { canClaimFree: true, reason: null },
     annualEnabled: false,
-    pixEnabled: true,
-    annualStart: { start: "now", startsAt: null, endsAt: null, code: null, availableAt: null },
-    monthlyStart: { intermediate: monthlyNow(14900), large: monthlyNow(49900) },
-    scheduledRenewal: null,
     checkout: false,
     terms: [],
-  };
-}
-type MonthlyStart = PlansOverview["monthlyStart"]["large"];
-function monthlyNow(amountCents: number): MonthlyStart {
-  return { start: "now", amountCents, startsAt: null, endsAt: null, code: null, availableAt: null };
-}
-function pending(): NonNullable<PlansOverview["request"]> {
-  return {
-    id: requestId,
-    tier: "intermediate",
-    amountCents: 14900,
-    state: "awaiting_payment",
-    period: "2026-10",
-    cycle: "monthly",
-    start: null,
-    firstPeriod: null,
-    periodStartsAt: Date.UTC(2026, 9, 1),
-    periodEndsAt: Date.UTC(2026, 10, 1),
-    payBy: Date.UTC(2026, 10, 1),
-    expired: false,
   };
 }
 beforeEach(() => {
@@ -103,10 +73,6 @@ beforeEach(() => {
   state.queryError = null;
   state.queries = [];
   state.claim.mockReset().mockResolvedValue(null);
-  state.request
-    .mockReset()
-    .mockResolvedValue({ id: requestId, amountCents: 14900, period: "2026-10" });
-  state.cancel.mockReset().mockResolvedValue(null);
   state.checkout.mockReset().mockResolvedValue({ url: "https://checkout.stripe.com/c/pay/cs_up" });
 });
 afterEach(() => {
@@ -159,7 +125,7 @@ it("compares real prices, companies and quotas without requiring consulting", ()
   expect(screen.getByText("Sem vencimento")).toBeTruthy();
   expect(screen.getByText(/Consultoria opcional por R\$\s180,00\/hora/)).toBeTruthy();
   expect(screen.getByText(/Solicite um orçamento pelo canal de atendimento/)).toBeTruthy();
-  expect(document.body.textContent).not.toMatch(/Convex|custódia|checkout|emissão real/);
+  expect(document.body.textContent).not.toMatch(/Convex|custódia|checkout|emissão real|Pix/);
 });
 
 it("the free tier lists new notes in Production and its sandbox quotas; paid tiers keep files and queries", () => {
@@ -182,9 +148,18 @@ it.each(["developer", "operator", "viewer"] as const)("%s can read but cannot co
   expect(screen.getByRole<HTMLButtonElement>("button", { name: "Ativar gratuito" }).disabled).toBe(
     true,
   );
-  expect(
-    screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Intermediário" }).disabled,
-  ).toBe(true);
+  // Cobrança is not shown to them: no pointer to it.
+  expect(screen.queryByText("Assine pelo cartão em Cobrança.")).toBeNull();
+});
+
+it("sells the paid tiers by card in Cobrança, in either cycle, and only the free tier here", async () => {
+  state.data = annualOn();
+  show();
+  expect(screen.getAllByText("Assine pelo cartão em Cobrança.")).toHaveLength(2);
+  expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
+  await chooseAnnual();
+  expect(screen.getAllByText("Assine pelo cartão em Cobrança.")).toHaveLength(2);
+  expect(screen.getByRole("button", { name: "Ativar gratuito" })).toBeTruthy();
 });
 
 it("owner activates free only after confirmation and reflects the subscription", async () => {
@@ -223,86 +198,6 @@ it("refusal leaves the dialog open and makes retry possible without claiming suc
   expect(screen.queryByRole("alertdialog")).toBeNull();
 });
 
-it("registers a paid request, discloses a month from the confirmation and never claims activation", async () => {
-  const view = show();
-  await click("Solicitar Intermediário");
-  const dialog = screen.getByRole("alertdialog");
-  expect(dialog.textContent).toMatch(
-    /R\$\s149,00 por um mês, da confirmação do pagamento pela equipe ao mesmo dia e horário do mês seguinte, em UTC\. O pedido vale por 7 dias\./,
-  );
-  expect(dialog.textContent).not.toMatch(/mês corrente|dia 1|mês civil/);
-  await click("Registrar pedido");
-  expect(state.request).toHaveBeenCalledWith({
-    organizationId: "org-one",
-    tier: "intermediate",
-    key: expect.any(String),
-  });
-  expect(screen.queryByText(/Pedido registrado/)).toBeNull();
-  expect(screen.queryByText(/Pagamento confirmado|Plano gratuito ativado/)).toBeNull();
-  state.data = {
-    ...overview(),
-    subscription: { tier: "free", endsAt: null, version: 1 },
-    request: pending(),
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByText("Aguardando pagamento")).toBeTruthy();
-  expect(screen.getByText(/Pedido registrado/)).toBeTruthy();
-  expect(
-    screen.getByText("Desde 01/10/2026 às 00:00 UTC, termina em 01/11/2026 às 00:00 UTC"),
-  ).toBeTruthy();
-  expect(screen.getByText(/O plano atual continua durante a espera/)).toBeTruthy();
-  expect(screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Grande" }).disabled).toBe(
-    true,
-  );
-  state.data = {
-    ...overview(),
-    subscription: { tier: "intermediate", endsAt: Date.UTC(2026, 10, 1), version: 2 },
-    request: { ...pending(), state: "activated" },
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByText("Pagamento confirmado")).toBeTruthy();
-  expect(screen.queryByText(/Pedido registrado/)).toBeNull();
-  expect(screen.queryByRole("button", { name: "Cancelar pedido" })).toBeNull();
-  state.data = { ...overview(), subscription: { tier: "intermediate", endsAt: null, version: 2 } };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.queryByText(/Pedido registrado/)).toBeNull();
-});
-
-it("keeps the idempotency key after an uncertain response and reopening", async () => {
-  state.request.mockRejectedValueOnce(new Error("Network"));
-  show();
-  await click("Solicitar Grande");
-  await click("Registrar pedido");
-  expect(screen.getByRole("alert").textContent).toContain("Não foi possível concluir");
-  const first = state.request.mock.calls[0]![0] as { key: string };
-  await click("Cancelar");
-  await click("Solicitar Grande");
-  await click("Registrar pedido");
-  expect(state.request.mock.calls[1]![0]).toEqual({
-    organizationId: "org-one",
-    tier: "large",
-    key: first.key,
-  });
-});
-
-it("confirms cancellation, waits for the server, and keeps the current plan", async () => {
-  state.data = { ...overview(), request: pending() };
-  const view = show();
-  await click("Cancelar pedido");
-  await click("Cancelar");
-  expect(state.cancel).not.toHaveBeenCalled();
-  await click("Cancelar pedido");
-  await click("Confirmar cancelamento");
-  expect(state.cancel).toHaveBeenCalledWith({ organizationId: "org-one", requestId });
-  expect(screen.getByRole("status").textContent).toContain(
-    "Pedido cancelado. O plano atual foi mantido.",
-  );
-  state.data = { ...overview(), request: { ...pending(), state: "cancelled" } };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByText("Pedido cancelado")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Cancelar pedido" })).toBeNull();
-});
-
 it("handles unavailable free tier without exposing an internal reason", () => {
   state.data = {
     ...overview(),
@@ -313,44 +208,14 @@ it("handles unavailable free tier without exposing an internal reason", () => {
   expect(document.body.textContent).not.toContain("private-internal-reason");
 });
 
-it("a cancellation refusal preserves the pending request and allows another attempt", async () => {
-  state.data = { ...overview(), request: pending() };
-  state.cancel.mockRejectedValueOnce(new ConvexError({ code: "PLAN_REQUEST_UNAVAILABLE" }));
-  show();
-  await click("Cancelar pedido");
-  await click("Confirmar cancelamento");
-  expect(screen.getByRole("alert").textContent).toContain("Este pedido mudou");
-  expect(screen.queryByText("Pedido cancelado. O plano atual foi mantido.")).toBeNull();
-  expect(
-    screen.getByRole<HTMLButtonElement>("button", { name: "Confirmar cancelamento" }).disabled,
-  ).toBe(false);
-});
-
-it("does not cancel a different request that arrives while its confirmation is open", async () => {
-  state.data = { ...overview(), request: pending() };
+it("replaces a revoked offer with availability", async () => {
   const view = show();
-  await click("Cancelar pedido");
-  state.data = { ...overview(), request: { ...pending(), id: "request-two" } };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(
-    screen.getByRole<HTMLButtonElement>("button", { name: "Confirmar cancelamento" }).disabled,
-  ).toBe(true);
-  expect(state.cancel).not.toHaveBeenCalled();
-});
-
-it("only offers cancellation to managers and replaces a revoked offer with availability", async () => {
-  state.data = { ...overview(), request: pending() };
-  const view = show("developer");
-  expect(screen.getByText("Aguardando pagamento")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Cancelar pedido" })).toBeNull();
-  state.data = overview();
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  await click("Solicitar Grande");
+  await click("Ativar gratuito");
   state.data = { ...overview(), enabled: false };
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(screen.queryByRole("alertdialog")).toBeNull();
   expect(screen.queryByRole("table")).toBeNull();
-  expect(state.request).not.toHaveBeenCalled();
+  expect(state.claim).not.toHaveBeenCalled();
 });
 
 it("isolates query arguments, dialogs and late mutation results when the organization changes", async () => {
@@ -414,8 +279,6 @@ function term(patch: Partial<Term> = {}): Term {
     segments: [],
     firstPeriod: OCT_1,
     endsAt: END,
-    renewalFrom: Date.UTC(2027, 8, 1),
-    source: "pix",
     state: "active",
     blocked: false,
     accessEndsAt: null,
@@ -429,17 +292,8 @@ const upgrade = (patch: Partial<NonNullable<Term["upgrade"]>> = {}) => ({
   amountCents: 349999,
   months: 12,
   from: OCT_1,
-  until: Date.UTC(2026, 10, 1),
-  cardUntil: null,
+  closesAt: END - 72 * 3600_000,
   ...patch,
-});
-type AnnualStart = PlansOverview["annualStart"];
-const refused = (code: string, availableAt: number | null): AnnualStart => ({
-  start: null,
-  startsAt: null,
-  endsAt: null,
-  code,
-  availableAt,
 });
 function clock() {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -470,141 +324,6 @@ it("the annual selector shows the catalog price and the savings over 12 months",
   expect(rows[3]!.textContent).toMatch(/Economia de R\$\s998,00/);
   // The free tier has no annual.
   expect(rows[1]!.textContent).toContain("Sem vencimento");
-  expect(screen.getByRole("button", { name: "Solicitar Grande anual" })).toBeTruthy();
-  await act(async () => {
-    fireEvent.click(screen.getByRole("radio", { name: /Mensal/ }));
-  });
-  expect(screen.getByRole("button", { name: "Solicitar Grande" })).toBeTruthy();
-});
-
-it("the annual Pix request starts at the confirmation and sends the server only the intention", async () => {
-  clock();
-  state.data = annualOn();
-  const view = show();
-  await chooseAnnual();
-  await click("Solicitar Intermediário anual");
-  const dialog = screen.getByRole("alertdialog");
-  expect(dialog.textContent).toMatch(/R\$\s1\.490,00 por 12 meses, pagos de uma vez/);
-  // No day-1 choice (ADR 0012): the server says how it starts.
-  expect(dialog.textContent).toContain("Começa na confirmação do pagamento pela equipe");
-  expect(dialog.textContent).toContain("no mesmo dia e horário, em UTC");
-  expect(dialog.textContent).not.toMatch(/dia 1 do mês seguinte, e o plano atual/);
-  expect(within(dialog).queryByRole("radio")).toBeNull();
-  expect(dialog.textContent).toContain(
-    "No cartão, o anual é contratado em Cobrança, cobrado e iniciado no pagamento",
-  );
-  await click("Registrar pedido");
-  expect(state.request).toHaveBeenCalledWith({
-    organizationId: "org-one",
-    tier: "intermediate",
-    key: expect.any(String),
-    cycle: "annual",
-    start: "now",
-  });
-  // Switched off while a confirmation is open: the annual is not sent.
-  state.request.mockClear();
-  await click("Solicitar Grande anual");
-  state.data = overview();
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByRole<HTMLButtonElement>("button", { name: "Registrar pedido" }).disabled).toBe(
-    true,
-  );
-  expect(state.request).not.toHaveBeenCalled();
-});
-
-it("a request past its deadline no longer holds the plans, and one made before ADR 0012 keeps its 1st", () => {
-  state.data = {
-    ...annualOn(),
-    request: { ...pending(), expired: true },
-  };
-  const view = show();
-  expect(screen.getByText("Prazo encerrado")).toBeTruthy();
-  expect(
-    screen.getByText(/O prazo de pagamento terminou em 01\/11\/2026 às 00:00 UTC/),
-  ).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Cancelar pedido" })).toBeNull();
-  expect(
-    screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Intermediário" }).disabled,
-  ).toBe(false);
-  // A legacy `next` request starts on the 1st it named, not "at the end of the plan in force".
-  state.data = {
-    ...annualOn(),
-    request: {
-      ...pending(),
-      amountCents: 149000,
-      cycle: "annual",
-      start: "next",
-      firstPeriod: Date.UTC(2026, 10, 1),
-      periodStartsAt: Date.UTC(2026, 10, 1),
-      periodEndsAt: null,
-      payBy: Date.UTC(2026, 11, 1),
-    },
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByText("01/11/2026 às 00:00 UTC")).toBeTruthy();
-  expect(screen.queryByText(/no fim do plano em vigor/)).toBeNull();
-});
-
-it("shows a pending annual request and a Pix upgrade as what they are, not a full-price plan", () => {
-  state.data = {
-    ...annualOn(),
-    request: {
-      ...pending(),
-      amountCents: 149000,
-      cycle: "annual",
-      start: "renewal",
-      firstPeriod: Date.UTC(2026, 10, 1),
-      periodStartsAt: Date.UTC(2026, 10, 1),
-      periodEndsAt: null,
-      payBy: Date.UTC(2026, 11, 1),
-    },
-  };
-  const view = show();
-  expect(screen.getByText("Intermediário anual")).toBeTruthy();
-  expect(screen.getByText(/R\$\s1\.490,00 por 12 meses/)).toBeTruthy();
-  expect(screen.getByText("01/11/2026 às 00:00 UTC, no fim do plano em vigor")).toBeTruthy();
-  expect(screen.getByText(/pagamento pela equipe, até 01\/12\/2026 às 00:00 UTC/)).toBeTruthy();
-  // An annual `now` starts at the confirmation: no instant to show yet.
-  state.data = {
-    ...annualOn(),
-    request: {
-      ...pending(),
-      amountCents: 149000,
-      cycle: "annual",
-      start: "now",
-      firstPeriod: null,
-      periodStartsAt: null,
-      periodEndsAt: null,
-      payBy: Date.UTC(2026, 9, 17, 12, 30, 15),
-    },
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getByText("Na confirmação do pagamento pela equipe")).toBeTruthy();
-  expect(screen.getByText(/até 17\/10\/2026 às 12:30:15 UTC/)).toBeTruthy();
-  state.data = {
-    ...annualOn(),
-    request: {
-      ...pending(),
-      tier: "large",
-      amountCents: 233333,
-      cycle: "annual",
-      start: "upgrade",
-      firstPeriod: Date.UTC(2027, 1, 10, 12),
-      periodStartsAt: Date.UTC(2027, 1, 10, 12),
-      periodEndsAt: null,
-      payBy: Date.UTC(2027, 2, 10, 12),
-    },
-    terms: [term()],
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.queryByText("Plano solicitado")).toBeNull();
-  expect(screen.queryByText("Valor integral")).toBeNull();
-  expect(screen.getByText("Mudança solicitada")).toBeTruthy();
-  expect(screen.getByText("Para Grande anual, até o fim do plano anual")).toBeTruthy();
-  expect(screen.getByText(/R\$\s2\.333,33, pela diferença dos meses restantes/)).toBeTruthy();
-  expect(screen.getByText("10/02/2027 às 12:00 UTC")).toBeTruthy();
-  expect(screen.getByText(/O plano anual continua durante a espera/)).toBeTruthy();
-  expect(screen.getByText(/até 10\/03\/2027 às 12:00 UTC/)).toBeTruthy();
 });
 
 it("shows the term in force with its payment method, start, end and the support rule to rescind", () => {
@@ -613,18 +332,16 @@ it("shows the term in force with its payment method, start, end and the support 
   const card = screen.getByRole("region", { name: "Plano anual em vigor" });
   expect(within(card).getByText("Em vigor")).toBeTruthy();
   expect(within(card).getByText("Intermediário anual")).toBeTruthy();
-  expect(within(card).getByText("Pix assistido")).toBeTruthy();
+  expect(within(card).getByText("Cartão, pelo Stripe")).toBeTruthy();
   expect(within(card).getByText("01/10/2026 às 00:00 UTC")).toBeTruthy();
   expect(within(card).getByText("01/10/2027 às 00:00 UTC")).toBeTruthy();
-  // A Pix term never renews by itself.
+  // Its subscription no longer renews it.
   expect(within(card).getByText("Fim")).toBeTruthy();
   expect(within(card).queryByText("Fim e renovação")).toBeNull();
-  expect(card.textContent).toContain(
-    "No Pix, a renovação é um novo pedido anual, feito no último mês, a partir de 01/09/2027 às 00:00 UTC",
-  );
   expect(card.textContent).toContain("Rescindir, com reembolso, é pelo suporte da Freecorps");
   expect(card.textContent).toContain("até 7 dias da cobrança, o reembolso é integral");
   expect(card.textContent).toContain("menos os meses usados, pelo preço mensal cheio");
+  expect(card.textContent).not.toContain("Pix");
   // Rescission is the operator's: no button for it, nor for an upgrade not on sale.
   expect(within(card).queryByRole("button")).toBeNull();
 });
@@ -634,7 +351,6 @@ it("shows upgrades, scheduled, blocked and rescinded terms", () => {
     ...annualOn(),
     terms: [
       term({
-        source: "stripe",
         renews: true,
         segments: [{ tier: "large", fromPeriod: Date.UTC(2027, 1, 1) }],
       }),
@@ -670,46 +386,6 @@ it("shows upgrades, scheduled, blocked and rescinded terms", () => {
   expect(rescinded.textContent).not.toContain("Rescindir, com reembolso");
 });
 
-it("upgrades a Pix term by a request priced by the server, keeping the renewal date", async () => {
-  clock();
-  state.data = {
-    ...annualOn(),
-    terms: [
-      term({
-        upgrade: upgrade({
-          amountCents: 233333,
-          months: 8,
-          from: Date.UTC(2027, 1, 10, 12),
-          until: Date.UTC(2027, 2, 10, 12),
-        }),
-      }),
-    ],
-  };
-  show();
-  expect(
-    screen.getByText(/R\$\s2\.333,33 pelos 8 meses restantes, com o mês corrente inteiro/),
-  ).toBeTruthy();
-  await click("Mudar para Grande anual");
-  const dialog = screen.getByRole("alertdialog");
-  // From the start of the term month under way, paid before it ends.
-  expect(dialog.textContent).toContain("do plano anual, de 10/02/2027 às 12:00 UTC a 01/10/2027");
-  expect(dialog.textContent).toContain(
-    "O plano muda quando a equipe confirmar o pagamento, até 10/03/2027 às 12:00 UTC",
-  );
-  expect(dialog.textContent).toContain("O plano anual continua terminando em 01/10/2027");
-  expect(dialog.textContent).not.toContain("a renovação passa a ser");
-  expect(dialog.textContent).toContain("O pagamento por Pix é assistido");
-  await click("Registrar pedido");
-  expect(state.request).toHaveBeenCalledWith({
-    organizationId: "org-one",
-    tier: "large",
-    key: expect.any(String),
-    cycle: "annual",
-    start: "upgrade",
-  });
-  expect(state.checkout).not.toHaveBeenCalled();
-});
-
 it("upgrades a card term in the Stripe Checkout, and closes it in the last 72 hours", async () => {
   clock();
   const assign = vi.fn();
@@ -718,9 +394,8 @@ it("upgrades a card term in the Stripe Checkout, and closes it in the last 72 ho
     ...annualOn(),
     terms: [
       term({
-        source: "stripe",
         renews: true,
-        upgrade: upgrade({ months: 1, amountCents: 29166, cardUntil: NOW + 1 }),
+        upgrade: upgrade({ months: 1, amountCents: 29166, closesAt: NOW + 1 }),
       }),
     ],
   };
@@ -744,7 +419,6 @@ it("upgrades a card term in the Stripe Checkout, and closes it in the last 72 ho
     start: "upgrade",
   });
   expect(assign).toHaveBeenCalledWith("https://checkout.stripe.com/c/pay/cs_up");
-  expect(state.request).not.toHaveBeenCalled();
   vi.setSystemTime(NOW + 1);
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   expect(
@@ -765,34 +439,30 @@ it.each([
   ["ANNUAL_TERM_ACTIVE", "tem um plano anual em vigor ou agendado"],
   ["ANNUAL_TERM_REQUIRED", "Não há plano anual em vigor agora"],
   ["ANNUAL_TERM_SCHEDULED", "Há um plano anual agendado"],
-  ["PAYMENT_METHOD_PIX", "foi pago por Pix"],
-  ["PAYMENT_METHOD_CARD", "Esta organização paga por cartão"],
-  // The screen still showed Pix when the switch went off.
-  ["PIX_DISABLED", "Assine pelo cartão em Cobrança"],
-  ["SUBSCRIPTION_RENEWING", "Use “Cancelar renovação” antes de assinar o anual no cartão"],
+  ["SUBSCRIPTION_REQUIRED", "A assinatura anual por cartão deste plano não está mais ativa"],
   ["PERIOD_CLOSING", "a mudança fecha 45 minutos antes do fim de cada mês do plano anual"],
 ])("explains %s in Portuguese", async (refusal, text) => {
-  state.data = annualOn();
-  state.request.mockRejectedValueOnce(new ConvexError({ code: refusal }));
+  clock();
+  state.data = { ...annualOn(), terms: [term({ renews: true, upgrade: upgrade() })] };
+  state.checkout.mockRejectedValueOnce(new ConvexError({ code: refusal }));
   show();
-  await chooseAnnual();
-  await click("Solicitar Intermediário anual");
-  await click("Registrar pedido");
+  await click("Mudar para Grande anual");
+  await click("Ir para o Stripe");
   expect(screen.getByRole("alert").textContent).toContain(text);
   expect(screen.getByRole("alert").textContent).not.toContain(refusal);
 });
 
 it("a sale that waits for the plan in force says when it becomes available", async () => {
-  state.data = annualOn();
-  state.request.mockRejectedValueOnce(
-    new ConvexError({ code: "PAYMENT_METHOD_CARD", availableAt: Date.UTC(2026, 10, 1) }),
+  clock();
+  state.data = { ...annualOn(), terms: [term({ renews: true, upgrade: upgrade() })] };
+  state.checkout.mockRejectedValueOnce(
+    new ConvexError({ code: "PLAN_UNAVAILABLE", availableAt: Date.UTC(2026, 10, 1) }),
   );
   show();
-  await chooseAnnual();
-  await click("Solicitar Intermediário anual");
-  await click("Registrar pedido");
+  await click("Mudar para Grande anual");
+  await click("Ir para o Stripe");
   expect(screen.getByRole("alert").textContent).toContain(
-    "Esta organização paga por cartão. O Pix fica disponível quando o período pago pelo cartão termina, com a renovação cancelada e sem pagamento em andamento. Disponível a partir de 01/11/2026 às 00:00 UTC.",
+    "Este plano está indisponível. Confira as opções atualizadas. Disponível a partir de 01/11/2026 às 00:00 UTC.",
   );
 });
 
@@ -800,7 +470,7 @@ it("a card term that no longer renews says so, and its upgrade does not promise 
   clock();
   state.data = {
     ...annualOn(),
-    terms: [term({ source: "stripe", renews: false, upgrade: upgrade() })],
+    terms: [term({ renews: false, upgrade: upgrade() })],
   };
   show();
   const card = screen.getByRole("region", { name: "Plano anual em vigor" });
@@ -815,110 +485,21 @@ it("a card term that no longer renews says so, and its upgrade does not promise 
   expect(dialog.textContent).not.toContain("a renovação passa a ser");
 });
 
-it("rescinded and Pix terms word the refund and the renewal without promises", () => {
+it("a rescinded term words the refund without promises", () => {
   state.data = {
     ...overview(),
-    terms: [
-      term({ state: "rescinded", accessEndsAt: Date.UTC(2027, 1, 1) }),
-      term({ id: "term-two" as Term["id"], firstPeriod: END, endsAt: Date.UTC(2028, 9, 1) }),
-    ],
+    terms: [term({ state: "rescinded", accessEndsAt: Date.UTC(2027, 1, 1) })],
   };
   show();
   expect(screen.getByText(/Se houver reembolso, a equipe o devolve/)).toBeTruthy();
-  // With the annual switch off, no renewal is offered for the Pix term.
-  const active = screen.getByRole("region", { name: "Plano anual em vigor" });
-  expect(active.textContent).toContain("sem renovação automática");
-  expect(active.textContent).not.toContain("último mês");
-});
-
-it("a term in force holds the annual purchase until its last month, which renews it at its end", async () => {
-  clock();
-  state.data = {
-    ...annualOn(),
-    annualStart: refused("ANNUAL_TERM_ACTIVE", Date.UTC(2027, 8, 1)),
-    terms: [term()],
-  };
-  const view = show();
-  await chooseAnnual();
-  expect(
-    screen.getByRole<HTMLButtonElement>("button", { name: "Solicitar Intermediário anual" })
-      .disabled,
-  ).toBe(true);
-  expect(
-    screen.getAllByText(
-      "Há um plano anual em vigor ou agendado. Pelo Pix, a renovação é pedida no último mês dele. Disponível a partir de 01/09/2027 às 00:00 UTC.",
-    ),
-  ).toHaveLength(2);
-  // A card term renews by itself: the hint says so instead.
-  state.data = {
-    ...annualOn(),
-    annualStart: refused("PAYMENT_METHOD_CARD", null),
-    terms: [term({ source: "stripe", renews: true })],
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  expect(screen.getAllByText("Há um plano anual em vigor, que renova pelo cartão.")).toHaveLength(
-    2,
-  );
-  // The last month: the renewal starts at the end of the term, never now.
-  state.data = {
-    ...annualOn(),
-    annualStart: {
-      start: "renewal",
-      startsAt: END,
-      endsAt: Date.UTC(2028, 9, 1),
-      code: null,
-      availableAt: null,
-    },
-    terms: [term()],
-  };
-  view.rerender(<Plans org={org} contextKey="entry-one" />);
-  await click("Solicitar Intermediário anual");
-  const dialog = screen.getByRole("alertdialog");
-  expect(dialog.textContent).toContain(
-    "Renovação do plano em vigor: começa em 01/10/2027 às 00:00 UTC, quando ele termina, e vai até 01/10/2028 às 00:00 UTC.",
-  );
-  expect(within(dialog).queryByRole("radio")).toBeNull();
-  await click("Registrar pedido");
-  expect(state.request).toHaveBeenCalledWith(
-    expect.objectContaining({ cycle: "annual", start: "renewal" }),
-  );
-});
-
-it("with a monthly in force, the annual by Pix is its renewal, of any tier, at its end", async () => {
-  clock();
-  state.data = {
-    ...annualOn(),
-    subscription: { tier: "large", endsAt: Date.UTC(2026, 10, 1), version: 3 },
-    annualStart: {
-      start: "renewal",
-      startsAt: Date.UTC(2026, 10, 1),
-      endsAt: Date.UTC(2027, 10, 1),
-      code: null,
-      availableAt: null,
-    },
-  };
-  show();
-  await chooseAnnual();
-  expect(
-    screen.getAllByText(
-      "Renovação do plano em vigor: começa em 01/11/2026 às 00:00 UTC, quando ele termina.",
-    ),
-  ).toHaveLength(2);
-  await click("Solicitar Intermediário anual");
-  expect(screen.getByRole("alertdialog").textContent).toContain(
-    "começa em 01/11/2026 às 00:00 UTC, quando ele termina, e vai até 01/11/2027 às 00:00 UTC",
-  );
-  await click("Registrar pedido");
-  expect(state.request).toHaveBeenCalledWith(
-    expect.objectContaining({ tier: "intermediate", cycle: "annual", start: "renewal" }),
-  );
+  expect(screen.queryByRole("button", { name: /Mudar para/ })).toBeNull();
 });
 
 it("after the card Checkout goes away, the upgrade is a new intention", async () => {
   clock();
   state.data = {
     ...annualOn(),
-    terms: [term({ source: "stripe", renews: true, upgrade: upgrade({ cardUntil: END }) })],
+    terms: [term({ renews: true, upgrade: upgrade({ closesAt: END }) })],
   };
   state.checkout.mockRejectedValue(new ConvexError({ code: "BILLING_UNAVAILABLE" }));
   const view = show();
@@ -934,207 +515,4 @@ it("after the card Checkout goes away, the upgrade is a new intention", async ()
   view.rerender(<Plans org={org} contextKey="entry-one" />);
   await click("Ir para o Stripe");
   expect(keys()[2]).not.toBe(keys()[0]);
-});
-
-it("with Pix off, paid tiers point to the card and a Pix term offers no upgrade", () => {
-  clock();
-  state.data = {
-    ...annualOn(),
-    pixEnabled: false,
-    terms: [term({ upgrade: upgrade() })],
-  };
-  show();
-  expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
-  expect(screen.getAllByText("Assine pelo cartão em Cobrança.")).toHaveLength(2);
-  expect(screen.getByRole("button", { name: "Ativar gratuito" })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Mudar para Grande anual" })).toBeNull();
-  cleanup();
-  state.data = {
-    ...annualOn(),
-    pixEnabled: false,
-    terms: [term({ source: "stripe", upgrade: upgrade() })],
-  };
-  show();
-  expect(screen.getByRole("button", { name: "Mudar para Grande anual" })).toBeTruthy();
-});
-
-it("with Pix off, a Pix term does not promise a renewal by a new Pix request", () => {
-  clock();
-  state.data = { ...annualOn(), pixEnabled: false, terms: [term()] };
-  show();
-  const card = screen.getByRole("region", { name: "Plano anual em vigor" });
-  expect(card.textContent).toContain(
-    "No Pix, o plano termina nessa data, sem renovação automática",
-  );
-  expect(card.textContent).not.toContain("novo pedido anual");
-});
-
-it("with Pix off, a member who cannot contract gets no pointer to Cobrança", () => {
-  state.data = { ...overview(), pixEnabled: false };
-  show("viewer");
-  expect(screen.getByText(/Apenas o proprietário e administradores/)).toBeTruthy();
-  expect(screen.queryByText("Assine pelo cartão em Cobrança.")).toBeNull();
-  expect(screen.queryByRole("button", { name: /^Solicitar/ })).toBeNull();
-});
-
-describe("mensal por Pix nos aniversários (ADR 0012)", () => {
-  const MONTH_END = Date.UTC(2026, 10, 10, 12, 0, 7);
-  const NEXT_END = Date.UTC(2026, 11, 10, 12, 0, 7);
-  const inForce = (): PlansOverview => ({
-    ...overview(),
-    subscription: { tier: "intermediate", endsAt: MONTH_END, version: 1 },
-    monthlyStart: {
-      intermediate: {
-        start: "renewal",
-        amountCents: 14900,
-        startsAt: MONTH_END,
-        endsAt: NEXT_END,
-        code: null,
-        availableAt: null,
-      },
-      large: {
-        start: "upgrade",
-        amountCents: 35000,
-        startsAt: null,
-        endsAt: MONTH_END,
-        code: null,
-        availableAt: null,
-      },
-    },
-  });
-  const refusedMonthly = (code: string, availableAt: number): MonthlyStart => ({
-    start: null,
-    amountCents: null,
-    startsAt: null,
-    endsAt: null,
-    code,
-    availableAt,
-  });
-
-  it("com um mensal Pix em vigor, o mesmo tier é a renovação no fim dele e o maior, o upgrade pela diferença", async () => {
-    state.data = inForce();
-    show();
-    expect(
-      screen.getByText(
-        "Renovação do plano em vigor: começa em 10/11/2026 às 12:00:07 UTC, quando ele termina.",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Mudança na confirmação, pela diferença, até 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor.",
-      ),
-    ).toBeTruthy();
-    await click("Solicitar Intermediário");
-    expect(screen.getByRole("alertdialog").textContent).toMatch(
-      /R\$\s149,00 pela renovação do plano em vigor: começa em 10\/11\/2026 às 12:00:07 UTC, quando ele termina, e vai até 10\/12\/2026 às 12:00:07 UTC\./,
-    );
-    await click("Registrar pedido");
-    // The server reads the renewal from the tier: the console sends only the intention.
-    expect(state.request).toHaveBeenCalledWith({
-      organizationId: "org-one",
-      tier: "intermediate",
-      key: expect.any(String),
-    });
-    await click("Solicitar Grande");
-    const upgrade = screen.getByRole("alertdialog").textContent;
-    expect(upgrade).toMatch(/R\$\s350,00, a diferença integral para o novo plano/);
-    expect(upgrade).toContain(
-      "até 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor, que não muda",
-    );
-    expect(document.body.textContent).not.toMatch(/mês civil|no dia 1 /);
-  });
-
-  it("um mensal recusado diz por quê e quando fica disponível", () => {
-    state.data = {
-      ...overview(),
-      monthlyStart: {
-        intermediate: refusedMonthly("PAYMENT_METHOD_CARD", Date.UTC(2026, 10, 1)),
-        large: refusedMonthly("ANNUAL_TERM_ACTIVE", Date.UTC(2027, 8, 10, 12)),
-      },
-    };
-    show();
-    for (const name of ["Solicitar Intermediário", "Solicitar Grande"])
-      expect(screen.getByRole<HTMLButtonElement>("button", { name }).disabled).toBe(true);
-    expect(
-      screen.getByText(
-        "Esta organização paga por cartão. O mensal por Pix espera o fim do período pago pelo cartão. Disponível a partir de 01/11/2026 às 00:00 UTC.",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Há um plano anual em vigor ou agendado. Pelo Pix, o mensal é a renovação dele, pedida no último mês. Disponível a partir de 10/09/2027 às 12:00 UTC.",
-      ),
-    ).toBeTruthy();
-  });
-
-  it("mostra a renovação e o upgrade pedidos com os instantes, e a renovação paga à espera", () => {
-    state.data = {
-      ...inForce(),
-      request: {
-        ...pending(),
-        start: "renewal",
-        firstPeriod: MONTH_END,
-        periodStartsAt: MONTH_END,
-        periodEndsAt: NEXT_END,
-        payBy: NEXT_END,
-      },
-    };
-    const view = show();
-    expect(
-      screen.getByText(
-        "De 10/11/2026 às 12:00:07 UTC, no fim do plano em vigor, a 10/12/2026 às 12:00:07 UTC",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        /só vale após a confirmação do pagamento pela equipe, até 10\/12\/2026 às 12:00:07 UTC\./,
-      ),
-    ).toBeTruthy();
-    state.data = {
-      ...inForce(),
-      request: {
-        ...pending(),
-        tier: "large",
-        amountCents: 35000,
-        start: "upgrade",
-        periodStartsAt: null,
-        periodEndsAt: MONTH_END,
-        payBy: MONTH_END,
-      },
-    };
-    view.rerender(<Plans org={org} contextKey="entry-one" />);
-    expect(screen.getByText("Para Grande")).toBeTruthy();
-    expect(screen.getByText(/R\$\s350,00, pela diferença integral/)).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Da confirmação do pagamento pela equipe a 10/11/2026 às 12:00:07 UTC, o fim do plano em vigor",
-      ),
-    ).toBeTruthy();
-    state.data = {
-      ...inForce(),
-      scheduledRenewal: {
-        tier: "intermediate",
-        startsAt: MONTH_END,
-        endsAt: NEXT_END,
-        blocked: false,
-      },
-    };
-    view.rerender(<Plans org={org} contextKey="entry-one" />);
-    const card = screen.getByRole("region", { name: "Renovação mensal paga" });
-    expect(card.textContent).toContain(
-      "De 10/11/2026 às 12:00:07 UTC a 10/12/2026 às 12:00:07 UTC",
-    );
-    expect(card.textContent).toContain("O plano atual continua até o início da renovação.");
-    state.data = {
-      ...inForce(),
-      scheduledRenewal: {
-        tier: "intermediate",
-        startsAt: MONTH_END,
-        endsAt: NEXT_END,
-        blocked: true,
-      },
-    };
-    view.rerender(<Plans org={org} contextKey="entry-one" />);
-    expect(screen.getByText(/o início da renovação aguarda a equipe/)).toBeTruthy();
-  });
 });

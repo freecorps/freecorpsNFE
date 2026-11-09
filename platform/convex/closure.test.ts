@@ -895,27 +895,13 @@ async function seedGuarded(f: Fixture, environment: "sandbox" | "production") {
       freeMonthlyCents: 1700,
       updatedAt: now,
     });
-    await ctx.db.insert("platformPlanRequests", {
-      organizationId,
-      tier: "intermediate",
-      key: "synthetic-guard-request",
-      amountCents: 14900,
-      period: "2026-10",
-      startsAt: now,
-      endsAt: now + DAY,
-      expectedVersion: 1,
-      state: "cancelled",
-      requestedBy: "synthetic-guard-owner",
-      createdAt: now,
-      updatedAt: now,
-    });
     // Expired: a term in force would refuse the closure itself.
     await insertTerm(ctx, {
       organizationId,
       tier: "intermediate",
       firstPeriod: Date.UTC(2025, 0, 1),
       endsAt: Date.UTC(2026, 0, 1),
-      source: "pix",
+      source: "stripe",
       references: ["synthetic-guard-term"],
       paidCents: 149000,
       purchasedAt: Date.UTC(2025, 0, 1),
@@ -1802,7 +1788,7 @@ function annualTerm(ctx: MutationCtx, f: Fixture, firstPeriod: number) {
     tier: "intermediate",
     firstPeriod: from,
     endsAt: Date.UTC(start.getUTCFullYear() + 1, start.getUTCMonth(), 1),
-    source: "pix",
+    source: "stripe",
     references: ["synthetic-operator-term"],
     paidCents: 149000,
     purchasedAt: from,
@@ -2010,25 +1996,6 @@ const operatorRefusals: [string, string, (ctx: MutationCtx, f: Fixture) => Promi
   // Like a receipt: an annual term once paid keeps the operator out, even after it ended.
   ["termo anual já encerrado", "PAID_PLAN", (ctx, f) => annualTerm(ctx, f, Date.UTC(2020, 0, 1))],
   [
-    "pedido de plano aguardando pagamento",
-    "PAID_PLAN",
-    (ctx, f) =>
-      ctx.db.insert("platformPlanRequests", {
-        organizationId: f.scope.organizationId,
-        tier: "intermediate",
-        key: "synthetic-operator-request",
-        amountCents: 14900,
-        period: "2026-10",
-        startsAt: Date.now(),
-        endsAt: Date.now() + DAY,
-        expectedVersion: 0,
-        state: "awaiting_payment",
-        requestedBy: "synthetic-operator-owner",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }),
-  ],
-  [
     "mais sondagens de emissão que o limite",
     "OPERATOR_CLOSURE_LIMIT",
     async (ctx, f) => {
@@ -2201,7 +2168,6 @@ const ownRecords = [
   "platformFreeClaims",
   "platformPlanAllocations",
   "platformPlanReceipts",
-  "platformPlanRequests",
   "platformPlanTerms",
   "termsOfUseAcceptances",
   "usagePlanAudit",
@@ -2257,7 +2223,7 @@ it("remove depois do encerramento os dados fiscais de uma organização que nunc
   // Plans, payments and capacity stay for their own deadline.
   expect(survivors(before, after)).toEqual(own(before));
   expect(own(before)).toEqual(
-    expect.arrayContaining(["platformFreeClaims", "platformPlanReceipts", "platformPlanRequests"]),
+    expect.arrayContaining(["platformFreeClaims", "platformPlanReceipts", "platformPlanTerms"]),
   );
   expect(after._storage).toEqual([other.storageId]);
   // Another organization keeps its Sandbox.
