@@ -1024,8 +1024,10 @@ O destino do alerta é o **e-mail operacional** da Freecorps, enviado uma vez
 por alerta pelo Email Sending da conta Cloudflare, o mesmo das contas:
 
 - `FNFE_CAPTURE_ALERT_EMAIL`: de um a cinco endereços, separados por vírgula.
-  No site, é só `operacao@nfe.freecorps.com.br`, a
-  [caixa de operação](../operacao/operacao-email.md) lida no console;
+  No site, é `operacao@nfe.freecorps.com.br`, a
+  [caixa de operação](../operacao/operacao-email.md) lida no console, e um
+  [endereço de plantão](../operacao/operacao-email.md#aviso-fora-do-console)
+  (#126);
 - `EMAIL_MODE=cloudflare`, `CLOUDFLARE_EMAIL_API_TOKEN` e `ACCOUNT_EMAIL_FROM`,
   já exigidos pelo e-mail das contas;
 - só no perfil `installation`; desenvolvimento e validação nunca enviam.
@@ -1120,7 +1122,9 @@ Ligar e desligar no dia a dia: [captura-fiscal.md](../operacao/captura-fiscal.md
    [alertas](#supervisão-e-alertas-422), e provar a chegada pelo
    [teste do e-mail](../operacao/captura-fiscal.md#testar-o-e-mail-dos-alertas).
    Feito em 28/10/2026: `operacao@nfe.freecorps.com.br`, com o teste do run
-   40701209624 recebido na caixa de operação (#463).
+   40701209624 recebido na caixa de operação (#463). O endereço de plantão
+   da #126 entra pelo passo 5 da
+   [ativação da caixa](../operacao/operacao-email.md#ativação).
 8. Depois do primeiro deploy da #422, disparar a lista (então `capture-release-list.yml`) uma
    vez para armar a supervisão das empresas já liberadas e conferir
    `supervised: true` em cada uma. Feito no run 40146214809, de 24/10/2026,
