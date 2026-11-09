@@ -14,7 +14,8 @@ import {
   reprocessDocument,
 } from "./documents";
 import { artifactAccess, chargeOriginal, responseHeaders } from "./documentDownloads";
-import { originalBody, originalSource, originalSourceOf } from "./lib/documentOriginalRead";
+import { originalBody, originalSource } from "./lib/documentOriginalRead";
+import { servedOriginal } from "./lib/originalStore";
 import { prepareCompany } from "./documentProjection";
 import { documentAccess, loadScopedDocument } from "./lib/documentCore";
 import { auditDanfe, danfeHeaders, resolveDanfe, serveDanfe } from "./documentDanfe";
@@ -185,8 +186,7 @@ export const download = internalMutation({
   handler: async (ctx, args) => {
     const scope = await parse(ctx, args);
     const artifact = await artifactAccess(ctx, scope, args.artifactId, args.keyHash);
-    const source = originalSourceOf(artifact);
-    if (!source) return deny("ORIGINAL_UNAVAILABLE");
+    const source = await servedOriginal(ctx, artifact);
     if (args.transferKey) await chargeOriginal(ctx, scope.organizationId, source, args.transferKey);
     return source;
   },
@@ -255,7 +255,7 @@ export const route = jsonRoute(
         artifactId: artifact[1]!,
         transferKey: crypto.randomUUID(),
       });
-      // Hot or cold (ADR 0010, decision 8): the same raw XML, checked by hash when cold.
+      // Hot or cold (ADR 0010, decision 8): the same raw XML, checked against the recorded hash.
       const blob = await originalBody(ctx.storage, source);
       if (!blob) return deny("ORIGINAL_UNAVAILABLE");
       await ctx.runMutation(internal.documentRest.download, { ...args, artifactId: artifact[1]! });

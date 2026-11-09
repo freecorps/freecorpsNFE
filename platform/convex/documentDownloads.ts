@@ -24,6 +24,7 @@ import {
   originalSourceOf,
   type ColdOriginalSource,
 } from "./lib/documentOriginalRead";
+import { servedOriginal } from "./lib/originalStore";
 
 export async function artifactAccess(
   ctx: QueryCtx,
@@ -140,8 +141,11 @@ async function documentArtifact(ctx: QueryCtx, ticket: Ticket) {
     artifact.environment !== ticket.environment
   )
     return null;
-  const file = originalSourceOf(artifact);
-  if (!file) return null;
+  const source = originalSourceOf(artifact);
+  if (!source) return null;
+  // The original's own download checks its stored file (#110); a DANFE ticket resolves the PDF
+  // (`documentDanfe.resolveDanfe`), and its rendering checks the original it reads.
+  const file = ticket.danfe ? source : await servedOriginal(ctx, artifact);
   return { id: artifact._id, file, operationId: artifact.processingOperationId };
 }
 /**

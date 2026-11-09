@@ -10,6 +10,7 @@ import {
 } from "../../platform/convex/_generated/server";
 import { claimFields } from "../../platform/convex/lib/operationValues";
 import { insertFiscal } from "../../platform/convex/lib/capacityCore";
+import { insertOriginal } from "../../platform/convex/lib/originalStore";
 
 export const NFSE_NAMESPACE = "http:/www.abrasf.org.br/nfse.xsd";
 export const LEGACY_NFSE_PARSER = "nfse-abrasf-export/1";
@@ -227,7 +228,7 @@ async function stageLegacyEntry(
     .unique();
   const artifactId =
     prior?._id ??
-    (await insertFiscal(ctx, "documentArtifacts", {
+    (await insertOriginal(ctx, {
       organizationId: original.organizationId,
       projectId: original.projectId,
       companyId: original.companyId,
@@ -236,7 +237,7 @@ async function stageLegacyEntry(
       parentArtifactId: original._id,
       entryIndex,
       entrySha256: entry.sha256,
-      storageId: original.storageId,
+      storageId: original.storageId!,
       sha256: original.sha256,
       size: original.size,
       source: original.source,

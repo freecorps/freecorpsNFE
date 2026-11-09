@@ -130,7 +130,8 @@ export async function readOriginal(
 }
 
 /**
- * The body of a download of the original: the stored blob as before, or the checked raw XML of a
+ * The body of a download of the original: the stored blob, whose `_storage` hash the download's
+ * mutation checked against the row (`originalStore.servedOriginal`), or the checked raw XML of a
  * cold object. The bytes are the same in both tiers, so the response is too.
  */
 export async function originalBody(

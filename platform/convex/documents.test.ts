@@ -25,6 +25,8 @@ import { routes, errorResponse } from "../../packages/contracts/src/external";
 import { FreecorpsClient } from "../../packages/sdk/src/index";
 import { CAPTURE_TERMS_VERSION } from "./lib/fiscalCaptureRelease";
 import { modules } from "../../tests/helpers/convex-modules";
+import { insertFiscal, patchFiscal } from "./lib/capacityCore";
+import { insertOriginal } from "./lib/originalStore";
 function testDatabase() {
   return convexTest(schema, modules);
 }
@@ -1053,6 +1055,91 @@ it("download tickets expire and membership removal invalidates issued tickets", 
       })
     ).status,
   ).toBe(404);
+});
+it("refuses to serve a hot original whose stored file no longer matches the recorded hash (#110)", async () => {
+  const f = await documentsFixture(),
+    imported = await f.importXml();
+  const artifactId = imported.version.artifactId;
+  const artifact = (await f.t.run((ctx) => ctx.db.get("documentArtifacts", artifactId)))!;
+  // `patchFiscal` and `insertFiscal` refuse the originals' rows in the type and at runtime: only
+  // `lib/originalStore.ts` writes them.
+  await expect(
+    f.t.run((ctx) =>
+      // @ts-expect-error The XML originals' rows are written only by lib/originalStore.ts.
+      patchFiscal(ctx, "documentArtifacts", artifactId, { sha256: "0".repeat(64) }),
+    ),
+  ).rejects.toThrow("ORIGINAL_WRITER");
+  const { _id, _creationTime, ...copy } = artifact;
+  await expect(
+    f.t.run((ctx) =>
+      // @ts-expect-error The XML originals' rows are written only by lib/originalStore.ts.
+      insertFiscal(ctx, "documentArtifacts", copy),
+    ),
+  ).rejects.toThrow("ORIGINAL_WRITER");
+  // Its single writer records only a hash and size that describe the stored file.
+  await expect(
+    f.t.run((ctx) =>
+      insertOriginal(ctx, { ...copy, storageId: artifact.storageId!, sha256: "0".repeat(64) }),
+    ),
+  ).rejects.toThrow("INVALID_FILE");
+  // Nor a hot row that carries a cold object's hash or size.
+  for (const cold of [{ objectSha256: "0".repeat(64) }, { objectSize: artifact.size }])
+    await expect(
+      f.t.run((ctx) => insertOriginal(ctx, { ...copy, storageId: artifact.storageId!, ...cold })),
+    ).rejects.toThrow("INVALID_FILE");
+
+  // A file swapped under the row, same size and other bytes, by a write outside ingestion.
+  const swapped = await f.t.run(async (ctx) => {
+    const bytes = new Uint8Array(await (await ctx.storage.get(artifact.storageId!))!.arrayBuffer());
+    bytes[bytes.length - 1] ^= 1;
+    const storageId = await ctx.storage.store(new Blob([bytes]));
+    await ctx.db.patch("documentArtifacts", artifactId, { storageId });
+    return storageId;
+  });
+  expect(swapped).not.toBe(artifact.storageId);
+  const charges = () =>
+    f.t.run(
+      async (ctx) =>
+        (
+          await ctx.db
+            .query("capacityEvents")
+            .withIndex("by_organizationId_and_metric_and_key", (q) =>
+              q.eq("organizationId", f.scope.organizationId).eq("metric", "downloadsBytes"),
+            )
+            .collect()
+        ).length,
+    );
+  const before = await charges();
+  const rest = await f.get(`/v1/document-artifacts/${artifactId}/original`);
+  expect(rest.status).toBe(404);
+  expect(errorResponse.parse(await rest.json()).error.code).toBe("ORIGINAL_UNAVAILABLE");
+  const owner = await actor(f.t, f.scope.organizationId);
+  const ticket = await owner.client.mutation(api.documentDownloads.ticket, {
+    ...f.queryScope,
+    artifactId,
+  });
+  const console = await f.t.fetch("/v1/document-download", {
+    headers: { Origin: "http://localhost:5190", "X-Download-Token": ticket.token },
+  });
+  expect(console.status).toBe(404);
+  expect(errorResponse.parse(await console.json()).error.code).toBe("ORIGINAL_UNAVAILABLE");
+  // A refused download charges nothing.
+  expect(await charges()).toBe(before);
+  // A file of another size is refused the same way.
+  await f.t.run(async (ctx) => {
+    const bytes = await (await ctx.storage.get(artifact.storageId!))!.arrayBuffer();
+    const storageId = await ctx.storage.store(new Blob([bytes, new Uint8Array([0x0a])]));
+    await ctx.db.patch("documentArtifacts", artifactId, { storageId });
+  });
+  const longer = await f.get(`/v1/document-artifacts/${artifactId}/original`);
+  expect(longer.status).toBe(404);
+  expect(errorResponse.parse(await longer.json()).error.code).toBe("ORIGINAL_UNAVAILABLE");
+
+  // The row back on its own file serves it again.
+  await f.t.run((ctx) =>
+    ctx.db.patch("documentArtifacts", artifactId, { storageId: artifact.storageId }),
+  );
+  expect((await f.get(`/v1/document-artifacts/${artifactId}/original`)).status).toBe(200);
 });
 it("limita downloads antes do storage e da auditoria, compartilhando o orçamento entre tickets", async () => {
   const f = await documentsFixture(),

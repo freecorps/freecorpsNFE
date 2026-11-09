@@ -57,6 +57,14 @@ membro, acesso à empresa e suas versões antes e depois de ler o arquivo; o
 ticket pertence ao projeto do console. A autorização do ticket é mutation para reavaliar o relógio a cada
 requisição, inclusive com query cache aquecido. Respostas usam `no-store`,
 `nosniff` e attachment. Retenção do original é independente da projeção.
+Antes de servir um original quente, a REST e o ticket conferem o SHA-256 e o
+tamanho do arquivo em `_storage` contra os gravados no artefato; divergência
+responde `ORIGINAL_UNAVAILABLE` (404) sem cobrar o download, como o objeto
+frio divergente responde `UNAVAILABLE`. Fora da reidratação (ADR 0009) e da
+exclusão por retenção, só `lib/originalStore.ts` escreve `documentArtifacts`:
+grava o hash conferido contra o arquivo e depois só muda vínculos ou a
+passagem para a camada fria; `insertFiscal` e `patchFiscal` recusam a tabela
+(#110).
 A emissão de tickets é limitada a 60 por minuto por organização e membro.
 Os metadados de `importFiles` aceitos são preservados junto da procedência;
 não há política de exclusão dessa linha nesta entrega.
