@@ -4,9 +4,9 @@
 
 Toda dependência externa direta dos `package.json` da raiz, de `apps/*`, de
 `platform` e de `packages/*` declara a versão exata que o `bun.lock` resolve,
-sem `^` nem `~`. A regra vale para `dependencies`, `devDependencies` e
-`overrides`; `workspace:*` e aliases `npm:` com versão exata seguem como
-estão.
+sem `^` nem `~`, salvo exceção registrada abaixo. A regra vale para
+`dependencies`, `devDependencies` e `overrides`; `workspace:*` e aliases
+`npm:` com versão exata seguem como estão.
 
 Exata sem exceção:
 
@@ -15,10 +15,10 @@ Exata sem exceção:
   `@xmldom/xmldom`, `pdf-lib`;
 - `convex` e os componentes `@convex-dev/*`.
 
-Nesses pacotes, um minor novo muda assinatura, canonicalização, validação de
-XML, DANFE ou o runtime do backend. Ele entra por uma mudança própria, com
-lockfile, patches e inventário revisados juntos, conforme a skill
-`dependency-maintenance`.
+Nesses pacotes, um minor novo pode mudar assinatura, canonicalização,
+validação de XML, DANFE, DANFSe ou o runtime do backend. Ele entra por uma
+mudança própria, com lockfile, patches e inventário revisados juntos,
+conforme a skill `dependency-maintenance`.
 
 Nas demais dependências, `~` ou `^` só entram com justificativa escrita
 nesta seção, ao lado do nome do pacote: o que a faixa resolve e por que a
