@@ -80,10 +80,13 @@ adaptados ao Vite+. `platform/convex/rate-limits.test.ts` verifica
 atomicidade, migração de saldo parcial, reposição, coexistência de chamadas
 antigas e rejeição de orçamentos repetidos. Os testes de chaves e uso cobrem
 HTTP, concorrência, revogação, isolamento e cotas.
-`scripts/proofs/prove-hosted-rate-limits.mjs <credencial> <sha-publicado>`
-repete a migração e 100 chamadas concorrentes em contadores sintéticos,
-removidos ao final. A prova hospedada continua necessária para medir
-contenção; `convex-test` não a reproduz.
+`scripts/proofs/prove-hosted-rate-limits.mjs <sha-publicado>` repete, na
+produção (`elated-possum-295`), a migração e 100 chamadas concorrentes em
+orçamentos sintéticos, removidos ao final. Usa a credencial do operador em
+`~/.freecorpsnfe/cutover-84/operator.json`. A prova hospedada continua
+necessária para medir contenção, porque `convex-test` não a reproduz. Em
+09/11/2026 ela passou contra `6e43a1f`: 100 de 100 chamadas aceitas, p95 de
+547 ms e 7 orçamentos removidos.
 
 ## Mudanças e rollback
 

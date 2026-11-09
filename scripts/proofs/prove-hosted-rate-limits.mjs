@@ -1,18 +1,74 @@
+// Hosted proof of the rate-limiter component (#79/#80, #142) on the production
+// deployment elated-possum-295. It writes synthetic budgets only, under a random
+// prefix, and resets every one of them at the end, partitions included.
+// Run: node scripts/proofs/prove-hosted-rate-limits.mjs <expected-sha>
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { hostedProof } from "../lib/hosted-proof.mjs";
-import { backendRequest, validationTarget } from "../lib/validation.mjs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const [credentialPath, expectedSha] = process.argv.slice(2);
-assert.match(expectedSha ?? "", /^[a-f0-9]{40}$/);
-const h = hostedProof(credentialPath);
-const identity = await h.preflight();
-assert.equal(identity.health.sha, expectedSha);
-const context = {
-  target: validationTarget,
-  key: JSON.parse(readFileSync(credentialPath, "utf8")).adminKey,
+const [expectedSha] = process.argv.slice(2);
+assert.match(expectedSha ?? "", /^[a-f0-9]{40}$/, "Expected published SHA");
+const credential = JSON.parse(
+  readFileSync(join(homedir(), ".freecorpsnfe/cutover-84/operator.json"), "utf8"),
+);
+const target = {
+  cloud: "https://elated-possum-295.convex.cloud",
+  // An installation refuses direct calls; /health goes through the public Worker.
+  api: "https://api.nfe.freecorps.com.br",
 };
+assert.equal(credential.deploymentName, "elated-possum-295");
+assert.equal(credential.deploymentType, "prod");
+assert.equal(credential.url, target.cloud);
+assert.ok(typeof credential.adminKey === "string" && credential.adminKey.length > 20);
+for (const name of ["CONVEX_DEPLOY_KEY", "CONVEX_SELF_HOSTED_URL", "CONVEX_SELF_HOSTED_ADMIN_KEY"])
+  assert.ok(!process.env[name], `Remove inherited ${name}`);
+
+const health = await (await fetch(`${target.api}/health`, { redirect: "error" })).json();
+assert.equal(health.sha, expectedSha, "Production does not serve the expected SHA");
+assert.equal(health.status, "ok");
+assert.equal(health.appEnv, "installation");
+assert.equal(health.productEnv, "sandbox");
+const identity = { deployment: credential.deploymentName, health };
+
+async function post(path, body) {
+  const response = await fetch(target.cloud + path, {
+    method: "POST",
+    headers: { Authorization: `Convex ${credential.adminKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    redirect: "error",
+    signal: AbortSignal.timeout(30_000),
+  });
+  assert.equal(response.status, 200, `Backend ${path} HTTP ${response.status}`);
+  return response.json();
+}
+async function logs(cursor) {
+  let response;
+  try {
+    response = await fetch(`${target.cloud}/api/stream_function_logs?cursor=${cursor}`, {
+      headers: { Authorization: `Convex ${credential.adminKey}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch (error) {
+    if (error.name === "TimeoutError") return { cursor, entries: [] };
+    throw error;
+  }
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  // Production also logs real traffic: keep only counts of the rate limiter's own calls,
+  // never messages, values, identities or execution ids.
+  const entries = {};
+  for (const entry of data.entries ?? []) {
+    if (entry.kind !== "Completion" || entry.componentPath !== "rateLimiter") continue;
+    const id = `${entry.identifier}:${entry.error ? "error" : "ok"}`;
+    entries[id] ??= { calls: 0, occRetries: 0 };
+    entries[id].calls++;
+    entries[id].occRetries += entry.occInfo?.retryCount ?? 0;
+  }
+  return { cursor: data.newCursor ?? cursor, entries };
+}
 const prefix = `hosted-partitions-${randomUUID()}`;
 const budgets = [];
 const budget = (suffix, rate, period = 60_000, key) => {
@@ -24,16 +80,17 @@ const budget = (suffix, rate, period = 60_000, key) => {
   budgets.push(result);
   return result;
 };
-const call = async (path, args) =>
-  (
-    await backendRequest(context, "/api/function", {
-      path: `lib:${path}`,
-      args,
-      componentPath: "rateLimiter",
-      format: "json",
-    })
-  ).value;
-const cursor = (await h.logs(0)).cursor;
+const call = async (path, args) => {
+  const result = await post("/api/function", {
+    path: `lib:${path}`,
+    args,
+    componentPath: "rateLimiter",
+    format: "json",
+  });
+  assert.equal(result.status, "success", `Component call ${path} failed`);
+  return result.value;
+};
+const cursor = (await logs(0)).cursor;
 const report = {
   identity,
   startedAt: new Date().toISOString(),
@@ -130,15 +187,22 @@ try {
   process.exitCode = 1;
 } finally {
   report.resetBudgets = 0;
-  for (const { name, key } of budgets) {
-    await call("resetRateLimit", { name, key });
+  report.leftPartitioned = 0;
+  for (const budget of budgets) {
+    await call("resetRateLimit", { name: budget.name, key: budget.key });
     report.resetBudgets++;
+    // Without its partitions row, the budget no longer reads the partitioned layout.
+    if ((await call("getValue", budget)).shard === -1) report.leftPartitioned++;
   }
-  report.runtime = (await h.logs(cursor)).entries;
+  if (report.leftPartitioned) {
+    report.result = "failed";
+    process.exitCode = 1;
+  }
+  report.runtime = (await logs(cursor)).entries;
   report.finishedAt = new Date().toISOString();
-  mkdirSync(".ci-results/hosted-79-80", { recursive: true });
+  mkdirSync(".ci-results/hosted-rate-limits", { recursive: true });
   writeFileSync(
-    `.ci-results/hosted-79-80/partitions-${expectedSha.slice(0, 7)}.json`,
+    `.ci-results/hosted-rate-limits/partitions-${expectedSha.slice(0, 7)}.json`,
     JSON.stringify(report, null, 2) + "\n",
   );
   console.log(
@@ -147,6 +211,7 @@ try {
       scenarios: report.scenarios,
       concurrent: report.concurrent,
       resetBudgets: report.resetBudgets,
+      leftPartitioned: report.leftPartitioned,
       error: report.error,
     }),
   );

@@ -1057,7 +1057,7 @@ com o backend local do worktree, embora grave em `.ci-results/hosted-79-80`.
 Os roteiros hospedados não compartilham uma única guarda de destino. Cada um
 confere o próprio alvo antes de escrever:
 
-- `prove-hosted-operations.mjs` e `prove-hosted-rate-limits.mjs` usam
+- `prove-hosted-operations.mjs` usa
   `hostedProof` (`scripts/lib/hosted-proof.mjs`). A credencial do operador,
   fora do checkout, precisa apontar para a validação persistente de
   `platform/validation.json` (`modest-seal-118`, tipo `dev`), e o helper
@@ -1066,6 +1066,12 @@ confere o próprio alvo antes de escrever:
   cobre essa recusa, inclusive de credencial do tipo `prod` e de outro host,
   antes de qualquer chamada de rede. Os outros roteiros abaixo não passam por
   esse helper nem por esse teste.
+- `prove-hosted-rate-limits.mjs` exige a mesma credencial da instalação
+  `elated-possum-295` que `prove-hosted-webhooks.mjs`, confere que o
+  `/health` público serve o SHA informado com `appEnv: installation` e
+  `productEnv: sandbox`, e só cria orçamentos sintéticos com prefixo aleatório
+  no componente `rateLimiter`. No fim, reseta cada um e confere que nenhum
+  ficou com a configuração de partições.
 - `prove-hosted-webhooks.mjs` exige a credencial da instalação
   `elated-possum-295`, deployment Convex do tipo `prod`, e chama a REST pelo
   Worker público. Antes de escrever, confere que `/health` e `/build.json`
