@@ -101,20 +101,22 @@ limpa o aviso, e em `production` isso exige a captura liberada outra vez.
 Crons da plataforma continuam vazios; agendamentos explícitos de um
 monitor ativo são trabalho persistido e retomam quando o backend local reinicia.
 
-| Sinal       | Medição                                                                                         | Limiar inicial | Responsável funcional      |
-| ----------- | ----------------------------------------------------------------------------------------------- | -------------- | -------------------------- |
-| Fila        | Maior atraso sobre a próxima tentativa de queued/retry_wait/reconciling                         | 5 minutos      | Backend/operação           |
-| Lease       | Operações running com lease vencida                                                             | 1              | Backend/operação           |
-| Cursor      | Tempo desde último sucesso, ou ativação quando ainda não houve sucesso                          | 120 minutos    | Backend/fiscal             |
-| Fonte       | Tentativas encerradas com falha na última hora, por NF-e, OpenCNPJ, processamento XML ou outros | 3 por fonte    | Backend/integrações        |
-| Webhook     | Idade da entrega pendente mais antiga, inclusive failed/paused                                  | 15 minutos     | Integrações/app consumidor |
-| Certificado | Tempo até expiração do certificado ativo                                                        | 30 dias        | Administrador da empresa   |
+| Sinal       | Medição                                                                                                        | Limiar inicial | Responsável funcional      |
+| ----------- | -------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------- |
+| Fila        | Maior atraso sobre a próxima tentativa de queued/retry_wait/reconciling                                        | 5 minutos      | Backend/operação           |
+| Lease       | Operações running com lease vencida                                                                            | 1              | Backend/operação           |
+| Cursor      | Tempo desde último sucesso, ou ativação quando ainda não houve sucesso                                         | 120 minutos    | Backend/fiscal             |
+| Fonte       | Tentativas encerradas com falha na última hora, por NF-e, OpenCNPJ, emissão NFS-e, processamento XML ou outros | 3 por fonte    | Backend/integrações        |
+| Webhook     | Idade da entrega pendente mais antiga, inclusive failed/paused                                                 | 15 minutos     | Integrações/app consumidor |
+| Certificado | Tempo até expiração do certificado ativo                                                                       | 30 dias        | Administrador da empresa   |
 
 O monitor lê o registro mais antigo pelos índices, até limiar mais um para
 leases e falhas por fonte, com teto de 101, e o limite existente de destinos
-de webhook. Nos limiares iniciais são até 2 leases e 4 falhas por fonte.
-Contagens truncadas aparecem
-como limite inferior. Observação incompleta ou ausente não comprova recuperação.
+de webhook. As fontes vêm de uma lista só, `OPERATION_SOURCES` em
+`platform/convex/lib/operationSources.ts`, que valida a gravação em
+`operationalFailures` e define as fontes lidas. Nos limiares iniciais são até
+2 leases e 4 falhas por fonte. Contagens truncadas aparecem como limite
+inferior. Observação incompleta ou ausente não comprova recuperação.
 Cursor sem captura e certificado sem versão ativa aparecem como sem medição.
 Esperas antes do envio (janela da fonte, teto por hora, parada geral) não são
 falhas da fonte ([CAPTURE.md](CAPTURE.md#coordenação-e-recuperação)).
@@ -172,7 +174,9 @@ repetiu os oito cenários operacionais e a capacidade de 20 monitores. Na janela
 completa, 27 avaliações terminaram sem erro, com p95 de execução de 236 ms;
 o monitor mais antigo tinha sido conferido havia 18,3 segundos, dentro da meta
 de 90 segundos. O custo marginal projetado foi US$ 14,88/mês para chamadas e
-IO das avaliações, abaixo do orçamento de US$ 20. A rodada também ensaiou pausa
+IO das avaliações, abaixo do orçamento de US$ 20. A rodada leu quatro fontes;
+desde a #111 o monitor lê cinco, uma consulta de índice a mais por avaliação,
+ainda não medida no hospedado. A rodada também ensaiou pausa
 de cursor com preservação de checkpoint/cooldown, recusa de retomada com
 certificado apenas de metadados e retry idempotente de webhook com transporte
 desativado. Recuperação de fonte e certificado permaneceu simulada.

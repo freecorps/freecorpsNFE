@@ -7,6 +7,8 @@ import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { recordAudit, DAY } from "./lib/operationalAudit";
 import { defaultThresholds } from "./lib/operationalMetrics";
+import { OPERATION_SOURCES } from "./lib/operationSources";
+import { issueTask } from "./lib/issuanceValues";
 import { finishAttempt } from "./lib/operationCore";
 import { modules } from "../../tests/helpers/convex-modules";
 beforeEach(() => {
@@ -123,7 +125,7 @@ it("limita amostras ao limiar, mantém alertas com contagem truncada e reavalia 
     void _creationTime;
     for (let i = 0; i < 120; i++) {
       await ctx.db.insert("operations", { ...template, state: "running", leaseUntil: now - 1 });
-      for (const source of ["nfe-distribution", "opencnpj", "xml-processing", "other"])
+      for (const source of OPERATION_SOURCES)
         await ctx.db.insert("operationalFailures", {
           ...f.args,
           operationId: op.operationId,
@@ -138,7 +140,7 @@ it("limita amostras ao limiar, mantém alertas com contagem truncada e reavalia 
   let row = (await f.t.run((ctx) => ctx.db.get("operationalMonitors", id)))!;
   expect(row.metrics.find((m) => m.kind === "lease")).toMatchObject({ value: 2, capped: true });
   expect(row.metrics.find((m) => m.kind === "source")?.sources).toEqual(
-    ["nfe-distribution", "opencnpj", "xml-processing", "other"].map((source) => ({
+    OPERATION_SOURCES.map((source) => ({
       source,
       count: 4,
       capped: true,
@@ -425,6 +427,42 @@ it("limpeza de autenticação por lastRequest usa índice e conserva buckets rec
     paginationOpts: { cursor: null, numItems: 50 },
   });
   expect(recent.page).toHaveLength(25);
+});
+it("conta a falha de transporte da emissão NFS-e na fonte nfse-issuance", async () => {
+  const f = await fixture(),
+    id = await monitor(f),
+    now = Date.now();
+  const op = await f.t.mutation(internal.operations.reserve, {
+    ...f.args,
+    keyHash: f.keyHash,
+    key: "issuance-failure",
+    request: "{}",
+    task: {
+      name: "proof.import",
+      scope: "documents:import",
+      workload: "import",
+      executor: "testing/operationTransport:execute",
+    },
+  });
+  await f.t.run(async (ctx) => {
+    const { _id, _creationTime, ...template } = (await ctx.db.get("operations", op.operationId))!;
+    void _id;
+    void _creationTime;
+    const issuance = await ctx.db.insert("operations", { ...template, task: issueTask });
+    await ctx.db.insert("operationAttempts", {
+      operationId: issuance,
+      generation: template.generation,
+      fence: template.fence,
+      mode: "execute",
+      startedAt: now,
+    });
+    await finishAttempt(ctx, (await ctx.db.get("operations", issuance))!, "TRANSPORT_FAILED");
+  });
+  await evaluate(f, id);
+  const row = (await f.t.run((ctx) => ctx.db.get("operationalMonitors", id)))!;
+  const source = row.metrics.find((m) => m.kind === "source");
+  expect(source?.sources).toContainEqual({ source: "nfse-issuance", count: 1, capped: false });
+  expect(source?.sources?.filter((s) => s.count > 0)).toHaveLength(1);
 });
 it("mede seis sinais, falhas por fonte e recuperação sem alterar cursor ou janela", async () => {
   const f = await fixture(),

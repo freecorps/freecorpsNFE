@@ -4,6 +4,7 @@ import { captureRelease } from "./fiscalCaptureRelease";
 import type { Doc } from "../_generated/dataModel";
 import type { Infer } from "convex/values";
 import { metric } from "./observabilitySchema";
+import { OPERATION_SOURCES } from "./operationSources";
 import { certificateHead } from "./certificateAccess";
 import { DAY } from "./operationalAudit";
 import { MAX_ENDPOINTS } from "./webhookValues";
@@ -74,7 +75,7 @@ export async function operationalMetrics(
     )
     .take(leaseLimit);
   const sources = await Promise.all(
-    ["nfe-distribution", "opencnpj", "xml-processing", "other"].map(async (source) => {
+    OPERATION_SOURCES.map(async (source) => {
       const failures = await ctx.db
         .query("operationalFailures")
         .withIndex("by_projectId_companyId_environment_source_createdAt", (q) =>

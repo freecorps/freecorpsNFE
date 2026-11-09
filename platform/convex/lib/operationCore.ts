@@ -14,6 +14,7 @@ import { isConsoleProject } from "./projectAccess";
 import { isSiteCapture, releaseSourceAllowed, releaseSourceFor } from "./siteCapture";
 import { operationAttention } from "./captureAttention";
 import { originalId } from "./coldArchiveOrigin";
+import type { OperationSource } from "./operationSources";
 
 export const poolLimits = { import: 4, capture: 2, webhook: 4, issuance: 2 } as const;
 export const pools = {
@@ -278,7 +279,7 @@ export async function waitOperation(
  * when the operation itself succeeded but the source refused, like the 656 of the distribution.
  */
 export async function recordSourceFailure(ctx: MutationCtx, op: Doc<"operations">, code: string) {
-  const source =
+  const source: OperationSource =
     op.task.name === "connections.sync"
       ? "nfe-distribution"
       : op.task.name === "registry.lookup"
