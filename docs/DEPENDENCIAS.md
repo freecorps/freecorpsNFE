@@ -34,6 +34,20 @@ Ao atualizar, edite a versão no manifest e rode `bunx vp install`; confira
 no diff do `bun.lock` que só mudaram os pacotes pretendidos. O Dependabot
 abre PRs apenas de GitHub Actions; atualização de npm não passa por ele.
 
+## Patches e componentes modificados
+
+Dois pacotes rodam com patch, aplicado pelo `patchedDependencies` da raiz:
+`@convex-dev/better-auth` e `convex-test`.
+[patches/README.md](../patches/README.md) registra o motivo de cada um, a
+prova antes de retirá-lo e a próxima revisão. Um patch amarra o pacote à
+versão exata do manifest; subir essa versão exige portar o patch ou
+retirá-lo com equivalente comprovado.
+
+O rate-limiter da plataforma não é patch: é o pacote do workspace
+[packages/convex-rate-limiter](../packages/convex-rate-limiter/README.md),
+derivado do `@convex-dev/rate-limiter` 0.3.2, com código, testes e versão
+próprios. As decisões de 09/11/2026 sobre cada patch estão na #142.
+
 ## Correções de segurança
 
 O projeto instala e audita com Bun 1.4.0, selecionado pelo Vite+:
