@@ -229,8 +229,9 @@ conteúdo que eles ficam indisponíveis até a reativação.
 ## Organização só com Sandbox
 
 Uma organização aberta que nunca teve dados de Produção, pelo critério de
-`sandboxOnly` do encerramento, em que uma nota recebida conta como Produção
-quando o próprio XML não declara homologação (#108), não vai para o arquivo: a Freecorps a encerra
+`sandboxOnly` do encerramento, em que uma nota recebida, inclusive a recusada
+na importação, conta como Produção quando o próprio XML não declara
+homologação (#108), não vai para o arquivo: a Freecorps a encerra
 (ADR 0009, decisão 2 de 29/10/2026). Depois de 90 dias sem atividade, com a
 mesma atividade do aviso de arquivamento do Gratuito e em qualquer plano ou
 sem plano, a Freecorps cria um aviso de 30 dias em `sandboxClosureNotices`,

@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { createHash } from "node:crypto";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import { api, internal } from "./_generated/api";
 import type { Id, TableNames } from "./_generated/dataModel";
@@ -10,7 +11,8 @@ import { insertTerm } from "./lib/planTerms";
 import { trackStoredFile } from "./lib/capacityCore";
 import { DOCUMENT_CONTENT_FORMAT, encodeDocumentContent } from "./lib/documentContent";
 import { fixture as importedNote, actor } from "../../tests/helpers/export-fixture";
-import { keepInline } from "../../tests/helpers/document-footprint";
+import { keepInline, writeContent } from "../../tests/helpers/document-footprint";
+import { fixture as xmlFixture } from "../../tests/helpers/nfe-corpus";
 import { decisionGuardUntil, fiscalGuardUntil, retentionClass } from "./lib/retentionClasses";
 
 const DAY = 86_400_000;
@@ -2480,6 +2482,182 @@ it("uma decisão de só Sandbox tomada antes da #108 para uma vez diante de uma 
   warn.mockRestore();
   expect(stopped).toHaveLength(1);
   expect(JSON.parse(stopped[0]!)).toMatchObject({ reason: "fiscal-document" });
+  expect((await closureOf(f))!.sandboxOnly).toBe(false);
+  expect(await counts(f, conserved)).toEqual(kept);
+});
+
+/**
+ * Imports `xml` as one more file of the fixture's company and runs its operation. The corpus note
+ * with another issuer is refused as COMPANY_MISMATCH and keeps no document, only its original.
+ */
+async function importRefused(f: Fixture, xml: string) {
+  const bytes = Buffer.from(xml);
+  const key = crypto.randomUUID();
+  const data = async (path: string, body?: unknown) =>
+    (await (await f.request(path, "POST", body, `${key}-${path}`)).json()).data;
+  const batch = await data("/v1/imports", {
+    companyId: f.scope.companyId,
+    files: [
+      {
+        name: "recusada.xml",
+        size: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      },
+    ],
+  });
+  const file = `/v1/imports/${batch.importId}/files/${batch.fileIds[0]}`;
+  const upload = await data(`${file}/upload`);
+  const sent = await f.t.fetch("/v1/import-upload", {
+    method: "POST",
+    headers: { "X-Upload-Token": upload.token },
+    body: new Uint8Array(bytes),
+  });
+  expect(sent.status).toBe(200);
+  const { operationId } = await data(`${file}/confirm`);
+  await f.t.action(internal.operationWorker.run, { operationId, generation: 1 });
+  // The content blob of the new version, written now so later counts do not see it arrive.
+  await writeContent(f.t);
+  return f.t.run(async (ctx) => {
+    const artifact = (await ctx.db
+      .query("documentArtifacts")
+      .withIndex("by_fileId", (q) => q.eq("fileId", batch.fileIds[0]))
+      .unique())!;
+    const versions = await ctx.db
+      .query("documentVersions")
+      .withIndex("by_artifactId", (q) => q.eq("artifactId", artifact._id))
+      .collect();
+    return { artifact, codes: versions.map((version) => version.code) };
+  });
+}
+/** The corpus note, homologação, issued by a CNPJ other than the fixture company's. */
+const otherIssuer = (tpAmb: "1" | "2") =>
+  xmlFixture("invoice-authorized")
+    .toString("utf8")
+    .replaceAll("<tpAmb>2</tpAmb>", `<tpAmb>${tpAmb}</tpAmb>`)
+    .replace("<emit><CNPJ>11222333000181</CNPJ>", "<emit><CNPJ>12345678000195</CNPJ>");
+
+it("uma NF-e recusada com tpAmb 1 marca o original, que conta como Produção e fica até o prazo", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  const { artifact, codes } = await importRefused(f, otherIssuer("1"));
+  expect(codes).toEqual(["COMPANY_MISMATCH"]);
+  expect([artifact.documentId, artifact.tpAmb]).toEqual([undefined, "1"]);
+  const kept = await counts(f, conserved);
+  const closure = await closeAndPurge(f, owner);
+  expect(closure.sandboxOnly).toBe(false);
+  expect(await f.t.mutation(internal.fiscalGuard.early, { closureId: closure._id })).toEqual({
+    done: true,
+    removed: 0,
+  });
+  expect(await counts(f, conserved)).toEqual(kept);
+  expect(await f.t.run((ctx) => ctx.db.get("documentArtifacts", artifact._id))).not.toBeNull();
+});
+
+it("um XML recusado antes da nota normalizada guarda a marca dos bytes, e sem ela conta como Produção", async () => {
+  const nfce = await (async () => {
+    const f = await fixture(),
+      owner = await actor(f);
+    await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" }));
+    // An NFC-e is refused by the parser, with no document: only its bytes say Produção.
+    const { artifact, codes } = await importRefused(
+      f,
+      otherIssuer("1").replace("<mod>55</mod>", "<mod>65</mod>"),
+    );
+    return { artifact, codes, closure: await closeAndPurge(f, owner) };
+  })();
+  expect([nfce.codes, nfce.artifact.tpAmb]).toEqual([["XML_MODEL_UNSUPPORTED"], "1"]);
+  expect(nfce.closure.sandboxOnly).toBe(false);
+  // A file the parser could not read is not known to hold no note.
+  const f = await fixture(),
+    owner = await actor(f);
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" }));
+  const malformed = await importRefused(f, "<NFe><infNFe>");
+  expect([malformed.codes, malformed.artifact.tpAmb]).toEqual([["XML_MALFORMED"], undefined]);
+  expect((await closeAndPurge(f, owner)).sandboxOnly).toBe(false);
+});
+
+it("uma NF-e recusada de homologação não segura a remoção antecipada, e um arquivo que não é nota também não", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" }));
+  const test = await importRefused(f, otherIssuer("2"));
+  expect([test.codes, test.artifact.tpAmb]).toEqual([["COMPANY_MISMATCH"], "2"]);
+  const junk = await importRefused(f, '<?xml version="1.0"?><nota>sintética</nota>');
+  expect([junk.codes, junk.artifact.tpAmb]).toEqual([["XML_NAMESPACE_UNSUPPORTED"], undefined]);
+  const closure = await closeAndPurge(f, owner);
+  expect(closure.sandboxOnly).toBe(true);
+  await at(f, Date.now() + 1);
+  for (const { artifact } of [test, junk])
+    expect(await f.t.run((ctx) => ctx.db.get("documentArtifacts", artifact._id))).toBeNull();
+});
+
+it("os limites da leitura dos originais recusados contam como Produção, e o original sem versão também", async () => {
+  /** `artifacts` unmarked originals without a document, each with `versions` refusals of a non-NF-e root. */
+  const decide = async (artifacts: number, versions: number) => {
+    const f = await fixture(),
+      owner = await actor(f);
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" });
+      const original = (await ctx.db.query("documentArtifacts").first())!;
+      const { _id, _creationTime, documentId: _document, ...artifact } = original;
+      const {
+        _id: _versionId,
+        _creationTime: _versionTime,
+        documentId: _versionDocument,
+        ...version
+      } = (await ctx.db.query("documentVersions").first())!;
+      for (let i = 0; i < artifacts; i++) {
+        const artifactId = await ctx.db.insert("documentArtifacts", artifact);
+        for (let n = 0; n < versions; n++)
+          await ctx.db.insert("documentVersions", {
+            ...version,
+            artifactId,
+            code: "XML_NAMESPACE_UNSUPPORTED",
+            kind: "unknown",
+          });
+      }
+    });
+    return (await closeAndPurge(f, owner)).sandboxOnly;
+  };
+  expect(await decide(1, 10)).toBe(true);
+  expect(await decide(1, 11)).toBe(false);
+  expect(await decide(1, 0)).toBe(false);
+  expect(await decide(100, 1)).toBe(true);
+  expect(await decide(101, 1)).toBe(false);
+});
+
+it("um original recusado sem a marca, de antes dela, para uma decisão de só Sandbox já gravada", async () => {
+  const f = await fixture(),
+    owner = await actor(f);
+  await f.t.run((ctx) => ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" }));
+  const organizationId = f.scope.organizationId;
+  await f.t.mutation(internal.fiscalGuard.hold, {
+    organizationId,
+    reference: "recusada-sem-marca",
+    responsible: "operacao-sintetica",
+    reviewAt: Date.now() + 400 * DAY,
+  });
+  const { artifact } = await importRefused(f, otherIssuer("2"));
+  const closure = await closeAndPurge(f, owner);
+  expect(closure.sandboxOnly).toBe(true);
+  // The refused original as it was before the mark: a note, but not known to be a test one.
+  await f.t.run((ctx) => ctx.db.patch("documentArtifacts", artifact._id, { tpAmb: undefined }));
+  await f.t.mutation(internal.fiscalGuard.release, {
+    organizationId,
+    reference: "recusada-sem-marca",
+  });
+  const kept = await counts(f, conserved);
+  const warn = vi.spyOn(console, "warn");
+  const current = (await closureOf(f))!;
+  await f.t.mutation(internal.fiscalGuard.expire, {
+    closureId: current._id,
+    generation: current.generation,
+  });
+  const stopped = warn.mock.calls
+    .map(([line]) => String(line))
+    .filter((line) => line.includes("organization.sandbox-purge-stopped"));
+  warn.mockRestore();
+  expect(stopped.map((line) => JSON.parse(line).reason)).toEqual(["fiscal-document"]);
   expect((await closureOf(f))!.sandboxOnly).toBe(false);
   expect(await counts(f, conserved)).toEqual(kept);
 });

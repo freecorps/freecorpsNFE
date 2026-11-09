@@ -12,6 +12,7 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { claimFields, outcome } from "./lib/operationValues";
 import { originalSourceOf, readOriginal } from "./lib/documentOriginalRead";
+import { declaredOf, scannedTpAmb } from "./lib/documentValues";
 
 export const execute = internalAction({
   args: { ...claimFields, request: v.string() },
@@ -84,6 +85,8 @@ export const execute = internalAction({
       ...claim,
       artifactId: input.artifact._id,
       fiscalKey: accepted ? doc!.key : null,
+      // A refused file has no document to carry its mark: the original keeps it (#108).
+      ...(!accepted ? { tpAmb: (doc ? declaredOf(doc) : scannedTpAmb(bytes)) ?? undefined } : {}),
       code,
       kind: doc?.kind ?? "unknown",
       completeness: !accepted ? -1 : doc?.kind === "invoice" ? 2 : doc?.kind === "summary" ? 1 : 0,

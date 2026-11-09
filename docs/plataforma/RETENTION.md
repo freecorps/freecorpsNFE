@@ -578,12 +578,15 @@ guarda mais do que essa versão promete, nunca menos.
   totais, cada um conferido com `.first()` no índice
   `by_organizationId_and_environment`; nenhuma nota recebida (sem
   `direction`) com `tpAmb` 1 ou sem a marca, cada caso conferido com
-  `.first()` no índice `by_organizationId_and_direction_and_tpAmb`; nenhuma
+  `.first()` no índice `by_organizationId_and_direction_and_tpAmb`; nenhum
+  original importado sem documento que guarde nota real (veja "O original
+  recusado"); nenhuma
   liberação da captura fiscal concedida (`captureReleaseEvents`), nenhum gate da emissão em produção
   (`issuanceGateEvents`), nenhum probe em `producao` (`issuanceProbeEvents`)
   e nenhum arquivo frio (`coldArchiveRuns`), que tira linhas das tabelas
   conferidas. Um arquivo frio iniciado depois da decisão também conta: antes
-  de cada lote, `early` confere `coldArchiveRuns` e as notas recebidas sem
+  de cada lote, `early` confere `coldArchiveRuns`, as notas recebidas e os
+  originais recusados sem
   homologação; se houver um ou outra, grava `sandboxOnly` falso, registra
   `organization.sandbox-purge-stopped` uma vez, com `reason` `cold-archive`
   ou `fiscal-document`, e deixa o resto para o prazo. A segunda conferência
@@ -606,6 +609,23 @@ guarda mais do que essa versão promete, nunca menos.
   antiga só perde o expurgo antecipado e segue a guarda. A NFS-e emitida
   (`direction` `emitted`) fica fora da conferência: no Sandbox ela sai do
   simulador, e em Produção já tem linha de Produção.
+- **O original recusado.** Um arquivo importado e recusado sem documento
+  (`COMPANY_MISMATCH`, `IDENTITY_INVALID`, ou recusado pelo parser, como uma
+  NFC-e, uma NF-e 3.10 ou um evento não suportado) não tem
+  `fiscalDocuments.tpAmb`. `importProcessing.stage` grava em
+  `documentArtifacts.tpAmb` o `tpAmb` que ele declara: o da nota normalizada,
+  ou, sem ela, o de todo elemento `tpAmb` lido como texto nos bytes; "1" nunca
+  é trocado. A decisão (`realOriginal`) confere com `.first()` um original sem
+  documento com `tpAmb` 1 no índice `by_organizationId_and_documentId_and_tpAmb`
+  e lê até 100 originais sem documento e sem a marca, de qualquer origem, com
+  até 10 versões cada. Entre os importados, conta como Produção o que não se
+  sabe ser teste: o resumo, a recusa de antes da marca, o arquivo que o parser
+  não conseguiu ler e o original cuja importação não gravou versão. Não conta
+  o arquivo cuja raiz o parser leu fora do namespace da NF-e
+  (`XML_NAMESPACE_UNSUPPORTED`, `XML_SOURCE_INVALID`, inclusive a NFS-e ABRASF
+  recusada desde 02/11/2026), nem o lote NFS-e aceito, cujas notas têm
+  documento. O original capturado só chega por liberação da captura, já
+  conferida. Passar de um desses limites conta como Produção.
 - **Retenção legal.** Com retenção ativa, nada sai antes do prazo. Depois da
   liberação, a remoção vem na verificação seguinte, em até 7 dias.
 - **Encerramentos anteriores.** Um encerramento expurgado antes desta versão

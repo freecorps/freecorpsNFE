@@ -151,6 +151,11 @@ export const importTables = {
     // entry artifact with one, and not a refusal. Absent on every other artifact, so the files
     // without a recognized document are one index range (`lib/unclassifiedArtifacts.ts`, #44).
     nfseBatch: v.optional(v.literal(true)),
+    // The `tpAmb` that an imported file refused without a document declares, from its normalized
+    // note or, without one, from its bytes (`documentValues.scannedTpAmb`), written by
+    // `importProcessing.stage`; "1" is never replaced. The fiscal guard reads it, since such an
+    // original has no `fiscalDocuments.tpAmb` to carry the mark.
+    tpAmb: v.optional(v.union(v.literal("1"), v.literal("2"))),
   })
     .index("by_storageId", ["storageId"])
     .index("by_objectKey", ["objectKey"])
@@ -169,7 +174,8 @@ export const importTables = {
       "nfseBatch",
       "importedAt",
     ])
-    .index("by_documentId", ["documentId"]),
+    .index("by_documentId", ["documentId"])
+    .index("by_organizationId_and_documentId_and_tpAmb", ["organizationId", "documentId", "tpAmb"]),
   documentVersions: defineTable({
     ...archiveOriginFields,
     parentVersionId: v.optional(v.id("documentVersions")),
