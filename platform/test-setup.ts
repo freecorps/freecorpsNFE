@@ -1,5 +1,5 @@
 import { register as registerAuth } from "@convex-dev/better-auth/test";
-import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
+import { register as registerRateLimiter } from "@freecorps/convex-rate-limiter/test";
 import { register as registerWorkpool } from "@convex-dev/workpool/test";
 import { vi } from "vite-plus/test";
 

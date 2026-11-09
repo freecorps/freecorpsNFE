@@ -68,7 +68,7 @@ de chamar Better Auth. Chamadas diretas sem assinatura são recusadas quando
 O corpo tem limite de 32 KiB. O proxy não segue redirects de upstream e aceita
 somente o destino Convex fixo. URLs de retorno são limitadas à origem do console.
 
-O componente `@convex-dev/rate-limiter` aplica janelas fixas de um minuto,
+O componente `@freecorps/convex-rate-limiter` aplica janelas fixas de um minuto,
 atomicamente: cinco tentativas por IP/rota para login, cadastro e alteração
 de credencial; três nas rotas OTP; trinta nas demais. Rotas desconhecidas usam
 um único grupo. IPv6 usa /64; clientes atrás do mesmo NAT compartilham limite.

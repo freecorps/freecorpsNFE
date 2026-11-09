@@ -64,8 +64,8 @@ esse prazo de uma garantia de apagamento instantâneo de todas as cópias.
 
 Complemento conferido em
 [`6e92497`](https://github.com/freecorps/freecorpsNFE-arquivo/commit/6e924978e71e0b4a4942c815d6612038b792d4af),
-publicado em validação após a revisão inicial. O patch de
-`@convex-dev/rate-limiter` adiciona `partitions` dentro do componente
+publicado em validação após a revisão inicial. O componente
+`@freecorps/convex-rate-limiter` adiciona `partitions` dentro da instância
 `rateLimiter`. Cada registro identifica o orçamento por `name` e `key`
 opcional, com quantidade de partições, taxa, capacidade e período. Os
 orçamentos REST e de admissão de uso dessa revisão distribuem o saldo em oito

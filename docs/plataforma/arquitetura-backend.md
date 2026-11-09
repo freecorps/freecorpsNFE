@@ -38,19 +38,21 @@ O grafo permitido está em `scripts/build/package-boundaries.json` e é conferid
 `bun run ci:boundaries` (dentro de `ci:local` e do CI). Cada workspace precisa
 de classificação explícita; um workspace novo sem classificação é recusado.
 
-| Pacote               | Tipo       | Depende de                                             |
-| -------------------- | ---------- | ------------------------------------------------------ |
-| `fiscal-core`        | puro       | nada                                                   |
-| `contracts`          | puro       | `fiscal-core`, `zod`                                   |
-| `sdk`                | puro       | `contracts`, `zod`                                     |
-| `fiscal-nfe`         | Node       | `fiscal-core` e bibliotecas de XML/assinatura          |
-| `fiscal-nfse`        | Node       | `fiscal-core`, XML/assinatura, PDF e QR Code           |
-| `fiscal-nfse/pure`   | puro       | `fiscal-core`; único subcaminho que mutations importam |
-| `platform`, `apps/*` | plataforma | pacotes acima                                          |
+| Pacote                | Tipo       | Depende de                                             |
+| --------------------- | ---------- | ------------------------------------------------------ |
+| `fiscal-core`         | puro       | nada                                                   |
+| `contracts`           | puro       | `fiscal-core`, `zod`                                   |
+| `sdk`                 | puro       | `contracts`, `zod`                                     |
+| `fiscal-nfe`          | Node       | `fiscal-core` e bibliotecas de XML/assinatura          |
+| `fiscal-nfse`         | Node       | `fiscal-core`, XML/assinatura, PDF e QR Code           |
+| `fiscal-nfse/pure`    | puro       | `fiscal-core`; único subcaminho que mutations importam |
+| `platform`, `apps/*`  | plataforma | pacotes acima                                          |
+| `convex-rate-limiter` | plataforma | `convex`; componente instalado por `platform`          |
 
-Nenhum pacote importa Convex, Better Auth, Clerk, React ou Cloudflare, nem lê
+Nenhum pacote independente importa Convex, Better Auth, Clerk, React ou Cloudflare, nem lê
 `process`, variáveis de ambiente ou outro runtime ambiente; o verificador
-falha nesses casos. Um subcaminho de export pode estreitar as regras do seu
+falha nesses casos. `convex-rate-limiter` é um componente Convex e por isso fica
+na classe da plataforma, sem as restrições dos independentes. Um subcaminho de export pode estreitar as regras do seu
 workspace, nunca ampliá-las.
 
 Pacotes não guardam estado. Conectores Node (distribuição em

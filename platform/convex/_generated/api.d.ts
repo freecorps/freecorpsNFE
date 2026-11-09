@@ -147,6 +147,7 @@ import type * as lib_nfseProfileValues from "../lib/nfseProfileValues.js";
 import type * as lib_observabilitySchema from "../lib/observabilitySchema.js";
 import type * as lib_operationAccess from "../lib/operationAccess.js";
 import type * as lib_operationCore from "../lib/operationCore.js";
+import type * as lib_operationSources from "../lib/operationSources.js";
 import type * as lib_operationValues from "../lib/operationValues.js";
 import type * as lib_operationalAudit from "../lib/operationalAudit.js";
 import type * as lib_operationalMetrics from "../lib/operationalMetrics.js";
@@ -154,6 +155,7 @@ import type * as lib_operationalRetention from "../lib/operationalRetention.js";
 import type * as lib_organizationAccess from "../lib/organizationAccess.js";
 import type * as lib_organizationClosure from "../lib/organizationClosure.js";
 import type * as lib_organizationValues from "../lib/organizationValues.js";
+import type * as lib_originalStore from "../lib/originalStore.js";
 import type * as lib_planCatalog from "../lib/planCatalog.js";
 import type * as lib_planCore from "../lib/planCore.js";
 import type * as lib_planSchema from "../lib/planSchema.js";
@@ -411,6 +413,7 @@ declare const fullApi: ApiFromModules<{
   "lib/observabilitySchema": typeof lib_observabilitySchema;
   "lib/operationAccess": typeof lib_operationAccess;
   "lib/operationCore": typeof lib_operationCore;
+  "lib/operationSources": typeof lib_operationSources;
   "lib/operationValues": typeof lib_operationValues;
   "lib/operationalAudit": typeof lib_operationalAudit;
   "lib/operationalMetrics": typeof lib_operationalMetrics;
@@ -418,6 +421,7 @@ declare const fullApi: ApiFromModules<{
   "lib/organizationAccess": typeof lib_organizationAccess;
   "lib/organizationClosure": typeof lib_organizationClosure;
   "lib/organizationValues": typeof lib_organizationValues;
+  "lib/originalStore": typeof lib_originalStore;
   "lib/planCatalog": typeof lib_planCatalog;
   "lib/planCore": typeof lib_planCore;
   "lib/planSchema": typeof lib_planSchema;
@@ -558,7 +562,7 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
-  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+  rateLimiter: import("@freecorps/convex-rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   importPool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"importPool">;
   capturePool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"capturePool">;
   webhookPool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"webhookPool">;

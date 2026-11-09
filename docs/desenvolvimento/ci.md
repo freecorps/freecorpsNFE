@@ -498,6 +498,8 @@ As classes são `pure`, `node` e `platform`. Pacotes independentes declaram
 explicitamente os workspaces e dependências externas permitidos. Um pacote
 puro não pode importar um conector Node; nenhum dos dois pode alcançar a
 plataforma. `fiscal-core` é puro; `contracts` é puro e reutiliza seu CNPJ.
+`convex-rate-limiter`, componente Convex da plataforma, fica na classe
+`platform`.
 `fiscal-nfe` é uma biblioteca Node independente: depende de core e dos
 validadores XML explicitamente permitidos no manifesto. Não depende dos
 contratos do SaaS. `fiscal-nfse` segue o mesmo desenho, com core, xmldom,
@@ -827,7 +829,7 @@ o alias `typescript-7` atende às checagens nativas. Os tipos do Node seguem a
 linha 24 do CI. Vite+ e seu alias `vite` avançam juntos, com `oxfmt`, `oxlint`
 e `oxlint-tsgolint` na versão exata que o Vite+ exige; a linha 1.x traz o
 Vitest 5. Mudanças de linha do plugin React e xmldom ficam separadas. O
-adaptador `@convex-dev/better-auth`, Workpool, Rate Limiter e `convex-test` preservam as versões dos patches locais em `patchedDependencies`.
+adaptador `@convex-dev/better-auth` e `convex-test` preservam as versões dos patches locais em `patchedDependencies`.
 
 A regra anterior pedia OS, arquitetura, Node, Bun e hash do lockfile na chave de
 qualquer cache. Ela valia para um cache que o Actions restaura sem conferir o

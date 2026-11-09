@@ -1,0 +1,18 @@
+{
+  "name": "@freecorps/convex-rate-limiter",
+  "version": "0.3.2-freecorps.1",
+  "private": true,
+  "description": "Componente Convex de limites de taxa: @convex-dev/rate-limiter 0.3.2 com consumo conjunto e partições.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/client/index.ts",
+    "./convex.config": "./src/component/convex.config.ts",
+    "./convex.config.js": "./src/component/convex.config.ts",
+    "./_generated/component.js": "./src/component/_generated/component.ts",
+    "./test": "./src/test.ts"
+  },
+  "peerDependencies": {
+    "convex": "^1.48.0"
+  }
+}

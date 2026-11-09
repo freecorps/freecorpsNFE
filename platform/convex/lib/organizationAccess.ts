@@ -1,5 +1,5 @@
 import { recordAudit } from "./operationalAudit";
-import { RateLimiter } from "@convex-dev/rate-limiter";
+import { RateLimiter } from "@freecorps/convex-rate-limiter";
 import { canManageRole, type MembershipRole } from "@freecorps/contracts";
 import { ConvexError } from "convex/values";
 import type { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";

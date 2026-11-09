@@ -15,6 +15,9 @@
       "workspaces": ["@freecorps/fiscal-core"],
       "external": ["zod"]
     },
+    "packages/convex-rate-limiter": {
+      "kind": "platform"
+    },
     "packages/fiscal-core": {
       "kind": "pure",
       "workspaces": [],

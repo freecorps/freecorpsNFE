@@ -1,4 +1,4 @@
-import { RateLimiter } from "@convex-dev/rate-limiter";
+import { RateLimiter } from "@freecorps/convex-rate-limiter";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "../_generated/dataModel";
 import { components } from "../_generated/api";
