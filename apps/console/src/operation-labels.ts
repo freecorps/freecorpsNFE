@@ -70,6 +70,7 @@ const actions: Record<string, string> = {
   "capture.pause": "Captura pausada",
   "capture.resume": "Captura retomada",
   "capture.checkpoint_committed": "Captura avançou o ponto de leitura",
+  "capture.source_retry": "Captura vai repetir a consulta depois de um erro da fonte (código 999)",
   "capture.transfer_authorized": "Transferência da captura autorizada",
   "capture.transfer_received": "Transferência da captura recebida",
   "capture.transfer_released": "Transferência da captura liberada",

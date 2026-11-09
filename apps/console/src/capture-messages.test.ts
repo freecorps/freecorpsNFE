@@ -213,6 +213,14 @@ describe("mensagens da captura (#432)", () => {
       todo: "Fale com o suporte da Freecorps antes de retomar, com os detalhes técnicos abaixo.",
     });
     expect(captureMessage("SOURCE_108", true)!.todo).toMatch(/tenta de novo em uma hora/);
+    // The 999 is retried by itself; the third in a row stops it, and resuming is the way on (#195).
+    expect(captureMessage("SOURCE_999", true)).toMatchObject({
+      action: "resume",
+      reason: expect.stringMatching(
+        /código 999\).*duas vezes; no terceiro erro seguido, ela para\./,
+      ),
+      todo: expect.stringMatching(/^Retome a captura\./),
+    });
     expect(captureMessage("UNHEARD_OF", true)!.reason).toMatch(/motivo que este painel/);
     expect(captureMessage(null, true)).toBeNull();
     // Names of the object's prototype are not codes.

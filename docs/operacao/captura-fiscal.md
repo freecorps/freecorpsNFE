@@ -224,7 +224,11 @@ volta sozinha quando a empresa ativar um A1 próprio
 ([renovação do A1](#renovação-do-a1-da-empresa)). Os demais motivos
 pedem **Retomar captura** depois de conferir a causa; o trecho de uma lacuna
 que saiu da Receita pede a decisão da empresa
-([lacuna](#lacuna-na-captura-419)). A parada geral da
+([lacuna](#lacuna-na-captura-419)). Uma captura em atenção com `SOURCE_999`
+recebeu três erros não catalogados seguidos da Receita: ela já tentou de novo
+duas vezes sozinha (#195). Ativa, com o mesmo código, ela ainda está tentando
+e não pede nada. Retome; se parar de novo com 999, abra uma
+issue com os ids. A parada geral da
 Freecorps não é uma parada da captura: ela só adia as consultas e não põe
 nenhuma em atenção.
 

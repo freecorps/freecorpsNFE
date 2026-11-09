@@ -2,6 +2,13 @@
 
 ## Não publicado
 
+- A captura de NF-e não para mais no primeiro cStat 999 ("Rejeição: Erro
+  não catalogado") da Receita (#195): o 999 não aponta problema na consulta,
+  então a captura repete a consulta depois de uma hora e do intervalo mínimo
+  da empresa, sem mexer no ponto de leitura. Só o terceiro 999 seguido põe a
+  captura em atenção com `SOURCE_999` e manda o alerta; qualquer outra
+  resposta zera a contagem, e cada 999 conta como falha da fonte nos
+  monitores.
 - O SDK muda de nome no npm: `@freecorps/sdk` passa a ser
   `@freecorps/freecorpsnfe-sdk`, com o export `/webhooks`. A API não muda;
   troque o pacote e os imports. O npm não aceita maiúsculas, por isso o nome

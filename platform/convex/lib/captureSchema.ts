@@ -56,6 +56,11 @@ export const captureTables = {
       }),
     ),
     received: v.number(),
+    /**
+     * Consecutive 999 the stream is retrying (#195), 1 or 2; absent otherwise. The third stops
+     * the stream in attention with `SOURCE_999` (`captureProcessing.checkpoint`).
+     */
+    sourceErrors: v.optional(v.number()),
     transferHash: v.optional(v.string()),
     transferExpiresAt: v.optional(v.number()),
     createdAt: v.number(),

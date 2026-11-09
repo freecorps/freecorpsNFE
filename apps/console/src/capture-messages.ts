@@ -407,6 +407,13 @@ export function captureMessage(
       reason: `${s.Of} está fora do ar ou em manutenção (código ${status}).`,
       todo: "Nada: a captura tenta de novo em uma hora.",
     };
+  // The capture retries a 999 by itself and stops only on the third in a row (#195).
+  if (status === "999")
+    return {
+      action: "resume",
+      reason: `${s.Of} respondeu com um erro dela, sem apontar problema na consulta (código 999). A captura tenta de novo sozinha duas vezes; no terceiro erro seguido, ela para.`,
+      ...AGAIN_OR_SUPPORT,
+    };
   if (status)
     return {
       action: "support",

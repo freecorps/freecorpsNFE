@@ -78,6 +78,13 @@ import { ensureConsoleProject } from "./lib/projectAccess";
 
 // Matches the connector's 2 MiB response + 16 MiB expanded envelope ceiling.
 export const CAPTURE_RESERVED_BYTES = 18 * 1024 * 1024;
+/**
+ * The 999 of the distribution ("Rejeição: Erro não catalogado") says nothing about the request: the
+ * stream asks again, after the source's hour and the release's interval, and only the third one in
+ * a row stops it in attention with `SOURCE_999` (#195). Any other committed answer starts over.
+ */
+const SOURCE_ERROR_ATTENTION = 3;
+const SOURCE_RETRY = "source_retry";
 
 /** Operator-only receipt. It never returns XML, storage URLs or certificate material. */
 export const proofEvidence = internalQuery({
@@ -667,6 +674,8 @@ export const checkpoint = internalMutation({
       recovery = stream.recovery;
     /** The next query's time when a branch decides it; otherwise the source windows below. */
     let decided: number | undefined;
+    /** Consecutive 999 with this one (#195); absent after any other answer or refusal. */
+    let sourceErrors: number | undefined;
     if (batch.mode === "consNSU" && batch.status === "138") {
       const only =
         entries.length === 1 ? await ctx.db.get("captureEnvelopes", entries[0]!.envelopeId) : null;
@@ -745,6 +754,11 @@ export const checkpoint = internalMutation({
       // batch for diagnosis; the stream only waits the source's hour, below.
     } else {
       code = `SOURCE_${batch.status}`;
+      if (batch.status === "999") {
+        sourceErrors = (stream.sourceErrors ?? 0) + 1;
+        // Each 999 reaches the monitors, the retried ones too (#195).
+        await recordSourceFailure(ctx, op, code);
+      }
       // An uncertain first request can probe checkpoint + 1 before knowing
       // whether that NSU exists. Only a consistent source boundary can end
       // that probe; never discard a previously known gap or move checkpoint.
@@ -779,6 +793,10 @@ export const checkpoint = internalMutation({
       (batch.status === "138" || (batch.status === "137" && code === "NO_DOCUMENTS"))
     )
       window = Math.max(window, Date.now() + (await endOfQueue()));
+    // A retried 999 asks no sooner than the end of the queue would (#195): the retry spends no
+    // more of the CNPJ's queries than the release allows.
+    const retrying = sourceErrors !== undefined && sourceErrors < SOURCE_ERROR_ATTENTION;
+    if (retrying) window = Math.max(window, Date.now() + (await endOfQueue()));
     // Only an answer (137/138) tells where the source's queue ends (#494): a refusal's `maxNSU`
     // (656, 589, …) may be zero or another bound, and stays in the batch for diagnosis.
     const answered = ["137", "138"].includes(batch.status!);
@@ -794,9 +812,15 @@ export const checkpoint = internalMutation({
       lastSuccessAt: answered ? Date.now() : stream.lastSuccessAt,
       code,
       recovery,
+      // The count survives only while the stream retries; attention and any other answer clear it.
+      sourceErrors: retrying ? sourceErrors : undefined,
     });
     const updated = (await ctx.db.get("captureStreams", stream._id))!;
     await captureAudit(ctx, updated, "checkpoint_committed", "system", batch._id);
+    if (retrying) {
+      await captureAudit(ctx, updated, SOURCE_RETRY, "system", batch._id);
+      return null;
+    }
     if (
       code &&
       [

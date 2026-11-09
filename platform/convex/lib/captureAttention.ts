@@ -116,6 +116,8 @@ export async function captureAttention(
     code,
     version,
     freecorpsCut: freecorpsCutOf(stream, code, cut) || undefined,
+    // A stop of any kind ends the run of 999 (#195): the resume after it gets the retries again.
+    sourceErrors: undefined,
   });
   // The audit and the signal record the stream as it is now: in attention, with the new code.
   const updated = (await ctx.db.get("captureStreams", stream._id))!;
