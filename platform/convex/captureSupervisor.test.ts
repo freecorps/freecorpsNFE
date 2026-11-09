@@ -802,6 +802,11 @@ describe("e-mail operacional", () => {
       expect(body.subject).toBe("[Freecorps Fiscal] Teste do alerta da captura: run 4242/2");
       expect(body.text).toContain("Nenhuma empresa está em alerta.");
       expect(body.text).toContain("ana-freecorps");
+      // It points to the procedure, never to an issue that will close (#192).
+      expect(body.text).toContain(
+        'docs/operacao/captura-fiscal.md, seção "Testar o e-mail dos alertas"',
+      );
+      expect(body.text).not.toMatch(/#\d/);
       expect(JSON.stringify(body)).not.toContain(f.scope.companyId);
       expect(JSON.stringify(body)).not.toContain(CNPJ);
       // It is not an alert: nothing recorded, the hourly ceiling untouched.

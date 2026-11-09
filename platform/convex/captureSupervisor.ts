@@ -562,7 +562,7 @@ export function testAlertMail(
       `Disparado por: ${run.operator}`,
       `Enviado em: ${new Date(at).toISOString()}`,
       "",
-      "Registre o horário de chegada no recibo da #463, conforme docs/operacao/captura-fiscal.md.",
+      'Registre o horário de chegada conforme docs/operacao/captura-fiscal.md, seção "Testar o e-mail dos alertas".',
     ].join("\n"),
   };
 }
