@@ -91,7 +91,7 @@ it("mostra carregamento, erro e o plano quando o cartão está desligado", () =>
   state.data = overview({ card: false, plan: { tier: "large", endsAt: NOV } });
   show();
   expect(screen.getByText("Contratação indisponível no momento.")).toBeTruthy();
-  expect(screen.getByText("Sem cobrança recorrente")).toBeTruthy();
+  expect(screen.queryByText("Forma de pagamento")).toBeNull();
   expect(screen.getByText("Grande, até 01/11/2026 às 00:00 UTC")).toBeTruthy();
   expect(screen.getByText("O pagamento por cartão está indisponível no momento.")).toBeTruthy();
   expect(document.body.textContent).not.toContain("Pix");

@@ -29,8 +29,11 @@ const DEC = Date.UTC(2026, 11, 1);
 const DAY = 24 * 60 * 60 * 1000;
 /** The term bought at `OCT`: from 10/10/2026 12:00 UTC to 10/10/2027 12:00 UTC. */
 const END = termEndsAt(OCT);
-/** The start of its last month, when its renewal is charged at the earliest. */
-const LAST_MONTH = Date.UTC(2027, 8, 10, 12);
+/**
+ * Its renewal, paid in its last month 10 days before the end: the fake timers hold at most 24.8
+ * days ahead.
+ */
+const RENEWAL_PAID = END - 10 * DAY;
 /** A monthly card plan signed at `OCT` ends on its first anniversary (ADR 0012). */
 const MONTHLY_END = addMonths(OCT, 1);
 /** The annual that follows that monthly starts at its end and keeps its anchor, `OCT`. */
@@ -814,8 +817,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
   it("leva junto a renovação agendada, já paga, com tudo devolvido", async () => {
     const f = await fixture();
     const annual = await annualNow(f);
-    // Paid at the first instant of the term's last month.
-    vi.setSystemTime(LAST_MONTH);
+    vi.setSystemTime(RENEWAL_PAID);
     await renewal(f, END);
     const next = (await f.terms()).find((row) => row._id !== annual._id)!;
     expect(next).toMatchObject({ state: "scheduled", firstPeriod: END, anchor: OCT });
@@ -827,7 +829,7 @@ describe("rescisão do anual pelo suporte e upgrade desfeito em 7 dias", () => {
         withdrawal: true,
         usedMonths: 0,
         refundCents: 149000,
-        accessEndsAt: LAST_MONTH,
+        accessEndsAt: RENEWAL_PAID,
       },
     ]);
     expect(await term(f, next._id)).toMatchObject({
@@ -940,7 +942,7 @@ describe("visão do anual no console (plans:overview)", () => {
     });
     const g = await fixture();
     await annualNow(g);
-    vi.setSystemTime(LAST_MONTH);
+    vi.setSystemTime(RENEWAL_PAID);
     await renewal(g, END);
     expect((await view(g)).terms).toMatchObject([
       { state: "active", firstPeriod: OCT, upgrade: null },

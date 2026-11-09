@@ -121,9 +121,8 @@ await withLocalBrowser(root, "plans", async () => {
     const published = [
       "01-disabled-desktop",
       "02-catalog-desktop",
-      "06-intermediate-active-desktop",
-      "07-upgrade-350-confirm-desktop",
-      "11-reloaded-mobile",
+      "04-paid-tiers-by-card-desktop",
+      "05-reloaded-mobile",
     ].includes(name);
     const imagePath = join(published ? output : privateOutput, file);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));

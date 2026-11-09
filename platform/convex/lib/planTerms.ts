@@ -93,7 +93,7 @@ export async function termsEnd(ctx: QueryCtx, organizationId: Id<"organizations"
 
 /**
  * Why a new annual term starting at the instant `start` cannot be sold: a term already covers
- * that instant, or another term is scheduled and not yet ended at `now`. A renewal requested in an
+ * that instant, or another term is scheduled and not yet ended at `now`. A renewal charged in an
  * active term's last month starts at its `endsAt`, which it no longer covers, so the renewal
  * leaves no gap; a scheduled term that ended blocked (`TERM_ENDED`) no longer stops new sales.
  */

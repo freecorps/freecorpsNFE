@@ -475,8 +475,8 @@ async function renewalBelowUpgrade(
 /**
  * A paid annual upgrade (ADR 0010, decision 9), a one-off payment from the upgrade Checkout,
  * raises the card term in force to `tier` from `period`, the start of the term month it was sold
- * in (counted from the chain's anchor, ADR 0012), until the term ends (`upgradeTerm`). It must be paid within that term month (`LATE_PAYMENT` otherwise), and
- * the amount must be the difference the server prices on that term for that month. Every check
+ * in (counted from the chain's anchor, ADR 0012), until the term ends (`upgradeTerm`). It must be
+ * paid within that term month (`LATE_PAYMENT` otherwise), and the amount must be the difference the server prices on that term for that month. Every check
  * runs before any write, so a refusal is `blocked` for a person with the money already taken.
  * Applied, the account renews at `tier`: the reconciliation then moves the annual subscription to
  * that tier's yearly price, without proration and keeping the anchor, so the renewal date stays

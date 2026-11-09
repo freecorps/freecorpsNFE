@@ -2014,6 +2014,46 @@ const operatorRefusals: [string, string, (ctx: MutationCtx, f: Fixture) => Promi
         });
     },
   ],
+  // The card still charges: a subscription that renews, in either Stripe mode, or an open
+  // Checkout (`cardBilling`).
+  ...([true, false] as const).map(
+    (livemode): [string, string, (ctx: MutationCtx, f: Fixture) => Promise<unknown>] => [
+      `assinatura do cartão que renova (livemode ${livemode})`,
+      "PAID_PLAN",
+      (ctx, f) =>
+        ctx.db.insert("billingAccounts", {
+          organizationId: f.scope.organizationId,
+          customerId: `cus_operator_${livemode}`,
+          livemode,
+          subscription: {
+            id: `sub_operator_${livemode}`,
+            status: "active",
+            tier: "intermediate",
+            cancelAtPeriodEnd: false,
+            periodEnd: Date.now() + 30 * DAY,
+          },
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }),
+    ],
+  ),
+  [
+    "Checkout do cartão aberto",
+    "PAID_PLAN",
+    (ctx, f) =>
+      ctx.db.insert("billingCheckouts", {
+        organizationId: f.scope.organizationId,
+        key: "synthetic-operator-checkout",
+        kind: "start",
+        tier: "intermediate",
+        grantCents: 14900,
+        state: "open",
+        expiresAt: Date.now() + DAY,
+        requestedBy: "synthetic-operator-owner",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }),
+  ],
   [
     "recibo de plano da plataforma",
     "PAID_PLAN",

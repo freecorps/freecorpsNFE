@@ -48,7 +48,7 @@ const monthsLeft = (months: number) =>
 export const annualMessages: Record<string, string> = {
   ANNUAL_DISABLED: "O plano anual não está à venda no momento. Nada foi registrado.",
   ANNUAL_TERM_ACTIVE:
-    "Esta organização tem um plano anual em vigor ou agendado que coincide com este pedido.",
+    "Esta organização tem um plano anual em vigor ou agendado que coincide com esta contratação.",
   ANNUAL_TERM_REQUIRED:
     "Não há plano anual em vigor agora para mudar de plano. Confira a situação atual.",
   ANNUAL_TERM_SCHEDULED:
@@ -90,7 +90,7 @@ const planMessages: Record<string, string> = {
   FREE_PLAN_UNAVAILABLE:
     "O plano gratuito não está disponível para esta organização. Confira o plano atual.",
   PLAN_REQUEST_UNAVAILABLE:
-    "Este pedido mudou ou não está mais disponível. Confira a situação atual.",
+    "Esta contratação mudou ou não está mais disponível. Confira a situação atual.",
   ORGANIZATION_CLOSED: "Esta organização foi encerrada. Não é possível contratar um plano.",
   ORGANIZATION_ARCHIVED:
     "Organização em arquivo econômico. Consulte a Freecorps sobre a recuperação dos dados.",

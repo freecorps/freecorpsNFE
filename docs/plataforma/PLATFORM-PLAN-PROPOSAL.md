@@ -115,7 +115,7 @@ a franquia inteira. O cliente escolhe iniciar agora ou no próximo mês antes
 do pagamento. Implantação não é cobrada. Em 27/10/2026 o mantenedor escolheu
 cobrar por cartão recorrente no Stripe, mantendo o Pix assistido (#556): o
 cartão renovava no dia 1, 00:00 UTC, com as mesmas regras de upgrade, downgrade e
-cancelamento, e o Pix continua sem débito automático. Inadimplência sem
+cancelamento, e o Pix ficava sem débito automático. Inadimplência sem
 carência e reembolso ou contestação só sinalizados foram decididos em
 28/10/2026. Em 03/11/2026 o mantenedor deixou de aceitar Pix, e o Pix
 assistido saiu do código em 09/11/2026 (#125): a venda é só pelo cartão. A

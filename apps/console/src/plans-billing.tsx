@@ -224,9 +224,9 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
   if (!data.card)
     return (
       <Card title="Cobrança" description="Contratação indisponível no momento.">
+        {/* Without the card configured, nothing tells whether a subscription still charges. */}
         <DescriptionList
           items={[
-            { term: "Forma de pagamento", value: current ? "Sem cobrança recorrente" : "Nenhum" },
             {
               term: "Plano e período",
               value: data.plan ? planUntil(data.plan) : "Sem plano em vigor",
