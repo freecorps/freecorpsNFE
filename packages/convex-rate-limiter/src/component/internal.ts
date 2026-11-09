@@ -23,7 +23,8 @@ export async function checkRateLimitOrThrow(
   const result = layout
     ? await checkPartition(db, args, layout, lane)
     : await checkRateLimitSharded(db, args);
-  if (result.status.retryAfter && args.throws) {
+  // Only a refusal throws: a reservation returns ok with the time to wait.
+  if (!result.status.ok && args.throws) {
     throw new ConvexError({
       kind: "RateLimited",
       name: args.name,

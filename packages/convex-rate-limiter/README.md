@@ -60,6 +60,19 @@ O Convex empacota o componente direto do TypeScript, sem `dist`. Os arquivos
 de `src/component/_generated/` saem do push local da plataforma
 (`bun run worktree:sync`); não os edite à mão.
 
+## Diferenças de comportamento do original
+
+Além do consumo conjunto e das partições, três correções da #198 mudam o
+comportamento do 0.3.2 publicado, que a plataforma não exercita:
+
+- `isRateLimitError` devolve `false` para um `ConvexError` sem dados de
+  objeto, em vez de lançar `TypeError`.
+- Com `throws: true` e `reserve: true`, uma reserva bem-sucedida devolve
+  `ok: true` com `retryAfter`; antes ela lançava `RateLimited` e desfazia a
+  reserva. Só a recusa lança.
+- `getValue` recusa `sampleShards` que não seja inteiro positivo; antes `0`
+  virava `1` e um valor negativo terminava em `TypeError`.
+
 ## Testes
 
 `vp test run packages/convex-rate-limiter` roda os testes do pacote original,

@@ -108,7 +108,10 @@ export const getValue = query({
       };
     }
     const config = configWithDefaults(args.config);
-    const samplesToTake = Math.min(args.sampleShards || 1, config.shards);
+    const requested = args.sampleShards ?? 1;
+    if (!Number.isInteger(requested) || requested < 1)
+      throw new Error("sampleShards must be a positive integer");
+    const samplesToTake = Math.min(requested, config.shards);
 
     const shardIndices = Array.from({ length: config.shards }, (_, i) => i);
     const selectedShards: number[] = [];
