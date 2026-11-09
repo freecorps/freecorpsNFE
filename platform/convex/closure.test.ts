@@ -2599,11 +2599,11 @@ it("os limites da leitura dos originais recusados contam como Produção, e o or
     await f.t.run(async (ctx) => {
       await ctx.db.patch("fiscalDocuments", f.documentId, { tpAmb: "2" });
       const original = (await ctx.db.query("documentArtifacts").first())!;
-      const { _id, _creationTime, documentId, ...artifact } = original;
+      const { _id, _creationTime, documentId: _document, ...artifact } = original;
       const {
-        _id: v,
-        _creationTime: c,
-        documentId: d,
+        _id: _versionId,
+        _creationTime: _versionTime,
+        documentId: _versionDocument,
         ...version
       } = (await ctx.db.query("documentVersions").first())!;
       for (let i = 0; i < artifacts; i++) {
