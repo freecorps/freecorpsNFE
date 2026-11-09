@@ -592,6 +592,10 @@ guarda mais do que essa versão promete, nunca menos.
   expurgada. Mais de 100 eventos de um desses históricos contam como
   Produção. Uma conexão Stripe de Produção só emite pelo gate da emissão,
   então o histórico do gate a cobre; a conexão em si é da classe `closure`.
+  As tabelas conferidas pelo ambiente formam `PRODUCTION_TABLES`, e
+  `fiscalGuard.test.ts` reprova uma tabela do schema com `environment` que
+  não está nela nem entre as exceções com motivo, e uma com `tpAmb` que a
+  decisão não lê.
 - **A marca da nota.** `fiscalDocuments.tpAmb` guarda o `tpAmb` que o XML
   declara, na nota, no protocolo de autorização, no evento ou no recibo dele.
   Cada versão gravada pela importação o escreve (`publishVersion`), também a
