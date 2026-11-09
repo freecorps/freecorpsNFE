@@ -154,7 +154,9 @@ it.skipIf(process.platform === "win32").each(["alive", "exited", "unowned-contro
       const net = require('node:net'), fs = require('node:fs');
       process.on('SIGTERM', () => {});
       const server = net.createServer().listen(0, '127.0.0.1', () => {
-        fs.writeFileSync(${JSON.stringify(ready)}, JSON.stringify({pid: process.pid, port: server.address().port}));
+        // Grava ao lado e renomeia: o teste lê o arquivo assim que ele existe.
+        fs.writeFileSync(${JSON.stringify(ready)} + '.tmp', JSON.stringify({pid: process.pid, port: server.address().port}));
+        fs.renameSync(${JSON.stringify(ready)} + '.tmp', ${JSON.stringify(ready)});
       });
       setTimeout(() => process.exit(), 15000);
     `;
