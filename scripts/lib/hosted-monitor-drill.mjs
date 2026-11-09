@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { scopeFields } from "./hosted-fixtures.mjs";
+import { OPERATION_SOURCES } from "../../platform/convex/lib/operationSources.ts";
+
+/** 101 synthetic failures per source, one beyond the 100 the monitor reads. */
+const FAILURES = OPERATION_SOURCES.length * 101;
 const DAY = 86400000;
 const thresholds = {
   queue: 300000,
@@ -43,7 +47,12 @@ async function clearIncompleteMonitor(h, scope, logicalKey) {
     );
   for (const [table, index, keys, limit] of [
     ["outboxEvents", "by_logicalKey", { logicalKey }, 2],
-    ["operationalFailures", "by_projectId_companyId_environment_source_createdAt", fields, 405],
+    [
+      "operationalFailures",
+      "by_projectId_companyId_environment_source_createdAt",
+      fields,
+      FAILURES + 1,
+    ],
     [
       "operations",
       "by_organizationId_and_projectId_and_environment",
@@ -90,7 +99,10 @@ export function assertMonitorSamples(monitors, sampleMode, limits) {
   assert.ok(
     monitors.every((m) => {
       const sources = m.metrics.find((x) => x.kind === "source").sources;
-      return sources.length === 4 && sources.every((x) => x.count === source && x.capped);
+      return (
+        sources.length === OPERATION_SOURCES.length &&
+        sources.every((x) => x.count === source && x.capped)
+      );
     }),
   );
 }
@@ -201,7 +213,7 @@ export async function prepareMonitorFixtures(h, state, membership, save) {
     const operationId = ops[0]._id;
     await h.add(
       "operationalFailures",
-      ["nfe-distribution", "opencnpj", "xml-processing", "other"].flatMap((source) =>
+      OPERATION_SOURCES.flatMap((source) =>
         Array.from({ length: 101 }, () => ({
           ...scope,
           operationId,
@@ -490,7 +502,7 @@ export async function monitorDrill(h, state, save, sampleMode) {
     assert.equal(first.alerts.length, 101);
     assertMonitorSamples(first.monitors, sampleMode, thresholds);
     report.scenarios.push({
-      name: "20-monitors-20-endpoints-101-leases-404-failures",
+      name: `20-monitors-20-endpoints-101-leases-${FAILURES}-failures`,
       passed: true,
       openAlerts: first.alerts.length,
     });
@@ -652,7 +664,7 @@ export async function monitorDrill(h, state, save, sampleMode) {
         "operationalFailures",
         "by_projectId_companyId_environment_source_createdAt",
         { projectId, companyId: s.companyId, environment: "sandbox" },
-        500,
+        FAILURES,
       );
       await h.patch(
         "operationalFailures",

@@ -1,6 +1,7 @@
 import { it, expect, vi } from "vite-plus/test";
 import { recoverSeed } from "../lib/hosted-recover-seed.mjs";
 import { prepareMonitorFixtures, assertMonitorSamples } from "../lib/hosted-monitor-drill.mjs";
+import { OPERATION_SOURCES } from "../../platform/convex/lib/operationSources";
 
 type Row = Record<string, unknown> & { _id: string };
 function memoryStore(failAfter?: string) {
@@ -103,7 +104,7 @@ it.each(["projects", "webhookDeliveries", "operationalMonitors"])(
       expect(h.tables.projects).toHaveLength(20);
       expect(h.tables.operationalMonitors).toHaveLength(20);
       expect(h.tables.operations).toHaveLength(20 * 102);
-      expect(h.tables.operationalFailures).toHaveLength(20 * 404);
+      expect(h.tables.operationalFailures).toHaveLength(20 * OPERATION_SOURCES.length * 101);
       expect(h.tables.webhookEndpoints).toHaveLength(20 * 20);
       expect(h.tables.webhookDeliveries).toHaveLength(20 * 100);
       expect(h.tables.outboxEvents).toHaveLength(20);
@@ -121,7 +122,7 @@ it("checks baseline and bounded candidate samples without accepting the wrong mo
         { kind: "lease", value: lease, capped: true },
         {
           kind: "source",
-          sources: Array.from({ length: 4 }, () => ({ count: source, capped: true })),
+          sources: OPERATION_SOURCES.map(() => ({ count: source, capped: true })),
         },
       ],
     },
@@ -135,4 +136,8 @@ it("checks baseline and bounded candidate samples without accepting the wrong mo
   expect(() => assertMonitorSamples(samples(2, 4), "baseline", limits)).toThrow();
   expect(() => assertMonitorSamples(samples(101, 101), "candidate", limits)).toThrow();
   expect(() => assertMonitorSamples([], "candidate", limits)).toThrow();
+  // A monitor that skips a source, like the four-source reader before #111, fails the drill.
+  const missing = samples(2, 4);
+  missing[0]!.metrics[1]!.sources!.pop();
+  expect(() => assertMonitorSamples(missing, "candidate", limits)).toThrow();
 });

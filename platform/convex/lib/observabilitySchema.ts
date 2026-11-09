@@ -1,6 +1,7 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import { scopeFields } from "./operationValues";
+import { OPERATION_SOURCES } from "./operationSources";
 
 export const metricKind = v.union(
   v.literal("queue"),
@@ -33,8 +34,9 @@ export const thresholds = v.object({
   webhook: v.number(),
   certificate: v.number(),
 });
+export const operationSource = v.union(...OPERATION_SOURCES.map((source) => v.literal(source)));
 export const sourceFailures = v.object({
-  source: v.string(),
+  source: operationSource,
   count: v.number(),
   capped: v.boolean(),
 });
@@ -55,7 +57,7 @@ export const observabilityTables = {
   operationalFailures: defineTable({
     ...scopeFields,
     operationId: v.id("operations"),
-    source: v.string(),
+    source: operationSource,
     code: v.string(),
     createdAt: v.number(),
     expiresAt: v.number(),
