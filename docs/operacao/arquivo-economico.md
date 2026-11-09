@@ -564,7 +564,7 @@ volta a `hot`, `version` nova e `noticeEnded`:
   `ARCHIVE_NOTICE_NOT_FOUND` sem aviso daquela organização,
   `PLAN_RENEWAL_REQUIRED` num aviso de plano pago e `ORGANIZATION_ARCHIVING`
   com o arquivamento em curso.
-- **Qualquer novo plano** (`activateCatalogPlan`): renovação por Pix ou
+- **Qualquer novo plano** (`activateCatalogPlan`): renovação pelo
   cartão, adesão ou troca. O aviso termina na mesma transação do plano.
 
 O `freeze` também recarrega a elegibilidade e a versão do plano, então uma

@@ -17,7 +17,7 @@ import {
   requireMembership,
 } from "./lib/organizationAccess";
 import { PLATFORM_PLANS, isCatalogTier, paidTier } from "./lib/planCatalog";
-import { allocateOffer, annualEnabled, markTermRenewalStop, pixEnabled } from "./lib/planCore";
+import { allocateOffer, annualEnabled, markTermRenewalStop } from "./lib/planCore";
 import {
   rescindedSubscription,
   subscriptionHasTerm,
@@ -64,15 +64,12 @@ import {
   openCheckout,
   paidByCard,
   periodStart,
-  pixMonthlyUntil,
-  pixPending,
   renews,
-  scheduledPixRenewal,
 } from "./lib/billingCore";
 
 /**
- * Card subscriptions of the platform plans through Stripe (#556), next to the assisted Pix of
- * `plans.ts`. The console only states an intention; the server prices it, Stripe charges it and
+ * Card subscriptions of the platform plans through Stripe (#556), the only way to buy a paid
+ * plan. The console only states an intention; the server prices it, Stripe charges it and
  * the plan moves only when a paid invoice is read back from the Stripe API.
  */
 const scope = { organizationId: v.id("organizations") };
@@ -183,8 +180,8 @@ export const overview = query({
     ),
     reviews: v.array(reviewItem),
     /**
-     * Plan in force and a Pix request waiting, so the card actions follow the same rules.
-     * `annual`: the plan row a term granted, the access a rescinded term left included.
+     * Plan in force, so the card actions follow the same rules. `annual`: the plan row a term
+     * granted, the access a rescinded term left included.
      */
     plan: v.union(
       v.null(),
@@ -194,11 +191,8 @@ export const overview = query({
         annual: v.optional(v.literal(true)),
       }),
     ),
-    pixPending: v.boolean(),
     /** The annual switch (`annualEnabled`): the annual Checkout is on sale. */
     annualEnabled: v.boolean(),
-    /** The Pix switch (`pixEnabled`): the console offers the assisted Pix beside the card. */
-    pixEnabled: v.boolean(),
     /**
      * The subscription in the account bought a term in force or scheduled. An annual one without
      * it has not been granted a term: its first charge is still being read, or it was blocked for
@@ -220,7 +214,7 @@ export const overview = query({
     try {
       cfg = config();
     } catch {
-      // Misconfigured card billing reads as unavailable; Pix, if switched on, keeps working.
+      // Misconfigured card billing reads as unavailable.
     }
     const now = args.asOf;
     const current = await planFor(ctx, args.organizationId);
@@ -232,9 +226,7 @@ export const overview = query({
             ...(current.termId ? { annual: true as const } : {}),
           }
         : null;
-    const pixWaiting = await pixPending(ctx, args.organizationId, now);
     const annualOnSale = await annualEnabled(ctx);
-    const pixOnSale = await pixEnabled(ctx);
     const annualBlocked = (await termsEnd(ctx, args.organizationId, now)) !== null;
     if (!cfg)
       return {
@@ -243,9 +235,7 @@ export const overview = query({
         checkout: null,
         reviews: [],
         plan,
-        pixPending: pixWaiting,
         annualEnabled: annualOnSale,
-        pixEnabled: pixOnSale,
         subscriptionTerm: false,
         annualBlocked,
       };
@@ -353,9 +343,7 @@ export const overview = query({
         }),
       ].sort((a, b) => b.createdAt - a.createdAt),
       plan,
-      pixPending: pixWaiting,
       annualEnabled: annualOnSale,
-      pixEnabled: pixOnSale,
       subscriptionTerm,
       annualBlocked,
     };
@@ -363,7 +351,7 @@ export const overview = query({
 });
 
 /**
- * Prices the intention under the same rules as Pix (ADR 0012, slice 2a): the whole month, charged
+ * Prices the intention (ADR 0012, slice 2a): the whole month, charged
  * at the signing, or the full difference on an upgrade. The monthly subscription has no anchor of
  * its own: Stripe anchors it at the signing (`billing_cycle_anchor`), and it renews on each
  * anniversary of that instant, which the quota periods of the plan follow. One paid plan at a
@@ -373,7 +361,7 @@ export const overview = query({
  * `cycle: "annual"` prices a 12-month term at `annualCents` (ADR 0010, decision 9), charged and
  * started at the signing (ADR 0012, slice 2b): Stripe anchors the yearly subscription there and
  * renews it on each anniversary, and the term's chain keeps that anchor. Over a monthly in force
- * of the same tier or below, by card or Pix, it is sold now and replaces that monthly without
+ * of the same tier or below, it is sold now and replaces that monthly without
  * discount; over a pricier one, or while any term holds, it waits for its end, with the date. A
  * card that still renews is refused, never cancelled here: an abandoned Checkout must leave the
  * monthly subscription as it was.
@@ -467,23 +455,12 @@ export const prepareCheckout = internalMutation({
       if (busyUntil !== null) deny("ANNUAL_TERM_ACTIVE", { availableAt: busyUntil });
     }
     if (await openCheckout(ctx, args.organizationId, now)) deny("CHECKOUT_PENDING");
-    if (await pixPending(ctx, args.organizationId, now)) deny("PLAN_REQUEST_PENDING");
     const plan = await planFor(ctx, args.organizationId);
     if (plan?.catalogTier === "custom") deny("PLAN_UNAVAILABLE");
     // The access a rescinded term left runs to the end of its term month, already paid: a new
     // start, monthly or annual, waits for it (ADR 0012), as the invoice would replace it.
     if (!upgrade && plan?.termId && plan.startsAt <= now && !planEnded(plan, now))
       deny("PLAN_UNAVAILABLE", { availableAt: plan.endsAt });
-    // One paid plan at a time (ADR 0012): the monthly card waits for the monthly Pix plan in
-    // force, and for a renewal of it already paid, to end. A paid renewal not yet started also
-    // holds the annual, which would replace it before it is used.
-    if (!annual) {
-      const pixUntil = await pixMonthlyUntil(ctx, args.organizationId, now);
-      if (pixUntil !== null) deny("PAYMENT_METHOD_PIX", { availableAt: pixUntil });
-    } else if (!upgrade) {
-      const renewal = await scheduledPixRenewal(ctx, args.organizationId, now);
-      if (renewal) deny("PAYMENT_METHOD_PIX", { availableAt: renewal.availableAt });
-    }
     const day = 24 * 60 * 60_000;
     // A start, monthly or annual, is charged when paid: its session lasts a day.
     let expiresAt = now + day;
@@ -502,7 +479,6 @@ export const prepareCheckout = internalMutation({
     if (upgrade) {
       // The card term in force, bought by the annual subscription that will renew it.
       const term = await upgradableTerm(ctx, args.organizationId, now);
-      if (term.source !== "stripe") deny("PAYMENT_METHOD_PIX");
       const sub = account?.subscription;
       if (
         !sub?.annual ||
@@ -800,7 +776,7 @@ export const prepareRenewal = internalMutation({
     if (args.change === "cancel" || args.change === "resume") {
       // Resuming a monthly subscription renews it into the months of a term in force. Resuming
       // the annual subscription whose invoices bought every term in force renews them. Any other
-      // term in force, a Pix renewal scheduled after it included, would block that charge.
+      // term in force would block that charge.
       if (
         args.change === "resume" &&
         (await termsInForce(ctx, args.organizationId, Date.now())).some(
@@ -815,8 +791,6 @@ export const prepareRenewal = internalMutation({
         (await rescindedSubscription(ctx, args.organizationId, subscription.id))
       )
         deny("ANNUAL_TERM_RESCINDED");
-      if (args.change === "resume" && (await pixPending(ctx, args.organizationId, Date.now())))
-        deny("PLAN_REQUEST_PENDING");
       return { subscriptionId: subscription.id };
     }
     if (subscription.cancelAtPeriodEnd) deny("SUBSCRIPTION_CANCELLING");
@@ -937,7 +911,7 @@ export const prepareAbandon = internalMutation({
     return row.sessionId;
   },
 });
-/** Expires the open Checkout at Stripe, so nobody can still pay it, then frees Pix again. */
+/** Expires the open Checkout at Stripe, so nobody can still pay it. */
 export const abandonCheckout = action({
   args: scope,
   returns: v.null(),

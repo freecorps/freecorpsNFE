@@ -49,7 +49,6 @@ export const retentionClass = {
   coldObjectUploads: "control",
   platformPlanSettings: "control",
   platformPlanAllocations: "commercial",
-  platformPlanRequests: "commercial",
   platformPlanReceipts: "commercial",
   platformPlanTerms: "commercial",
   billingAccounts: "commercial",

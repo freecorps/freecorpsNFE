@@ -81,15 +81,8 @@ export async function openCheckout(
   return null;
 }
 
-/**
- * Pix and card never bill the same organization at once: a Pix request waits while a card
- * subscription will renew or a Checkout is open, in either Stripe mode.
- */
-export async function cardBlocksPix(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  now: number,
-) {
+/** A card subscription that will renew, or an open Checkout, in either Stripe mode. */
+export async function cardBilling(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
   const accounts = await ctx.db
     .query("billingAccounts")
     .withIndex("by_organizationId_and_livemode", (q) => q.eq("organizationId", organizationId))
@@ -98,23 +91,9 @@ export async function cardBlocksPix(
 }
 
 /**
- * A Pix request awaiting payment within its deadline (`endsAt`, its `payBy`): it holds the card.
- * One past the deadline can no longer be confirmed, and the next Pix request cancels it.
- */
-export async function pixPending(ctx: QueryCtx, organizationId: Id<"organizations">, now: number) {
-  const requests = await ctx.db
-    .query("platformPlanRequests")
-    .withIndex("by_organizationId_and_state", (q) =>
-      q.eq("organizationId", organizationId).eq("state", "awaiting_payment"),
-    )
-    .take(10);
-  return requests.some((request) => request.endsAt > now);
-}
-
-/**
  * Whether a card invoice granted this plan row. The row records no payment method, so this relies
  * on `applyInvoice`: every card grant that writes the row records, in `billingGrants`, the version
- * it wrote (`planVersion`), and any later write (a Pix confirmation, an operator's assignment)
+ * it wrote (`planVersion`), and any later write (an operator's assignment)
  * raises the row's version past it. The last 20 grants are enough: only the newest applied one can
  * match the row in force.
  */
@@ -125,113 +104,6 @@ export async function paidByCard(ctx: QueryCtx, plan: Doc<"usagePlans">) {
     .order("desc")
     .take(20);
   return grants.some((grant) => grant.state === "applied" && grant.planVersion === plan.version);
-}
-
-/** The end of a monthly Pix renewal starting at `firstPeriod`: the next anniversary of `anchor`. */
-export const renewalEnd = (request: { firstPeriod: number; anchor: number }) =>
-  termMonthStart(request.firstPeriod, 1, request.anchor);
-
-/** A month is at most 31 days: a renewal that started before this window has already ended. */
-const RENEWAL_WINDOW = 31 * 24 * 60 * 60 * 1000;
-/** The scheduled activation runs at the start; this long after it, the renewal is `overdue`. */
-const RENEWAL_OVERDUE = 10 * 60 * 1000;
-
-/**
- * A monthly Pix renewal paid before its start and not yet granted (`scheduled`, ADR 0012): it
- * holds the organization as a plan in force would, from now to the end of the month it bought. A
- * refused activation (`blockedCode`) waits for the team and no longer holds after that end. Only
- * renewals starting in the last 31 days are read, so ended rows that keep `scheduled` never crowd
- * out the current one. `availableAt` is when what it holds opens: its start, or, refused, its end.
- * `overdue`: its start passed 10 minutes ago and it was neither granted nor refused (an
- * activation that failed unexpectedly), so it needs the team as a refused one does.
- */
-export async function scheduledPixRenewal(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  now: number,
-) {
-  const rows = await ctx.db
-    .query("platformPlanRequests")
-    .withIndex("by_organizationId_and_scheduled_and_firstPeriod", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("scheduled", true)
-        .gt("firstPeriod", now - RENEWAL_WINDOW),
-    )
-    .take(5);
-  for (const request of rows) {
-    if (
-      request.state !== "activated" ||
-      request.firstPeriod === undefined ||
-      request.anchor === undefined
-    )
-      continue;
-    const span = { firstPeriod: request.firstPeriod, anchor: request.anchor };
-    const endsAt = renewalEnd(span);
-    if (endsAt <= now) continue;
-    const blocked = request.blockedCode !== undefined;
-    const overdue = !blocked && request.firstPeriod + RENEWAL_OVERDUE <= now;
-    return {
-      request,
-      startsAt: request.firstPeriod,
-      endsAt,
-      blocked,
-      overdue,
-      // Blocked or overdue, it still holds the organization until its end: never a past date.
-      availableAt: blocked || overdue ? endsAt : request.firstPeriod,
-    };
-  }
-  return null;
-}
-
-/**
- * Whether a monthly Pix confirmation wrote this plan row: the activated monthly request that
- * recorded its version (`planVersion`). A positive signal, unlike `paidByCard`: a row assigned by
- * an operator, or granted before the version was recorded, is not taken for Pix. Only the newest
- * activated requests can match the row in force.
- */
-export async function paidByPix(ctx: QueryCtx, plan: Doc<"usagePlans">) {
-  const requests = await ctx.db
-    .query("platformPlanRequests")
-    .withIndex("by_organizationId_and_state", (q) =>
-      q.eq("organizationId", plan.organizationId).eq("state", "activated"),
-    )
-    .order("desc")
-    .take(20);
-  return requests.some((request) => request.planVersion === plan.version);
-}
-
-/**
- * When the monthly Pix plan in force, with any renewal of it already paid, ends; null without
- * one. A monthly plan row of a catalog tier without a term, written by a Pix confirmation
- * (`paidByPix`), is a Pix plan. One paid plan at a time (ADR 0012): the monthly card Checkout
- * waits until then.
- */
-export async function pixMonthlyUntil(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-  now: number,
-) {
-  const renewal = await scheduledPixRenewal(ctx, organizationId, now);
-  const plan = await planFor(ctx, organizationId);
-  // A card that renews holds the plan in force; the Pix waits for it (`cardBlocksPix`).
-  const accounts = await ctx.db
-    .query("billingAccounts")
-    .withIndex("by_organizationId_and_livemode", (q) => q.eq("organizationId", organizationId))
-    .take(2);
-  const inForce =
-    !accounts.some(renews) &&
-    plan &&
-    plan.startsAt <= now &&
-    !planEnded(plan, now) &&
-    plan.endsAt !== null &&
-    !plan.termId &&
-    (plan.catalogTier === "intermediate" || plan.catalogTier === "large") &&
-    (await paidByPix(ctx, plan))
-      ? plan.endsAt
-      : null;
-  if (renewal) return Math.max(renewal.endsAt, inForce ?? 0);
-  return inForce;
 }
 
 /**
@@ -461,9 +333,9 @@ export async function applyInvoice(
 }
 
 /**
- * A paid annual invoice becomes one term (ADR 0010, decision 9), as a confirmed annual Pix does,
- * for the year of the subscription's anchor its yearly line bills (ADR 0012, invariant 6): the
- * first invoice, charged at the signing since slice 2b, from the anchor itself; a renewal from
+ * A paid annual invoice becomes one term (ADR 0010, decision 9) for the year of the
+ * subscription's anchor its yearly line bills (ADR 0012, invariant 6): the first invoice,
+ * charged at the signing since slice 2b, from the anchor itself; a renewal from
  * the anniversary 12(n − 1), which is the previous term's `endsAt`, so the renewal leaves no gap.
  * The term records the anchor as the one of its chain when it does not start on it, so its
  * months, its end and the quota periods of its plan count from it. The annual switch is not
@@ -488,7 +360,7 @@ async function applyAnnualInvoice(
   const organizationId = account.organizationId;
   const { tier, startsAt: firstPeriod, endsAt, anchor } = year;
   const paidAt = invoice.paidAt ?? now;
-  // The Pix `payBy`: the whole term only if paid within its first term month.
+  // The whole term only if paid within its first term month.
   if (paidAt >= termMonthStart(firstPeriod, 1, anchor) || now >= endsAt)
     return void (await record("blocked", "LATE_PAYMENT"));
   // Stripe charges a year when it starts: one starting after the anchor's month in force (a
@@ -603,9 +475,8 @@ async function renewalBelowUpgrade(
 /**
  * A paid annual upgrade (ADR 0010, decision 9), a one-off payment from the upgrade Checkout,
  * raises the card term in force to `tier` from `period`, the start of the term month it was sold
- * in (counted from the chain's anchor, ADR 0012), until the term ends, as the Pix confirmation
- * does (`upgradeTerm`). It must be paid within that term month (`LATE_PAYMENT` otherwise), and
- * the amount must be the difference the server prices on that term for that month. Every check
+ * in (counted from the chain's anchor, ADR 0012), until the term ends (`upgradeTerm`). It must be
+ * paid within that term month (`LATE_PAYMENT` otherwise), and the amount must be the difference the server prices on that term for that month. Every check
  * runs before any write, so a refusal is `blocked` for a person with the money already taken.
  * Applied, the account renews at `tier`: the reconciliation then moves the annual subscription to
  * that tier's yearly price, without proration and keeping the anchor, so the renewal date stays
@@ -651,9 +522,8 @@ async function applyAnnualUpgrade(
     if (!code) throw error;
     return void (await record("blocked", code));
   }
-  // The term of the month paid for, bought by card: a Pix term is upgraded by Pix.
-  if (term.firstPeriod > fromPeriod || term.source !== "stripe")
-    return void (await record("blocked", "ANNUAL_TERM_REQUIRED"));
+  // The term of the month paid for.
+  if (term.firstPeriod > fromPeriod) return void (await record("blocked", "ANNUAL_TERM_REQUIRED"));
   // A segment starts at the start of a term month, as the Checkout priced it.
   if (!isTermMonthStart(term.firstPeriod, fromPeriod, chainAnchor(term)))
     return void (await record("blocked", "INVOICE_UNEXPECTED"));

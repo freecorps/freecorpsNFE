@@ -157,7 +157,7 @@ describe("distribuição pública estática", () => {
     ]);
   });
 
-  // Since 03/11/2026 new plan sales are card only (docs/plataforma/BILLING.md, interruptor do Pix).
+  // Since 03/11/2026 plans are sold by card only (docs/plataforma/BILLING.md).
   it("anuncia na landing só o cartão como forma de pagamento", () => {
     const terms = parse(landing()).querySelector(".price-terms")?.textContent ?? "";
     expect(terms).toContain("Cartão pelo Stripe");

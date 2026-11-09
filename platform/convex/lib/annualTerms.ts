@@ -209,7 +209,7 @@ export type TermShape = {
   }[];
 };
 const REFERENCE = /^[a-zA-Z0-9_-]{8,120}$/;
-/** A payment reference a term can record (a Stripe invoice id or a Pix reference). */
+/** A payment reference a term can record: a Stripe invoice id. */
 export const isTermReference = (ref: string) => REFERENCE.test(ref);
 
 /**

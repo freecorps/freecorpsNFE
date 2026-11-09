@@ -12,7 +12,7 @@ import { requirePlatformEnvironment } from "./environment";
 import { FREECORPS_OPERATOR, operatorAndReason } from "./lib/issuanceGate";
 import { planFor } from "./lib/usageCore";
 import { planEnded } from "./lib/usageValues";
-import { cardBlocksPix, scheduledPixRenewal } from "./lib/billingCore";
+import { cardBilling } from "./lib/billingCore";
 import { activeTerm } from "./lib/planTerms";
 import { archiveStatus } from "./lib/coldArchiveCore";
 
@@ -131,23 +131,15 @@ export const close = mutation({
 
 /**
  * A plan the organization is still paying for: a plan not yet ended whose tier is not `free`
- * (paid, `custom` or without tier, from the older assisted assignment), a plan request awaiting
- * payment, a monthly Pix renewal paid and not yet started, an annual term not yet ended, or a
- * renewing card subscription or open Checkout. Freecorps never closes it on its own.
+ * (paid, `custom` or without tier, from the older assisted assignment), an annual term not yet
+ * ended, or a renewing card subscription or open Checkout. Freecorps never closes it on its own.
  */
 export async function paidPlanInForce(ctx: MutationCtx, organizationId: Id<"organizations">) {
   const plan = await planFor(ctx, organizationId);
   return !!(
     (plan && plan.catalogTier !== "free" && !planEnded(plan, Date.now())) ||
-    (await ctx.db
-      .query("platformPlanRequests")
-      .withIndex("by_organizationId_and_state", (q) =>
-        q.eq("organizationId", organizationId).eq("state", "awaiting_payment"),
-      )
-      .first()) ||
-    (await scheduledPixRenewal(ctx, organizationId, Date.now())) ||
     (await activeTerm(ctx, organizationId, Date.now())) ||
-    (await cardBlocksPix(ctx, organizationId, Date.now()))
+    (await cardBilling(ctx, organizationId, Date.now()))
   );
 }
 
@@ -157,7 +149,7 @@ export const OPERATOR_CLOSURE_LIMIT = 100;
 /**
  * Why the operator may not close this organization, or null. Checked: a plan not yet ended whose
  * tier is not `free` (paid, `custom` or without tier, from the older assisted assignment), a
- * platform plan receipt or annual term ever, a plan request awaiting payment, a renewing card
+ * platform plan receipt or annual term ever, a renewing card
  * subscription or an open Checkout; a production NFS-e probe; and, per company, the issuance
  * gate in production, a capture release ever granted, a Stripe connection in `production`, or a
  * fiscal document, artifact, import, issuance or capture stream in `production`. A company with fiscal history cannot be deleted (`companyHistory`), so the

@@ -2,12 +2,7 @@ import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  enablePix,
-  platformTest,
-  person,
-  usePlatformEnvironment,
-} from "../../tests/helpers/platform";
+import { platformTest, person, usePlatformEnvironment } from "../../tests/helpers/platform";
 import {
   billingConfig,
   invoiceGrant,
@@ -399,7 +394,6 @@ async function fixture() {
     admissionsUntil: Date.UTC(2027, 11, 31),
     evidence: "synthetic-local-proof",
   });
-  await enablePix(t);
   const fake = fakeStripe();
   const plan = () =>
     t.run((ctx) =>
@@ -961,19 +955,12 @@ describe("respostas inconsistentes do portal", () => {
   });
 });
 
-describe("interruptor do Pix na cobrança", () => {
-  it("billing:overview traz pixEnabled, com e sem o cartão configurado", async () => {
+describe("cartão sem configuração", () => {
+  it("billing:overview responde sem o cartão configurado", async () => {
     const f = await fixture();
-    expect((await f.billing()).pixEnabled).toBe(true);
-    await f.t.mutation(internal.plans.configurePix, {
-      enabled: false,
-      expectedVersion: 1,
-      evidence: "synthetic-pix-off",
-    });
-    expect((await f.billing()).pixEnabled).toBe(false);
     vi.stubEnv("STRIPE_BILLING_SECRET_KEY", "");
     vi.stubEnv("STRIPE_BILLING_WEBHOOK_SECRET", "");
-    expect(await f.billing()).toMatchObject({ card: false, pixEnabled: false });
+    expect(await f.billing()).toMatchObject({ card: false, account: null, checkout: null });
   });
 });
 
@@ -1122,49 +1109,6 @@ describe("ciclo da assinatura", () => {
     expect(response.status).toBe(400);
   });
 
-  it("o mensal no cartão espera o fim do Pix, mesmo num plano maior, e então cobra o mês inteiro", async () => {
-    const f = await fixture();
-    const request = await f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key: "pix-before-large",
-    });
-    await f.t.mutation(internal.plans.confirmPayment, {
-      requestId: request.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-pix-difference",
-      actor: "operator",
-    });
-    // One paid plan at a time (ADR 0012): the Pix month runs from 10/10 12:00 to 10/11 12:00 UTC.
-    const pixEnd = Date.UTC(2026, 10, 10, 12);
-    expect(
-      await refusal(
-        f.owner.action(api.billing.checkout, {
-          organizationId: f.organizationId,
-          tier: "large",
-          key: "large-during-pix",
-        }),
-      ),
-    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: pixEnd });
-    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
-    vi.setSystemTime(pixEnd);
-    const owner = await person(f.t, f.organizationId, "owner");
-    await owner.action(api.billing.checkout, {
-      organizationId: f.organizationId,
-      tier: "large",
-      key: "large-after-pix",
-    });
-    // The whole month at the recurring price, charged at the signing (ADR 0012, slice 2a).
-    const sent = f.fake.sent("/v1/checkout/sessions")[0]!.params;
-    expect(Object.fromEntries(sent)).toMatchObject({
-      mode: "subscription",
-      "line_items[0][price]": "price_large",
-      "subscription_data[metadata][grantCents]": "49900",
-    });
-    expect(sent.has("line_items[1][price_data][unit_amount]")).toBe(false);
-    expect(await f.plan()).toMatchObject({ catalogTier: "intermediate" });
-  });
-
   it("contrata pelo Checkout, só ativa com a fatura paga e não repete o efeito", async () => {
     const f = await fixture();
     const { url, customer } = await startCard(f);
@@ -1203,16 +1147,6 @@ describe("ciclo da assinatura", () => {
       }),
     ).toEqual({ url });
     expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(1);
-    // Card and Pix never run together.
-    expect(
-      await code(
-        f.owner.mutation(api.plans.requestPaid, {
-          organizationId: f.organizationId,
-          tier: "large",
-          key: "pix-while-card",
-        }),
-      ),
-    ).toBe("PAYMENT_METHOD_CARD");
     expect(
       await code(
         f.owner.action(api.billing.checkout, {
@@ -1306,7 +1240,7 @@ describe("ciclo da assinatura", () => {
         url: "https://invoice.stripe.com/i/synthetic",
       },
     });
-    // Recovered 4 days later: the whole month, as Pix, still on the anchor's anniversaries.
+    // Recovered 4 days later: the whole month, still on the anchor's anniversaries.
     vi.setSystemTime(DEC_10 + 4 * 86400_000);
     Object.assign(declined, { status: "paid", amount_paid: 14900 });
     sub.status = "active";
@@ -1444,7 +1378,7 @@ describe("ciclo da assinatura", () => {
     });
     expect((sub.items.data[0] as Json).price).toBe("price_int");
     expect(await f.plan()).toMatchObject({ catalogTier: "large", version: 2 });
-    // Cancel: no renewal, the paid period stays; Pix becomes possible again.
+    // Cancel: no renewal, the paid period stays.
     await owner.action(api.billing.changeRenewal, {
       organizationId: f.organizationId,
       change: "cancel",
@@ -1539,86 +1473,12 @@ describe("ciclo da assinatura", () => {
     ).toBe("2026-11-10T12:00:00.000Z");
   });
 
-  it("o mês pago por Pix não abre o cartão: pedido aguardando e plano em vigor recusam o Checkout", async () => {
-    const f = await fixture();
-    const request = await f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key: "pix-october",
-    });
-    const card = (key: string) =>
-      f.owner.action(api.billing.checkout, {
-        organizationId: f.organizationId,
-        tier: "intermediate",
-        key,
-      });
-    expect(await code(card("card-during-pix"))).toBe("PLAN_REQUEST_PENDING");
-    await f.t.mutation(internal.plans.confirmPayment, {
-      requestId: request.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-pix-ref",
-      actor: "operator",
-    });
-    // The same tier is no longer credited at R$ 0: the card waits for the Pix plan to end.
-    expect(await refusal(card("card-after-pix"))).toEqual({
-      code: "PAYMENT_METHOD_PIX",
-      availableAt: Date.UTC(2026, 10, 10, 12),
-    });
-    // A renewal already paid by Pix holds the card until the end of the month it bought.
-    const renewal = await f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key: "pix-renewal",
-    });
-    await f.t.mutation(internal.plans.confirmPayment, {
-      requestId: renewal.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-pix-renewal-ref",
-      actor: "operator",
-    });
-    expect(await refusal(card("card-after-renewal"))).toEqual({
-      code: "PAYMENT_METHOD_PIX",
-      availableAt: Date.UTC(2026, 11, 10, 12),
-    });
-    await f.t.mutation(internal.plans.configureAnnual, {
-      enabled: true,
-      expectedVersion: 1,
-      evidence: "synthetic-annual-on",
-    });
-    expect(
-      await refusal(
-        f.owner.action(api.billing.checkout, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "annual-after-renewal",
-          cycle: "annual",
-        }),
-      ),
-    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: Date.UTC(2026, 10, 10, 12) });
-    // A renewal whose activation was refused waits for the team until the end of its month.
-    await f.t.run((ctx) =>
-      ctx.db.patch("platformPlanRequests", renewal.id, { blockedCode: "PLANS_DISABLED" }),
-    );
-    expect(
-      await refusal(
-        f.owner.action(api.billing.checkout, {
-          organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "annual-after-blocked-renewal",
-          cycle: "annual",
-        }),
-      ),
-    ).toEqual({ code: "PAYMENT_METHOD_PIX", availableAt: Date.UTC(2026, 11, 10, 12) });
-    expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(0);
-    expect(f.fake.sent("/v1/coupons")).toHaveLength(0);
-  });
-
-  it("uma linha de tier do catálogo atribuída pelo operador não é tomada por Pix", async () => {
+  it("uma linha de tier do catálogo atribuída pelo operador não segura o cartão", async () => {
     const f = await fixture();
     await f.t.run((ctx) =>
       activateCatalogPlan(ctx, f.organizationId, "intermediate", OCT, NOV, 0, "op", "Atribuído"),
     );
-    // No Pix confirmation wrote the row: the card is not sent to wait for a Pix plan.
+    // No card invoice wrote the row: the upgrade by card is sold over it at once.
     expect(
       await code(
         f.owner.action(api.billing.checkout, {
@@ -1666,7 +1526,7 @@ describe("ciclo da assinatura", () => {
     expect((await f.billing()).reviews).toHaveLength(1);
   });
 
-  it("abandonar o Checkout expira a sessão no Stripe e libera o Pix", async () => {
+  it("abandonar o Checkout expira a sessão no Stripe e libera um novo Checkout", async () => {
     const f = await fixture();
     await startCard(f);
     await f.owner.action(api.billing.abandonCheckout, { organizationId: f.organizationId });
@@ -1674,10 +1534,10 @@ describe("ciclo da assinatura", () => {
     expect((await f.billing()).checkout).toBeNull();
     expect(
       await code(
-        f.owner.mutation(api.plans.requestPaid, {
+        f.owner.action(api.billing.checkout, {
           organizationId: f.organizationId,
-          tier: "intermediate",
-          key: "pix-after-abandon",
+          tier: "large",
+          key: "card-after-abandon",
         }),
       ),
     ).toBe("OK");
@@ -1989,8 +1849,8 @@ describe("mensal no cartão por aniversário (ADR 0012, fatia 2a)", () => {
         tier: "intermediate",
         firstPeriod: OCT,
         endsAt: termEndsAt(OCT),
-        source: "pix",
-        references: ["pix-annual-term-2a"],
+        source: "stripe",
+        references: ["in_annual_term_2a"],
         paidCents: 149000,
         purchasedAt: OCT,
         segments: [],
@@ -2026,8 +1886,8 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
         tier: "intermediate",
         firstPeriod,
         endsAt: termEndsAt(firstPeriod),
-        source: "pix",
-        references: [`pix-annual-${organizationId}`],
+        source: "stripe",
+        references: [`in_annual_${organizationId}`],
         paidCents: 149000,
         purchasedAt: firstPeriod,
         segments: [],
@@ -2046,15 +1906,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
           termId,
         );
       return termId;
-    });
-  const requestPix = (f: Fixture, key: string, tier: "intermediate" | "large" = "intermediate") =>
-    f.owner.mutation(api.plans.requestPaid, { organizationId: f.organizationId, tier, key });
-  const confirm = (f: Fixture, requestId: Id<"platformPlanRequests">, reference: string) =>
-    f.t.mutation(internal.plans.confirmPayment, {
-      requestId,
-      amountCents: 14900,
-      paymentReference: reference,
-      actor: "operator",
     });
   const checkoutLarge = (f: Fixture, key: string) =>
     f.owner.action(api.billing.checkout, { organizationId: f.organizationId, tier: "large", key });
@@ -2084,17 +1935,11 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     });
   });
 
-  it("no mês coberto, recusa Pix, confirmação, atribuição e gratuito sem mexer no plano anual", async () => {
+  it("no mês coberto, recusa atribuição e gratuito sem mexer no plano anual", async () => {
     const f = await fixture();
-    // Asked before the term existed, then paid by Pix under it.
-    const request = await requestPix(f, "pix-before-annual");
     const termId = await annual(f, f.organizationId, "active", { grant: true });
     const plan = await f.plan();
     expect(plan).toMatchObject({ catalogTier: "intermediate", termId, version: 1 });
-    expect(await code(requestPix(f, "pix-under-annual", "large"))).toBe("ANNUAL_TERM_ACTIVE");
-    expect(await code(confirm(f, request.id, "synthetic-pix-under-annual"))).toBe(
-      "ANNUAL_TERM_ACTIVE",
-    );
     expect(
       await code(
         f.t.mutation(internal.usage.assignPlan, {
@@ -2111,9 +1956,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
       ),
     ).toBe("ANNUAL_TERM_ACTIVE");
     expect(await f.plan()).toEqual(plan);
-    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", request.id))).toMatchObject({
-      state: "awaiting_payment",
-    });
     // The free tier activates without a term, for the covered month: refused too.
     const other = await f.org("Gratuito sob anual");
     const owner = await person(f.t, other, "owner");
@@ -2121,18 +1963,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     expect(await code(owner.mutation(api.plans.claimFree, { organizationId: other }))).toBe(
       "ANNUAL_TERM_ACTIVE",
     );
-  });
-
-  it("com um anual agendado, o Pix mensal espera o último mês dele", async () => {
-    const f = await fixture();
-    await annual(f, f.organizationId, "scheduled", { firstPeriod: NOV });
-    // One paid plan at a time (ADR 0012): a month from now would overlap the term; the monthly
-    // opens as its renewal, in its last month.
-    expect(await refusal(requestPix(f, "pix-before-scheduled"))).toEqual({
-      code: "ANNUAL_TERM_ACTIVE",
-      availableAt: Date.UTC(2027, 9, 1),
-    });
-    expect(await f.plan()).toBeNull();
   });
 
   it("recusa o Checkout mensal e bloqueia uma vez a fatura do mês coberto", async () => {
@@ -2200,19 +2030,15 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     ["expirado", "expired", OCT_1],
     // Ends on the 1st of this month: October is no longer covered.
     ["terminado no dia 1 deste mês", "active", Date.UTC(2025, 9, 1)],
-  ] as const)("com o termo %s, o Pix mensal volta a valer", async (_, state, firstPeriod) => {
-    const f = await fixture();
-    await annual(f, f.organizationId, state, { firstPeriod });
-    const request = await requestPix(f, "pix-after-annual");
-    await confirm(f, request.id, "synthetic-pix-after-annual");
-    // A month from the confirmation, anchored on it (ADR 0012).
-    expect(await f.plan()).toMatchObject({
-      catalogTier: "intermediate",
-      startsAt: OCT,
-      periodAnchor: OCT,
-      endsAt: Date.UTC(2026, 10, 10, 12),
-    });
-  });
+  ] as const)(
+    "com o termo %s, o mensal no cartão volta a ser vendido",
+    async (_, state, firstPeriod) => {
+      const f = await fixture();
+      await annual(f, f.organizationId, state, { firstPeriod });
+      expect(await code(checkoutLarge(f, "card-after-annual"))).toBe("OK");
+      expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(1);
+    },
+  );
 
   it("o acesso de um termo rescindido segura o mensal até o fim do mês do termo", async () => {
     const f = await fixture();
@@ -2224,11 +2050,7 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
       reason: "Cliente pediu a rescisão ao suporte",
     });
     expect(await f.plan()).toMatchObject({ termId, catalogTier: "intermediate", endsAt: NOV });
-    // One paid plan at a time (ADR 0012): not even a larger tier by the difference.
-    expect(await refusal(requestPix(f, "pix-over-rescinded", "large"))).toEqual({
-      code: "PLAN_UNAVAILABLE",
-      availableAt: NOV,
-    });
+    // One paid plan at a time (ADR 0012): not even a larger tier.
     expect(
       await refusal(
         f.owner.action(api.billing.checkout, {
@@ -2256,22 +2078,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
     expect(await f.plan()).toMatchObject({ termId, catalogTier: "intermediate", endsAt: NOV });
   });
 
-  it("no último mês do termo, o Pix mensal é a renovação no fim dele, com a âncora do termo", async () => {
-    const f = await fixture();
-    // November 2025 to November 2026: October is its last month.
-    const anchor = Date.UTC(2025, 10, 1);
-    await annual(f, f.organizationId, "active", { firstPeriod: anchor });
-    const request = await requestPix(f, "pix-last-month");
-    expect(await f.t.run((ctx) => ctx.db.get("platformPlanRequests", request.id))).toMatchObject({
-      start: "renewal",
-      firstPeriod: NOV,
-      anchor,
-      // Paid within the month it buys.
-      endsAt: DEC,
-      amountCents: 14900,
-    });
-  });
-
   it.each([
     ["coberto pelo termo", { state: "scheduled", firstPeriod: NOV }],
     // Only October, the month of the activation, is covered; it blocks instead of failing the sync.
@@ -2292,51 +2098,6 @@ describe("plano anual (ADR 0010, decisão 9)", () => {
       expect(await f.plan()).toBeNull();
     },
   );
-
-  it("o anual por Pix é recusado com Checkout aberto ou cartão que renova", async () => {
-    const f = await fixture();
-    await f.t.mutation(internal.plans.configureAnnual, {
-      enabled: true,
-      expectedVersion: 1,
-      evidence: "synthetic-annual-on",
-    });
-    const request = (start: "now" | "renewal", owner = f.owner) =>
-      owner.mutation(api.plans.requestPaid, {
-        organizationId: f.organizationId,
-        tier: "intermediate",
-        key: `annual-pix-${start}`,
-        cycle: "annual",
-        start,
-      });
-    const refusal = (start: "now" | "renewal") =>
-      request(start).then(
-        () => "OK",
-        (error: { data?: { code?: string; availableAt?: number } }) => error.data,
-      );
-    const annualPix = (start: "now" | "renewal") => code(request(start));
-    const { customer } = await startCard(f);
-    expect(await annualPix("now")).toBe("PAYMENT_METHOD_CARD");
-    const sub = f.fake.subscribe(customer, "intermediate");
-    f.fake.invoice(startInvoice(customer, sub.id, f.organizationId, 14900));
-    await f.t.action(internal.billing.sync, { organizationId: f.organizationId });
-    // While the card renews, no date is promised.
-    expect(await refusal("now")).toEqual({ code: "PAYMENT_METHOD_CARD" });
-    expect(await annualPix("renewal")).toBe("PAYMENT_METHOD_CARD");
-    expect(await f.t.run((ctx) => ctx.db.query("platformPlanRequests").collect())).toEqual([]);
-    // One paid plan at a time (ADR 0012): with the renewal cancelled, the card month still runs,
-    // and the Pix waits for its end, a new chain then, never a renewal across payment methods.
-    await f.owner.action(api.billing.changeRenewal, {
-      organizationId: f.organizationId,
-      change: "cancel",
-    });
-    expect(await refusal("renewal")).toEqual({
-      code: "PAYMENT_METHOD_CARD",
-      availableAt: NOV_10,
-    });
-    expect(await refusal("now")).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: NOV_10 });
-    vi.setSystemTime(NOV_10);
-    expect(await code(request("now", await person(f.t, f.organizationId, "owner")))).toBe("OK");
-  });
 
   it("não ativa um plano com o termo de outra organização", async () => {
     const f = await fixture();
@@ -2757,8 +2518,8 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
         tier: "large",
         firstPeriod: OCT_1,
         endsAt: termEndsAt(OCT_1),
-        source: "pix",
-        references: ["pix-annual-other-org"],
+        source: "stripe",
+        references: ["in_annual_other_org"],
         paidCents: 499000,
         purchasedAt: OCT_1,
         segments: [],
@@ -3098,7 +2859,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
     expect(await f.plan()).toMatchObject({ catalogTier: "large", endsAt: NOV });
   });
 
-  it("não retoma a assinatura anual com um anual por Pix agendado para depois do termo dela", async () => {
+  it("não retoma a assinatura anual com outro anual agendado para depois do termo dela", async () => {
     const f = await fixture();
     await f.t.mutation(internal.plans.configureAnnual, {
       enabled: true,
@@ -3111,43 +2872,27 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
     const renewal = (owner: Fixture["owner"], change: "cancel" | "resume") =>
       code(owner.action(api.billing.changeRenewal, { organizationId: f.organizationId, change }));
     expect(await renewal(f.owner, "cancel")).toBe("OK");
-    // In the card term's last month, a Pix annual waits for the card term to end (ADR 0012, one
-    // paid plan at a time): the renewal never crosses payment methods. The first session has
-    // expired by then; a manager signs in again.
+    // In the term's last month the first session has expired; a manager signs in again.
     vi.setSystemTime(Date.UTC(2027, 8, 15));
     const owner = await person(f.t, f.organizationId, "owner");
-    for (const start of ["now", "renewal"] as const)
-      expect(
-        await owner
-          .mutation(api.plans.requestPaid, {
-            organizationId: f.organizationId,
-            tier: "intermediate",
-            key: `pix-annual-after-card-${start}`,
-            cycle: "annual",
-            start,
-          })
-          .catch((error: { data?: unknown }) => error.data),
-      ).toEqual({ code: "PAYMENT_METHOD_CARD", availableAt: YEAR });
-    // A Pix term scheduled after it, as one sold before that rule.
+    // A term bought by another subscription, scheduled after this one.
     await f.t.run((ctx) =>
       insertTerm(ctx, {
         organizationId: f.organizationId,
         tier: "intermediate",
         firstPeriod: YEAR,
         endsAt: termEndsAt(YEAR),
-        source: "pix",
-        references: ["pix-annual-after-card"],
+        source: "stripe",
+        references: ["in_annual_after_card"],
+        stripeSubscriptionId: "sub_other_annual",
         paidCents: 149000,
         purchasedAt: Date.now(),
         segments: [],
         state: "scheduled",
       }),
     );
-    expect((await terms(f)).map((term) => [term.source, term.state])).toEqual([
-      ["stripe", "active"],
-      ["pix", "scheduled"],
-    ]);
-    // Resumed, the card would charge at its anchor a term the Pix one already covers.
+    expect((await terms(f)).map((term) => term.state)).toEqual(["active", "scheduled"]);
+    // Resumed, the card would charge at its anchor a term the other one already covers.
     expect(await renewal(owner, "resume")).toBe("ANNUAL_TERM_ACTIVE");
     expect(sub.cancel_at_period_end).toBe(true);
   });
@@ -3379,7 +3124,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
       expect(f.fake.sent(`/v1/subscriptions/${sub.id}`)).toHaveLength(1);
     });
 
-    it("recusa antes do Stripe: sem termo, termo Pix, Grande já em vigor, anual desligado, Checkout aberto e virada do mês do termo", async () => {
+    it("recusa antes do Stripe: sem termo, termo sem assinatura, Grande já em vigor, anual desligado, Checkout aberto e virada do mês do termo", async () => {
       const none = await fixture();
       await annualOn(none);
       none.fake.state.prices.push(...(YEARLY_PRICES as Json[]));
@@ -3395,16 +3140,17 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
         ),
       ).toBe("INVALID_REQUEST");
 
-      const pix = await fixture();
-      await annualOn(pix);
-      await pix.t.run(async (ctx) => {
+      // A term whose subscription this customer does not have: no price switch could follow.
+      const orphan = await fixture();
+      await annualOn(orphan);
+      await orphan.t.run(async (ctx) => {
         const termId = await insertTerm(ctx, {
-          organizationId: pix.organizationId,
+          organizationId: orphan.organizationId,
           tier: "intermediate",
           firstPeriod: OCT,
           endsAt: END,
-          source: "pix",
-          references: ["pix-annual-upgrade"],
+          source: "stripe",
+          references: ["in_annual_upgrade"],
           paidCents: 149000,
           purchasedAt: OCT,
           segments: [],
@@ -3412,7 +3158,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
         });
         await activateCatalogPlan(
           ctx,
-          pix.organizationId,
+          orphan.organizationId,
           "intermediate",
           OCT,
           END,
@@ -3422,7 +3168,7 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
           termId,
         );
       });
-      expect(await code(upgradeCheckout(pix))).toBe("PAYMENT_METHOD_PIX");
+      expect(await code(upgradeCheckout(orphan))).toBe("SUBSCRIPTION_REQUIRED");
 
       const { f } = await cardTerm();
       expect(await code(upgradeCheckout(f, { tier: "intermediate" }))).toBe("PLAN_UNAVAILABLE");
@@ -3450,18 +3196,6 @@ describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 00
           }),
         ),
       ).toBe("OPERATION_CONFLICT");
-      // An open Checkout keeps the Pix away.
-      expect(
-        await code(
-          (await person(f.t, f.organizationId, "owner")).mutation(api.plans.requestPaid, {
-            organizationId: f.organizationId,
-            tier: "large",
-            key: "pix-upgrade-under-card",
-            cycle: "annual",
-            start: "upgrade",
-          }),
-        ),
-      ).toBe("PAYMENT_METHOD_CARD");
       expect(f.fake.sent("/v1/checkout/sessions")).toHaveLength(1);
 
       vi.setSystemTime(OCT);
@@ -4055,8 +3789,8 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
         tier: "intermediate",
         firstPeriod,
         endsAt: termEndsAt(firstPeriod),
-        source: "pix",
-        references: [`pix-annual-${state}`],
+        source: "stripe",
+        references: [`in_annual_${state}`],
         paidCents: 149000,
         purchasedAt: OCT,
         segments: [],
@@ -4348,19 +4082,9 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     expect(f.fake.state.calls).toEqual([]);
   });
 
-  it("recusa com Pix aguardando ou Checkout aberto", async () => {
+  it("recusa com Checkout aberto", async () => {
     const f = await fixture();
     await annualOn(f);
-    const pix = await f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key: "pix-before-annual-card",
-    });
-    expect(await code(annualCheckout(f))).toBe("PLAN_REQUEST_PENDING");
-    await f.owner.mutation(api.plans.cancelRequest, {
-      organizationId: f.organizationId,
-      requestId: pix.id,
-    });
     await startCard(f);
     expect(await code(annualCheckout(f))).toBe("CHECKOUT_PENDING");
     await f.owner.action(api.billing.abandonCheckout, { organizationId: f.organizationId });
@@ -4436,20 +4160,24 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     ).toMatchObject({ id: sub.id, annual: true });
   });
 
-  it("sobre o mensal Pix de tier igual, o anual no cartão o substitui na hora; um mensal maior em vigor segura o anual menor com a data", async () => {
+  it("sobre um mensal atribuído de tier igual, o anual no cartão o substitui na hora; um mensal maior em vigor segura o anual menor com a data", async () => {
     const f = await fixture();
     await annualOn(f);
-    const request = await f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key: "pix-monthly-before-annual",
-    });
-    await f.t.mutation(internal.plans.confirmPayment, {
-      requestId: request.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-pix-monthly-annual",
-      actor: "operator",
-    });
+    // A monthly Intermediário without a card behind it, as one assigned by the operator.
+    await f.t.run((ctx) =>
+      activateCatalogPlan(
+        ctx,
+        f.organizationId,
+        "intermediate",
+        OCT,
+        NOV_10,
+        0,
+        "operator",
+        "Mensal",
+        undefined,
+        OCT,
+      ),
+    );
     expect(await f.plan()).toMatchObject({ catalogTier: "intermediate", endsAt: NOV_10 });
     await annualCheckout(f);
     const { sub } = payAnnual(f, await customerOf(f));
@@ -4506,8 +4234,8 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
         tier: "intermediate",
         firstPeriod: OCT_1,
         endsAt: termEndsAt(OCT_1),
-        source: "pix",
-        references: ["pix-annual-rescinded"],
+        source: "stripe",
+        references: ["in_annual_rescinded"],
         paidCents: 149000,
         purchasedAt: OCT_1,
         segments: [],
@@ -4665,27 +4393,27 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     expect((await view()).annualBlocked).toBe(false);
   });
 
-  it("o anual no cartão espera o fim de um termo Pix, mesmo no último mês dele", async () => {
+  it("o anual no cartão espera o fim de um termo em vigor, mesmo no último mês dele", async () => {
     const f = await fixture();
-    const PIX_FIRST = Date.UTC(2025, 10, 1);
+    const FIRST = Date.UTC(2025, 10, 1);
     await f.t.run((ctx) =>
       insertTerm(ctx, {
         organizationId: f.organizationId,
         tier: "intermediate",
-        firstPeriod: PIX_FIRST,
-        endsAt: termEndsAt(PIX_FIRST),
-        source: "pix",
-        references: ["pix-annual-ending"],
+        firstPeriod: FIRST,
+        endsAt: termEndsAt(FIRST),
+        source: "stripe",
+        references: ["in_annual_ending"],
         paidCents: 149000,
-        purchasedAt: PIX_FIRST,
+        purchasedAt: FIRST,
         segments: [],
         state: "active",
       }),
     );
-    expect(termEndsAt(PIX_FIRST)).toBe(NOV);
+    expect(termEndsAt(FIRST)).toBe(NOV);
     // A monthly card would renew into the term's months.
     expect(await code(startCard(f))).toBe("ANNUAL_TERM_ACTIVE");
-    // October is the Pix term's last month: the card annual, a new chain, waits for its end
+    // October is the term's last month: a new annual, a new chain, waits for its end
     // (ADR 0012, one paid plan at a time).
     await annualOn(f);
     expect(await refusal(annualCheckout(f))).toEqual({
@@ -4700,20 +4428,20 @@ describe("Checkout anual por cartão (ADR 0012, fatia 2b)", () => {
     ).toMatchObject({ annualBlocked: true });
   });
 
-  it("um termo Pix que termina no meio do mês segura o anual no cartão até o fim dele", async () => {
+  it("um termo que termina no meio do mês segura o anual no cartão até o fim dele", async () => {
     const f = await fixture();
     // 15/10/2026 14:30 to 15/10/2027 14:30 UTC.
-    const PIX_START = Date.UTC(2026, 9, 15, 14, 30);
+    const START = Date.UTC(2026, 9, 15, 14, 30);
     await f.t.run((ctx) =>
       insertTerm(ctx, {
         organizationId: f.organizationId,
         tier: "intermediate",
-        firstPeriod: PIX_START,
-        endsAt: termEndsAt(PIX_START),
-        source: "pix",
-        references: ["pix-annual-mid-month"],
+        firstPeriod: START,
+        endsAt: termEndsAt(START),
+        source: "stripe",
+        references: ["in_annual_mid_month"],
         paidCents: 149000,
-        purchasedAt: PIX_START,
+        purchasedAt: START,
         segments: [],
         state: "active",
       }),

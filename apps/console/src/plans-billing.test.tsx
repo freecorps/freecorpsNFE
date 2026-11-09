@@ -40,9 +40,7 @@ function overview(patch: Partial<BillingOverview> = {}): BillingOverview {
     checkout: null,
     reviews: [],
     plan: null,
-    pixPending: false,
     annualEnabled: false,
-    pixEnabled: true,
     subscriptionTerm: false,
     annualBlocked: false,
     ...patch,
@@ -81,7 +79,7 @@ afterEach(() => {
 });
 const show = (org: Organization = owner) => render(<PlanBilling org={org} contextKey="test" />);
 
-it("mostra carregamento, erro e o Pix quando o cartão está desligado", () => {
+it("mostra carregamento, erro e o plano quando o cartão está desligado", () => {
   show();
   expect(screen.getByText("Carregando cobrança…")).toBeTruthy();
   cleanup();
@@ -92,8 +90,11 @@ it("mostra carregamento, erro e o Pix quando o cartão está desligado", () => {
   state.queryError = null;
   state.data = overview({ card: false, plan: { tier: "large", endsAt: NOV } });
   show();
-  expect(screen.getByText("Pix assistido")).toBeTruthy();
+  expect(screen.getByText("Contratação indisponível no momento.")).toBeTruthy();
+  expect(screen.queryByText("Forma de pagamento")).toBeNull();
+  expect(screen.getByText("Grande, até 01/11/2026 às 00:00 UTC")).toBeTruthy();
   expect(screen.getByText("O pagamento por cartão está indisponível no momento.")).toBeTruthy();
+  expect(document.body.textContent).not.toContain("Pix");
   expect(screen.queryByRole("button")).toBeNull();
 });
 
@@ -560,8 +561,8 @@ it("after the Checkout is abandoned, the next one is a new intention", async () 
   expect(keys()[2]).not.toBe(keys()[0]);
 });
 
-it("com o Pix desligado, a cobrança fala só do cartão", () => {
-  state.data = overview({ annualEnabled: true, pixEnabled: false });
+it("a cobrança fala só do cartão", () => {
+  state.data = overview({ annualEnabled: true });
   show();
   expect(
     screen.getByText(
@@ -570,8 +571,4 @@ it("com o Pix desligado, a cobrança fala só do cartão", () => {
   ).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Assinar Grande anual no cartão" }));
   expect(screen.getByRole("alertdialog").textContent).not.toContain("Pix");
-  cleanup();
-  state.data = overview({ card: false, pixEnabled: false });
-  show();
-  expect(screen.getByText("Contratação indisponível no momento.")).toBeTruthy();
 });

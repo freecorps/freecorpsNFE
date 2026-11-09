@@ -64,7 +64,7 @@ const ended = ["canceled", "incomplete_expired"];
 
 /**
  * The plan in force and its end, the UTC instant it was bought until: a monthly plan ends on an
- * anniversary of its signing or confirmation (ADR 0012), by card or Pix.
+ * anniversary of its signing (ADR 0012).
  */
 const planUntil = (plan: { tier: string; endsAt: number | null }) =>
   `${tierNames[plan.tier] ?? plan.tier}${plan.endsAt ? `, até ${formatUtcInstant(plan.endsAt)}` : ", sem vencimento"}`;
@@ -81,11 +81,6 @@ function failure(error: unknown) {
       "O Stripe não respondeu. Nada foi cobrado por esta tentativa; tente novamente em instantes.",
     PLANS_DISABLED: "A contratação de planos está indisponível no momento.",
     PLAN_UNAVAILABLE: "Esta mudança de plano está indisponível. Confira a situação atual.",
-    PLAN_REQUEST_PENDING:
-      "Há um pedido por Pix aguardando pagamento. Cancele-o antes de usar o cartão.",
-    // One paid plan at a time (ADR 0012): the card waits for the plan paid by Pix to end.
-    PAYMENT_METHOD_PIX:
-      "Há um plano pago por Pix em vigor ou uma renovação dele já paga. O cartão espera o fim dele.",
     CHECKOUT_PENDING: "Já existe um pagamento por cartão em andamento.",
     // The upgrade closes 45 minutes before the month of the plan turns, with the date it
     // reopens, and the annual one also in the last 72 hours of the annual plan.
@@ -104,9 +99,9 @@ function failure(error: unknown) {
 }
 
 /**
- * Card subscription next to the assisted Pix: method, period, next charge, pending items. Only
- * owners and admins read billing (`billing.overview` refuses the other roles), so the card is
- * not shown to them at all.
+ * Card subscription, the only way to buy a paid plan: method, period, next charge, pending
+ * items. Only owners and admins read billing (`billing.overview` refuses the other roles), so the
+ * card is not shown to them at all.
  */
 export function PlanBilling({ org, contextKey }: { org: Organization; contextKey: string }) {
   if (org.role !== "owner" && org.role !== "admin") return null;
@@ -179,8 +174,8 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
   const renewing = !!live && !live.cancelAtPeriodEnd;
   const current = data.plan && data.plan.tier in monthly ? (data.plan.tier as PaidTier) : null;
   const renewal = data.account?.renewalTier ?? live?.tier ?? null;
-  const method = live ? "Cartão, pelo Stripe" : current ? "Pix assistido" : "Nenhum";
-  const blocked = !canManage || action.busy || !!data.checkout || data.pixPending;
+  const method = live ? "Cartão, pelo Stripe" : current ? "Sem cobrança recorrente" : "Nenhum";
+  const blocked = !canManage || action.busy || !!data.checkout;
   // An annual subscription that bought no term: its charge is still being read, or it was
   // blocked for the team. No paid months come from it.
   const termless = !!live?.annual && !data.subscriptionTerm;
@@ -228,15 +223,10 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
 
   if (!data.card)
     return (
-      <Card
-        title="Cobrança"
-        description={
-          data.pixEnabled ? "Pagamento por Pix assistido." : "Contratação indisponível no momento."
-        }
-      >
+      <Card title="Cobrança" description="Contratação indisponível no momento.">
+        {/* Without the card configured, nothing tells whether a subscription still charges. */}
         <DescriptionList
           items={[
-            { term: "Forma de pagamento", value: current ? "Pix assistido" : "Nenhum" },
             {
               term: "Plano e período",
               value: data.plan ? planUntil(data.plan) : "Sem plano em vigor",
@@ -249,11 +239,7 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
   return (
     <Card
       title="Cobrança"
-      description={
-        data.pixEnabled
-          ? "Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC, ou Pix assistido. Uma forma de pagamento por vez."
-          : "Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC."
-      }
+      description="Cartão com renovação automática todo mês, no dia e horário da contratação, em UTC."
       actions={
         live ? (
           <StatusBadge tone={live.status === "active" ? "success" : "warning"}>
@@ -359,9 +345,6 @@ export function Billing({ org, data }: { org: Organization; data: BillingOvervie
                 }`}
           . O link vale até {utcDateTime(data.checkout.expiresAt)}.
         </Callout>
-      ) : null}
-      {data.pixPending ? (
-        <p className="gestao-help">Há um pedido por Pix aguardando pagamento.</p>
       ) : null}
       {canManage && data.annualEnabled && renewing && !live.annual ? (
         <p className="gestao-help">

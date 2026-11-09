@@ -50,10 +50,6 @@ export const annualOn = (
   settings: Pick<Doc<"platformPlanSettings">, "enabled" | "annual"> | null,
 ) => settings?.enabled === true && settings.annual?.enabled === true;
 export const annualEnabled = async (ctx: QueryCtx) => annualOn(await planSettings(ctx));
-/** The assisted Pix sale is on only while the catalog is on too; the card does not depend on it. */
-export const pixOn = (settings: Pick<Doc<"platformPlanSettings">, "enabled" | "pix"> | null) =>
-  settings?.enabled === true && settings.pix?.enabled === true;
-export const pixEnabled = async (ctx: QueryCtx) => pixOn(await planSettings(ctx));
 
 export async function requirePlanAdmissions(ctx: QueryCtx) {
   const settings = await requirePlansEnabled(ctx);
@@ -92,7 +88,7 @@ export async function assertEntityCapacity(
 /**
  * Admission reserves the whole stock, not an optimistic average. Custody is never recycled by
  * cancellation. The admission window (`admissionsUntil`) only gates a new reservation: an
- * organization that already holds the reservation of the offer renews, by card or Pix, or moves
+ * organization that already holds the reservation of the offer renews, by card, or moves
  * down after the window closes (#549). A first plan or an upgrade still needs the window open.
  */
 export async function allocatePlan(
@@ -164,7 +160,7 @@ export async function allocateOffer(
 
 /**
  * The quota anchor of the plan rows a term grants (ADR 0012, section 4): the anchor of the term's
- * chain (`chainAnchor`), truncated to the whole second, so a Pix renewal keeps the periods of the
+ * chain (`chainAnchor`), truncated to the whole second, so a renewal keeps the periods of the
  * term it follows and a chain anchored on 29/02 does not drift to 28/02. A card term's chain is
  * its subscription's `billing_cycle_anchor` (slice 2b); one bought before it starts on a 1st at
  * 00:00 UTC, so its keys stay `AAAA-MM`.
@@ -175,13 +171,12 @@ const termAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" | "anchor
 /**
  * Without `termId`, a monthly activation: refused when an annual term overlaps it from `startsAt`
  * to `endsAt` (`monthlyBlockedByTerm`), which it would shorten. With `monthlyAnchor`, a monthly
- * Pix grant from slice 1c of ADR 0012 or a card one from slice 2a, the row's quotas count by that
- * anchor's months (`periodAnchor`): it is truncated to the second, not after `startsAt`, and
- * `endsAt` is one of its monthly anniversaries (`INVALID_REQUEST` otherwise, invariant 4). Every
- * card grant passes it (`applyInvoice`); without it, as the Free plan or a Pix request made
- * before slice 1c, by the civil UTC month. With `termId`, the plan row records the term it grants
- * and the
- * anchor of the term's chain as `periodAnchor` (`termAnchor`), and the grant must match the term
+ * card grant from slice 2a of ADR 0012, the row's quotas count by that anchor's months
+ * (`periodAnchor`): it is truncated to the second, not after `startsAt`, and `endsAt` is one of
+ * its monthly anniversaries (`INVALID_REQUEST` otherwise, invariant 4). Every card grant passes it
+ * (`applyInvoice`); without it, as the Free plan, by the civil UTC month. With `termId`, the plan
+ * row records the term it grants and the anchor of the term's chain as `periodAnchor`
+ * (`termAnchor`), and the grant must match the term
  * (`INVALID_REQUEST` otherwise): same organization, `scheduled` or `active`, the tier in force at
  * `startsAt`, `startsAt` within the term and `endsAt` equal to the term's.
  */
@@ -265,7 +260,7 @@ export async function activateCatalogPlan(
 }
 
 /**
- * Records a paid annual term and starts it, for Pix and card alike (ADR 0010, decision 9). A
+ * Records a paid annual term and starts it (ADR 0010, decision 9). A
  * term whose `firstPeriod`, its start instant, has arrived grants the plan now over
  * `expectedVersion`; one starting later reserves the stock now and is activated at its
  * `firstPeriod` (`plans:activateScheduledTerm`), while the current plan runs until then. The
@@ -317,7 +312,7 @@ export async function grantTerm(
 
 /**
  * Raises an `active` term to `upgrade.tier` from `upgrade.fromPeriod`, the start of one of its
- * term months, until its end (ADR 0010, decision 9), for Pix and card alike, and grants the plan
+ * term months, until its end (ADR 0010, decision 9), and grants the plan
  * now over `expectedVersion`. The end and the renewal date stay; the upgrade becomes a segment, or
  * the term's `tier` in its first term month, which it covers whole. The charge is added to
  * `references`, `paidCents` and `upgrades`; `purchasedAt` stays the annual charge's. The grant
@@ -518,9 +513,8 @@ async function rescindOne(
  * "Rescindir" (ADR 0010, decision 9, and the owner's decision of 30/10/2026), through support: the
  * server computes the refund, which the operator pays back by hand (`recordTermRefund`); nothing
  * here calls a Stripe refund. A `scheduled` renewal of the term, already paid and unused, is
- * rescinded with it with everything paid back, so no term remains to renew. An annual Pix
- * request awaiting payment (a renewal or an upgrade) is cancelled, and the Stripe subscription
- * of a card term is cancelled at once (`billing:stopTermRenewal`), so nothing is charged again;
+ * rescinded with it with everything paid back, so no term remains to renew. The Stripe
+ * subscription of the term is cancelled at once (`billing:stopTermRenewal`), so nothing is charged again;
  * an open upgrade Checkout is expired, here and at Stripe (`billing:expireCheckout`), so the term
  * is not raised after it ends. The same `key` answers the rescission already made, and a key that
  * undid an upgrade of the term is `OPERATION_CONFLICT`; another key on a rescinded term is
@@ -542,18 +536,6 @@ export async function rescindTerm(ctx: MutationCtx, args: OperatorAction) {
   await rescindOne(ctx, term, { key: args.key, operator, reason }, now);
   for (const renewal of renewals)
     await rescindOne(ctx, renewal, { key: args.key, operator, reason, after: term._id }, now);
-  const pending = await ctx.db
-    .query("platformPlanRequests")
-    .withIndex("by_organizationId_and_state", (q) =>
-      q.eq("organizationId", term.organizationId).eq("state", "awaiting_payment"),
-    )
-    .take(10);
-  for (const request of pending)
-    if (request.cycle === "annual")
-      await ctx.db.patch("platformPlanRequests", request._id, {
-        state: "cancelled",
-        updatedAt: now,
-      });
   for (const state of ["open", "creating"] as const) {
     const checkouts = await ctx.db
       .query("billingCheckouts")
@@ -573,7 +555,7 @@ export async function rescindTerm(ctx: MutationCtx, args: OperatorAction) {
   }
   const subscriptions = new Set(
     [term, ...renewals].flatMap((row) =>
-      row.source === "stripe" && row.stripeSubscriptionId ? [row.stripeSubscriptionId] : [],
+      row.stripeSubscriptionId ? [row.stripeSubscriptionId] : [],
     ),
   );
   for (const subscriptionId of subscriptions)
@@ -632,7 +614,7 @@ export async function undoTermUpgrade(ctx: MutationCtx, args: OperatorAction) {
     `operator:${operator}`,
     "Upgrade anual desfeito em 7 dias",
   );
-  if (term.source === "stripe" && term.stripeSubscriptionId && term.endsAt > now) {
+  if (term.stripeSubscriptionId && term.endsAt > now) {
     const accounts = await ctx.db
       .query("billingAccounts")
       .withIndex("by_organizationId_and_livemode", (q) =>
@@ -833,15 +815,6 @@ export async function purgePlanRecords(
             .withIndex("by_organizationId", (q) => q.eq("organizationId", organizationId))
             .take(n),
         del("capacityAccounts"),
-      ),
-    () =>
-      drain<"platformPlanRequests">(
-        (n) =>
-          ctx.db
-            .query("platformPlanRequests")
-            .withIndex("by_organizationId_and_key", (q) => q.eq("organizationId", organizationId))
-            .take(n),
-        del("platformPlanRequests"),
       ),
     () =>
       drain<"platformPlanTerms">(

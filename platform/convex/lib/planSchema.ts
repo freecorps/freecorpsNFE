@@ -11,7 +11,7 @@ export const termState = v.union(
 
 /**
  * One of the operator's statements that part of a computed refund was paid back, by hand (a
- * Stripe refund or a Pix): what it returned, its reference, who did it and when it was recorded.
+ * Stripe refund): what it returned, its reference, who did it and when it was recorded.
  * A card refund cannot exceed the charge it returns, so the annual charge and an upgrade may take
  * one refund each; together they make the computed amount. The server never refunds by itself.
  */
@@ -50,10 +50,6 @@ export const planTables = {
     annual: v.optional(
       v.object({ enabled: v.boolean(), evidence: v.string(), updatedAt: v.number() }),
     ),
-    /** Assisted Pix sale switch; missing is off, and it needs `enabled` too. */
-    pix: v.optional(
-      v.object({ enabled: v.boolean(), evidence: v.string(), updatedAt: v.number() }),
-    ),
   }).index("by_key", ["key"]),
   platformPlanAllocations: defineTable({
     organizationId: v.id("organizations"),
@@ -83,80 +79,11 @@ export const planTables = {
   })
     .index("by_organizationId", ["organizationId"])
     .index("by_paymentReference", ["paymentReference"]),
-  platformPlanRequests: defineTable({
-    organizationId: v.id("organizations"),
-    tier: paidTier,
-    key: v.string(),
-    amountCents: v.number(),
-    /**
-     * The civil UTC month bought, `AAAA-MM`, on monthly requests made before slice 1c of ADR 0012,
-     * which still buy it when confirmed. Annual requests written before ADR 0012 have it too. The
-     * newer requests do not: their plans run from anniversary to anniversary.
-     */
-    period: v.optional(v.string()),
-    /**
-     * Monthly requests from slice 1c (ADR 0012): `now`, a month from the confirmation, with a new
-     * anchor; `renewal`, from `firstPeriod`, the end of the Pix plan in force, keeping its anchor
-     * (`anchor`); `upgrade`, the plan in force raised now, with the same period and anchor. Missing
-     * on a monthly request made before 1c, which buys the civil month `period`, and on annual
-     * requests, whose start is read from the other fields (`startOf` in `plans.ts`).
-     */
-    start: v.optional(v.union(v.literal("now"), v.literal("renewal"), v.literal("upgrade"))),
-    /**
-     * A monthly `renewal` paid before its `firstPeriod`: confirmed (`activated`) and waiting for
-     * `plans:activatePixRenewal` at that instant, which clears it. `blockedCode` records why that
-     * activation was refused; the operator resolves it and runs the activation again.
-     */
-    scheduled: v.optional(v.boolean()),
-    blockedCode: v.optional(v.string()),
-    /**
-     * A monthly request: the `usagePlans` version its grant wrote, so the row in force is known to
-     * be paid by Pix (`pixMonthlyUntil`). Missing on requests confirmed before it was recorded.
-     */
-    planVersion: v.optional(v.number()),
-    startsAt: v.number(),
-    endsAt: v.number(),
-    expectedVersion: v.number(),
-    state: v.union(v.literal("awaiting_payment"), v.literal("activated"), v.literal("cancelled")),
-    requestedBy: v.string(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-    paymentReference: v.optional(v.string()),
-    /** Missing is monthly. An annual request is paid in full (`annualCents`) and grants a term. */
-    cycle: v.optional(v.union(v.literal("monthly"), v.literal("annual"))),
-    /**
-     * A renewal, annual or monthly: the instant it starts, the end of the plan it renews. Missing
-     * on a `now`, which starts at the confirmation (ADR 0012). From ADR 0012, `endsAt` is the
-     * payment deadline (`payBy`): 7 days after the request for `now`; the end of the first month
-     * it buys for a renewal (the whole month, for a monthly one); the end of the current term
-     * month for an annual upgrade and the end of the plan in force for a monthly one. On a monthly
-     * request made before slice 1c, `endsAt` is the end of the civil month bought.
-     */
-    firstPeriod: v.optional(v.number()),
-    /**
-     * A renewal only: the anchor of the chain it continues (`platformPlanTerms.anchor`, or the
-     * `usagePlans.periodAnchor` of the monthly plan it grants).
-     */
-    anchor: v.optional(v.number()),
-    /**
-     * An annual upgrade (`start: "upgrade"`): the term it raises. `firstPeriod` is then the start
-     * of the term month the upgrade starts and `amountCents` the difference over the months left.
-     */
-    termId: v.optional(v.id("platformPlanTerms")),
-  })
-    .index("by_organizationId_and_key", ["organizationId", "key"])
-    .index("by_organizationId_and_state", ["organizationId", "state"])
-    .index("by_organizationId_and_scheduled_and_firstPeriod", [
-      "organizationId",
-      "scheduled",
-      "firstPeriod",
-    ])
-    .index("by_paymentReference", ["paymentReference"]),
   /**
-   * One annual term (ADR 0010, decisions 4.2 and 9, and ADR 0012). Times are UTC instants in ms:
-   * the card still starts on a 1st at 00:00 UTC, the Pix at the confirmation, truncated to the
-   * second, or at the end of the plan it renews. `endsAt` is `termEndsAt(firstPeriod, anchor)`;
-   * `assertTermShape` checks each write (`insertTerm`).
+   * One annual term (ADR 0010, decisions 4.2 and 9, and ADR 0012), bought by card through Stripe.
+   * Times are UTC instants in ms: a first term starts at the anchor of its subscription, the
+   * signing, and a renewal at the end of the term it follows. `endsAt` is
+   * `termEndsAt(firstPeriod, anchor)`; `assertTermShape` checks each write (`insertTerm`).
    * While a `scheduled` or `active` term has not ended, the monthly paths refuse
    * (`ANNUAL_TERM_ACTIVE`, `activeTerm`).
    */
@@ -169,16 +96,16 @@ export const planTables = {
     tier: paidTier,
     firstPeriod: v.number(),
     /**
-     * The anchor of the chain the term continues (ADR 0012, section 1), stored on a Pix renewal:
-     * the first term's start, or the anchor of the monthly it renews. Its months, its end and the
-     * quota periods of the plan it grants (`usagePlans.periodAnchor`) count from it, so a chain
-     * anchored on 29/02 does not drift to 28/02. Missing, the term is its own anchor, as every
-     * term written before 1b and every card term.
+     * The anchor of the chain the term continues (ADR 0012, section 1), stored on a renewal: the
+     * anchor of the subscription that bought it. Its months, its end and the quota periods of the
+     * plan it grants (`usagePlans.periodAnchor`) count from it, so a chain anchored on 29/02 does
+     * not drift to 28/02. Missing, the term is its own anchor, as every first term.
      */
     anchor: v.optional(v.number()),
     endsAt: v.number(),
-    source: v.union(v.literal("stripe"), v.literal("pix")),
-    /** Stripe invoice IDs or Pix payment references of the charges of this term. */
+    /** How the term was paid: by card, through Stripe, the only way to buy a plan. */
+    source: v.literal("stripe"),
+    /** Stripe invoice IDs of the charges of this term. */
     references: v.array(v.string()),
     /** The Stripe subscription whose invoice bought a `stripe` term; it renews this term. */
     stripeSubscriptionId: v.optional(v.string()),

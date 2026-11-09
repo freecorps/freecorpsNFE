@@ -115,18 +115,20 @@ a franquia inteira. O cliente escolhe iniciar agora ou no próximo mês antes
 do pagamento. Implantação não é cobrada. Em 27/10/2026 o mantenedor escolheu
 cobrar por cartão recorrente no Stripe, mantendo o Pix assistido (#556): o
 cartão renovava no dia 1, 00:00 UTC, com as mesmas regras de upgrade, downgrade e
-cancelamento, e o Pix continua sem débito automático. Inadimplência sem
+cancelamento, e o Pix ficava sem débito automático. Inadimplência sem
 carência e reembolso ou contestação só sinalizados foram decididos em
-28/10/2026. A integração está em [BILLING.md](BILLING.md) e não liga o
-catálogo, que segue desligado.
+28/10/2026. Em 03/11/2026 o mantenedor deixou de aceitar Pix, e o Pix
+assistido saiu do código em 09/11/2026 (#125): a venda é só pelo cartão. A
+integração está em [BILLING.md](BILLING.md) e não liga o catálogo, que segue
+desligado.
 
 Em 03/11/2026 o dono trocou o mês civil dos planos pagos pelo período por
 aniversário, a partir da contratação, para a assinatura e para as cotas. Com
 isso, a escolha entre iniciar agora ou no próximo mês deixa de existir. O
 Gratuito continua no mês civil UTC. A decisão está na
 [ADR 0012](../adr/0012-periodo-por-aniversario.md) e está implementada no
-código: o mensal e o anual, pelo Pix e pelo cartão, correm de aniversário a
-aniversário, e o anual no cartão é cobrado e começa na contratação. Ligar o
+código: o mensal e o anual no cartão correm de aniversário a aniversário, e o
+anual é cobrado e começa na contratação. Ligar o
 catálogo ou o anual ainda espera a prova hospedada; os termos de uso 1.2, com
 esse modelo, entraram no console em 04/11/2026
 ([BILLING.md](BILLING.md#período-por-aniversário-decidido-em-03112026)).

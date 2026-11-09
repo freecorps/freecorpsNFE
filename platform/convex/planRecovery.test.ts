@@ -6,7 +6,6 @@ import { PLATFORM_PLANS } from "./lib/planCatalog";
 import { assignPlan } from "./usage";
 import { resumeArchived } from "./plans";
 import {
-  enablePix,
   person,
   platformTest,
   usePlatformEnvironment,
@@ -78,7 +77,6 @@ async function fixture() {
     admissionsUntil: MONTH_END,
     evidence: "synthetic-prefunded-admission",
   });
-  await enablePix(t);
   return { t, organizationId, otherId, args: assignment(organizationId) };
 }
 
@@ -87,7 +85,6 @@ function persisted(t: PlatformTest) {
   return t.run(async (ctx) => ({
     plans: await ctx.db.query("usagePlans").collect(),
     receipts: await ctx.db.query("platformPlanReceipts").collect(),
-    requests: await ctx.db.query("platformPlanRequests").collect(),
     audit: await ctx.db.query("usagePlanAudit").collect(),
     settings: await ctx.db.query("platformPlanSettings").collect(),
     allocations: await ctx.db.query("platformPlanAllocations").collect(),
@@ -352,49 +349,6 @@ describe("atribuição comercial com policy habilitada", () => {
     await refusesAtomically(
       f.t,
       () => f.t.mutation(internal.usage.assignPlan, f.args),
-      "OPERATION_CONFLICT",
-    );
-  });
-
-  it("não reutiliza pagamento de catálogo em custom nem recibo custom na confirmação de catálogo", async () => {
-    const f = await fixture();
-    const owner = await person(f.t, f.otherId, "owner");
-    const request = await owner.mutation(api.plans.requestPaid, {
-      organizationId: f.otherId,
-      tier: "intermediate",
-      key: "synthetic-paid-plan",
-    });
-    const payment = {
-      requestId: request.id,
-      amountCents: request.amountCents,
-      paymentReference: "synthetic-catalog-receipt",
-      actor: "operador-sintetico",
-    };
-    await f.t.mutation(internal.plans.confirmPayment, payment);
-    await refusesAtomically(
-      f.t,
-      () =>
-        f.t.mutation(internal.usage.assignPlan, {
-          ...f.args,
-          commercial: { ...f.args.commercial!, paymentReference: payment.paymentReference },
-        }),
-      "OPERATION_CONFLICT",
-    );
-    await f.t.mutation(internal.usage.assignPlan, f.args);
-    const upgrade = await owner.mutation(api.plans.requestPaid, {
-      organizationId: f.otherId,
-      tier: "large",
-      key: "synthetic-paid-upgrade",
-    });
-    await refusesAtomically(
-      f.t,
-      () =>
-        f.t.mutation(internal.plans.confirmPayment, {
-          ...payment,
-          requestId: upgrade.id,
-          amountCents: upgrade.amountCents,
-          paymentReference: f.args.commercial!.paymentReference,
-        }),
       "OPERATION_CONFLICT",
     );
   });

@@ -7,6 +7,9 @@ trabalho em 29/10/2026 e registradas na
 10 e 11 resolvem as antigas pendências 4, 5 e 6 e estão no
 [comentário da #642](https://github.com/freecorps/freecorpsNFE-arquivo/issues/642#issuecomment-6510521089) que as registra. As
 [Pendências do dono](#pendências-do-dono) que restam não estão decididas.
+Desde 09/11/2026 o Pix assistido não está mais no código (#125): o cartão é a
+única forma de pagamento, e as menções ao Pix abaixo ficam só como registro da
+decisão ([BILLING.md](../plataforma/BILLING.md)).
 
 Esta ADR complementa a [ADR 0009](0009-custodia-fria-de-organizacoes-abertas.md);
 as decisões 5 e 6 a ajustam. A emenda da

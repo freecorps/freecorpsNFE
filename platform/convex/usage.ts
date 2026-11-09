@@ -215,14 +215,10 @@ export const assignPlan = internalMutation({
       )
         deny("INVALID_REQUEST");
       if (
-        (await ctx.db
+        await ctx.db
           .query("platformPlanReceipts")
           .withIndex("by_paymentReference", (q) => q.eq("paymentReference", terms.paymentReference))
-          .first()) ||
-        (await ctx.db
-          .query("platformPlanRequests")
-          .withIndex("by_paymentReference", (q) => q.eq("paymentReference", terms.paymentReference))
-          .first())
+          .first()
       )
         deny("OPERATION_CONFLICT");
       await allocateOffer(ctx, args.organizationId, "custom", {

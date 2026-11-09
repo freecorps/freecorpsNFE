@@ -1,7 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
-  TERM_MONTHS,
   assertTermShape,
   remainingMonths,
   rescissionCents,
@@ -35,10 +34,6 @@ export const chainAnchor = (term: Pick<Doc<"platformPlanTerms">, "firstPeriod" |
 /** The term month holding `at` (`termMonthAt`, counted from the chain's anchor). */
 export const termMonth = (term: TermClock, at: number) =>
   termMonthAt(term.firstPeriod, at, chainAnchor(term));
-
-/** The start of the term's last month: a Pix renewal may be asked from it (ADR 0012). */
-export const termLastMonth = (term: TermClock) =>
-  termMonthStart(term.firstPeriod, TERM_MONTHS - 1, chainAnchor(term));
 
 const span = (term: TermClock) => ({
   startsAt: term.firstPeriod,
@@ -98,7 +93,7 @@ export async function termsEnd(ctx: QueryCtx, organizationId: Id<"organizations"
 
 /**
  * Why a new annual term starting at the instant `start` cannot be sold: a term already covers
- * that instant, or another term is scheduled and not yet ended at `now`. A renewal requested in an
+ * that instant, or another term is scheduled and not yet ended at `now`. A renewal charged in an
  * active term's last month starts at its `endsAt`, which it no longer covers, so the renewal
  * leaves no gap; a scheduled term that ended blocked (`TERM_ENDED`) no longer stops new sales.
  */

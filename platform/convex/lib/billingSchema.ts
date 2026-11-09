@@ -45,7 +45,7 @@ export const billingEventState = v.union(
   v.literal("failed"),
 );
 
-/** Card subscriptions through Stripe (#556). Pix stays in `platformPlanRequests`. */
+/** Card subscriptions through Stripe (#556). */
 export const billingTables = {
   /** One Stripe customer per organization; the customer id is the only link Stripe sends back. */
   billingAccounts: defineTable({

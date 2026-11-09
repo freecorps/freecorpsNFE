@@ -1,14 +1,10 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "./_generated/api";
-import {
-  enablePix,
-  platformTest,
-  person,
-  usePlatformEnvironment,
-} from "../../tests/helpers/platform";
+import { platformTest, person, usePlatformEnvironment } from "../../tests/helpers/platform";
 import { PLATFORM_PLANS } from "./lib/planCatalog";
-import { reserveUsage } from "./lib/usageCore";
-import { annualEnabled, pixEnabled, requireEntitySlot } from "./lib/planCore";
+import { activateCatalogPlan, annualEnabled, requireEntitySlot } from "./lib/planCore";
+import { planFor } from "./lib/usageCore";
+import { addMonths } from "./lib/annualTerms";
 import { consoleProjectFor } from "../../tests/helpers/console";
 import { normalizeCnpj } from "../../packages/fiscal-core/src/cnpj";
 import type { Id } from "./_generated/dataModel";
@@ -32,8 +28,8 @@ async function fixture() {
     }),
   );
   const owner = await person(t, organizationId, "owner");
-  const configure = async (custodyCents = 100000) => {
-    const version = await t.mutation(internal.plans.configure, {
+  const configure = async (custodyCents = 100000) =>
+    t.mutation(internal.plans.configure, {
       enabled: true,
       expectedVersion: 0,
       filesBytes: 10 * 2 ** 30,
@@ -43,9 +39,6 @@ async function fixture() {
       admissionsUntil: Date.now() + 86400000,
       evidence: "synthetic-local-proof",
     });
-    await enablePix(t);
-    return version;
-  };
   return { t, organizationId, owner, configure };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
@@ -75,24 +68,27 @@ const createCompany = (owner: Owner, organizationId: Id<"organizations">, n: num
       postalCode: "01000-000",
     },
   });
-async function payIntermediate(
-  f: Fixture,
-  owner: Owner,
-  organizationId: Id<"organizations">,
-  key: string,
-) {
-  const request = await owner.mutation(api.plans.requestPaid, {
-    organizationId,
-    tier: "intermediate",
-    key,
+/**
+ * A month of Intermediário from now, granted as a paid card invoice grants it (`applyInvoice`):
+ * the catalog plan over the version in force, anchored at the payment.
+ */
+const grantIntermediate = (f: Fixture, organizationId: Id<"organizations">) =>
+  f.t.run(async (ctx) => {
+    const anchor = Math.floor(Date.now() / 1000) * 1000;
+    const version = (await planFor(ctx, organizationId))?.version ?? 0;
+    await activateCatalogPlan(
+      ctx,
+      organizationId,
+      "intermediate",
+      anchor,
+      addMonths(anchor, 1),
+      version,
+      "stripe:in_synthetic",
+      "Pagamento mensal por cartão confirmado (Stripe)",
+      undefined,
+      anchor,
+    );
   });
-  await f.t.mutation(internal.plans.confirmPayment, {
-    requestId: request.id,
-    amountCents: 14900,
-    paymentReference: `${key}-receipt`,
-    actor: "operator",
-  });
-}
 const companyCount = (f: Fixture, organizationId: Id<"organizations">) =>
   f.t.run(
     async (ctx) =>
@@ -116,13 +112,6 @@ it("denies enrollment without rollout, unauthorized roles and cross-organization
       asOf: Date.now(),
       organizationId: f.organizationId,
       contextKey: "test",
-    }),
-  ).rejects.toThrow("ACCESS_DENIED");
-  await expect(
-    viewer.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "large",
-      key: "request-invalid",
     }),
   ).rejects.toThrow("ACCESS_DENIED");
   await expect(
@@ -182,134 +171,6 @@ it("refuses enrollment without prefunded company cash and rolls back every reser
   expect(await f.t.run((ctx) => ctx.db.query("platformPlanAllocations").collect())).toEqual([]);
 });
 
-it("charges the full month, activates only on operator confirmation and deduplicates payment", async () => {
-  const f = await fixture();
-  await f.configure();
-  const args = {
-    organizationId: f.organizationId,
-    tier: "intermediate" as const,
-    key: "synthetic-payment-1",
-  };
-  const request = await f.owner.mutation(api.plans.requestPaid, args);
-  // No civil month is bought (ADR 0012): the month runs from the confirmation.
-  expect(request).toEqual({ id: request.id, amountCents: 14900 });
-  expect(await f.t.run((ctx) => ctx.db.query("platformPlanAllocations").collect())).toEqual([]);
-  expect(await f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique())).toMatchObject({
-    allocatedCustodyCents: 0,
-    allocatedFilesBytes: 0,
-  });
-  expect(await f.owner.mutation(api.plans.requestPaid, args)).toEqual(request);
-  expect(
-    (
-      await f.owner.query(api.plans.overview, {
-        asOf: Date.now(),
-        organizationId: f.organizationId,
-        contextKey: "test",
-      })
-    ).subscription,
-  ).toBeNull();
-  const payment = {
-    requestId: request.id,
-    amountCents: 14900,
-    paymentReference: "synthetic-bank-reference",
-    actor: "operator",
-  };
-  await expect(
-    f.t.mutation(internal.plans.confirmPayment, { ...payment, amountCents: 14899 }),
-  ).rejects.toThrow("PLAN_REQUEST_UNAVAILABLE");
-  await f.t.mutation(internal.plans.confirmPayment, payment);
-  await f.t.mutation(internal.plans.confirmPayment, payment);
-  expect(
-    (
-      await f.owner.query(api.plans.overview, {
-        asOf: Date.now(),
-        organizationId: f.organizationId,
-        contextKey: "test",
-      })
-    ).subscription,
-  ).toMatchObject({ tier: "intermediate", version: 1, endsAt: Date.UTC(2026, 10, 30, 12) });
-});
-
-it("upgrade bills the full difference, preserves usage and never duplicates custody", async () => {
-  const f = await fixture();
-  await f.configure();
-  const first = await f.owner.mutation(api.plans.requestPaid, {
-    organizationId: f.organizationId,
-    tier: "intermediate",
-    key: "synthetic-first",
-  });
-  await f.t.mutation(internal.plans.confirmPayment, {
-    requestId: first.id,
-    amountCents: 14900,
-    paymentReference: "synthetic-first-receipt",
-    actor: "operator",
-  });
-  await f.t.run((ctx) =>
-    reserveUsage(ctx, f.organizationId, "production", "imports", "before-upgrade", 1),
-  );
-  const next = await f.owner.mutation(api.plans.requestPaid, {
-    organizationId: f.organizationId,
-    tier: "large",
-    key: "synthetic-upgrade",
-  });
-  expect(next.amountCents).toBe(35000);
-  await expect(
-    f.t.mutation(internal.plans.confirmPayment, {
-      requestId: next.id,
-      amountCents: 35000,
-      paymentReference: "synthetic-first-receipt",
-      actor: "operator",
-    }),
-  ).rejects.toThrow("OPERATION_CONFLICT");
-  await f.t.mutation(internal.plans.confirmPayment, {
-    requestId: next.id,
-    amountCents: 35000,
-    paymentReference: "synthetic-upgrade-receipt",
-    actor: "operator",
-  });
-  expect(await f.t.run((ctx) => ctx.db.query("usageEvents").collect())).toHaveLength(1);
-  expect(await f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique())).toMatchObject({
-    allocatedCustodyCents: 28000,
-  });
-});
-
-it("cancellation never grants quota or recycles custody, and expired payment cannot activate", async () => {
-  const f = await fixture();
-  await f.configure();
-  const request = await f.owner.mutation(api.plans.requestPaid, {
-    organizationId: f.organizationId,
-    tier: "intermediate",
-    key: "synthetic-cancel",
-  });
-  await f.owner.mutation(api.plans.cancelRequest, {
-    organizationId: f.organizationId,
-    requestId: request.id,
-  });
-  await expect(
-    f.t.mutation(internal.plans.confirmPayment, {
-      requestId: request.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-cancel-receipt",
-      actor: "operator",
-    }),
-  ).rejects.toThrow("PLAN_REQUEST_UNAVAILABLE");
-  const next = await f.owner.mutation(api.plans.requestPaid, {
-    organizationId: f.organizationId,
-    tier: "intermediate",
-    key: "synthetic-expire",
-  });
-  // The request is paid within 7 days.
-  vi.setSystemTime(Date.UTC(2026, 10, 7, 12));
-  await expect(
-    f.t.mutation(internal.plans.confirmPayment, {
-      requestId: next.id,
-      amountCents: 14900,
-      paymentReference: "synthetic-expire-receipt",
-      actor: "operator",
-    }),
-  ).rejects.toThrow("PLAN_REQUEST_UNAVAILABLE");
-});
-
 it("enforces entity capacity and cannot disable enforcement to evade quotas", async () => {
   const f = await fixture();
   await f.configure();
@@ -364,8 +225,8 @@ it("Intermediário admits the fifth company and refuses the sixth, counting each
     }),
   );
   const otherOwner = await person(f.t, otherId, "owner");
-  await payIntermediate(f, f.owner, f.organizationId, "synthetic-five");
-  await payIntermediate(f, otherOwner, otherId, "synthetic-other-five");
+  await grantIntermediate(f, f.organizationId);
+  await grantIntermediate(f, otherId);
   // The other organization fills its own five slots first, with the same CNPJs.
   for (let n = 1; n <= 5; n++) await createCompany(otherOwner, otherId, n);
   for (let n = 1; n <= 5; n++)
@@ -379,7 +240,7 @@ it("Intermediário admits the fifth company and refuses the sixth, counting each
 it("an Intermediário activated with three companies keeps them until the next activation copies the catalog", async () => {
   const f = await fixture();
   await f.configure();
-  await payIntermediate(f, f.owner, f.organizationId, "synthetic-before");
+  await grantIntermediate(f, f.organizationId);
   // A plan activated before the catalog moved to five companies holds its own copy.
   await f.t.run(async (ctx) => {
     const plan = (await ctx.db.query("usagePlans").unique())!;
@@ -387,11 +248,11 @@ it("an Intermediário activated with three companies keeps them until the next a
   });
   for (let n = 1; n <= 3; n++) await createCompany(f.owner, f.organizationId, n);
   await expect(createCompany(f.owner, f.organizationId, 4)).rejects.toThrow("QUOTA_EXCEEDED");
-  // The month ends on 30/11 at 12:00 UTC, a month after the confirmation; the next one is paid
-  // after it, with a fresh session, since the first one expired meanwhile.
+  // The month ends on 30/11 at 12:00 UTC, a month after the payment; the next one is paid after
+  // it, with a fresh session, since the first one expired meanwhile.
   vi.setSystemTime(Date.UTC(2026, 10, 30, 13));
   const owner = await person(f.t, f.organizationId, "owner");
-  await payIntermediate(f, owner, f.organizationId, "synthetic-renewal");
+  await grantIntermediate(f, f.organizationId);
   await createCompany(owner, f.organizationId, 4);
   await createCompany(owner, f.organizationId, 5);
   await expect(createCompany(owner, f.organizationId, 6)).rejects.toThrow("QUOTA_EXCEEDED");
@@ -510,108 +371,6 @@ describe("annual switch", () => {
       await ctx.db.patch("platformPlanSettings", row._id, { enabled: false });
     });
     expect((await settings(f))?.annual?.enabled).toBe(true);
-    expect(await isOn(f)).toBe(false);
-  });
-});
-
-describe("Pix switch", () => {
-  const pix = (
-    f: Fixture,
-    enabled: boolean,
-    expectedVersion: number,
-    evidence = "cartao-somente",
-  ) => f.t.mutation(internal.plans.configurePix, { enabled, expectedVersion, evidence });
-  const settings = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanSettings").unique());
-  const isOn = (f: Fixture) => f.t.run((ctx) => pixEnabled(ctx));
-  const view = (f: Fixture) =>
-    f.owner.query(api.plans.overview, {
-      asOf: Date.now(),
-      organizationId: f.organizationId,
-      contextKey: "pix",
-    });
-  const request = (f: Fixture, key: string) =>
-    f.owner.mutation(api.plans.requestPaid, {
-      organizationId: f.organizationId,
-      tier: "intermediate",
-      key,
-    });
-  const requests = (f: Fixture) => f.t.run((ctx) => ctx.db.query("platformPlanRequests").collect());
-  /** The catalog on without the fixture's Pix: what a deployment has before `configurePix`. */
-  const catalogOnly = (f: Fixture) =>
-    f.t.mutation(internal.plans.configure, {
-      enabled: true,
-      expectedVersion: 0,
-      filesBytes: 10 * 2 ** 30,
-      databaseBytes: 2 ** 30,
-      custodyCents: 100000,
-      freeMonthlyCents: 10000,
-      admissionsUntil: Date.now() + 86400000,
-      evidence: "synthetic-local-proof",
-    });
-
-  it("is off by default: the request is refused before anything is written", async () => {
-    const f = await fixture();
-    await expect(pix(f, true, 0)).rejects.toThrow("PLANS_DISABLED");
-    await catalogOnly(f);
-    expect(await isOn(f)).toBe(false);
-    expect((await view(f)).pixEnabled).toBe(false);
-    await expect(request(f, "pix-while-off")).rejects.toThrow("PIX_DISABLED");
-    expect(await requests(f)).toEqual([]);
-    // The free tier does not go through Pix.
-    await f.owner.mutation(api.plans.claimFree, { organizationId: f.organizationId });
-  });
-
-  it("turned off, keeps the request already made and its confirmation", async () => {
-    const f = await fixture();
-    await catalogOnly(f);
-    expect(await pix(f, true, 1)).toBe(2);
-    expect((await view(f)).pixEnabled).toBe(true);
-    const made = await request(f, "pix-before-off");
-    expect(await pix(f, false, 2, "so-cartao-por-ora")).toBe(3);
-    expect(await settings(f)).toMatchObject({
-      pix: { enabled: false, evidence: "so-cartao-por-ora", updatedAt: Date.now() },
-    });
-    expect((await view(f)).pixEnabled).toBe(false);
-    expect(await request(f, "pix-before-off")).toEqual(made);
-    await expect(request(f, "pix-after-off")).rejects.toThrow("PIX_DISABLED");
-    await f.t.mutation(internal.plans.confirmPayment, {
-      requestId: made.id,
-      amountCents: 14900,
-      paymentReference: "pix-before-off-receipt",
-      actor: "operator",
-    });
-    expect((await view(f)).subscription?.tier).toBe("intermediate");
-  });
-
-  it("refuses a stale version and short evidence, and survives a catalog reconfiguration", async () => {
-    const f = await fixture();
-    await catalogOnly(f);
-    await expect(pix(f, true, 0)).rejects.toThrow("OPERATION_CONFLICT");
-    await expect(pix(f, true, 1, "curta")).rejects.toThrow("INVALID_REQUEST");
-    await pix(f, true, 1);
-    const before = (await settings(f))!;
-    await f.t.mutation(internal.plans.configure, {
-      enabled: true,
-      expectedVersion: 2,
-      filesBytes: before.filesBytes,
-      databaseBytes: before.databaseBytes,
-      custodyCents: before.custodyCents + 1,
-      freeMonthlyCents: before.freeMonthlyCents,
-      admissionsUntil: before.admissionsUntil,
-      evidence: "synthetic-more-custody",
-    });
-    expect(await settings(f)).toMatchObject({ version: 3, pix: before.pix });
-    expect(await isOn(f)).toBe(true);
-  });
-
-  it("is off whenever the catalog is off, even with the Pix flag set", async () => {
-    const f = await fixture();
-    await f.configure();
-    await f.t.run(async (ctx) => {
-      const row = (await ctx.db.query("platformPlanSettings").unique())!;
-      await ctx.db.patch("platformPlanSettings", row._id, { enabled: false });
-    });
-    expect((await settings(f))?.pix?.enabled).toBe(true);
     expect(await isOn(f)).toBe(false);
   });
 });

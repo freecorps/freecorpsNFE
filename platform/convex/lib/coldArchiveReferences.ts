@@ -281,7 +281,6 @@ export const ARCHIVE_TEXT_UNRELATED = [
   "organizationAudit.target",
   "outboxEvents.eventId",
   "platformFreeClaims.authUserId",
-  "platformPlanRequests.key",
   // The operator's idempotency keys of a rescission and of a withdrawn upgrade (ADR 0010, D3).
   "platformPlanTerms.rescission.key",
   "platformPlanTerms.stripeSubscriptionId",
