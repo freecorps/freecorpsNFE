@@ -144,7 +144,8 @@ pareceres por decisão própria, assumindo o risco, e registrou:
   trazem a atribuição, o aviso completo do W3C para o XMLDSig e, no NFS-e, a
   CC BY-ND 3.0 do portal. A pendência `xsd-permission` sai dos dois pacotes.
 - **Patches e assets:** os patches dos pacotes `@convex-dev/*` ficam sob
-  Apache-2.0, como os originais, inclusive os arquivos novos do rate-limiter;
+  Apache-2.0, como os originais. Desde 09/11/2026 (#142) o rate-limiter
+  modificado fica em `packages/convex-rate-limiter`, com `LICENSE` e `NOTICE`;
   [patches/README.md](../../patches/README.md) registra arquivos, autoria e
   data como aviso de modificação. `public/favicon.svg` e `public/icons.svg` do
   legado, sem uso e com logotipos de terceiros, foram removidos.

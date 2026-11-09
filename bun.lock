@@ -93,6 +93,13 @@
         "zod": "4.6.7",
       },
     },
+    "packages/convex-rate-limiter": {
+      "name": "@freecorps/convex-rate-limiter",
+      "version": "0.3.2-freecorps.1",
+      "peerDependencies": {
+        "convex": "^1.48.0",
+      },
+    },
     "packages/fiscal-core": {
       "name": "@freecorps/fiscal-core",
       "version": "0.1.0",
@@ -134,9 +141,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@convex-dev/better-auth": "0.12.5",
-        "@convex-dev/rate-limiter": "0.3.2",
         "@convex-dev/workpool": "0.4.13",
         "@freecorps/contracts": "workspace:*",
+        "@freecorps/convex-rate-limiter": "workspace:*",
         "@freecorps/fiscal-core": "workspace:*",
         "@freecorps/fiscal-nfe": "workspace:*",
         "@freecorps/fiscal-nfse": "workspace:*",
@@ -150,7 +157,6 @@
   },
   "patchedDependencies": {
     "convex-test@0.0.60": "patches/convex-test@0.0.60.patch",
-    "@convex-dev/rate-limiter@0.3.2": "patches/@convex-dev%2Frate-limiter@0.3.2.patch",
     "@convex-dev/better-auth@0.12.5": "patches/@convex-dev%2Fbetter-auth@0.12.5.patch",
   },
   "overrides": {
@@ -250,8 +256,6 @@
 
     "@convex-dev/better-auth": ["@convex-dev/better-auth@0.12.5", "", { "dependencies": { "@better-fetch/fetch": "^1.1.18", "common-tags": "^1.8.2", "convex-helpers": "^0.1.95", "jose": "^6.1.0", "remeda": "^2.32.0", "semver": "^7.7.3", "type-fest": "^5.0.0", "zod": "^4.0.0" }, "peerDependencies": { "better-auth": ">=1.6.11 <1.7.0", "convex": "^1.25.0", "react": "^18.3.1 || ^19.0.0" } }, "sha512-YFUbGk04OlINno9FpOTNZN67AP+kSQsblfep5zs1f/WTgMWjD5FymU6rSSh3mu52gukmDNnBJTjC/lj4QRpjlQ=="],
 
-    "@convex-dev/rate-limiter": ["@convex-dev/rate-limiter@0.3.2", "", { "peerDependencies": { "convex": "^1.24.8", "react": "^18.2.0 || ^19.0.0" }, "optionalPeers": ["react"] }, "sha512-+oBPsBfFbzdxiF/9XaaTQmVnvDlvEfg/c69/v8LxTbw4VLuiflIKlfnPQL8OS0azXQQ11hcPWHmU8ytFmHKDXA=="],
-
     "@convex-dev/workpool": ["@convex-dev/workpool@0.4.13", "", { "dependencies": { "@convex-dev/batch-worker": "^0.2.2" }, "peerDependencies": { "convex": "^1.36.1", "convex-helpers": "^0.1.94" } }, "sha512-mGJ6mfeI0sY6MEW5f61jkgXBtdUxYZxA3AJCvn53oT6uPGPY0HpGwo/u0qzKoBAiE6ppZWyIR1tzJfX++hVF5Q=="],
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
@@ -343,6 +347,8 @@
     "@freecorps/console": ["@freecorps/console@workspace:apps/console"],
 
     "@freecorps/contracts": ["@freecorps/contracts@workspace:packages/contracts"],
+
+    "@freecorps/convex-rate-limiter": ["@freecorps/convex-rate-limiter@workspace:packages/convex-rate-limiter"],
 
     "@freecorps/docs": ["@freecorps/docs@workspace:apps/docs"],
 

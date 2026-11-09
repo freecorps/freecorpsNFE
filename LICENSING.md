@@ -115,9 +115,11 @@ fica em `docs/licenses/texts/shadcn-LICENSE` para uma distribuição que inclua
 esse histórico. As buscas de 20/10 e 28/10 não acharam código do shadcn/ui na
 árvore atual.
 Essas revisões identificam os textos consultados, não a origem exata de cada
-linha adaptada no passado. Patches de Better Auth, Workpool e Rate Limiter
-ficam em `patches/`,
-com as versões no lock, e conservam a licença dos respectivos componentes.
+linha adaptada no passado. Os patches de Better Auth e `convex-test` ficam em
+`patches/`, com as versões no lock, e conservam a licença dos respectivos
+componentes. O Rate Limiter modificado fica em `packages/convex-rate-limiter`,
+privado, sob Apache-2.0 como o original, com `LICENSE` e o aviso de
+modificação em `NOTICE`.
 
 ## Schemas e fontes de dados
 

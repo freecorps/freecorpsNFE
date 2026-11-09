@@ -1,4 +1,4 @@
-import { RateLimiter } from "@convex-dev/rate-limiter";
+import { RateLimiter } from "@freecorps/convex-rate-limiter";
 import { components, internal } from "../_generated/api";
 import type { ActionCtx, MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "169ed001f7b86f6b374abd7d886f2cf4aba553822c712eace97e30c34cbd2619",
+  "lockSha256": "c87b6ca945fc7268d6c7d1e09bfb1b7af4ed16f6e427e13e057525c145d568f8",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -407,20 +407,6 @@
           "workspace": "platform",
           "kind": "dependencies",
           "dependency": "@convex-dev/better-auth"
-        }
-      ]
-    },
-    {
-      "id": "@convex-dev/rate-limiter@0.3.2",
-      "declaredLicense": "Apache-2.0",
-      "source": "https://registry.npmjs.org/%40convex-dev%2Frate-limiter/0.3.2",
-      "integrity": "sha512-+oBPsBfFbzdxiF/9XaaTQmVnvDlvEfg/c69/v8LxTbw4VLuiflIKlfnPQL8OS0azXQQ11hcPWHmU8ytFmHKDXA==",
-      "repository": "git+https://github.com/get-convex/rate-limiter.git",
-      "direct": [
-        {
-          "workspace": "platform",
-          "kind": "dependencies",
-          "dependency": "@convex-dev/rate-limiter"
         }
       ]
     },

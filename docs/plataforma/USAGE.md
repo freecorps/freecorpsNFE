@@ -487,7 +487,7 @@ teto aceito pelo conector. A [proposta comercial](PLATFORM-PLAN-PROPOSAL.md#limi
 explica o efeito no saldo e mantém o teto técnico de 120 consultas autorizadas
 por empresa em qualquer hora. Esses limites não aumentam com o preço do plano.
 
-O componente `@convex-dev/rate-limiter` existente aplica 120 admissões/minuto
+O componente `@freecorps/convex-rate-limiter` existente aplica 120 admissões/minuto
 por organização e 60 por chave, além dos limites específicos de cada domínio.
 Os orçamentos REST e de uso dividem o saldo em oito partições, sem renovar
 a cota na transição. A recusa consulta todo o saldo disponível e não consome
@@ -589,7 +589,7 @@ função diretamente.
 
 O wrapper das rotas `/v1/*` autenticadas por API key admite até 60 requisições
 por chave e 120 por organização, compartilhadas entre projetos e rotas.
-Usa o componente `@convex-dev/rate-limiter` com token buckets de capacidade
+Usa o componente `@freecorps/convex-rate-limiter` com token buckets de capacidade
 60/120 e reposição contínua de 60/120 tokens por minuto. Os dois saldos são
 conferidos e debitados na mesma mutation. Uma recusa por chave não consome o
 saldo da organização. A mutation termina antes da validação do corpo,
@@ -749,7 +749,7 @@ dessa compactação.
 A rodada hospedada de 05/10/2026
 acompanha a republicação da validação e a contenção na admissão REST.
 Uma chamada ao componente confere e consome os dois orçamentos REST na mesma
-transação. O patch `rateLimitMany` reutiliza os contadores existentes e também
+transação. O `rateLimitMany` do componente reutiliza os contadores existentes e também
 atende os limites de uso por organização/chave. Recusa continua sem consumir
 qualquer orçamento, e os limites não mudam.
 

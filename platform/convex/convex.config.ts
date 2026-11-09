@@ -1,6 +1,6 @@
 import { defineApp } from "convex/server";
 import betterAuth from "@convex-dev/better-auth/convex.config";
-import rateLimiter from "@convex-dev/rate-limiter/convex.config";
+import rateLimiter from "@freecorps/convex-rate-limiter/convex.config";
 import workpool from "@convex-dev/workpool/convex.config";
 import { v } from "convex/values";
 

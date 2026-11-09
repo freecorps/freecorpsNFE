@@ -137,7 +137,6 @@
   },
   "patchedDependencies": {
     "@convex-dev/better-auth@0.12.5": "patches/@convex-dev%2Fbetter-auth@0.12.5.patch",
-    "@convex-dev/rate-limiter@0.3.2": "patches/@convex-dev%2Frate-limiter@0.3.2.patch",
     "convex-test@0.0.60": "patches/convex-test@0.0.60.patch"
   }
 }
