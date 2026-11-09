@@ -1,4 +1,40 @@
-# Dependências com correções de segurança
+# Dependências
+
+## Versões nos manifests
+
+Toda dependência externa direta dos `package.json` da raiz, de `apps/*`, de
+`platform` e de `packages/*` declara a versão exata que o `bun.lock` resolve,
+sem `^` nem `~`, salvo exceção registrada abaixo. A regra vale para
+`dependencies`, `devDependencies` e `overrides`; `workspace:*` e aliases
+`npm:` com versão exata seguem como estão.
+
+Exata sem exceção:
+
+- criptografia e assinatura: `xml-crypto`, `node-forge`;
+- parsing e geração fiscal: `fast-xml-parser`, `libxml2-wasm`,
+  `@xmldom/xmldom`, `pdf-lib`;
+- `convex` e os componentes `@convex-dev/*`.
+
+Nesses pacotes, um minor novo pode mudar assinatura, canonicalização,
+validação de XML, DANFE, DANFSe ou o runtime do backend. Ele entra por uma
+mudança própria, com lockfile, patches e inventário revisados juntos,
+conforme a skill `dependency-maintenance`.
+
+Nas demais dependências, `~` ou `^` só entram com justificativa escrita
+nesta seção, ao lado do nome do pacote: o que a faixa resolve e por que a
+versão exata não serve. Hoje não há exceção.
+
+Ao adicionar uma dependência, salve a versão exata:
+
+```sh
+bunx vp add --save-exact <pacote>
+```
+
+Ao atualizar, edite a versão no manifest e rode `bunx vp install`; confira
+no diff do `bun.lock` que só mudaram os pacotes pretendidos. O Dependabot
+abre PRs apenas de GitHub Actions; atualização de npm não passa por ele.
+
+## Correções de segurança
 
 O projeto instala e audita com Bun 1.4.0, selecionado pelo Vite+:
 
