@@ -1,11 +1,11 @@
 # Patches de dependências
 
-Bun aplica os quatro patches deste diretório pelo `patchedDependencies` do
+Bun aplica os três patches deste diretório pelo `patchedDependencies` do
 `package.json` da raiz e pelo lockfile.
 
 ## Licença e aviso de modificação
 
-Os quatro pacotes são Apache-2.0, e o `LICENSE` de cada um continua no pacote
+Os três pacotes são Apache-2.0, e o `LICENSE` de cada um continua no pacote
 instalado. Os patches são modificações feitas pela Freecorps e ficam sob a
 mesma Apache-2.0, inclusive os arquivos novos `partitioned.ts`,
 `partitioned.js` e `partitioned.d.ts` do rate-limiter. Por decisão do
@@ -17,7 +17,6 @@ e data.
 | -------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- |
 | `@convex-dev/better-auth@0.12.5` | `dist/react/index.d.ts`, `src/component/schema.ts`, `dist/component/schema.js`                        | 09/09/2026 |
 | `@convex-dev/rate-limiter@0.3.2` | `lib`, `internal`, `schema` e `_generated/component` em `src` e `dist`, mais os novos `partitioned.*` | 27/10/2026 |
-| `@convex-dev/workpool@0.4.12`    | `src/component/shared.ts`                                                                             | 12/09/2026 |
 | `convex-test@0.0.60`             | `dist/index.js`                                                                                       | 03/11/2026 |
 
 Alterar um patch atualiza a data nesta tabela.
@@ -100,15 +99,6 @@ continua necessária para medir contenção; `convex-test` não a reproduz.
 Remover o patch quando o componente oferecer uma operação conjunta equivalente,
 preservando os contadores na transição e repetindo a carga antes do aceite.
 
-## Workpool
-
-`@convex-dev/workpool@0.4.12` recebe uma linha em `src/component/shared.ts`:
-a constante local não usada `_`, que só servia para conferir `RetryBehavior`
-contra o validador `retryBehavior`, vira uma expressão `void` com o mesmo
-`satisfies`. A checagem de tipo continua; o JavaScript do componente não muda
-de comportamento. As operações persistidas usam o componente conforme
-[OPERATIONS.md](../docs/plataforma/OPERATIONS.md).
-
 ## Arquivos guardados por actions no convex-test
 
 `convex-test@0.0.60` roda uma query ou mutation por vez, sob uma trava, e grava
@@ -137,12 +127,14 @@ amarra cada patch à versão exata em `patchedDependencies`; subir a versão de 
 desses pacotes exige portar o patch, retirá-lo com equivalente comprovado ou
 manter a versão.
 
-| Pacote                     | Por que permanece                                                                   | Próxima revisão                                                  | Prova antes de retirar ou portar                                                                              |
-| -------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `@convex-dev/better-auth`  | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza      | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso                 |
-| `@convex-dev/rate-limiter` | Consumo conjunto atômico e partições com saldo migrado                              | Versão publicada com operação conjunta equivalente               | `platform/convex/rate-limits.test.ts`, testes de chaves e uso e `scripts/proofs/prove-hosted-rate-limits.mjs` |
-| `@convex-dev/workpool`     | O `shared.ts` publicado declara uma local não usada, acusada pela checagem de tipos | Versão publicada sem a local `_` em `src/component/shared.ts`    | `bun run platform:check` e os testes de operações                                                             |
-| `convex-test`              | O arquivo guardado por uma action entra na transação de outra função concorrente    | Versão publicada que decida pelo contexto de quem grava          | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`                              |
+Em 09/11/2026 (#142), o patch do Workpool saiu: a 0.4.13 publica a mesma
+correção de `src/component/shared.ts` (get-convex/workpool#242).
+
+| Pacote                     | Por que permanece                                                                | Próxima revisão                                                  | Prova antes de retirar ou portar                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `@convex-dev/better-auth`  | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza   | Versão publicada com a correção de #420 e o índice `lastRequest` | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso                 |
+| `@convex-dev/rate-limiter` | Consumo conjunto atômico e partições com saldo migrado                           | Versão publicada com operação conjunta equivalente               | `platform/convex/rate-limits.test.ts`, testes de chaves e uso e `scripts/proofs/prove-hosted-rate-limits.mjs` |
+| `convex-test`              | O arquivo guardado por uma action entra na transação de outra função concorrente | Versão publicada que decida pelo contexto de quem grava          | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`                              |
 
 O índice `lastRequest` não tem equivalente no Better Auth publicado. Retirar a
 correção de tipos não retira o patch: ele só sai quando o componente trouxer o

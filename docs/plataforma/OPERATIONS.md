@@ -1,7 +1,7 @@
 # Operações persistidas
 
 Contrato B05 da gestão de operações em `platform/convex`. O domínio reserva uma operação e
-seu agendamento na mesma mutation. As operações usam Workpool 0.4.12 com
+seu agendamento na mesma mutation. As operações usam Workpool 0.4.13 com
 três componentes distintos: importação 4, captura 2 e webhook 4 execuções
 simultâneas. A exportação tem um quarto pool próprio, `exportPool`, com 2, e a
 emissão NFS-e (workload `issuance`, tarefas `documents.issue` e
