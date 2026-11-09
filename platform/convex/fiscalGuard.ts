@@ -664,31 +664,43 @@ async function realDocument(ctx: QueryCtx, organizationId: Id<"organizations">) 
 }
 
 /**
+ * The tables whose Production row is Production for `neverProduction`, read by
+ * `by_organizationId_and_environment`. Every other table with an `environment` field has its
+ * reason to stay out in `fiscalGuard.test.ts`, which fails on a table in neither list.
+ */
+export const PRODUCTION_TABLES = [
+  "fiscalDocuments",
+  "imports",
+  "captureStreams",
+  "issuances",
+  "dpsSequences",
+  "issuanceSimulations",
+  "operations",
+  "usageEvents",
+  "usageTotals",
+  "apiUsageEvents",
+  "apiUsageTotals",
+] as const;
+
+/**
  * Decision of 27/10/2026, narrowed by #108: an organization that never had Production holds
- * nothing the guard exists for, since nothing it holds has fiscal validity. Every guarded table
- * with an environment has no Production row; every received note says homologação
+ * nothing the guard exists for, since nothing it holds has fiscal validity. No table of
+ * `PRODUCTION_TABLES` has a Production row; every received note says homologação
  * (`realDocument`); no capture release was ever granted and the issuance gate and the probe never
  * reached production (bounded: more events than `EVENTS` count as Production). A Production
  * Stripe connection issues only through the issuance gate, so the gate history covers it.
  */
 async function neverProduction(ctx: QueryCtx, organizationId: Id<"organizations">) {
-  const production = <Q extends { eq(f: "environment", v: "production"): IndexRange }>(q: {
-    eq(f: "organizationId", v: Id<"organizations">): Q;
-  }) => q.eq("organizationId", organizationId).eq("environment", "production");
-  const index = "by_organizationId_and_environment";
-  const found = await Promise.all([
-    ctx.db.query("fiscalDocuments").withIndex(index, production).first(),
-    ctx.db.query("imports").withIndex(index, production).first(),
-    ctx.db.query("captureStreams").withIndex(index, production).first(),
-    ctx.db.query("issuances").withIndex(index, production).first(),
-    ctx.db.query("dpsSequences").withIndex(index, production).first(),
-    ctx.db.query("issuanceSimulations").withIndex(index, production).first(),
-    ctx.db.query("operations").withIndex(index, production).first(),
-    ctx.db.query("usageEvents").withIndex(index, production).first(),
-    ctx.db.query("usageTotals").withIndex(index, production).first(),
-    ctx.db.query("apiUsageEvents").withIndex(index, production).first(),
-    ctx.db.query("apiUsageTotals").withIndex(index, production).first(),
-  ]);
+  const found = await Promise.all(
+    PRODUCTION_TABLES.map((table) =>
+      ctx.db
+        .query(table)
+        .withIndex("by_organizationId_and_environment", (q) =>
+          q.eq("organizationId", organizationId).eq("environment", "production"),
+        )
+        .first(),
+    ),
+  );
   if (found.some((row) => row !== null) || (await realDocument(ctx, organizationId))) return false;
   const org = (q: { eq(f: "organizationId", v: Id<"organizations">): IndexRange }) =>
     q.eq("organizationId", organizationId);
