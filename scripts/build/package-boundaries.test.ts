@@ -79,7 +79,7 @@ it.each([
 it("checks the real workspaces and connects the blocking command before CI approval", () => {
   // entryPoints: the `./pure` subset of packages/fiscal-nfse.
   expect(checkPackageBoundaries(resolve("."))).toEqual({
-    workspaces: 8,
+    workspaces: 9,
     independent: 5,
     entryPoints: 1,
   });

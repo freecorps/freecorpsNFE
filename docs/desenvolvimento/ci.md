@@ -498,6 +498,8 @@ As classes são `pure`, `node` e `platform`. Pacotes independentes declaram
 explicitamente os workspaces e dependências externas permitidos. Um pacote
 puro não pode importar um conector Node; nenhum dos dois pode alcançar a
 plataforma. `fiscal-core` é puro; `contracts` é puro e reutiliza seu CNPJ.
+`convex-rate-limiter`, componente Convex da plataforma, fica na classe
+`platform`.
 `fiscal-nfe` é uma biblioteca Node independente: depende de core e dos
 validadores XML explicitamente permitidos no manifesto. Não depende dos
 contratos do SaaS. `fiscal-nfse` segue o mesmo desenho, com core, xmldom,
