@@ -30,13 +30,18 @@ async function storedAs(
   return !!meta && meta.size === size && storageHash(meta.sha256) === sha256;
 }
 
-/** Records a new hot original; its `sha256` and `size` must be those of the stored file. */
+/**
+ * Records a new hot original; its `sha256` and `size` must be those of the stored file. A hot
+ * row carries none of the cold object's fields, which only `moveOriginalCold` writes.
+ */
 export async function insertOriginal(
   ctx: MutationCtx,
   value: WithoutSystemFields<Artifact> & { storageId: Id<"_storage"> },
 ) {
   if (
     value.objectKey !== undefined ||
+    value.objectSha256 !== undefined ||
+    value.objectSize !== undefined ||
     !(await storedAs(ctx, value.storageId, value.sha256, value.size))
   )
     return deny("INVALID_FILE");

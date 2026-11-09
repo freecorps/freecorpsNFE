@@ -1082,6 +1082,11 @@ it("refuses to serve a hot original whose stored file no longer matches the reco
       insertOriginal(ctx, { ...copy, storageId: artifact.storageId!, sha256: "0".repeat(64) }),
     ),
   ).rejects.toThrow("INVALID_FILE");
+  // Nor a hot row that carries a cold object's hash or size.
+  for (const cold of [{ objectSha256: "0".repeat(64) }, { objectSize: artifact.size }])
+    await expect(
+      f.t.run((ctx) => insertOriginal(ctx, { ...copy, storageId: artifact.storageId!, ...cold })),
+    ).rejects.toThrow("INVALID_FILE");
 
   // A file swapped under the row, same size and other bytes, by a write outside ingestion.
   const swapped = await f.t.run(async (ctx) => {
