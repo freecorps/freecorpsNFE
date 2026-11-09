@@ -713,6 +713,19 @@ describe("agenda, 656 e retirada", () => {
       now + 6 * 3_600_000,
     );
   });
+  it("um 999 repete a consulta só depois do intervalo da empresa, sem alerta (#195)", async () => {
+    const f = await siteFixture({ released: false });
+    await f.setRelease(true, 6);
+    const stream = await f.command("production", "activate");
+    const token = await f.claim(stream.operationId);
+    const now = Date.now();
+    await respond(f, token, distributionXml({ status: "999", environment: "1" }));
+    const retrying = await streamOf(f, stream.id);
+    expect(retrying).toMatchObject({ state: "active", code: "SOURCE_999", sourceErrors: 1 });
+    // The source's hour is not enough: the retry spends no more queries than the release allows.
+    expect(retrying.nextAllowedAt).toBeGreaterThanOrEqual(now + 6 * 3_600_000);
+    expect(await f.t.run((ctx) => ctx.db.query("captureAlerts").collect())).toEqual([]);
+  });
   it("656 entra em atenção, conta como falha da fonte e só retoma depois da janela", async () => {
     const f = await siteFixture();
     const stream = await f.command("production", "activate");

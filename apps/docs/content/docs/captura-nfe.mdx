@@ -75,13 +75,14 @@ Os documentos capturados ficam em <Ui>Documentos</Ui>, na aba <Ui>Produção</Ui
 
 Depois da primeira consulta, a captura agenda a seguinte sozinha, sem ação de ninguém:
 
-| Situação                                     | Próxima consulta                                       |
-| -------------------------------------------- | ------------------------------------------------------ |
-| A fonte ainda tem documentos na fila         | Um segundo depois                                      |
-| A fila chegou ao fim                         | Depois do intervalo mínimo da empresa, de 1 a 24 horas |
-| Receita fora do ar (108 ou 109)              | Uma hora depois                                        |
-| Bloqueio por consumo indevido (656)          | Só por retomada, depois de uma hora                    |
-| Busca de um registro que faltou na sequência | Um segundo depois, até 6 buscas por hora               |
+| Situação                                     | Próxima consulta                                                                       |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| A fonte ainda tem documentos na fila         | Um segundo depois                                                                      |
+| A fila chegou ao fim                         | Depois do intervalo mínimo da empresa, de 1 a 24 horas                                 |
+| Receita fora do ar (108 ou 109)              | Uma hora depois                                                                        |
+| Erro não catalogado da Receita (999)         | Depois de uma hora e do intervalo mínimo da empresa; o terceiro seguido põe em atenção |
+| Bloqueio por consumo indevido (656)          | Só por retomada, depois de uma hora                                                    |
+| Busca de um registro que faltou na sequência | Um segundo depois, até 6 buscas por hora                                               |
 
 O intervalo mínimo vale só no fim da fila: uma empresa com muitos documentos pendentes recebe todos em sequência. `nextAllowedAt` traz o instante da próxima consulta permitida. `sync` pede uma consulta, sem antecipar essa janela. `sourceMaxNsu` é o último NSU que a Receita informou (`maxNSU`): enquanto `checkpoint` estiver abaixo dele, ainda há documentos para receber. Ele fica `null` até a primeira consulta respondida.
 
@@ -100,6 +101,7 @@ painel e no Início do console.
 
 - `SOURCE_COOLDOWN`: a Receita só aceita a próxima consulta depois de um intervalo. Nada a fazer: a captura consulta sozinha em `nextAllowedAt`.
 - `SOURCE_CONSUMPTION_BLOCKED`: a Receita bloqueou o CNPJ por uma hora por consumo indevido (656), em geral porque outro sistema consulta o mesmo CNPJ. Espere `nextAllowedAt` e retome. Antes disso, a retomada é recusada.
+- `SOURCE_999`: a Receita respondeu com um erro não catalogado (999), que não aponta problema na consulta. Com `state` `active`, a captura tenta de novo sozinha, até duas vezes, em `nextAllowedAt`. No terceiro 999 seguido ela entra em `attention`: retome, e se parar de novo com 999 fale com o suporte.
 - `CAPTURE_FISCAL_DENIED`: a ativação ou o certificado A1 da empresa deixou de valer antes da consulta, e nada foi enviado à Receita. Confira a captura fiscal e o certificado da empresa e retome.
 - `CERTIFICATE_UNAVAILABLE`: a empresa não tem A1 próprio válido. Envie ou renove o A1. A captura volta sozinha quando o certificado é ativado.
 - `PLAN_REQUIRED`: falta plano atribuído com cotas de consultas (ou notas, no Gratuito) e bytes para Produção. Um gestor da organização deve [solicitar o plano à Freecorps](/docs/ajuda#pedir-ajuda). A atribuição do plano rearma a captura.

@@ -240,6 +240,8 @@ async function startQuery(
     transferExpiresAt: undefined,
     code: undefined,
     mode,
+    // Every new start (resume, accepted gap) gets the 999 retries again (#195).
+    sourceErrors: undefined,
   });
   return result.operationId;
 }

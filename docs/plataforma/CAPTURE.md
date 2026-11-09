@@ -136,24 +136,25 @@ código (`ACCESS_REVOKED`, `CERTIFICATE_UNAVAILABLE`, `CAPTURE_FISCAL_DENIED`,
 `FISCAL_TRANSPORT_DISABLED`, `FISCAL_PROOF_DENIED`), sem torná-la incerta. Não
 há consulta de reconciliação. A prova da #50 mantém a janela conservadora.
 
-| Situação                                                               | Comportamento                                                                                   |
-| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Lease antiga ou acesso/certificado revogado                            | Recusa persistência/checkpoint; operação para (em produção no site, com atenção)                |
-| Recusa do cofre antes do envio                                         | Espera ou pausa com o código, sem incerteza nem reconciliação; janela e cota devolvidas no site |
-| Crash após IO antes do bruto                                           | Resultado incerto; após a janela consulta `consNSU` do próximo NSU                              |
-| Crash com bruto persistido                                             | Reinterpreta o mesmo hash sem nova consulta                                                     |
-| Crash entre envelopes                                                  | Retoma por posição e deduplica stream/NSU/hash                                                  |
-| Crash após checkpoint                                                  | Recibos impedem republicação lógica                                                             |
-| Lacuna após checkpoint conhecido                                       | Persiste lote, avança só prefixo contínuo e recupera NSU faltante em lote (até 6 `consNSU`/h)   |
-| `consNSU` 137 numa lacuna                                              | Localiza o limite do trecho perdido; atenção até o Proprietário aceitar a perda                 |
-| Primeira consulta com histórico limitado                               | Começa no primeiro NSU disponível e informa `HISTORY_LIMITED`                                   |
-| NSU repetido sem progresso ou cursor regressivo                        | Atenção; cursor e janela preservados                                                            |
-| Mesmo NSU com conteúdo diferente                                       | Atenção por integridade; bruto e original anterior preservados                                  |
-| 656                                                                    | Atenção; checkpoint, cursor e modo preservados; espera uma hora                                 |
-| 589 em `consNSU`, `ultNSU = maxNSU = checkpoint`, sem lacuna conhecida | Atenção com rejeição preservada; retomada após a janela usa `distNSU` no mesmo checkpoint       |
-| `consNSU` ausente/incompatível                                         | Atenção; não pula documento indisponível                                                        |
-| 108/109                                                                | Nova operação depois de pelo menos uma hora                                                     |
-| Bruto ausente/adulterado ou XML inválido                               | Atenção operacional; retomar não descarta lote nem contorna erro                                |
+| Situação                                                               | Comportamento                                                                                    |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Lease antiga ou acesso/certificado revogado                            | Recusa persistência/checkpoint; operação para (em produção no site, com atenção)                 |
+| Recusa do cofre antes do envio                                         | Espera ou pausa com o código, sem incerteza nem reconciliação; janela e cota devolvidas no site  |
+| Crash após IO antes do bruto                                           | Resultado incerto; após a janela consulta `consNSU` do próximo NSU                               |
+| Crash com bruto persistido                                             | Reinterpreta o mesmo hash sem nova consulta                                                      |
+| Crash entre envelopes                                                  | Retoma por posição e deduplica stream/NSU/hash                                                   |
+| Crash após checkpoint                                                  | Recibos impedem republicação lógica                                                              |
+| Lacuna após checkpoint conhecido                                       | Persiste lote, avança só prefixo contínuo e recupera NSU faltante em lote (até 6 `consNSU`/h)    |
+| `consNSU` 137 numa lacuna                                              | Localiza o limite do trecho perdido; atenção até o Proprietário aceitar a perda                  |
+| Primeira consulta com histórico limitado                               | Começa no primeiro NSU disponível e informa `HISTORY_LIMITED`                                    |
+| NSU repetido sem progresso ou cursor regressivo                        | Atenção; cursor e janela preservados                                                             |
+| Mesmo NSU com conteúdo diferente                                       | Atenção por integridade; bruto e original anterior preservados                                   |
+| 656                                                                    | Atenção; checkpoint, cursor e modo preservados; espera uma hora                                  |
+| 589 em `consNSU`, `ultNSU = maxNSU = checkpoint`, sem lacuna conhecida | Atenção com rejeição preservada; retomada após a janela usa `distNSU` no mesmo checkpoint        |
+| `consNSU` ausente/incompatível                                         | Atenção; não pula documento indisponível                                                         |
+| 108/109                                                                | Nova operação depois de pelo menos uma hora                                                      |
+| 999 (erro não catalogado)                                              | Nova operação depois de uma hora e do intervalo da empresa; o terceiro seguido dá atenção (#195) |
+| Bruto ausente/adulterado ou XML inválido                               | Atenção operacional; retomar não descarta lote nem contorna erro                                 |
 
 A recuperação encadeia `consNSU`, um segundo entre eles, até 6 por hora por
 stream (3 no dia seguinte a um 656), abaixo do limite de 20/h ([lacunas](#lacunas-e-histórico-limitado-419));
@@ -520,7 +521,10 @@ Streams de `sandbox` no site continuam sem transporte fiscal.
 **Agenda no site.** A próxima consulta é agendada pelo próprio stream, sem
 cron. Com fila pendente (`ultNSU < maxNSU`), um segundo; no fim da fila
 (137 sem lacuna, ou 138 que alcançou o máximo), o intervalo mínimo da
-empresa, de 1 a 24 horas; 108/109 e 656 mantêm a janela de uma hora, e a
+empresa, de 1 a 24 horas; 108/109 e 656 mantêm a janela de uma hora; um 999
+espera a hora e o intervalo da empresa e só o terceiro seguido põe o stream
+em atenção com `SOURCE_999` (#195), cada um contado como falha da fonte e
+cada repetição registrada como `source_retry` na auditoria do stream; e a
 recuperação por `consNSU` anda um segundo por NSU, até 6 por hora (3 no
 dia seguinte a um 656)
 ([lacunas](#lacunas-e-histórico-limitado-419)). Um 656 deixa o stream em atenção, avisa por

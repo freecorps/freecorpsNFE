@@ -125,8 +125,11 @@ com pelo menos o intervalo mínimo da liberação (1 a 24 h) mais uma hora: no
 fim da fila a captura espera esse intervalo entre dois sucessos, e a hora a
 mais é a mesma folga que os 120 minutos dão sobre o intervalo padrão de uma
 hora, o bastante para o agendamento e uma janela perdida (108/109 ou o teto
-por hora) antes do alerta. Um limiar configurado maior continua valendo; o
-alerta registra o limiar efetivo.
+por hora) antes do alerta. Um 999 da Receita (#195) espera o intervalo
+inteiro antes de repetir a consulta, então numa empresa com intervalo de 2 h
+ou mais o cursor alerta já no primeiro 999: é o aviso de que a captura está
+sem resposta, mesmo com ela ainda tentando. Um limiar configurado maior
+continua valendo; o alerta registra o limiar efetivo.
 O limiar de quantidade não pode superar 100, para que a contagem limitada seja
 suficiente para decidir abertura. Tempo e certificado usam milissegundos no
 backend; o formulário apresenta minutos/dias.
