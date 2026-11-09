@@ -85,8 +85,12 @@ A caixa está ativa.
   O teste não foi feito com alerta de empresa, e a recusa para operador de
   outra caixa e para conta cliente fica com os testes automáticos da #582.
 
-Em 09/11/2026, o endereço de plantão da [#126](https://github.com/freecorps/freecorpsNFE/issues/126) (passo 5 da ativação) ainda
-não foi gravado.
+Em 09/11/2026, o passo 5 gravou o endereço de plantão da
+[#126](https://github.com/freecorps/freecorpsNFE/issues/126). O
+[run 42698697429](https://github.com/freecorps/freecorpsNFE/actions/runs/42698697429)
+de `capture-fiscal.yml` passou com `recipients: 2` e `delivery: "sent"` às
+21:02:54 UTC, e o mantenedor conferiu a chegada nas duas caixas às 21:02 UTC
+([registro na #126](https://github.com/freecorps/freecorpsNFE/issues/126#issuecomment-6751456282)).
 
 ## Ativação
 
