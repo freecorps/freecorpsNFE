@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "fb412c14aa65371098410c51035e09585e3f891bf7d42c4b01f44ccbc3aad1ab",
+  "lockSha256": "169ed001f7b86f6b374abd7d886f2cf4aba553822c712eace97e30c34cbd2619",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -425,10 +425,10 @@
       ]
     },
     {
-      "id": "@convex-dev/workpool@0.4.12",
+      "id": "@convex-dev/workpool@0.4.13",
       "declaredLicense": "Apache-2.0",
-      "source": "https://registry.npmjs.org/%40convex-dev%2Fworkpool/0.4.12",
-      "integrity": "sha512-mJOtVds/vWWVdFUNhveXlQcfPFUmugZbJYjdjblgA2PpfaedtcwqYBVnLXEBI2QlspTR7HfAT3cTxJtdhVPUsg==",
+      "source": "https://registry.npmjs.org/%40convex-dev%2Fworkpool/0.4.13",
+      "integrity": "sha512-mGJ6mfeI0sY6MEW5f61jkgXBtdUxYZxA3AJCvn53oT6uPGPY0HpGwo/u0qzKoBAiE6ppZWyIR1tzJfX++hVF5Q==",
       "repository": "git+https://github.com/get-convex/workpool.git",
       "direct": [
         {
