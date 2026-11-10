@@ -817,23 +817,6 @@ export const dropHot = internalMutation({
 });
 
 /**
- * A new blob attached to a version of a cold note (a later event or the full XML after the
- * summary): the note goes back to `moving` with a stale claim, so the next sweep moves the new
- * version too, and no archive run takes the organization meanwhile.
- */
-export async function reopenColdNote(ctx: MutationCtx, documentId: Id<"fiscalDocuments">) {
-  const doc = await ctx.db.get("fiscalDocuments", documentId);
-  if (doc?.coldState === "cold")
-    await patchFiscal(
-      ctx,
-      "fiscalDocuments",
-      doc._id,
-      { coldState: "moving", coldClaimedAt: 0, coldAt: undefined },
-      false,
-    );
-}
-
-/**
  * An intent older than this, with no version or original on its key, is an orphan of a lost
  * action.
  */

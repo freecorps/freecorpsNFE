@@ -21,9 +21,8 @@ import {
 } from "../../packages/fiscal-nfe/src/index";
 import { MAX_IMPORT_BYTES, IMPORT_MIME } from "./lib/importValues";
 import { LEASE_MS } from "./lib/operationValues";
-import { requestCleanup } from "./importUpload";
 import type { Id } from "./_generated/dataModel";
-import { importStates, importSummary } from "./lib/importCore";
+import { importStates, importSummary, requestCleanup } from "./lib/importCore";
 import { importBatchOutcome } from "./lib/importOutcome";
 import type { QueryCtx } from "./_generated/server";
 usePlatformEnvironment({

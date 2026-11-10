@@ -18,12 +18,8 @@ import { issuanceReadTask } from "./lib/issuanceCore";
 import { currentRow } from "./lib/coldArchiveCurrent";
 import { auditDanfe, danfeHeaders, resolveDanfe, serveDanfe } from "./documentDanfe";
 import { danfeResolution } from "./lib/danfeValues";
-import {
-  coldOriginalSource,
-  originalBody,
-  originalSourceOf,
-  type ColdOriginalSource,
-} from "./lib/documentOriginalRead";
+import { originalBody, originalSourceOf } from "./lib/documentOriginalRead";
+import { coldOriginalSource, type ColdOriginalSource } from "./lib/documentValues";
 import { servedOriginal } from "./lib/originalStore";
 
 export async function artifactAccess(

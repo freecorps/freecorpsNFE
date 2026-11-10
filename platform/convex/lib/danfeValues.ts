@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { environment } from "./projectValues";
-import { originalSource } from "./documentOriginalRead";
+import { originalSource } from "./documentValues";
 
 /**
  * `DANFE_GENERATOR_VERSION` of `@freecorps/fiscal-nfe/danfe`, which only the Node worker loads

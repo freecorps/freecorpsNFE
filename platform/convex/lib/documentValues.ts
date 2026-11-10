@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
 export const textOrNull = v.union(v.string(), v.null());
 const xmlEnvironment = v.union(v.literal("1"), v.literal("2"));
 const party = v.object({
@@ -314,3 +314,26 @@ export function declaredOf(document: unknown): "1" | "2" | null {
   if (declared.includes("1")) return "1";
   return declared.includes("2") ? "2" : null;
 }
+
+/**
+ * The XML original of a document (`documentArtifacts`), wherever it lives (ADR 0010, decision 8):
+ * the raw bytes in Convex file storage (hot, `storageId`), or, once its note went cold, the gzip
+ * of those bytes in the cold tier's bucket (`objectKey`). `sha256` and `size` always describe the
+ * raw XML; `objectSha256` and `objectSize` describe the object, so the backup and the ADR 0009
+ * package check the bucket without decompressing. The bytes are read by
+ * `lib/documentOriginalRead.ts`; the validators stay here so that `lib/danfeValues.ts` describes
+ * the DANFE sources without importing a module that reads the database.
+ */
+export const coldOriginalSource = v.object({
+  objectKey: v.string(),
+  objectSha256: v.string(),
+  objectSize: v.number(),
+  sha256: v.string(),
+  size: v.number(),
+});
+export const originalSource = v.union(
+  v.object({ storageId: v.id("_storage"), sha256: v.string(), size: v.number() }),
+  coldOriginalSource,
+);
+export type OriginalSource = Infer<typeof originalSource>;
+export type ColdOriginalSource = Infer<typeof coldOriginalSource>;

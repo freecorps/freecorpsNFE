@@ -1,33 +1,16 @@
-import { ConvexError, v, type Infer } from "convex/values";
+import { ConvexError } from "convex/values";
 import { gunzipSync, gzipSync } from "fflate";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { coldObjects, sha256Hex } from "./coldObjects";
+import type { ColdOriginalSource, OriginalSource } from "./documentValues";
 
 /**
- * The XML original of a document (`documentArtifacts`), wherever it lives (ADR 0010, decision 8):
- * the raw bytes in Convex file storage (hot, `storageId`), or, once its note went cold, the gzip
- * of those bytes in the cold tier's bucket (`objectKey`). `sha256` and `size` always describe the
- * raw XML; `objectSha256` and `objectSize` describe the object, so the backup and the ADR 0009
- * package check the bucket without decompressing.
- *
- * Every reader of an original's bytes goes through `readOriginal`, in any runtime: `fflate` and
- * `lib/coldObjects.ts` run in both, like the phase B codec (`lib/documentContent.ts`, which
- * records why the default runtime has no `CompressionStream`).
+ * Every reader of an original's bytes (`lib/documentValues.ts`, `originalSource`) goes through
+ * `readOriginal`, in any runtime: `fflate` and `lib/coldObjects.ts` run in both, like the phase B
+ * codec (`lib/documentContent.ts`, which records why the default runtime has no
+ * `CompressionStream`).
  */
-export const coldOriginalSource = v.object({
-  objectKey: v.string(),
-  objectSha256: v.string(),
-  objectSize: v.number(),
-  sha256: v.string(),
-  size: v.number(),
-});
-export const originalSource = v.union(
-  v.object({ storageId: v.id("_storage"), sha256: v.string(), size: v.number() }),
-  coldOriginalSource,
-);
-export type OriginalSource = Infer<typeof originalSource>;
-export type ColdOriginalSource = Infer<typeof coldOriginalSource>;
 
 /** Where an artifact's original is, or `null` when it has none (never both, never neither). */
 export function originalSourceOf(artifact: Doc<"documentArtifacts">): OriginalSource | null {

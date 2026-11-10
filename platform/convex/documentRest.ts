@@ -14,7 +14,8 @@ import {
   reprocessDocument,
 } from "./documents";
 import { artifactAccess, chargeOriginal, responseHeaders } from "./documentDownloads";
-import { originalBody, originalSource } from "./lib/documentOriginalRead";
+import { originalBody } from "./lib/documentOriginalRead";
+import { originalSource } from "./lib/documentValues";
 import { servedOriginal } from "./lib/originalStore";
 import { prepareCompany } from "./documentProjection";
 import { documentAccess, loadScopedDocument } from "./lib/documentCore";
