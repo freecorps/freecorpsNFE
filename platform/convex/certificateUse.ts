@@ -4,7 +4,7 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
 import { buildSha } from "./buildInfo";
 import schema from "./schema";
 import { claimFields } from "./lib/operationValues";
-import { activeClaim, executionAllowed, type Claim } from "./lib/operationCore";
+import { activeClaim, executionAllowed, markEffectSent, type Claim } from "./lib/operationCore";
 import { certificateAudit, certificateHead, certificateUsable } from "./lib/certificateAccess";
 import { fiscalProofAllowed, realFiscalMode } from "./lib/fiscalProof";
 import { attemptUsageKey, captureTask, deferralAudit } from "./lib/captureValues";
@@ -188,7 +188,11 @@ export const complete = internalMutation({
     const op = await ctx.db.get("operations", args.operationId);
     if (!op?.certificate) return false;
     const cert = await ctx.db.get("certificates", op.certificate.id);
-    const current = !!(await activeClaim(ctx, args)) && (await executionAllowed(ctx, op));
+    const claimed = await activeClaim(ctx, args);
+    // Success or failure, the request may have left: the attempt can no longer be abandoned as
+    // one that sent nothing, even when its access fell meanwhile.
+    if (claimed) await markEffectSent(ctx, claimed);
+    const current = !!claimed && (await executionAllowed(ctx, op));
     if (cert)
       await certificateAudit(
         ctx,

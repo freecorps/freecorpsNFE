@@ -7,7 +7,7 @@ import { register } from "../test-setup";
 import { syntheticCertificate } from "../../tests/helpers/certificates";
 import { consoleProjectFor } from "../../tests/helpers/console";
 import { certificateUsable } from "./lib/certificateAccess";
-import { executionAllowed } from "./lib/operationCore";
+import { abandonBeforeEffect, executionAllowed } from "./lib/operationCore";
 import { validatePendingCertificate } from "./certificateWorker";
 import { modules } from "../../tests/helpers/convex-modules";
 const ring = {
@@ -353,4 +353,112 @@ it("an operation with an old pin is denied even when its access grants still exi
       operationId,
     }),
   ).rejects.toThrow("ACCESS_REVOKED");
+});
+it("an attempt whose certificate use was completed cannot be abandoned as one that sent nothing", async () => {
+  const f = await fixture(),
+    id = await f.upload();
+  await f.t.action(internal.certificateWorker.validate, { id });
+  const projectId = await consoleProjectFor(f.t, f.scope.organizationId);
+  const { operationId } = await f.owner.client.mutation(internal.operations.reserve, {
+    ...f.scope,
+    projectId,
+    environment: "sandbox",
+    key: crypto.randomUUID(),
+    request: "{}",
+    certificate: { id, version: 1 },
+    task: {
+      name: "cert.proof",
+      scope: "documents:read",
+      workload: "capture",
+      executor: "testing/operationProof:execute",
+      reconciler: "testing/operationProof:execute",
+    },
+  });
+  const read = async () => (await f.t.run((ctx) => ctx.db.get("operations", operationId)))!;
+  const attemptRow = (claim: { generation: number; fence: number }) =>
+    f.t.run((ctx) =>
+      ctx.db
+        .query("operationAttempts")
+        .withIndex("by_operationId_and_generation_and_fence", (q) =>
+          q
+            .eq("operationId", operationId)
+            .eq("generation", claim.generation)
+            .eq("fence", claim.fence),
+        )
+        .unique(),
+    );
+  /** Claims the next attempt, opens the vault and enters `calling`. */
+  const calling = async () => {
+    const op = await read();
+    vi.setSystemTime(Math.max(Date.now(), op.nextAttemptAt));
+    const running = (await f.t.mutation(internal.operations.claim, {
+      operationId,
+      generation: op.generation,
+    }))!;
+    const claim = { operationId, generation: running.generation, fence: running.fence };
+    expect(await f.t.mutation(internal.certificateUse.authorize, claim)).toMatchObject({ _id: id });
+    expect(await f.t.mutation(internal.operations.beginEffect, claim)).toBe(true);
+    return claim;
+  };
+  const abandon = () =>
+    f.t.run(async (ctx) =>
+      abandonBeforeEffect(ctx, (await ctx.db.get("operations", operationId))!, "PLAN_REQUIRED"),
+    );
+  /** The worker died: the watchdog takes the attempt back as uncertain. */
+  const lose = async () => {
+    vi.setSystemTime((await read()).leaseUntil);
+    await f.t.mutation(internal.operations.recoverOne, { operationId });
+  };
+
+  // The request answered: the attempt stays in `calling`, and abandoning it is refused.
+  const first = await calling();
+  expect(
+    await f.t.mutation(internal.certificateUse.complete, { ...first, result: "success" }),
+  ).toBe(true);
+  expect((await attemptRow(first))?.effectAt).toBeTypeOf("number");
+  const before = await read();
+  await expect(abandon()).rejects.toThrow("may have left");
+  expect(await read()).toEqual(before);
+  await lose();
+  expect(await read()).toMatchObject({ state: "reconciling", uncertain: true });
+
+  // A failed request may have left too; a stale completion marks nothing on the current attempt.
+  const second = await calling();
+  expect(
+    await f.t.mutation(internal.certificateUse.complete, { ...first, result: "success" }),
+  ).toBe(false);
+  expect((await attemptRow(second))?.effectAt).toBeUndefined();
+  expect(
+    await f.t.mutation(internal.certificateUse.complete, { ...second, result: "failed" }),
+  ).toBe(true);
+  await expect(abandon()).rejects.toThrow("may have left");
+  expect(await read()).toMatchObject({ state: "running", stage: "calling" });
+  await lose();
+
+  // The mark belongs to its attempt: a new one refused before the vault completes may abandon,
+  // keeping the uncertainty the earlier requests left.
+  await calling();
+  await abandon();
+  const paused = await read();
+  expect(paused).toMatchObject({
+    state: "paused",
+    stage: "ready",
+    code: "PLAN_REQUIRED",
+    uncertain: true,
+  });
+
+  // The certificate revoked while the request was out: the completion is stale for the vault,
+  // but the request may still have left, so the attempt cannot be abandoned either.
+  await f.owner.client.mutation(api.operations.control, {
+    action: "retry",
+    expectedGeneration: paused.generation,
+    operationId,
+  });
+  const fourth = await calling();
+  await f.owner.client.mutation(api.certificates.revoke, { ...f.scope, id });
+  expect(
+    await f.t.mutation(internal.certificateUse.complete, { ...fourth, result: "success" }),
+  ).toBe(false);
+  expect((await attemptRow(fourth))?.effectAt).toBeTypeOf("number");
+  await expect(abandon()).rejects.toThrow("may have left");
 });

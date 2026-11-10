@@ -219,6 +219,27 @@ export async function finishAttempt(
   )
     await recordSourceFailure(ctx, op, code);
 }
+/** The attempt row of the claim `op` carries (generation + fence). */
+function claimAttempt(ctx: MutationCtx, op: Doc<"operations">) {
+  return ctx.db
+    .query("operationAttempts")
+    .withIndex("by_operationId_and_generation_and_fence", (q) =>
+      q.eq("operationId", op._id).eq("generation", op.generation).eq("fence", op.fence),
+    )
+    .unique();
+}
+/**
+ * A request of the running attempt may have reached the source: the vault closed a use of the
+ * certificate for it (`certificateUse.complete`), whether the request answered or failed. From
+ * here the attempt only records its outcome or is recovered as uncertain; `abandonBeforeEffect`
+ * refuses it.
+ */
+export async function markEffectSent(ctx: MutationCtx, op: Doc<"operations">) {
+  if (op.state !== "running") throw new Error(`markEffectSent: operation is ${op.state}`);
+  const attempt = await claimAttempt(ctx, op);
+  if (attempt && attempt.effectAt === undefined)
+    await ctx.db.patch("operationAttempts", attempt._id, { effectAt: Date.now() });
+}
 /** Closes the open attempt row with `code`; true when this call closed it. */
 async function closeAttempt(
   ctx: MutationCtx,
@@ -227,12 +248,7 @@ async function closeAttempt(
   diagnostic?: Diagnostic,
 ) {
   await releaseUsageLease(ctx, op.organizationId, String(op._id));
-  const attempt = await ctx.db
-    .query("operationAttempts")
-    .withIndex("by_operationId_and_generation_and_fence", (q) =>
-      q.eq("operationId", op._id).eq("generation", op.generation).eq("fence", op.fence),
-    )
-    .unique();
+  const attempt = await claimAttempt(ctx, op);
   if (attempt && attempt.finishedAt === undefined) {
     await ctx.db.patch("operationAttempts", attempt._id, {
       finishedAt: Date.now(),
@@ -335,7 +351,8 @@ export async function pauseOperation(
  * `ready` first, since `pauseOperation` reads `calling` as an effect that may have left; the
  * operation keeps the uncertainty it already had, or `uncertain` when an earlier send of the same
  * operation may have reached the source. Only a running attempt before its response may rewind:
- * `response` and `checkpoint` hold a result that a rewind would lose.
+ * `response` and `checkpoint` hold a result that a rewind would lose. Nor one whose certificate
+ * use was completed (`markEffectSent`): its request may have left, whatever the caller believes.
  */
 export async function abandonBeforeEffect(
   ctx: MutationCtx,
@@ -345,6 +362,8 @@ export async function abandonBeforeEffect(
 ) {
   if (op.state !== "running" || (op.stage !== "ready" && op.stage !== "calling"))
     throw new Error(`abandonBeforeEffect: ${op.state}/${op.stage} is past the effect`);
+  if ((await claimAttempt(ctx, op))?.effectAt !== undefined)
+    throw new Error("abandonBeforeEffect: a request of this attempt may have left");
   if (op.stage !== "ready") await ctx.db.patch("operations", op._id, { stage: "ready" });
   await pauseOperation(
     ctx,
