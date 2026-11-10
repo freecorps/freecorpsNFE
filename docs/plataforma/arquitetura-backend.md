@@ -41,7 +41,8 @@ auditoria, custódia, organizações, ..., REST, console, provas e a composiçã
 do app em `schema.ts`, `http.ts` e `crons.ts`), e reprova:
 
 - módulo sem domínio, ou em mais de um;
-- referência `internal.*` a um domínio acima;
+- referência `internal.*` a um domínio acima, ou que não aponta para um módulo
+  (acesso por índice);
 - import de valor para um domínio acima entre módulos da mesma altura (`lib/`
   com `lib/`, topo com topo). O topo usa qualquer helper de `lib/`, e um
   módulo sem banco (sem `_generated/server`, direto ou por import) é

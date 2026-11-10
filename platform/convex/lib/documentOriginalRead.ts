@@ -6,8 +6,8 @@ import { coldObjects, sha256Hex } from "./coldObjects";
 import type { ColdOriginalSource, OriginalSource } from "./documentValues";
 
 /**
- * Every reader of an original's bytes (`lib/documentValues.ts`, `originalSource`) goes through
- * `readOriginal`, in any runtime: `fflate` and `lib/coldObjects.ts` run in both, like the phase B
+ * Every reader of an original's bytes (where they are: `originalSource`, in
+ * `lib/documentValues.ts`) goes through `readOriginal`, in any runtime: `fflate` and `lib/coldObjects.ts` run in both, like the phase B
  * codec (`lib/documentContent.ts`, which records why the default runtime has no
  * `CompressionStream`).
  */

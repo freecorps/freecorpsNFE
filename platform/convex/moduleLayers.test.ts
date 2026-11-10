@@ -205,14 +205,18 @@ const topForLib: Record<string, string> = {
   schema: "a reidratação valida as linhas contra o schema das tabelas arquivadas",
 };
 
-/** Módulos que referenciam um `*Rest` além de `http.ts`, com o motivo. */
+/** Referências a um `*Rest` além das de `http.ts`, como `origem -> destino`, com o motivo. */
 const restCallers: Record<string, string> = {
-  documentContentNode:
-    "metade Node das leituras REST de documentos e importação: a query do `*Rest` autentica a chave e monta o plano, a action resolve as partes no storage",
-  "testing/usageProof": "a prova de leitura limitada chama o mesmo dispatch da rota de documentos",
+  "documentContentNode -> documentRest":
+    "metade Node da leitura REST de documentos: a query do `*Rest` autentica a chave e monta o plano, a action resolve as partes no storage",
+  "documentContentNode -> importRest": "a mesma metade Node, para a leitura REST de importações",
+  "testing/usageProof -> documentRest":
+    "a prova de leitura limitada chama o mesmo dispatch da rota de documentos",
 };
 
 type Edge = { from: string; to: string; kind: "value" | "type" | "internal"; line: number };
+/** `internal.*` ou `api.*` que não se resolve num módulo conhecido. */
+const unresolved: string[] = [];
 
 /**
  * Lidos da pasta, não por `import.meta.glob` (tests/helpers/convex-sources.ts): o glob fica no
@@ -263,21 +267,29 @@ function edgesOf(from: string, text: string): Edge[] {
       ts.isStringLiteral(node.arguments[0])
     )
       add(node.arguments[0].text, "value", node);
-    else if (ts.isPropertyAccessExpression(node) && !ts.isPropertyAccessExpression(node.parent)) {
+    else if (
+      (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) &&
+      !ts.isPropertyAccessExpression(node.parent) &&
+      !ts.isElementAccessExpression(node.parent)
+    ) {
+      // A referência inteira (`internal.lib.x.f`, `internal.importUpload`): o módulo é o
+      // prefixo mais longo que existe. Acesso por índice não se resolve e reprova.
       const path: string[] = [];
       let target: ts.Expression = node;
-      while (ts.isPropertyAccessExpression(target)) {
-        path.unshift(target.name.text);
+      let indexed = false;
+      for (;;) {
+        if (ts.isPropertyAccessExpression(target)) path.unshift(target.name.text);
+        else if (ts.isElementAccessExpression(target)) indexed = true;
+        else break;
         target = target.expression;
       }
-      if (ts.isIdentifier(target) && (target.text === "internal" || target.text === "api"))
-        for (let size = path.length - 1; size > 0; size--) {
-          const to = path.slice(0, size).join("/");
-          if (known.has(to)) {
-            found.push({ from, to, kind: "internal", line: line(node) });
-            break;
-          }
-        }
+      if (ts.isIdentifier(target) && (target.text === "internal" || target.text === "api")) {
+        let to: string | undefined;
+        for (let size = path.length; !indexed && size > 0 && !to; size--)
+          if (known.has(path.slice(0, size).join("/"))) to = path.slice(0, size).join("/");
+        if (to) found.push({ from, to, kind: "internal", line: line(node) });
+        else unresolved.push(`${from}.ts:${line(node)}: ${node.getText(source)}`);
+      }
     }
     ts.forEachChild(node, visit);
   };
@@ -299,7 +311,8 @@ const rankOf = new Map(
 
 /**
  * Módulo com banco: importa `_generated/server` (os tipos de ctx bastam) ou importa um valor de
- * outro módulo com banco.
+ * outro módulo com banco. `deny` de `lib/organizationAccess.ts` também marca: um módulo que só
+ * recusa com ele, como `lib/issuanceGate.ts`, conta como com banco.
  */
 const database = new Set(
   edges.filter(({ to }) => to === "_generated/server").map(({ from }) => from),
@@ -318,6 +331,12 @@ const contract = (name: string) => /^lib\/\w+(Schema|Values|Rules)$/.test(name);
 const where = ({ from, line }: Edge) => `${from}.ts:${line}`;
 
 describe("camadas de platform/convex", () => {
+  it("toda referência internal.* e api.* aponta para um módulo", () => {
+    expect(unresolved, "escreva a referência por extenso, `internal.<módulo>.<função>`").toEqual(
+      [],
+    );
+  });
+
   it("todo módulo pertence a exatamente um domínio", () => {
     const wrong = [...known]
       .map((name) => [name, domainsOf(name).map(({ domain }) => domain)] as const)
@@ -332,7 +351,7 @@ describe("camadas de platform/convex", () => {
     expect(unused, "padrão de `domains` que não casa nenhum módulo").toEqual([]);
   });
 
-  it("nenhum domínio depende de um domínio acima dele", () => {
+  it("nem internal.* nem import da mesma altura sobem de domínio", () => {
     // `internal.*` liga funções e conta sempre. Um import conta entre módulos da mesma
     // altura (lib com lib, topo com topo): o topo pode usar qualquer helper de lib, e um
     // módulo sem banco é importável de qualquer domínio.
@@ -347,7 +366,7 @@ describe("camadas de platform/convex", () => {
       const to = rankOf.get(edge.to);
       if (!from || !to || to.rank <= from.rank) continue;
       const key = `${edge.from} -> ${edge.to}`;
-      if (key in upward) used.add(key);
+      if (Object.hasOwn(upward, key)) used.add(key);
       else found.push(`${where(edge)} -> ${edge.to} (${from.domain} -> ${to.domain})`);
     }
     expect(
@@ -365,7 +384,9 @@ describe("camadas de platform/convex", () => {
       ({ from, to, kind }) => kind === "value" && isLib(from) && !isLib(to),
     );
     expect(
-      imports.filter(({ to }) => !(to in topForLib)).map((edge) => `${where(edge)} -> ${edge.to}`),
+      imports
+        .filter(({ to }) => !Object.hasOwn(topForLib, to))
+        .map((edge) => `${where(edge)} -> ${edge.to}`),
       "leve o helper para lib/, ou registre o módulo em `topForLib` com o motivo",
     ).toEqual([]);
     expect(
@@ -378,15 +399,20 @@ describe("camadas de platform/convex", () => {
     const callers = local.filter(
       ({ from, to, kind }) => kind !== "type" && /(^|\/)\w+Rest$/.test(to) && from !== "http",
     );
+    const key = ({ from, to }: Edge) => `${from} -> ${to}`;
     expect(
-      callers
-        .filter(({ from }) => !(from in restCallers))
-        .map((edge) => `${where(edge)} -> ${edge.to}`),
+      [
+        ...new Set(
+          callers
+            .filter((edge) => !Object.hasOwn(restCallers, key(edge)))
+            .map((edge) => `${where(edge)} -> ${edge.to}`),
+        ),
+      ],
       "a regra compartilhada vai para lib/ ou para o módulo do domínio, não para o `*Rest`",
     ).toEqual([]);
     expect(
-      Object.keys(restCallers).filter((name) => !callers.some(({ from }) => from === name)),
-      "módulo de `restCallers` que não referencia mais um `*Rest`",
+      Object.keys(restCallers).filter((name) => !callers.some((edge) => key(edge) === name)),
+      "exceção de `restCallers` que não existe mais",
     ).toEqual([]);
   });
 
