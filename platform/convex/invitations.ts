@@ -189,7 +189,8 @@ export const send = action({
             }
           : accounts.enabled
             ? {
-                provider: "cloudflare",
+                provider: "mail",
+                apiUrl: accounts.apiUrl,
                 apiKey: accounts.apiKey,
                 from: accounts.from,
                 allowedRecipients: accounts.allowedRecipients,

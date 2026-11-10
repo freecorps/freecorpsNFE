@@ -3015,31 +3015,6 @@ it("um encerramento sem decisão gravada, só com Sandbox e sem arquivo frio, pe
   expect(survivors(before, await snapshot(f))).toEqual(own(before));
 });
 
-it("um arquivo também guardado pela caixa de privacidade fica, como no arquivo frio", async () => {
-  const f = await fixture(),
-    owner = await actor(f);
-  const storageId = await f.t.run(async (ctx) => {
-    const artifact = (await ctx.db
-      .query("documentArtifacts")
-      .withIndex("by_documentId", (q) => q.eq("documentId", f.documentId))
-      .first())!;
-    await ctx.db.insert("privacyIntakes", {
-      key: "synthetic-intake",
-      hash: "synthetic",
-      from: "titular@development.invalid",
-      to: "privacidade@development.invalid",
-      raw: artifact.storageId!,
-      state: "pending",
-    });
-    return artifact.storageId!;
-  });
-  await closeAndPurge(f, owner);
-  await f.t.run(async (ctx) => {
-    expect(await ctx.db.get("fiscalDocuments", f.documentId)).toBeNull();
-    expect(await ctx.db.system.get("_storage", storageId)).not.toBeNull();
-  });
-});
-
 /**
  * Two versions holding a content blob (ADR 0010, phase B), tracked in the capacity inventory:
  * one on the fixture document, removed with it, and one without a document, which only the

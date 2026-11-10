@@ -161,15 +161,17 @@ Prepare `backend.env` privado com:
 | `AUTH_PROXY_SECRET`                         | 32 bytes aleatórios em hexadecimal, iguais no proxy e backend                |
 | `FNFE_WEBHOOK_MASTER_KEY`                   | 32 bytes aleatórios em hexadecimal, exclusivos do banco                      |
 | `FNFE_PLATFORM_CERT_KEYS`                   | Keyring versionado conforme [CERTIFICATES.md](../plataforma/CERTIFICATES.md) |
-| `EMAIL_MODE`                                | `disabled` ou `cloudflare`                                                   |
+| `EMAIL_MODE`                                | `disabled` ou `mail`                                                         |
 
 `CONVEX_SITE_URL` e `CONVEX_CLOUD_URL` são fornecidas pelo deployment. No
 servidor próprio, configure as origens públicas no processo do servidor.
 Não declare essas variáveis como variáveis da aplicação.
 
-Para habilitar cadastro/verificação/recuperação hospedados, use o provedor
-existente Cloudflare Email Sending em conta do operador. Configure
-`CLOUDFLARE_EMAIL_API_TOKEN`, `ACCOUNT_EMAIL_FROM` e
+Para habilitar cadastro/verificação/recuperação hospedados, use um
+[Ember Mail](https://github.com/freecorps/mail) do operador (código aberto,
+MIT, sobre o Cloudflare Email Service da conta dele), com o domínio do
+remetente verificado e uma chave `sending_access` desse domínio. Configure
+`MAIL_API_URL` (HTTPS), `MAIL_API_KEY`, `ACCOUNT_EMAIL_FROM` e
 `ACCOUNT_EMAIL_RECIPIENTS`, de um a dez destinatários autorizados, ou `*`
 para escrever a qualquer endereço, com cadastro aberto a quem verificar o
 e-mail. O modo desabilitado não conserva credenciais do provedor. Não há SMTP
@@ -225,8 +227,8 @@ node ../node_modules/convex/bin/main.js run termsOfUseNotice:start --env-file CA
 ```
 
 Sem versão em vigor, `start` devolve `none`; com `EMAIL_MODE=disabled`,
-`disabled`; nos dois casos, nada é registrado. Com `EMAIL_MODE=cloudflare`, o
-aviso sai pela Cloudflare para os endereços de `ACCOUNT_EMAIL_RECIPIENTS`, ou
+`disabled`; nos dois casos, nada é registrado. Com `EMAIL_MODE=mail`, o
+aviso sai pelo Ember Mail para os endereços de `ACCOUNT_EMAIL_RECIPIENTS`, ou
 para todos com `*`. Com uma lista, os outros proprietários e administradores
 contam em `withheld` e não recebem o e-mail dessa versão, nem depois; o aviso do console continua valendo
 ([linhas do aviso](../plataforma/ORGANIZATIONS.md#aviso-dos-termos-linhas-presas)).

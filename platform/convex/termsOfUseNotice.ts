@@ -9,7 +9,7 @@ import {
   type MutationCtx,
 } from "./_generated/server";
 import { requirePlatformEnvironment } from "./environment";
-import { sendCloudflareMail } from "./lib/accountMail";
+import { sendAccountMail } from "./lib/accountMail";
 import { closureOf } from "./lib/organizationClosure";
 import { currentTermsOfUse, termsOfUseAcceptance } from "./lib/termsOfUse";
 
@@ -322,7 +322,7 @@ export const deliver = internalAction({
                 otp: claimed.version,
                 type: "terms-of-use",
               })
-            : sendCloudflareMail(accounts, { name: "Freecorps Fiscal", to: [email], ...message }),
+            : sendAccountMail(accounts, { name: "Freecorps Fiscal", to: [email], ...message }),
         ),
       );
       // Never log addresses or the provider response; the row keeps the counts.

@@ -1,7 +1,9 @@
 # E-mail de contas na validação
 
-O backend usa Cloudflare Email Sending pela API REST, seguindo a direção já adotada
-em outro projeto do mantenedor.
+O backend envia pelo [Ember Mail](../operacao/email.md), o serviço de e-mail da
+Freecorps, com `@freecorps/mail-sdk`. Até a troca, enviava direto pela API REST
+do Cloudflare Email Sending; o serviço usa o mesmo provedor e passa a cuidar da
+fila, dos eventos de entrega e das supressões.
 O remetente preparado é `acesso@validacao.fiscal.freecorps.com.br`, na conta
 FreeCorps. O domínio e o token dedicado foram preparados em 10/09/2026.
 Na instalação (`prod:elated-possum-295`), o remetente passou a ser
@@ -25,22 +27,24 @@ O manifesto continua com envio desligado. A configuração compartilhada passa
 pela mesma política em runtime e no preflight de publicação. Modos parciais,
 credenciais remanescentes com envio desligado e provedores desconhecidos falham.
 
-| Variável no Convex de validação | Uso                                                                                                                                 |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `EMAIL_MODE`                    | `disabled` inicialmente; `cloudflare` após ativação controlada                                                                      |
-| `AUTH_PROXY_MODE`               | Ausente/`disabled` inicialmente; `signed` na ativação                                                                               |
-| `AUTH_PROXY_SECRET`             | 32 bytes aleatórios codificados em 64 caracteres hexadecimais; mesmo valor no Worker                                                |
-| `CLOUDFLARE_EMAIL_API_TOKEN`    | Token exclusivo com Account → Email Sending → Edit na conta FreeCorps                                                               |
-| `ACCOUNT_EMAIL_FROM`            | Remetente acima, pertencente ao domínio habilitado                                                                                  |
-| `ACCOUNT_EMAIL_RECIPIENTS`      | 1–10 endereços autorizados, separados por vírgula, guardados privadamente. Só no perfil `installation`, `*` tira a allowlist (#428) |
+| Variável no Convex de validação | Uso                                                                                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `EMAIL_MODE`                    | `disabled` inicialmente; `mail` após ativação controlada (`cloudflare`, o nome anterior, é lido como `mail` durante a troca)            |
+| `AUTH_PROXY_MODE`               | Ausente/`disabled` inicialmente; `signed` na ativação                                                                                   |
+| `AUTH_PROXY_SECRET`             | 32 bytes aleatórios codificados em 64 caracteres hexadecimais; mesmo valor no Worker                                                    |
+| `MAIL_API_URL`                  | `https://mail-api.freecorps.com.br`, a API do Ember Mail                                                                                |
+| `MAIL_API_KEY`                  | Chave `sending_access` do projeto no Ember Mail, restrita ao domínio do remetente ([chaves por deployment](../operacao/email.md#envio)) |
+| `ACCOUNT_EMAIL_FROM`            | Remetente acima, pertencente ao domínio habilitado                                                                                      |
+| `ACCOUNT_EMAIL_RECIPIENTS`      | 1–10 endereços autorizados, separados por vírgula, guardados privadamente. Só no perfil `installation`, `*` tira a allowlist (#428)     |
 
-O Worker recebe somente `AUTH_PROXY_SECRET`. O token de e-mail fica no backend;
-não vai para o bundle, navegador, logs, fixtures ou variáveis `VITE_*`. O escopo
-Cloudflare é da conta: a aplicação restringe remetente, destinatários e endpoint.
-Não usar token de outro projeto ou a credencial de publicação do Worker para enviar e-mail.
+O Worker recebe somente `AUTH_PROXY_SECRET`. A chave de e-mail fica no backend;
+não vai para o bundle, navegador, logs, fixtures ou variáveis `VITE_*`. A chave
+só envia do domínio dela, e a aplicação restringe ainda remetente e
+destinatários. Não usar a chave de outro projeto nem a credencial de publicação
+do Worker para enviar e-mail.
 
 O GitHub environment `validation` guarda cópias exclusivas com os nomes
-`VALIDATION_AUTH_PROXY_SECRET`, `VALIDATION_CLOUDFLARE_EMAIL_API_TOKEN`,
+`VALIDATION_AUTH_PROXY_SECRET`, `VALIDATION_MAIL_API_KEY`,
 `VALIDATION_ACCOUNT_EMAIL_FROM` e `VALIDATION_ACCOUNT_EMAIL_RECIPIENTS`.
 Esses secrets não são injetados no CI de PR nem ativam o runtime automaticamente.
 
@@ -113,11 +117,12 @@ Veja a prova HTTP da renovação local.
 
 ## Entrega, códigos e sessão
 
-O adaptador usa endpoint fixo, timeout de cinco segundos, sem redirects e sem
-repetição automática. Resposta 2xx só é aceita quando `success=true` e o
-destinatário aparece em `queued` ou `delivered`, sem rejeição permanente.
-Resposta do provedor tem limite de 32 KiB; seu conteúdo nunca vai para o cliente.
-Aceitação em fila não é prova de entrega na caixa de entrada.
+O adaptador chama o Ember Mail em `MAIL_API_URL`, com timeout de cinco segundos
+e sem repetição automática. O envio só conta quando o serviço o aceita (fila,
+com id); uma recusa (4xx) e uma resposta incerta (timeout, 5xx, sem resposta)
+falham com erro genérico. O conteúdo da resposta nunca vai para o cliente nem
+para o log. Aceitação em fila não é prova de entrega na caixa de entrada; a
+entrega, os bounces e as supressões ficam no serviço.
 
 O fluxo aguarda o provedor. Better Auth pode absorver erros do callback; a
 instância criada para cada requisição retém a falha para registrar somente

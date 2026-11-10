@@ -256,7 +256,8 @@ describe("Aviso por e-mail aos proprietários e administradores", () => {
       EMAIL_MODE: "disabled",
       SITE_URL: "https://freecorpsnfe-validation.freecorps.workers.dev",
       CONVEX_SITE_URL: "https://modest-seal-118.convex.site",
-      CLOUDFLARE_EMAIL_API_TOKEN: "",
+      MAIL_API_URL: "",
+      MAIL_API_KEY: "",
       ACCOUNT_EMAIL_FROM: "",
       ACCOUNT_EMAIL_RECIPIENTS: "",
     }))

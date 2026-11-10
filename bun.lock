@@ -147,11 +147,11 @@
         "@freecorps/fiscal-core": "workspace:*",
         "@freecorps/fiscal-nfe": "workspace:*",
         "@freecorps/fiscal-nfse": "workspace:*",
+        "@freecorps/mail-sdk": "0.1.1",
         "better-auth": "1.6.33",
         "convex": "1.48.0",
         "convex-helpers": "0.1.129",
         "fflate": "0.8.3",
-        "postal-mime": "4.1.4",
       },
     },
   },
@@ -361,6 +361,8 @@
     "@freecorps/fiscal-platform": ["@freecorps/fiscal-platform@workspace:platform"],
 
     "@freecorps/freecorpsnfe-sdk": ["@freecorps/freecorpsnfe-sdk@workspace:packages/sdk"],
+
+    "@freecorps/mail-sdk": ["@freecorps/mail-sdk@0.1.1", "", {}, "sha512-9j1jmuTEE6WwVsZ9j4w5VlZqGTS8miMu83btttobzJ2epu2YVlgUWh1ZJztagGKt1XQ4IZxlfTgo9SXuTM5Rqw=="],
 
     "@fuma-translate/react": ["@fuma-translate/react@1.0.2", "", { "peerDependencies": { "@types/react": "*", "react": "^19.2.0", "react-dom": "^19.2.0" }, "optionalPeers": ["@types/react"] }, "sha512-uOiOtBx3nRXR8Nu1GzBf1tApgF1FErDBTHxRIAQeyQdyOoZbrNRN6H4kDCWObY4qyGeGbHydG0DHzgeUgFDMIw=="],
 
@@ -1451,8 +1453,6 @@
     "playwright-core": ["playwright-core@1.64.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ=="],
 
     "pngjs": ["pngjs@5.0.0", "", {}, "sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw=="],
-
-    "postal-mime": ["postal-mime@4.1.4", "", {}, "sha512-+6Qsn7Q2TSLMScfN4X2VQIclPRKgDAtKhytQex3fVSV/+HgVaawtsQGzKYDQLQIBR7b4Vfg+88WRGvuF/kwLSw=="],
 
     "postcss": ["postcss@8.5.31", "", { "dependencies": { "nanoid": "^3.3.20", "picocolors": "^1.1.1", "source-map-js": "^1.2.2" } }, "sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg=="],
 

@@ -376,8 +376,8 @@ outra versão; sem ela, vale a vigente.
   enquanto `resumed` não for zero. Repetir é seguro: só uma reserva da linha
   vence, então um envio original atrasado e o retomado não mandam duas vezes.
 - **`sending`:** não há reenvio automático nem comando de reenvio, porque o
-  efeito é incerto. O operador confere nos registros do Email Sending da
-  conta Cloudflare se saíram mensagens com o assunto do aviso perto de
+  efeito é incerto. O operador confere no Ember Mail (`GET /emails` do
+  projeto, [e-mail](../operacao/email.md#envio)) se saíram mensagens com o assunto do aviso perto de
   `claimedAt`, para os proprietários e administradores ativos da organização
   (`organizationId`); o endereço não fica na linha nem no log. Se saíram, a
   linha fica como está. Se não saíram, ou se não

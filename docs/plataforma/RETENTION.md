@@ -843,35 +843,17 @@ do `convex-test` foi executado, e nada foi aplicado na instalação.
 ### Canal de atendimento, D02
 
 O canal dedicado é `privacidade@nfe.freecorps.com.br`, escolhido em 21/10/2026
-em substituição ao alias do domínio principal. A caixa fica no console,
-restrita ao responsável e ao substituto por allowlist do servidor. Mensagens,
-originais, anexos e notas ficam nas tabelas globais `privacy*` e no storage,
-fora das organizações clientes. A classe `control` identifica seu ciclo
-próprio: cinco anos após encerrar o pedido, o expurgo remove conversa,
-mensagens e originais; reabrir cancela esse prazo. Tickets de download
-expiram em dois minutos. A manutenção é chamada pelo Worker dedicado a cada
-cinco minutos, sem habilitar os crons fiscais do backend. Ela também apaga
-originais de e-mail sem intake nem mensagem depois de uma hora, como os de
-uma entrega que falhou antes de se registrar; `privacyMaintenance`, classe
-`control`, guarda o cursor dessa varredura. Original referenciado não é
-apagado por ela. O `message/rfc822` genérico só é elegível se criado antes
-da linha de controle; um arquivo enviado à mão pelo dashboard com esse tipo
-antes disso e sem referência seria apagado, e nenhum envio manual pode usar
-o tipo privado dos originais. Na D05, com o Worker desligado, nem o expurgo
-nem essa coleta rodam. A coleta falha fechada: nasce retida, retém tudo
-que foi criado desde a última execução depois de mais de 30 minutos sem
-execução e, no restore, é retida explicitamente com `holdOriginals` antes de
-religar o Worker ([restauração](../operacao/restauracao.md#retenção-e-encerramentos-após-o-restore)).
-O operador recupera os originais posteriores ao snapshot e libera com
-`releaseHeldOriginals`, conforme o roteiro. A fila R2 e os
-passos de ativação estão no [roteiro](../operacao/privacidade-email.md#falha-recuperação-e-retenção).
-As mesmas tabelas guardam a caixa de segurança, separada por conversa, com
-o mesmo ciclo de cinco anos, confirmado pelo mantenedor em 21/10/2026
-([roteiro](../operacao/seguranca-email.md)). A caixa de suporte, ainda não
-ativada, segue o mesmo ciclo no código; a guarda dos chamados é decisão do
-mantenedor pendente ([roteiro](../operacao/suporte-email.md)). A caixa de
-operação, dos alertas da captura, segue o mesmo ciclo até decisão própria
-([roteiro](../operacao/operacao-email.md)).
+em substituição ao alias do domínio principal. A caixa fica no
+[Ember Mail](../operacao/email.md#caixas), o serviço de e-mail da Freecorps,
+fora do Convex e das organizações clientes. Só as contas do serviço com acesso
+à caixa a leem: os admins, que são o responsável e o substituto. Conversas,
+mensagens, originais, anexos e notas ficam no serviço. A caixa apaga a
+conversa encerrada, com mensagens, originais e anexos, cinco anos (1.826 dias)
+depois da última mudança de status ou mensagem; reabrir ou escrever reinicia
+o prazo. As caixas de segurança, suporte e operação seguem o mesmo ciclo, com
+a mesma configuração por caixa no serviço. Até a troca, a caixa ficava no
+console, nas tabelas `privacy*`, com o mesmo ciclo
+([registro](../operacao/privacidade-email.md)).
 O canal deve ser publicado junto com a identificação do encarregado
 ([LGPD, art. 41](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm)).
 Para vigorar, falta habilitar o recebimento e comprovar o atendimento por

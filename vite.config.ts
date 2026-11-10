@@ -316,15 +316,6 @@ export default defineConfig({
         command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
         cache: false,
       },
-      // Só workerd local, sem Git nem rede; o relatório não carimba revisão. O
-      // Miniflare regrava o cache de request.cf em node_modules/.mf.
-      "ci:privacy-worker": {
-        command: "node scripts/proofs/prove-privacy-mail-worker.mjs",
-        cache: {
-          input: [{ auto: true }, ...generated],
-          output: [".browser-results/privacy-worker/report.json"],
-        },
-      },
       validate: {
         command: "echo validate: ok",
         cache: false,
@@ -341,7 +332,6 @@ export default defineConfig({
           "ci:tooling",
           "ci:console",
           "ci:auth-worker",
-          "ci:privacy-worker",
         ],
       },
     },

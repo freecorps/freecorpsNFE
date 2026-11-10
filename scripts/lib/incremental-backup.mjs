@@ -21,8 +21,6 @@ export const STORAGE_FIELDS = {
   captureBatches: "rawId",
   issuanceArtifacts: "storageId",
   referenceVersions: "storageId",
-  privacyIntakes: "raw",
-  privacyMessages: "raw",
   exportParts: "storageId",
   documentDanfes: "storageId",
   capacityFiles: "storageId",

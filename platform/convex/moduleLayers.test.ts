@@ -63,7 +63,6 @@ const domains: [name: string, modules: string[]][] = [
       "invitations",
       "mail",
       "organizations",
-      "privacyMail*",
       "provision",
       "termsOfUse*",
       "lib/accountMail",

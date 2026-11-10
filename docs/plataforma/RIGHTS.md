@@ -11,7 +11,7 @@ fiscal/privacidade de D06.
 
 O modelo escolhido é o menor que atende D02: um canal dedicado, um registro
 restrito de decisões recuperável fora do snapshot e os fluxos que o produto
-já tem. A caixa e as notas restritas ficam em `/console/privacidade`;
+já tem. A caixa e as notas restritas ficam no [Ember Mail](../operacao/email.md#caixas);
 correção e exclusão da conta são feitas pelo próprio titular em **Minha conta**.
 
 ## Papéis e responsáveis
@@ -304,31 +304,25 @@ responde `unchanged`.
 
 ## Caixa implantada e acompanhamento
 
-A decisão de 21/10/2026 substitui o alias externo por uma caixa no console,
-como em outro projeto da Freecorps. O endereço passa a ser
-`privacidade@nfe.freecorps.com.br`. A caixa em `/console/privacidade` recebe
-mensagens, registra notas internas e permite responder. Acesso exige conta
-Better Auth verificada e presença em `FNFE_PRIVACY_OPERATOR_EMAILS`;
-papéis das organizações clientes não concedem acesso.
+A decisão de 21/10/2026 substituiu o alias externo por uma caixa própria, no
+endereço `privacidade@nfe.freecorps.com.br`. A caixa começou no console e
+passou para o [Ember Mail](../operacao/email.md), o serviço de e-mail da
+Freecorps, sem mudar o endereço. Ela recebe mensagens, registra notas
+internas e permite responder. Só as contas do serviço com acesso à caixa a
+leem: os admins, que são o responsável e o substituto. Papéis das
+organizações clientes não concedem acesso.
 
-O Worker dedicado guarda o original no R2 antes de aceitar a mensagem,
-entrega ao Convex com assinatura e repete falhas. O Convex deduplica a entrega,
-preserva o original com anexos e mostra apenas texto no console. O remetente
-não é considerado verificado. O token do endereço de resposta reúne a
-conversa, mas não substitui a verificação de identidade exigida neste roteiro.
-Notas internas registram os campos de atendimento acima; não são enviadas
-ao titular. Conversas encerradas são expurgadas cinco anos depois, junto
-dos originais, mensagens e notas.
+O serviço guarda o original `.eml` e os anexos de cada mensagem. O remetente
+não é considerado verificado. A conversa reúne as respostas pelos cabeçalhos,
+mas isso não substitui a verificação de identidade exigida neste roteiro.
+Notas internas registram os campos de atendimento acima e não são enviadas
+ao titular. Conversas encerradas são apagadas cinco anos depois da última
+mudança de status ou mensagem, junto dos originais, mensagens e notas.
 
-O envio é idempotente por operador e pedido. Aceitação pelo provedor não
-comprova leitura nem entrega final. Timeout deixa o envio sem confirmação,
-sem retentativa automática; conferir o provedor antes de enviar outra resposta.
-O download do original exige autorização e um ticket de uso único por dois
-minutos, com nova conferência do operador ao consumir.
-
-Implementação e testes locais não habilitam o endereço. Configuração,
-ensaio externo e recuperação estão em
-[E-mail de privacidade](../operacao/privacidade-email.md).
+Aceitação da resposta pelo serviço não comprova leitura nem entrega final; a
+entrega e os bounces aparecem na própria conversa. A configuração e a troca
+estão em [E-mail pelo Ember Mail](../operacao/email.md); o registro da caixa
+anterior, em [E-mail de privacidade](../operacao/privacidade-email.md).
 
 - Canal e ensaio do responsável concluídos no roteiro operacional de 21/10.
   Registrar o primeiro acesso do substituto quando ele criar e verificar sua conta.

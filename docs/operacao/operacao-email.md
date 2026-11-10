@@ -1,5 +1,10 @@
 # E-mail de operação
 
+> **Aposentado.** Esta caixa passou para o Ember Mail, com o envio da
+> plataforma: veja [E-mail pelo Ember Mail](email.md). O Worker
+> `freecorpsnfe-privacy-mail`, as tabelas `privacy*` e a página do console
+> saíram do código. O texto abaixo é o registro do que foi feito.
+
 Caixa interna da Freecorps para os alertas da captura fiscal, acompanhada
 pela [#463](https://github.com/freecorps/freecorpsNFE-arquivo/issues/463). O
 endereço é `operacao@nfe.freecorps.com.br`, no mesmo subdomínio das outras

@@ -25,13 +25,14 @@ beforeEach(() => {
     FISCAL_ENV: "disabled",
     FNFE_CRONS: "off",
     WEBHOOK_MODE: "disabled",
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     SITE_URL: origin,
     CONVEX_SITE_URL: site,
     BETTER_AUTH_SECRET: "synthetic-better-auth-secret-not-for-deployment",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: secret,
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token-only",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token-only",
     ACCOUNT_EMAIL_FROM: "sender@validation.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: `${email},${missing}`,
   }))
@@ -41,10 +42,7 @@ beforeEach(() => {
     vi.fn(async (_url, init) => {
       const body = JSON.parse(init.body);
       messages.push(body);
-      return Response.json({
-        success: true,
-        result: { queued: body.to, delivered: [], permanent_bounces: [] },
-      });
+      return Response.json({ id: "email-1" });
     }),
   );
 });
@@ -95,11 +93,37 @@ async function signup(t: ReturnType<typeof setup>) {
 }
 it("validates controlled configuration and keeps remote credentials out of local worktrees", () => {
   expect(accountPolicy({ EMAIL_MODE: "disabled" }).enabled).toBe(false);
-  expect(() => accountPolicy({ EMAIL_MODE: "cloudflare" })).toThrow();
-  expect(() =>
-    accountPolicy({ EMAIL_MODE: "local", CLOUDFLARE_EMAIL_API_TOKEN: "private" }, true),
-  ).toThrow();
+  expect(() => accountPolicy({ EMAIL_MODE: "mail" })).toThrow();
+  expect(() => accountPolicy({ EMAIL_MODE: "local", MAIL_API_KEY: "private" }, true)).toThrow();
   expect(() => accountPolicy({ EMAIL_MODE: "disabled", AUTH_PROXY_SECRET: secret })).toThrow();
+});
+it("reads the mail service from MAIL_*, with an HTTPS address, and the former mode name while switching", () => {
+  const remote = {
+    EMAIL_MODE: "mail",
+    AUTH_PROXY_MODE: "signed",
+    AUTH_PROXY_SECRET: secret,
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
+    ACCOUNT_EMAIL_FROM: "sender@example.invalid",
+    ACCOUNT_EMAIL_RECIPIENTS: "a@example.invalid",
+  };
+  expect(accountPolicy(remote)).toMatchObject({
+    enabled: true,
+    apiUrl: "https://mail.development.invalid",
+    apiKey: "synthetic-provider-token",
+  });
+  // `cloudflare` is read as `mail`, and the former token is ignored, until the deployments switch.
+  expect(
+    accountPolicy({ ...remote, EMAIL_MODE: "cloudflare", CLOUDFLARE_EMAIL_API_TOKEN: "old" })
+      .enabled,
+  ).toBe(true);
+  for (const MAIL_API_URL of [
+    "",
+    "http://mail.development.invalid",
+    "https://u:p@mail.development.invalid",
+  ])
+    expect(() => accountPolicy({ ...remote, MAIL_API_URL })).toThrow();
+  expect(() => accountPolicy({ ...remote, EMAIL_MODE: "disabled" })).toThrow();
 });
 it("names the sender without Validação only in the installation profile", () => {
   vi.stubEnv("APP_ENV", "installation");
@@ -110,10 +134,11 @@ it("names the sender without Validação only in the installation profile", () =
 });
 it("lifts the allowlist with * only in the installation profile (#428)", () => {
   const remote = {
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: secret,
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
     ACCOUNT_EMAIL_FROM: "sender@example.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: "*",
   };
@@ -335,7 +360,8 @@ it("keeps unverified accounts blocked when mail is disabled and verifies only re
   const t = setup();
   await signup(t);
   for (const name of [
-    "CLOUDFLARE_EMAIL_API_TOKEN",
+    "MAIL_API_URL",
+    "MAIL_API_KEY",
     "ACCOUNT_EMAIL_FROM",
     "ACCOUNT_EMAIL_RECIPIENTS",
   ])

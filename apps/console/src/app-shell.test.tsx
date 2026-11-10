@@ -106,12 +106,11 @@ function renderShell(
   children: React.ReactNode = <h1>Organizações</h1>,
   signOut = vi.fn(),
   environment: string | null = "Desenvolvimento local",
-  mailboxes: { privacy?: boolean; security?: boolean; support?: boolean; operation?: boolean } = {},
 ) {
   render(
     <AppShell
       account={{ name: "Ana Sintética", role: "Conta verificada" }}
-      tools={{ diagnostics: false, prototype: false, components: false, ...mailboxes }}
+      tools={{ diagnostics: false, prototype: false, components: false }}
       environment={environment ?? undefined}
       version="abcdef1234"
       onSignOut={signOut}
@@ -212,27 +211,6 @@ describe("shell do console", () => {
       renderShell();
       expect(offered()).toEqual({ link: true, menu: true, palette: true });
     });
-  });
-
-  it("cada caixa de e-mail aparece só para os operadores dela", () => {
-    renderShell(undefined, undefined, undefined, { support: true });
-    const nav = screen.getByRole("navigation", { name: "Navegação do console" });
-    expect(within(nav).getByRole("link", { name: "Suporte" }).getAttribute("href")).toBe(
-      "/console/suporte",
-    );
-    expect(within(nav).queryByRole("link", { name: "Privacidade" })).toBeNull();
-    expect(within(nav).queryByRole("link", { name: "Segurança" })).toBeNull();
-    cleanup();
-    renderShell(undefined, undefined, undefined, { privacy: true, security: true });
-    expect(screen.queryByRole("link", { name: "Suporte" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Operação" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Segurança" })).toBeTruthy();
-    cleanup();
-    renderShell(undefined, undefined, undefined, { operation: true });
-    expect(screen.getByRole("link", { name: "Operação" }).getAttribute("href")).toBe(
-      "/console/operacao",
-    );
-    expect(screen.queryByRole("link", { name: "Suporte" })).toBeNull();
   });
 
   it("com organização: seletor no topo, menu pelo papel e troca que desmonta antes de navegar", () => {

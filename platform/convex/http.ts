@@ -1,5 +1,4 @@
 import { httpRouter } from "convex/server";
-import { receive as receivePrivacyMail, file as privacyMailFile } from "./privacyMailHttp";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requirePlatformEnvironment } from "./environment";
@@ -24,9 +23,6 @@ import { route as stripeRoute } from "./stripeRest";
 import { route as billingRoute } from "./billingRest";
 
 const http = httpRouter();
-http.route({ path: "/privacy-mail", method: "POST", handler: receivePrivacyMail });
-http.route({ path: "/privacy-mail/maintenance", method: "POST", handler: receivePrivacyMail });
-http.route({ pathPrefix: "/privacy-mail/file/", method: "GET", handler: privacyMailFile });
 http.route({ path: "/v1/exports", method: "POST", handler: exportRoute });
 http.route({ pathPrefix: "/v1/exports/", method: "GET", handler: exportRoute });
 http.route({ pathPrefix: "/v1/exports/", method: "POST", handler: exportRoute });

@@ -3,7 +3,6 @@ import { capacityTables } from "./lib/capacitySchema";
 import { planTables } from "./lib/planSchema";
 import { billingTables } from "./lib/billingSchema";
 import { archiveOriginFields, coldArchiveTables } from "./lib/coldArchiveSchema";
-import { privacyTables } from "./lib/privacyMailSchema";
 import { usageTables } from "./lib/usageSchema";
 import { exportTables } from "./lib/exportSchema";
 import { observabilityTables } from "./lib/observabilitySchema";
@@ -45,7 +44,6 @@ export default defineSchema({
   ...planTables,
   ...billingTables,
   ...coldArchiveTables,
-  ...privacyTables,
   ...accessTables,
   ...closureTables,
   ...sandboxClosureTables,

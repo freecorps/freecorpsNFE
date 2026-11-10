@@ -1025,14 +1025,14 @@ atenção em Produção. O site não tem log stream declarado
 para a mesma contagem fora do Convex.
 
 O destino do alerta é o **e-mail operacional** da Freecorps, enviado uma vez
-por alerta pelo Email Sending da conta Cloudflare, o mesmo das contas:
+por alerta pelo [Ember Mail](../operacao/email.md), o mesmo das contas:
 
 - `FNFE_CAPTURE_ALERT_EMAIL`: de um a cinco endereços, separados por vírgula.
   No site, é `operacao@nfe.freecorps.com.br`, a
-  [caixa de operação](../operacao/operacao-email.md) lida no console, e um
+  [caixa de operação](../operacao/email.md#caixas) no Ember Mail, e um
   [endereço de plantão](../operacao/operacao-email.md#aviso-fora-do-console)
   (#126);
-- `EMAIL_MODE=cloudflare`, `CLOUDFLARE_EMAIL_API_TOKEN` e `ACCOUNT_EMAIL_FROM`,
+- `EMAIL_MODE=mail`, `MAIL_API_URL`, `MAIL_API_KEY` e `ACCOUNT_EMAIL_FROM`,
   já exigidos pelo e-mail das contas;
 - só no perfil `installation`; desenvolvimento e validação nunca enviam.
 

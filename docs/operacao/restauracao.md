@@ -80,40 +80,12 @@ registrados fora do banco, conforme
 `prepare` e `restore <worktree-destino>` como acima. O recibo de 07/10 está
 na evidência de D05.
 
-Originais das caixas de privacidade, segurança, suporte e operação, antes de religar
-o Worker `freecorpsnfe-privacy-mail`. Mensagens recebidas depois do snapshot
-podem ter só o original no storage, sem intake, e a coleta de órfãos as apagaria:
-
-1. Com o Worker ainda desligado, ler a linha de controle no deployment
-   restaurado. Em Git Bash, com a chave de deploy desse deployment só na
-   sessão:
-
-   ```sh
-   cd platform
-   export CONVEX_DEPLOY_KEY='<deployment restaurado>|…'   # colar, sem gravar em arquivo
-   bunx convex data privacyMaintenance
-   ```
-
-2. Reter a partir do instante do snapshot, em milissegundos desde a época.
-   Uma retenção existente mais antiga é mantida:
-
-   ```sh
-   bunx convex run privacyMail:holdOriginals '{"from": <instante do snapshot>}'
-   bunx convex data privacyMaintenance
-   ```
-
-   Conferir `heldFrom` menor ou igual ao instante do snapshot.
-
-3. Religar o Worker. Os Workers Logs passam a registrar
-   `privacy-mail: coleta de originais retida; conferir privacyMaintenance`.
-4. Reconciliar os originais criados desde `heldFrom`, conforme
-   [Falha, recuperação e retenção](privacidade-email.md#falha-recuperação-e-retenção).
-   A liberação vale para todas as retenções fundidas nesse `heldFrom`.
-5. Só então liberar, com o valor lido:
-
-   ```sh
-   bunx convex run privacyMail:releaseHeldOriginals '{"heldFrom": <valor lido>}'
-   ```
+As caixas de privacidade, segurança, suporte e operação ficam no
+[Ember Mail](email.md), fora do snapshot do Convex: um restore não as toca nem
+precisa reter originais. Um snapshot anterior à troca ainda traz as tabelas
+`privacy*`, que o schema atual não tem. Restaure-o com o código da revisão
+dele, ou esvazie essas tabelas depois de exportá-las para o registro restrito
+([troca](email.md#troca)).
 
 ## Arquivo econômico na restauração
 

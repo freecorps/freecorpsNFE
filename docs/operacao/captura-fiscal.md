@@ -277,7 +277,7 @@ A Freecorps recebe um alerta de cada atenção de uma captura em produção e do
 que a verificação de cada empresa liberada encontra a cada 6 horas
 ([supervisão](../plataforma/CAPTURE.md#supervisão-e-alertas-422)). Um alerta
 chega uma vez, por e-mail em `FNFE_CAPTURE_ALERT_EMAIL` (no site, a
-[caixa de operação](operacao-email.md), em `/console/operacao`, e o
+[caixa de operação](email.md#caixas) no Ember Mail, e o
 [endereço de plantão](operacao-email.md#aviso-fora-do-console)), e sempre como linha
 `capture_alert` no log do Convex do site. O e-mail traz tipo, código e ids da
 organização, da empresa e do stream, sem CNPJ. A situação de todas as
@@ -323,7 +323,7 @@ real. Não expire certificado nem provoque consulta à Receita para gerar um.
    `delivery` e `sentAt`. O recibo fica no artefato
    `capture-fiscal-alert_test-<run>-<tentativa>`. Nenhum dos dois mostra os
    endereços.
-3. Em `/console/operacao` (ou em cada caixa de `FNFE_CAPTURE_ALERT_EMAIL`), procure o assunto
+3. Na caixa `nfe-operacao` do Ember Mail (ou em cada caixa de `FNFE_CAPTURE_ALERT_EMAIL`), procure o assunto
    `[Freecorps Fiscal] Teste do alerta da captura: run <run>/<tentativa>` e
    anote o horário de chegada.
 4. Registre na issue da mudança (a #463 na ativação, a #126 no endereço de

@@ -10,7 +10,7 @@ import {
   type ActionCtx,
 } from "./_generated/server";
 import { requirePlatformEnvironment } from "./environment";
-import { accountSenderName, sendCloudflareMail } from "./lib/accountMail";
+import { accountSenderName, sendAccountMail } from "./lib/accountMail";
 import { archiveStatus, endArchiveNotice, FISCAL_READ_WINDOW } from "./lib/coldArchiveCore";
 import { archiveNoticeMailState, archiveState } from "./lib/coldArchiveSchema";
 import {
@@ -274,7 +274,7 @@ export async function sendNoticeMail(
         .map((email) =>
           local
             ? ctx.runMutation(internal.mail.capture, { email, otp: notice.otp, type: notice.type })
-            : sendCloudflareMail(accounts, { name: accountSenderName(), to: [email], ...message }),
+            : sendAccountMail(accounts, { name: accountSenderName(), to: [email], ...message }),
         ),
     );
     confirmed += sends.filter((send) => send.status === "fulfilled").length;

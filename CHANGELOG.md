@@ -2,6 +2,16 @@
 
 ## Não publicado
 
+- O e-mail da plataforma passa pelo Ember Mail (freecorps/mail), com
+  `@freecorps/mail-sdk`: códigos de conta, convites, avisos e alertas da
+  captura saem pelo serviço (`EMAIL_MODE=mail`, `MAIL_API_URL`,
+  `MAIL_API_KEY`), que cuida da fila, dos eventos de entrega e das
+  supressões. As caixas `privacidade@`, `seguranca@`, `suporte@` e
+  `operacao@nfe.freecorps.com.br` passam a ser lidas e respondidas no Ember
+  Mail, com o mesmo ciclo de cinco anos. Saem a caixa do console
+  (`/console/privacidade`, `/seguranca`, `/suporte`, `/operacao`), as tabelas
+  `privacy*` e o Worker `freecorpsnfe-privacy-mail`. A ordem da troca está em
+  `docs/operacao/email.md`.
 - A captura de NF-e não para mais no primeiro cStat 999 ("Rejeição: Erro
   não catalogado") da Receita (#195): o 999 não aponta problema na consulta,
   então a captura repete a consulta depois de uma hora e do intervalo mínimo

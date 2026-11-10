@@ -70,8 +70,6 @@
     "worktree:mail": "bun scripts/worktree.mjs mail",
     "platform:browser": "node --experimental-strip-types apps/console/e2e/foundation.mjs",
     "platform:worker": "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
-    "platform:privacy-worker": "node scripts/proofs/prove-privacy-mail-worker.mjs",
-    "deploy:mail": "wrangler deploy --config deploy/privacy-mail/wrangler.jsonc",
     "xml:runtime": "node scripts/fiscal/prove-nfe-runtime.mjs",
     "contracts:generate": "bun scripts/contracts/generate-contracts.mjs",
     "contracts:check": "bun scripts/contracts/generate-contracts.mjs --check",

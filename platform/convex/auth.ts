@@ -145,7 +145,8 @@ export function createAuth(ctx: GenericCtx<DataModel>, provision = false) {
                           capture: (message) => ctx.runMutation(internal.mail.capture, message),
                         }
                       : {
-                          provider: "cloudflare",
+                          provider: "mail",
+                          apiUrl: accounts.apiUrl,
                           apiKey: accounts.apiKey,
                           from: accounts.from,
                           allowedRecipients: accounts.allowedRecipients,
