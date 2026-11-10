@@ -50,12 +50,14 @@ export const documentationOnly = (file) =>
 
 /**
  * Testes que leem toda a documentação versionada e rodam também no modo `docs`:
- * os identificadores fiscais de cada Markdown e a classificação de todo
- * arquivo versionado para a cópia pública.
+ * os identificadores fiscais de cada Markdown, a classificação de todo
+ * arquivo versionado para a cópia pública e o status das ADRs, que só o
+ * cabeçalho delas declara.
  */
 export const documentationTests = [
   "scripts/public-copy/public-identifiers.test.ts",
   "scripts/public-copy/public-tree.test.ts",
+  "scripts/repo/adr-status.test.ts",
 ];
 
 /**

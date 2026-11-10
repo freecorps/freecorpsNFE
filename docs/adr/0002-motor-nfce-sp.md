@@ -1,5 +1,9 @@
 # Motor NFC-e no backend existente
 
+Data: 08/09/2026 · Status: **Substituída**, sem ADR sucessora: o adaptador
+saiu com o backend legado, e a plataforma atual não emite NFC-e
+([Situação em 21/10/2026](#situação-em-21102026)).
+
 ## Situação em 21/10/2026
 
 > O adaptador NFC-e SP descrito aqui vivia no backend legado

@@ -405,7 +405,7 @@ operação e captura de uma integração respondem `INTEGRATION_RECORD` com o no
 dela, e o console orienta a geri-los pela integração. Cancelar NFS-e é a
 exceção: owner/admin/operator cancelam emissões de qualquer origem, notificando
 só o projeto dono. Aceitar a perda de uma lacuna da captura é a outra (#442,
-[ADR 0008](../adr/0008-perda-fiscal-em-captura-de-integracao.md), proposta):
+[ADR 0008](../adr/0008-perda-fiscal-em-captura-de-integracao.md)):
 só o owner decide, com motivo registrado, como na captura do console, e a
 captura segue na integração.
 O contrário não vale: a chave de um projeto não enxerga lotes, emissões ou a

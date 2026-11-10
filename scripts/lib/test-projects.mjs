@@ -18,13 +18,15 @@ const tooling = [
 ];
 const benchmarks = ["platform/**/*.benchmark.test.ts", "tests/**/*.benchmark.test.ts"];
 // Testes que leem a árvore inteira: os identificadores de todo Markdown, a
-// classificação de todo arquivo versionado para a cópia pública e o guarda da
-// lista de documentação, que lê todo código-fonte. Numa área própria, a
-// `tooling` só repete a execução quando muda o que ela lê, não a cada arquivo
-// do repositório. Os dois primeiros são também os testes do modo de
-// documentação do CI (`documentationTests` em scripts/lib/ci-changes.mjs).
+// classificação de todo arquivo versionado para a cópia pública, o status das
+// ADRs em todo Markdown e o guarda da lista de documentação, que lê todo
+// código-fonte. Numa área própria, a `tooling` só repete a execução quando muda
+// o que ela lê, não a cada arquivo do repositório. Os três primeiros são também
+// os testes do modo de documentação do CI (`documentationTests` em
+// scripts/lib/ci-changes.mjs).
 const repository = [
   "scripts/public-copy/{public-identifiers,public-tree}.test.ts",
+  "scripts/repo/adr-status.test.ts",
   "tests/ci.changes.test.ts",
 ];
 // Os testes da plataforma ficam ao lado do módulo (platform/convex/, inclusive lib/ e

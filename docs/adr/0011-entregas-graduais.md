@@ -1,6 +1,6 @@
 # Entregas graduais e aceite por capacidade
 
-Data: 31/10/2026. Status: aceita por decisão do mantenedor na
+Data: 31/10/2026 · Status: **Aceita** por decisão do mantenedor na
 [#43](https://github.com/freecorps/freecorpsNFE-arquivo/issues/43), documentada na
 [#694](https://github.com/freecorps/freecorpsNFE-arquivo/issues/694).
 

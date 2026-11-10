@@ -7,14 +7,14 @@ agentes e aponta para as referências abaixo.
 
 ## Onde fica cada tipo de documento
 
-| Pasta                                  | Responde                                                                                 |
-| -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`plataforma/`](plataforma/)           | Contrato atual de cada domínio e arquitetura do backend                                  |
-| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI, lint e validação no navegador                                     |
-| [`operacao/`](operacao/)               | Publicação, ambientes, backup, restauração e instalação própria                          |
-| [`adr/`](adr/)                         | Decisões aceitas; mudança posterior entra em "Situação" datada, sem reescrever a decisão |
-| [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                        |
-| [`termos/`](termos/)                   | Termos da captura, termos de uso e política, com versão e hash, e o rascunho da captura  |
+| Pasta                                  | Responde                                                                                                       |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [`plataforma/`](plataforma/)           | Contrato atual de cada domínio e arquitetura do backend                                                        |
+| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI, lint e validação no navegador                                                           |
+| [`operacao/`](operacao/)               | Publicação, ambientes, backup, restauração e instalação própria                                                |
+| [`adr/`](adr/)                         | Decisões, com o status só no cabeçalho; mudança posterior entra em "Situação" datada, sem reescrever a decisão |
+| [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                                              |
+| [`termos/`](termos/)                   | Termos da captura, termos de uso e política, com versão e hash, e o rascunho da captura                        |
 
 O estado tem uma fonte por pergunta. [ACCEPTANCE.md](v1.0/ACCEPTANCE.md)
 mantém as capacidades com seus limites, os critérios de aceite e as lacunas
@@ -93,7 +93,7 @@ define metas de custo para redesenhar a entrada paga.
 | Guarda de dados                          | [RETENTION.md](plataforma/RETENTION.md)                                                                                                |
 | Termos e privacidade                     | [termos/](termos/README.md), [PRIVACY-DRAFT.md](v1.0/PRIVACY-DRAFT.md) e [TERMS-DRAFT.md](v1.0/TERMS-DRAFT.md)                         |
 | Visual do console e do site              | [DESIGN.md](../DESIGN.md) e [frontend.md](desenvolvimento/frontend.md)                                                                 |
-| Período das assinaturas e cotas pagas    | [ADR 0012](adr/0012-periodo-por-aniversario.md), implementada nas fatias 0 a 2b, com o catálogo ainda desligado                        |
+| Período das assinaturas e cotas pagas    | [ADR 0012](adr/0012-periodo-por-aniversario.md) e [BILLING.md](plataforma/BILLING.md)                                                  |
 | Decisões em aberto e expansões           | [ARQUITETURA.md](ARQUITETURA.md#decisões-em-aberto-e-expansões)                                                                        |
 | Convex                                   | `platform/convex/_generated/ai/guidelines.md`                                                                                          |
 
