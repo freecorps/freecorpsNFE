@@ -218,4 +218,4 @@ it("measures the complete export worker with published versions, items and origi
     mkdirSync(".ci-results/125", { recursive: true });
     writeFileSync(".ci-results/125/comparison.json", JSON.stringify(report, null, 2) + "\n");
   }
-}, 60_000);
+});
