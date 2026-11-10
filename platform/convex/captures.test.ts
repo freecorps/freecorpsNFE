@@ -246,6 +246,17 @@ async function persist(f: Awaited<ReturnType<typeof fixture>>, token: Claim, byt
   });
   return batchId;
 }
+/** The lease ends; the recovered operation runs again through the real worker. */
+async function expireAndRerun(f: Awaited<ReturnType<typeof fixture>>, token: Claim) {
+  vi.setSystemTime(Date.now() + 60_001);
+  await f.t.mutation(internal.operations.recoverOne, { operationId: token.operationId });
+  const op = (await f.t.run((ctx) => ctx.db.get("operations", token.operationId)))!;
+  vi.setSystemTime(Math.max(Date.now(), op.nextAttemptAt));
+  await f.t.action(internal.operationWorker.run, {
+    operationId: op._id,
+    generation: op.generation,
+  });
+}
 it("isolates the fiscal identity globally and deduplicates concurrent manual activation", async () => {
   const f = await fixture();
   const [a, b] = await Promise.all([f.command("activate"), f.command("activate")]);
@@ -574,14 +585,7 @@ it("recovers raw response after crash without another source call; old lease can
     old,
     distributionXml({ envelopes: [{ nsu: 1, xml: corpus("summary-authorized") }] }),
   );
-  vi.setSystemTime(Date.now() + 60_001);
-  await f.t.mutation(internal.operations.recoverOne, { operationId: old.operationId });
-  const op = (await f.t.run((ctx) => ctx.db.get("operations", old.operationId)))!;
-  vi.setSystemTime(op.nextAttemptAt);
-  await f.t.action(internal.operationWorker.run, {
-    operationId: op._id,
-    generation: op.generation,
-  });
+  await expireAndRerun(f, old);
   expect((await f.command()).checkpoint).toBe(nsu(1));
   expect(await f.t.mutation(internal.operations.checkpoint, old)).toBe(false);
   expect(await f.t.run((ctx) => ctx.db.query("captureEnvelopes").collect())).toHaveLength(1);
@@ -1419,14 +1423,7 @@ it("resumes a partially persisted batch without leaking or duplicating the first
     storageId,
     size: e.xml.length,
   });
-  vi.setSystemTime(Date.now() + 60_001);
-  await f.t.mutation(internal.operations.recoverOne, { operationId: old.operationId });
-  const op = (await f.t.run((ctx) => ctx.db.get("operations", old.operationId)))!;
-  vi.setSystemTime(op.nextAttemptAt);
-  await f.t.action(internal.operationWorker.run, {
-    operationId: op._id,
-    generation: op.generation,
-  });
+  await expireAndRerun(f, old);
   expect((await f.command()).checkpoint).toBe(nsu(2));
   expect(await f.t.run((ctx) => ctx.db.query("documentArtifacts").collect())).toHaveLength(2);
   expect(
@@ -1443,17 +1440,6 @@ it("resumes a partially persisted batch without leaking or duplicating the first
   ).toBe(false);
 });
 
-/** The lease ends; the recovered operation runs again through the real worker. */
-async function expireAndRerun(f: Awaited<ReturnType<typeof fixture>>, token: Claim) {
-  vi.setSystemTime(Date.now() + 60_001);
-  await f.t.mutation(internal.operations.recoverOne, { operationId: token.operationId });
-  const op = (await f.t.run((ctx) => ctx.db.get("operations", token.operationId)))!;
-  vi.setSystemTime(Math.max(Date.now(), op.nextAttemptAt));
-  await f.t.action(internal.operationWorker.run, {
-    operationId: op._id,
-    generation: op.generation,
-  });
-}
 const twoEnvelopes = () =>
   distributionXml({
     envelopes: [
