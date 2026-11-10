@@ -319,8 +319,9 @@ Nenhum teste local autoriza declarar economia fria ou lançamento concluído.
 O backup incremental conserva o teto global de 1 GiB, incluindo arquivos,
 no preflight e na recuperação. (Nota posterior: 1 GiB é o teto do formato 1;
 o plano ativo usa o formato 2 com 4 GiB desde 01/11/2026, conforme
-[backup.md](../operacao/backup.md#gate-de-ativação-e-retenção-de-objetos).) Portanto, não cobre uma organização Grande
-com os 2 GiB de arquivos ocupados. O pacote frio de até 2 GiB tem outro limite
+[backup.md](../operacao/backup.md#gate-de-ativação-e-retenção-de-objetos).)
+O formato 1 não cobre uma organização Grande com os 2 GiB de arquivos
+ocupados. O pacote frio de até 2 GiB tem outro limite
 e não resolve essa restrição. A prova real usou 993 bytes de arquivos;
 capacidade integral e tempo de recuperação do Grande continuam sem prova.
 
