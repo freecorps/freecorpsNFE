@@ -27,7 +27,7 @@
 | Cláusula | Fonte                                                                                                                                                                              |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1, 4, 9  | [RIGHTS.md](../plataforma/RIGHTS.md#papéis-e-responsáveis) e [RETENTION.md](../plataforma/RETENTION.md#guarda-após-o-encerramento-d01)                                             |
-| 2, 3     | [README](../../README.md#o-que-existe), [CAPTURE.md](../plataforma/CAPTURE.md) e [EXPORTS.md](../plataforma/EXPORTS.md)                                                            |
+| 2, 3     | [README](../../README.md#o-que-dá-para-fazer), [CAPTURE.md](../plataforma/CAPTURE.md) e [EXPORTS.md](../plataforma/EXPORTS.md)                                                     |
 | 5, 12    | [RETENTION.md](../plataforma/RETENTION.md#guarda-após-o-encerramento-d01) (acesso pelo painel) e [EXPORTS.md](../plataforma/EXPORTS.md)                                            |
 | 6        | [CERTIFICATES.md](../plataforma/CERTIFICATES.md), [PROJECTS.md](../plataforma/PROJECTS.md), [OBSERVABILITY.md](../plataforma/OBSERVABILITY.md) e [backup](../operacao/backup.md)   |
 | 7        | Seção 4 da [política publicada](../termos/arquivo/politica-de-privacidade-2026-11-01.md); D03 e D04 em [RETENTION.md](../plataforma/RETENTION.md#proposta-operacional-de-06102026) |

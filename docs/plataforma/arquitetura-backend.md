@@ -3,9 +3,7 @@
 Este documento aprofunda as responsabilidades e as fronteiras do backend da
 plataforma (`platform/convex` e `packages/*`). A visão geral do produto, da
 borda e do fluxo de uma requisição está em [ARQUITETURA.md](../ARQUITETURA.md);
-cada domínio tem seu contrato nesta pasta. O plano B00–B11 que originou este
-desenho é histórico e está em
-planejamento-v1/backend.md.
+cada domínio tem seu contrato nesta pasta.
 
 ## Camadas e organização dos arquivos
 

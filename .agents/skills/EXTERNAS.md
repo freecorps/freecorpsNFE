@@ -457,3 +457,7 @@ trecho à SPA. Se SSR for adotado, garanta que o primeiro render
 coincida com o DOM. `suppressHydrationWarning` é apenas uma exceção para uma
 divergência intencional de um nível, não uma correção da divergência; consulte
 a [documentação de hidratação do React](https://react.dev/reference/react-dom/client/hydrateRoot#suppressing-unavoidable-hydration-mismatch-errors).
+
+No guia compilado `vercel-react-best-practices/AGENTS.md`, três links para
+regras apontavam para `./<regra>.md`, fora de `rules/`, onde as regras estão.
+Em 10/11/2026 passaram a apontar para `./rules/<regra>.md` (#157).

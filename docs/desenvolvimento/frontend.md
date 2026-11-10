@@ -3,10 +3,7 @@
 Regras em vigor do console em `apps/console/src/`: stack, rotas, contexto,
 dados reativos, sessão, sistema visual, estados de tela e testes. A estética
 (cor, tipo, luz, movimento e voz) está em [DESIGN.md](../../DESIGN.md); este
-documento cobre a implementação do console. O plano F00–F10 que deu origem a
-estas regras está preservado em
-planejamento-v1/frontend.md e não
-descreve o estado atual.
+documento cobre a implementação do console.
 
 ## Stack e propriedade de estado
 
