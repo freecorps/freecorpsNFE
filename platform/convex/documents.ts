@@ -20,7 +20,7 @@ import { requestProjection } from "./documentProjection";
 import { mutation } from "./_generated/server";
 import { limitOrganizationAction } from "./lib/organizationAccess";
 import { keyAccess, memberAccess } from "./lib/operationAccess";
-import { importTask, PROCESSOR_VERSION } from "./lib/importValues";
+import { importTask, PROCESSOR_VERSION, reprocessTask } from "./lib/importValues";
 import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -413,7 +413,7 @@ export async function reprocessDocument(
     environment: args.environment,
     key: args.key,
     ...(keyHash ? { keyHash } : {}),
-    task: { ...importTask, name: "documents.reprocess" },
+    task: reprocessTask,
     // The ID exactly as the caller sent it (ADR 0009, §6): a repetition after a rehydration with
     // the ID of before keeps the hash of before. Without a rehydration it is `doc._id`.
     idempotencyRequest: JSON.stringify({ documentId: args.documentId }),

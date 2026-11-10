@@ -14,7 +14,12 @@ import { claimFields, companyScopeFields, operationState, outcome } from "./lib/
 import { memberAccess, projectAccess } from "./lib/operationAccess";
 import { findCompany } from "./lib/companyAccess";
 import { consoleProject, ensureConsoleProject } from "./lib/projectAccess";
-import { importTask, NFE_PARSER_VERSION, PROCESSOR_VERSION, refusalTask } from "./lib/importValues";
+import {
+  NFE_PARSER_VERSION,
+  PROCESSOR_VERSION,
+  refusalTask,
+  reprocessTask,
+} from "./lib/importValues";
 import { captureProcessingTask } from "./lib/captureValues";
 // Keys composed with IDs of archivable rows use their first ID (ADR 0009, §5, item 5), so a
 // repetition after a rehydration finds the same record and never redoes the effect.
@@ -227,9 +232,7 @@ async function reprocessRefusal(
   const child = await continueOperation(
     ctx,
     op,
-    artifact.source === "distribution-xml"
-      ? captureProcessingTask
-      : { ...importTask, name: "documents.reprocess" },
+    artifact.source === "distribution-xml" ? captureProcessingTask : reprocessTask,
     JSON.stringify({ artifactId: artifact._id, processorVersion: PROCESSOR_VERSION }),
     at,
     false,

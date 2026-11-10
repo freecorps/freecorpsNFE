@@ -27,6 +27,8 @@ export const importTask = {
   checkpoint: "importProcessing:checkpoint",
   onSucceeded: "importProcessing:published",
 } as const;
+/** Reprocessing of a stored original: the import's functions under its own name. */
+export const reprocessTask = { ...importTask, name: "documents.reprocess" } as const;
 /**
  * Reprocessing of the technical refusals of a company and environment (#499), asked in the
  * console. Its environment purpose is `capture-processing` (`environmentPurpose`): it only reads

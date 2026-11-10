@@ -22,7 +22,7 @@ import { claimFields } from "./lib/operationValues";
 import { deny, requireMembership } from "./lib/organizationAccess";
 import { ensureConsoleProject } from "./lib/projectAccess";
 import { getFile } from "./lib/importCore";
-import { importTask, PROCESSOR_VERSION } from "./lib/importValues";
+import { PROCESSOR_VERSION, reprocessTask } from "./lib/importValues";
 import schema from "./schema";
 import { requestProjection, recordEvidence } from "./documentProjection";
 import { documentEvent, completeImport } from "./lib/webhookOutbox";
@@ -348,7 +348,7 @@ export async function reprocessArtifact(
       environment: batch.environment,
       ...(keyHash ? { keyHash } : {}),
       key,
-      task: { ...importTask, name: "documents.reprocess" },
+      task: reprocessTask,
       request: JSON.stringify({ artifactId: artifact._id, processorVersion: PROCESSOR_VERSION }),
       // The caller names the file, not the artifact: the hash compares the artifact by its first
       // ID, so a repetition after a rehydration keeps the hash of before (ADR 0009, §6). Without a
