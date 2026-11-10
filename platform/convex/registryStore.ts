@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { claimFields } from "./lib/operationValues";
-import { activeClaim, executionAllowed } from "./lib/operationCore";
+import { abandonBeforeEffect, activeClaim, executionAllowed } from "./lib/operationCore";
 // Usage keys use the operation's first ID (ADR 0009, §5, item 5): the same after a rehydration.
 import { firstId } from "./lib/coldArchiveOrigin";
 import { cacheFor, restrictionFor } from "./lib/registryRead";
@@ -11,7 +11,6 @@ import { reserveCall, saveResult } from "./lib/registryCall";
 import { deny, limitOrganizationAction } from "./lib/organizationAccess";
 import { cleanText, companyCnpj } from "./lib/companyAccess";
 import { checkUsage, recordUsage, usageError } from "./lib/usageCore";
-import { pauseOperation } from "./lib/operationCore";
 
 export const begin = internalMutation({
   args: { ...claimFields, cnpj: v.string() },
@@ -49,8 +48,7 @@ export const begin = internalMutation({
     } catch (error) {
       const code = usageError(error);
       if (!code) throw error;
-      await ctx.db.patch("operations", op._id, { stage: "ready" });
-      await pauseOperation(ctx, { ...op, stage: "ready" }, code);
+      await abandonBeforeEffect(ctx, op, code);
       return "denied";
     }
     await limitOrganizationAction(ctx, "registry-provider", PROVIDER, 30);

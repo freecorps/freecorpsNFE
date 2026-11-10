@@ -14,7 +14,12 @@ import {
 } from "./lib/issuanceCore";
 import { rejectionItem } from "./lib/issuanceValues";
 import { recordAudit } from "./lib/operationalAudit";
-import { activeClaim, executionAllowed, pauseOperation, type Claim } from "./lib/operationCore";
+import {
+  abandonBeforeEffect,
+  activeClaim,
+  executionAllowed,
+  type Claim,
+} from "./lib/operationCore";
 import { claimFields } from "./lib/operationValues";
 import { recordUsage } from "./lib/usageCore";
 // Usage keys use the issuance's first ID (ADR 0009, §5, item 5): the same after a rehydration.
@@ -42,12 +47,7 @@ async function claimed(ctx: MutationCtx, claim: Claim) {
  * did not, so the operation goes back to `ready` and stays uncertain only if an earlier send did.
  */
 async function pauseRevoked(ctx: MutationCtx, op: Doc<"operations">, submittedBefore: boolean) {
-  await ctx.db.patch("operations", op._id, { stage: "ready" });
-  await pauseOperation(
-    ctx,
-    { ...op, stage: "ready", uncertain: op.uncertain || submittedBefore },
-    "ACCESS_REVOKED",
-  );
+  await abandonBeforeEffect(ctx, op, "ACCESS_REVOKED", { uncertain: submittedBefore });
 }
 async function claimedCancellation(ctx: MutationCtx, claim: Claim) {
   const op = await activeClaim(ctx, claim);

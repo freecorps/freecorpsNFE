@@ -130,6 +130,27 @@ A publicação cria um recibo lógico de resultado e um de consumo por operaçã
 atomicamente com succeeded. São recibos da operação, ainda sem agregação de
 cobrança ou entrega de outbox. Tentativas têm registros distintos.
 
+## Escritas dos domínios
+
+Só `operations.ts` e `lib/operationCore.ts` escrevem na tabela `operations`.
+Um domínio que precisa mexer na sua operação usa um destes helpers do núcleo,
+cada um com a cerca do seu momento:
+
+| Helper                 | Quando                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `abandonBeforeEffect`  | A tentativa não enviou nada (gate, limite de uso, cofre, acesso perdido): volta a `ready` e pausa com o código, mantendo a incerteza que já tinha; `uncertain` a acrescenta quando um envio anterior da mesma operação pode ter chegado à fonte. Só em `running`, de `ready` ou `calling`; em `response` ou `checkpoint` recusa, pois perderia o resultado. |
+| `patchOperationDomain` | Progresso do domínio na tentativa em execução: `usageCaptureKey`, `captureReservation` e `refusalSweep`. Estado, estágio, geração e fence ficam fora do tipo.                                                                                                                                                                                               |
+| `setResult`            | Reescreve o DTO do resultado no checkpoint (`stage: "response"`) ou depois do sucesso, como no `onSucceeded`, até 32 KiB.                                                                                                                                                                                                                                   |
+| `continueOperation`    | Cria a operação seguinte com o ator e as épocas da que a pediu.                                                                                                                                                                                                                                                                                             |
+
+`operationWrites.test.ts` reprova `db.patch`, `db.replace`, `db.insert` ou
+`db.delete` com a tabela `"operations"` em qualquer outro módulo, e a forma
+antiga sem tabela (`db.patch(id, ...)`) em qualquer módulo; os testes e
+`testing/` montam estado sintético e ficam fora da varredura. As escritas
+genéricas de custódia (arquivo econômico, reidratação, purga), que recebem a
+tabela numa variável, também ficam fora: movem a linha ou reescrevem suas
+referências, sem tocar no protocolo.
+
 ## Recuperação e limites
 
 Próxima data, backoff e jitter ficam no banco. O scheduler só entrega ao

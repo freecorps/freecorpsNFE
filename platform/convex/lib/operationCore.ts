@@ -329,6 +329,65 @@ export async function pauseOperation(
   if (isSiteCapture(op) && !DECIDED_PAUSES.includes(code))
     await operationAttention(ctx, op, code, cut);
 }
+/**
+ * Pause of an attempt that the caller proves sent nothing: a gate, the usage limit, the vault or
+ * a lost access refused it after `beginEffect` and before the request. The stage goes back to
+ * `ready` first, since `pauseOperation` reads `calling` as an effect that may have left; the
+ * operation keeps the uncertainty it already had, or `uncertain` when an earlier send of the same
+ * operation may have reached the source. Only a running attempt before its response may rewind:
+ * `response` and `checkpoint` hold a result that a rewind would lose.
+ */
+export async function abandonBeforeEffect(
+  ctx: MutationCtx,
+  op: Doc<"operations">,
+  code: string,
+  options: { actor?: string; cut?: boolean; uncertain?: boolean } = {},
+) {
+  if (op.state !== "running" || (op.stage !== "ready" && op.stage !== "calling"))
+    throw new Error(`abandonBeforeEffect: ${op.state}/${op.stage} is past the effect`);
+  if (op.stage !== "ready") await ctx.db.patch("operations", op._id, { stage: "ready" });
+  await pauseOperation(
+    ctx,
+    { ...op, stage: "ready", uncertain: op.uncertain || !!options.uncertain },
+    code,
+    options.actor,
+    options.cut,
+  );
+}
+/** Fields a domain keeps on its operation; the protocol's own (state, stage, fences) stay out. */
+type OperationDomainFields = Pick<
+  Doc<"operations">,
+  "usageCaptureKey" | "captureReservation" | "refusalSweep"
+>;
+/**
+ * Writes the domain's progress on a running attempt, in the transaction that holds its claim.
+ * `undefined` removes a field. Returns the operation as written, for the protocol calls that follow.
+ */
+export async function patchOperationDomain(
+  ctx: MutationCtx,
+  op: Doc<"operations">,
+  fields: { [K in keyof OperationDomainFields]?: OperationDomainFields[K] | undefined },
+): Promise<Doc<"operations">> {
+  if (op.state !== "running") throw new Error(`patchOperationDomain: operation is ${op.state}`);
+  await ctx.db.patch("operations", op._id, fields);
+  return { ...op, ...fields };
+}
+/** The response limit of `recordOutcome`, also for a result the domain rewrites. */
+export const RESPONSE_LIMIT_BYTES = 32_768;
+/**
+ * Rewrites the operation's result with the domain's DTO: in the checkpoint (`stage: "response"`,
+ * still under the fence of `operations.checkpoint`) or once succeeded, as `onSucceeded` does in the
+ * transaction that wrote `succeeded`. Nowhere else: an attempt that has not answered has no result
+ * to rewrite.
+ */
+export async function setResult(ctx: MutationCtx, op: Doc<"operations">, response: string) {
+  const inCheckpoint = op.state === "running" && op.stage === "response";
+  if (!inCheckpoint && op.state !== "succeeded")
+    throw new Error(`setResult: ${op.state}/${op.stage} has no result to write`);
+  if (new TextEncoder().encode(response).length > RESPONSE_LIMIT_BYTES)
+    throw new Error("setResult: response over the limit");
+  await ctx.db.patch("operations", op._id, { response });
+}
 export async function retryOperation(
   ctx: MutationCtx,
   op: Doc<"operations">,

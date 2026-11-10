@@ -28,9 +28,11 @@ import {
   attemptUsageKey,
 } from "./lib/captureValues";
 import {
+  abandonBeforeEffect,
   activeClaim,
   continueOperation,
   executionAllowed,
+  patchOperationDomain,
   recordSourceFailure,
   waitOperation,
 } from "./lib/operationCore";
@@ -53,7 +55,6 @@ import {
 } from "./lib/usageCore";
 import { planEnded } from "./lib/usageValues";
 import { quotaPeriod } from "./lib/quotaPeriod";
-import { pauseOperation } from "./lib/operationCore";
 import {
   RESUMABLE_PAUSES,
   USAGE_PAUSES,
@@ -218,8 +219,7 @@ export const prepare = internalMutation({
           ? await ctx.db.get("certificates", op.certificate.id)
           : null;
         if (!certificate || !(await fiscalProofAllowed(ctx, op, certificate))) {
-          await ctx.db.patch("operations", op._id, { stage: "ready" });
-          await pauseOperation(ctx, { ...op, stage: "ready" }, "FISCAL_PROOF_DENIED");
+          await abandonBeforeEffect(ctx, op, "FISCAL_PROOF_DENIED");
           return null;
         }
       } else if (isSiteCapture(op)) {
@@ -242,8 +242,7 @@ export const prepare = internalMutation({
         }
         if (!decision.allowed) {
           // The pause turns the stream to attention (`pauseOperation`).
-          await ctx.db.patch("operations", op._id, { stage: "ready" });
-          await pauseOperation(ctx, { ...op, stage: "ready" }, decision.code);
+          await abandonBeforeEffect(ctx, op, decision.code);
           return null;
         }
       }
@@ -295,8 +294,7 @@ export const prepare = internalMutation({
       } catch (error) {
         const code = usageError(error);
         if (!code) throw error;
-        await ctx.db.patch("operations", op._id, { stage: "ready" });
-        await pauseOperation(ctx, { ...op, stage: "ready" }, code);
+        await abandonBeforeEffect(ctx, op, code);
         // On the site the stream is now in attention; it resumes by itself when the plan admits
         // a query again: the next period, the plan's start or a new plan (`usage.assignPlan`,
         // the only way out of PLAN_REQUIRED).
@@ -318,7 +316,7 @@ export const prepare = internalMutation({
         CAPTURE_RESERVED_BYTES,
       );
       // What the window was before this attempt, for a refusal before the request (#421).
-      await ctx.db.patch("operations", op._id, {
+      await patchOperationDomain(ctx, op, {
         usageCaptureKey: usageKey,
         captureReservation: {
           fence: op.fence,
@@ -395,8 +393,7 @@ export const refusedBeforeSend = internalMutation({
         captureReservation: undefined,
         ...(key === attemptUsageKey(op) ? { usageCaptureKey: undefined } : {}),
       };
-      await ctx.db.patch("operations", op._id, refunded);
-      current = { ...op, ...refunded };
+      current = await patchOperationDomain(ctx, op, refunded);
     }
     const code = /^[A-Z0-9_]{1,80}$/.test(args.code) ? args.code : "TASK_FAILED";
     if (args.defer && Number.isSafeInteger(args.defer.until)) {
@@ -411,8 +408,7 @@ export const refusedBeforeSend = internalMutation({
     }
     if (stream) await captureAudit(ctx, stream, "query_refused");
     // Back to `ready` first: a pause in `calling` would take the attempt for an uncertain one.
-    await ctx.db.patch("operations", op._id, { stage: "ready" });
-    await pauseOperation(ctx, { ...current, stage: "ready" }, code, "system", args.cut);
+    await abandonBeforeEffect(ctx, current, code, { cut: args.cut });
     return null;
   },
 });

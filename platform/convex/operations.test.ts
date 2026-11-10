@@ -8,6 +8,12 @@ import { hashApiKey } from "./lib/apiKeyCrypto";
 import { canonicalRequest, LEASE_MS, RECOVERY_BATCH } from "./lib/operationValues";
 import { publicError } from "./lib/publicErrors";
 import { modules } from "../../tests/helpers/convex-modules";
+import {
+  abandonBeforeEffect,
+  patchOperationDomain,
+  RESPONSE_LIMIT_BYTES,
+  setResult,
+} from "./lib/operationCore";
 beforeEach(() => {
   vi.useFakeTimers();
   for (const [k, value] of Object.entries({
@@ -733,4 +739,87 @@ it("sessão humana permitida consulta; viewer não pausa, membro removido não c
   await expect(f.t.query(api.operations.get, { operationId: f.operationId })).rejects.toThrow(
     "UNAUTHENTICATED",
   );
+});
+it("abandonBeforeEffect volta a ready e pausa antes do efeito, nunca depois da resposta", async () => {
+  const f = await fixture(),
+    current = await claim(f);
+  await f.t.mutation(internal.operations.beginEffect, current);
+  await f.t.run(async (ctx) =>
+    abandonBeforeEffect(ctx, (await ctx.db.get("operations", f.operationId))!, "PLAN_REQUIRED"),
+  );
+  const paused = (await inspect(f)).operation!;
+  expect(paused).toMatchObject({ state: "paused", stage: "ready", uncertain: false });
+  expect(paused.code).toBe("PLAN_REQUIRED");
+
+  // An earlier send of the same operation keeps it uncertain.
+  const g = await fixture(),
+    other = await claim(g);
+  await g.t.mutation(internal.operations.beginEffect, other);
+  await g.t.run(async (ctx) =>
+    abandonBeforeEffect(ctx, (await ctx.db.get("operations", g.operationId))!, "ACCESS_REVOKED", {
+      uncertain: true,
+    }),
+  );
+  expect((await inspect(g)).operation).toMatchObject({ state: "paused", uncertain: true });
+
+  const h = await fixture(),
+    answered = await claim(h);
+  await h.t.mutation(internal.operations.beginEffect, answered);
+  await h.t.mutation(internal.operations.recordOutcome, {
+    ...answered,
+    outcome: { kind: "success", response: '{"synthetic":true}' },
+  });
+  await expect(
+    h.t.run(async (ctx) =>
+      abandonBeforeEffect(ctx, (await ctx.db.get("operations", h.operationId))!, "PLAN_REQUIRED"),
+    ),
+  ).rejects.toThrow("past the effect");
+  expect((await inspect(h)).operation).toMatchObject({ state: "running", stage: "response" });
+});
+it("setResult só grava na resposta ou depois do sucesso, dentro do limite", async () => {
+  const f = await fixture(),
+    current = await claim(f);
+  await f.t.mutation(internal.operations.beginEffect, current);
+  const write = (response: string) =>
+    f.t.run(async (ctx) =>
+      setResult(ctx, (await ctx.db.get("operations", f.operationId))!, response),
+    );
+  await expect(write('{"early":true}')).rejects.toThrow("no result to write");
+  await f.t.mutation(internal.operations.recordOutcome, {
+    ...current,
+    outcome: { kind: "success", response: '{"synthetic":true}' },
+  });
+  await expect(write(`"${"x".repeat(RESPONSE_LIMIT_BYTES)}"`)).rejects.toThrow("over the limit");
+  await write('{"checkpoint":true}');
+  expect((await inspect(f)).operation?.response).toBe('{"checkpoint":true}');
+  await f.t.mutation(internal.operations.checkpoint, current);
+  await f.t.mutation(internal.operations.publish, current);
+  await write('{"published":true}');
+  expect((await inspect(f)).operation).toMatchObject({
+    state: "succeeded",
+    response: '{"published":true}',
+  });
+});
+it("patchOperationDomain grava só na tentativa em execução", async () => {
+  const f = await fixture();
+  await claim(f);
+  const sweep = { cursor: null, requested: 2, busy: 0 };
+  const written = await f.t.run(async (ctx) =>
+    patchOperationDomain(ctx, (await ctx.db.get("operations", f.operationId))!, {
+      refusalSweep: sweep,
+    }),
+  );
+  expect(written.refusalSweep).toEqual(sweep);
+  expect((await inspect(f)).operation?.refusalSweep).toEqual(sweep);
+  await f.t.run(async (ctx) =>
+    abandonBeforeEffect(ctx, (await ctx.db.get("operations", f.operationId))!, "PAUSED_BY_USER"),
+  );
+  await expect(
+    f.t.run(async (ctx) =>
+      patchOperationDomain(ctx, (await ctx.db.get("operations", f.operationId))!, {
+        refusalSweep: undefined,
+      }),
+    ),
+  ).rejects.toThrow("operation is paused");
+  expect((await inspect(f)).operation?.refusalSweep).toEqual(sweep);
 });
