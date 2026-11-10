@@ -34,6 +34,7 @@ import {
   finishAttempt,
   pauseOperation,
   pools,
+  RESPONSE_LIMIT_BYTES,
   retryOperation,
   schedule,
   summary,
@@ -304,7 +305,7 @@ export const recordOutcome = internalMutation({
     }
     const result = args.outcome;
     if (result.kind === "success") {
-      if (new TextEncoder().encode(result.response).length > 32_768) {
+      if (new TextEncoder().encode(result.response).length > RESPONSE_LIMIT_BYTES) {
         await retryOperation(ctx, op, true, "RESPONSE_TOO_LARGE");
         return false;
       }

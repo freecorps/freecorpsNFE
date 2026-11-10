@@ -17,7 +17,7 @@ import {
 } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { activeClaim, executionAllowed } from "./lib/operationCore";
+import { activeClaim, executionAllowed, setResult } from "./lib/operationCore";
 import { claimFields } from "./lib/operationValues";
 import { deny, requireMembership } from "./lib/organizationAccess";
 import { ensureConsoleProject } from "./lib/projectAccess";
@@ -252,14 +252,16 @@ export const checkpoint = internalMutation({
         state: "complete",
         completedAt: Date.now(),
       });
-    await ctx.db.patch("operations", op._id, {
-      response: JSON.stringify({
+    await setResult(
+      ctx,
+      op,
+      JSON.stringify({
         versionId: version._id,
         documentId: version.documentId ?? null,
         code: version.code,
         itemCount: version.itemCount,
       }),
-    });
+    );
     return null;
   },
 });
@@ -285,14 +287,16 @@ export const published = internalMutation({
     for (const entry of entries) await publishVersion(ctx, operation, entry);
     await publishVersion(ctx, operation, version);
     const published = (await ctx.db.get("documentVersions", version._id))!;
-    await ctx.db.patch("operations", operation._id, {
-      response: JSON.stringify({
+    await setResult(
+      ctx,
+      operation,
+      JSON.stringify({
         versionId: version._id,
         documentId: version.documentId ?? null,
         code: published.code,
         itemCount: version.itemCount,
       }),
-    });
+    );
     const artifact = (await ctx.db.get("documentArtifacts", version.artifactId))!;
     // An accepted NFS-e batch stays without a document: marked, it leaves the files without a
     // recognized document (`lib/unclassifiedArtifacts.ts`).

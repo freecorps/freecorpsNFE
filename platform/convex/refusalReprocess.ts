@@ -4,7 +4,12 @@ import { internalAction, internalMutation, mutation, query } from "./_generated/
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { activeClaim, continueOperation, executionAllowed } from "./lib/operationCore";
+import {
+  activeClaim,
+  continueOperation,
+  executionAllowed,
+  patchOperationDomain,
+} from "./lib/operationCore";
 import { claimFields, companyScopeFields, operationState, outcome } from "./lib/operationValues";
 import { memberAccess, projectAccess } from "./lib/operationAccess";
 import { findCompany } from "./lib/companyAccess";
@@ -386,7 +391,7 @@ export const sweep = internalMutation({
     }
     const total = progress.requested + requested;
     // The cursor commits with the children of the page: a retry resumes after them.
-    await ctx.db.patch("operations", op._id, {
+    await patchOperationDomain(ctx, op, {
       refusalSweep: { cursor: page.continueCursor, requested: total, busy },
     });
     return { kind: "page", requested, total, done: page.isDone };
