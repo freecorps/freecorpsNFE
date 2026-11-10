@@ -381,7 +381,7 @@ município, regime, subitem e vigência (inclusiva) decide. Cada regra tem fonte
 textual. Fora de Campinas, o padrão é `sefin-nacional`. MEI segue as regras do
 Simples. A rota não confere adesão do município nem credenciamento.
 
-Campinas (3509502), conforme o ADR 0004 (proposto; provisório até o aceite):
+Campinas (3509502), conforme o ADR 0004 (aceito em 08/10/2026):
 
 | Regra | Regime      | Subitens                    | Vigência           | Resultado                             |
 | ----- | ----------- | --------------------------- | ------------------ | ------------------------------------- |

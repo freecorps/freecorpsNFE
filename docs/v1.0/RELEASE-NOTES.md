@@ -184,7 +184,8 @@ novas ativações: o produto não pede novo aceite a quem já ativou.
 **Emergência, desbloqueio e parada geral.** Os workflows
 `capture-release-emergency.yml`, `capture-release-unblock.yml`,
 `capture-fiscal-halt.yml`, `capture-fiscal-resume.yml` e
-`capture-release-list.yml` agem sem aprovação, para quem está em
+`capture-release-list.yml` (desde a [#57](https://github.com/freecorps/freecorpsNFE/pull/57), operações de
+`capture-fiscal.yml`) agem sem aprovação, para quem está em
 `deploy/issuance-gate.json`. O desbloqueio é recusado com
 `CAPTURE_RELEASE_NOT_BLOCKED` numa empresa sem bloqueio e nunca religa
 nada. A parada geral adia as consultas de todas as empresas sem gastar cota
@@ -201,7 +202,8 @@ restauração sem transporte.
 cron, que registra alertas de atenção, parada, silêncio de 30 e 50 dias,
 lacuna antiga e A1 perto do vencimento. Os alertas chegam à caixa de operação,
 em `/console/operacao`, com entrega comprovada em 28/10 pelo e-mail de teste
-de `capture-alert-test.yml` (#463). Depois de 20
+de `capture-alert-test.yml` (#463), hoje a operação `alert_test` de
+`capture-fiscal.yml` ([#57](https://github.com/freecorps/freecorpsNFE/pull/57)). Depois de 20
 linhas de auditoria sem lote, o painel deixa de mostrar a fila da fonte
 (#494).
 

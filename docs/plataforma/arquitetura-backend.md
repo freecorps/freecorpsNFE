@@ -29,9 +29,17 @@ Cada domínio segue o mesmo arranjo de arquivos:
 | `lib/<domínio>Core.ts`   | Regras do domínio que leem ou gravam com o `ctx` de quem chama        |
 | `lib/<domínio>Access.ts` | Autorização do domínio sobre organização, projeto, empresa e ambiente |
 
-`lib/organizationAccess.ts` e `lib/projectAccess.ts` são a base dos demais
-`*Access.ts`. Regras de autorização e de estado ficam na função que lê ou
-escreve; validação no formulário ou no contrato REST é só feedback.
+`lib/organizationAccess.ts` (sessão e membership) e `lib/projectAccess.ts`
+(projeto e concessão) são a base das checagens dos demais `*Access.ts`. Regras
+de autorização e de estado ficam na função que lê ou escreve; validação no
+formulário ou no contrato REST é só feedback. A regra de lint
+[`require-access-helper-in-convex-functions`](../desenvolvimento/lint.md#require-access-helper-in-convex-functions)
+reprova função pública que toca em dado antes de uma checagem, e
+`tooling/oxlint-plugin-freecorps/access-helpers.test.ts` reprova export de
+`*Access.ts` sem classificação. O comportamento negado tem testes:
+`platform/convex/access.test.ts` (sessão e papel) e
+`platform/convex/consoleAccess.test.ts` (cada domínio do console contra o
+mesmo conjunto de atores).
 
 ### Domínios em camadas
 
@@ -99,25 +107,11 @@ extração nova exige consumo ou responsabilidade demonstrados.
 
 ## Modelo de dados
 
-O schema vigente está em `platform/convex/schema.ts` e nos
-`platform/convex/lib/*Schema.ts`. Tabelas por domínio:
-
-| Domínio                   | Tabelas                                                                                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Organizações e contas     | `organizations`, `memberships`, `invitations`, `organizationAudit`, `emailChanges`, `developmentMail`, `onboarding`                                                                              |
-| Empresas                  | `companies`, `companyGrants`, `companyAudit`                                                                                                                                                     |
-| Projetos e chaves         | `projects`, `projectCompanies`, `apiKeys`, `integrationAudit`, `apiUsageEvents`, `apiUsageTotals`                                                                                                |
-| Operações                 | `operations`, `operationAttempts`, `operationReceipts`, `operationAudit`, `idempotencyRecords`, `operationProofDocuments`                                                                        |
-| Importação e documentos   | `imports`, `importFiles`, `importMaintenance`, `fiscalDocuments`, `documentVersions`, `documentItems`, `documentArtifacts`, `documentFiscalEvidence`, `documentListings`, `documentDownloads`    |
-| Certificados e captura    | `certificates`, `certificateHeads`, `certificateAudit`, `captureStreams`, `captureBatches`, `captureEnvelopes`, `captureBatchEntries`, `captureAudit`, `captureProofResponses`                   |
-| Emissão NFS-e             | `nfseProfiles`, `issuances`, `dpsSequences`, `issuanceCancellations`, `issuanceArtifacts`, `issuanceEvents`, `issuanceGates`, `issuanceGateEvents`, `issuanceProbeEvents`, `issuanceSimulations` |
-| Webhooks                  | `webhookEndpoints`, `outboxEvents`, `webhookDeliveries`, `webhookAttempts`                                                                                                                       |
-| Stripe                    | `stripeConnections`, `stripeEvents`                                                                                                                                                              |
-| Referências e CNPJ        | `referenceVersions`, `referenceEntries`, `referenceActive`, `referenceAudit`, `registryCache`, `registryCalls`, `registryApplications`                                                           |
-| Consumo                   | `usagePlans`, `usagePlanAudit`, `usageEvents`, `usageTotals`, `usageLeases`                                                                                                                      |
-| Exportação e encerramento | `documentExports`, `exportParts`, `exportTickets`, `organizationClosures`, `retentionHolds`                                                                                                      |
-| Observabilidade e acesso  | `operationalAudit`, `operationalFailures`, `operationalMonitors`, `operationalAlerts`, `operationalNotifications`, `operationalRetention`, `accessRecords`, `accessRetention`                    |
-| Validação                 | `validationAccess`, `validationProbes`                                                                                                                                                           |
+O schema é a fonte das tabelas e dos índices, e este documento não as
+repete. `platform/convex/schema.ts` reúne as tabelas dos domínios que têm
+`platform/convex/lib/<domínio>Schema.ts` e declara ele mesmo as de
+organizações e contas, empresas, projetos, operações, termos de uso e
+validação.
 
 Invariantes do modelo:
 

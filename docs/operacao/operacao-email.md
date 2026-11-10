@@ -84,6 +84,8 @@ A caixa está ativa.
   ([registro na #463](https://github.com/freecorps/freecorpsNFE-arquivo/issues/463#issuecomment-6470963411)).
   O teste não foi feito com alerta de empresa, e a recusa para operador de
   outra caixa e para conta cliente fica com os testes automáticos da #582.
+  Desde a [#57](https://github.com/freecorps/freecorpsNFE/pull/57), esse teste é a
+  operação `alert_test` de `capture-fiscal.yml`.
 
 Em 09/11/2026, o passo 5 gravou o endereço de plantão da
 [#126](https://github.com/freecorps/freecorpsNFE/issues/126). O

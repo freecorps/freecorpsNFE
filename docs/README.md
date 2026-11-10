@@ -84,18 +84,18 @@ define metas de custo para redesenhar a entrada paga.
 
 ### 3. Entender as regras
 
-| Regra                                    | Referência principal                                                                                                   |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Autorização e escopos                    | Contrato do domínio, os `*Access.ts` de `platform/convex/lib/` e [lint.md](desenvolvimento/lint.md)                    |
-| Valores fiscais em decimal exato (texto) | [fiscal-core](../packages/fiscal-core/README.md)                                                                       |
-| Idempotência e deduplicação              | [OPERATIONS.md](plataforma/OPERATIONS.md), [IMPORTS.md](plataforma/IMPORTS.md) e [WEBHOOKS.md](plataforma/WEBHOOKS.md) |
-| Ambientes e gate de produção fiscal      | [ISSUANCE.md](plataforma/ISSUANCE.md) e [deploy-producao.md](operacao/deploy-producao.md)                              |
-| Guarda de dados                          | [RETENTION.md](plataforma/RETENTION.md)                                                                                |
-| Termos e privacidade                     | [termos/](termos/README.md), [PRIVACY-DRAFT.md](v1.0/PRIVACY-DRAFT.md) e [TERMS-DRAFT.md](v1.0/TERMS-DRAFT.md)         |
-| Visual do console e do site              | [DESIGN.md](../DESIGN.md) e [frontend.md](desenvolvimento/frontend.md)                                                 |
-| Período das assinaturas e cotas pagas    | [ADR 0012](adr/0012-periodo-por-aniversario.md), ainda não implementada                                                |
-| Decisões em aberto e expansões           | [ARQUITETURA.md](ARQUITETURA.md#decisões-em-aberto-e-expansões)                                                        |
-| Convex                                   | `platform/convex/_generated/ai/guidelines.md`                                                                          |
+| Regra                                    | Referência principal                                                                                                                   |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Autorização e escopos                    | Contrato do domínio, `platform/convex/lib/*Access.ts` e [provas](plataforma/arquitetura-backend.md#camadas-e-organização-dos-arquivos) |
+| Valores fiscais em decimal exato (texto) | [fiscal-core](../packages/fiscal-core/README.md)                                                                                       |
+| Idempotência e deduplicação              | [OPERATIONS.md](plataforma/OPERATIONS.md), [IMPORTS.md](plataforma/IMPORTS.md) e [WEBHOOKS.md](plataforma/WEBHOOKS.md)                 |
+| Ambientes e gate de produção fiscal      | [ISSUANCE.md](plataforma/ISSUANCE.md) e [deploy-producao.md](operacao/deploy-producao.md)                                              |
+| Guarda de dados                          | [RETENTION.md](plataforma/RETENTION.md)                                                                                                |
+| Termos e privacidade                     | [termos/](termos/README.md), [PRIVACY-DRAFT.md](v1.0/PRIVACY-DRAFT.md) e [TERMS-DRAFT.md](v1.0/TERMS-DRAFT.md)                         |
+| Visual do console e do site              | [DESIGN.md](../DESIGN.md) e [frontend.md](desenvolvimento/frontend.md)                                                                 |
+| Período das assinaturas e cotas pagas    | [ADR 0012](adr/0012-periodo-por-aniversario.md), implementada nas fatias 0 a 2b, com o catálogo ainda desligado                        |
+| Decisões em aberto e expansões           | [ARQUITETURA.md](ARQUITETURA.md#decisões-em-aberto-e-expansões)                                                                        |
+| Convex                                   | `platform/convex/_generated/ai/guidelines.md`                                                                                          |
 
 O [AGENTS.md](../AGENTS.md) repete de propósito as cinco regras que não se
 pode perder, em forma resumida; o detalhe fica na referência principal.

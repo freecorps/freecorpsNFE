@@ -15,8 +15,9 @@ o snapshot. A correção local da #688 substitui o teto de 64 MiB por tabela por
 leitura em fluxo e ordenação em disco, mantendo os digests anteriores. O código
 do formato 2 admite orçamento explícito de até 8 GiB; o plano ativo usa o
 formato 2 com 4 GiB, conforme o
-[gate de ativação](#gate-de-ativação-e-retenção-de-objetos). A B4 da ADR 0010 já escreve o blob compactado junto com o
-conteúdo em linha, sem reduzir o banco. Leitores e migração ainda faltam.
+[gate de ativação](#gate-de-ativação-e-retenção-de-objetos). Na fase B da ADR 0010, o blob compactado de cada versão
+é lido pelos leitores (B5), as versões antigas passam pela migração (B7), e a
+limpeza (B8) retira a cópia em linha só de versão com blob verificado.
 
 Bucket, environment, secrets e cofre foram configurados em 08/10/2026. Desde
 19/10/2026, o plano cifra para o substituto e o mantenedor, duas pessoas
@@ -260,9 +261,11 @@ O custo também inclui a origem: leitura do banco e dos arquivos, geração e
 download do ZIP no Convex, cerca de 60 vezes em um mês de 30 dias. A saída
 gratuita do R2 não elimina essas cobranças. Confira a
 [comparação de custos e hipóteses](../plataforma/PLATFORM-COSTS.md#referência-anterior-export-completo-reproduzível)
-antes de definir cotas comerciais. `maxSnapshotBytes` é 1 GiB global. O
-preflight agora mede o banco por páginas, soma os arquivos e uma reserva e
-recusa a exportação acima desse limite. No formato 1, partes de exports dos
+antes de definir cotas comerciais. `maxSnapshotBytes` vem do plano
+(`deploy/offsite-backup.json`, 4 GiB no plano ativo, em formato 2); o
+formato 1 o limita a 1 GiB (`scripts/lib/offsite-backup.mjs`). O preflight mede o banco por
+páginas, soma os arquivos e uma reserva e recusa a exportação acima desse
+limite. No formato 1, partes de exports dos
 clientes também entram no snapshot.
 Confira o tamanho, a duração e a fatura e registre a capacidade aceita na #688.
 

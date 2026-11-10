@@ -121,7 +121,7 @@ real nem incluem banco, suporte ou os outros recursos.
 
 Os cenários isolados abaixo continuam úteis para comparar provedores, mas
 não autorizam dedicar todos os 50 GB de saída ou 100 GB de arquivos do
-Professional ao gratuito. O limite de 1 GiB do nosso runner de backup também
+Professional ao gratuito. O limite de 1 GiB do formato 1 do nosso runner de backup também
 continua existindo após uma mudança de assinatura.
 
 ## Estoque lógico, banco físico e backup
@@ -227,7 +227,7 @@ banco, aplicação e qualquer outro projeto. Isso não é tamanho máximo de
 arquivo: é o estoque constante hipotético que a franquia de tráfego consegue
 recopiar. Com ZIP a 25%, seriam cerca de 11,11 MB. O Free não sustenta a
 promessa anterior; habilitar Starter apenas troca interrupção por cobrança,
-sem resolver o limite de 1 GiB do runner nem financiar usuários gratuitos.
+sem resolver o limite de 1 GiB do formato 1 do runner nem financiar usuários gratuitos.
 
 Também há um problema de banco independente: 100 mil documentos da fixture
 já somam 0,96 GB lógicos nas duas tabelas medidas, acima dos 0,5 GB Free,

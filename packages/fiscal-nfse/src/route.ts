@@ -67,7 +67,7 @@ const GUIA = "guia da Prefeitura de Campinas de 18/09/2026";
 
 /**
  * Regras em ordem de precedência: a primeira que casa decide. Campinas segue
- * o ADR 0004 (proposto na PR #200; PROVISÓRIO até o aceite). Onde o ADR deixa
+ * o ADR 0004 (aceito em 08/10/2026). Onde o ADR deixa
  * o emissor à escolha (C3, C5), o padrão é campinas-adn e a alternativa
  * ABRASF fica registrada em `alternatives`.
  */
