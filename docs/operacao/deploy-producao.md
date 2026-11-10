@@ -464,3 +464,71 @@ O deploy não limpa dados. Após a abertura, preservar os registros novos e
 ensaiar mudanças incompatíveis antes de publicar. Reverter código não restaura
 o banco descartado no corte nem desfaz efeitos externos. Enquanto a emissão
 legada estiver desativada, o app consumidor precisa mostrar essa indisponibilidade.
+
+## Reverter uma publicação
+
+O `Deploy production` só publica a ponta da `main`. Antes da primeira escrita,
+o script confere que o SHA do run ainda é a ponta; um SHA antigo termina como
+`obsolete`, com o job verde e nada publicado. Reexecutar o run da última
+versão boa, portanto, não volta nada. Voltar uma publicação com defeito é
+publicar um commit novo que desfaz o anterior, pelo caminho de qualquer
+mudança: PR, `Validate`, merge e publicação automática. O ruleset da `main`
+não tem exceção: a PR do revert espera `Validate` e `Public scan` e todas as
+conversas resolvidas.
+
+1. Conferir se o commit alargou o schema do Convex: campo, valor ou tabela
+   nova em `platform/convex/schema.ts`, nos `platform/convex/lib/*Schema.ts`,
+   nos validadores que eles importam (como `platform/convex/lib/*Values.ts`)
+   ou no schema de um componente (`packages/convex-rate-limiter`,
+   `patches/`). Esse alargamento fica. O push do Convex recusa um schema que
+   não aceita os documentos já gravados, e a produção pode ter gravado no
+   formato novo.
+
+2. Numa branch a partir de `origin/main`, reverter sem commitar. Um merge
+   commit pede o pai da `main` com `-m 1`. Uma PR que entrou por rebase deixa
+   vários commits: listá-los no mesmo comando, do mais novo para o mais
+   antigo.
+
+   ```bash
+   git fetch origin
+   git switch -c revert-<pr> origin/main
+   git revert --no-commit <sha>          # squash ou rebase
+   git revert --no-commit -m 1 <sha>     # merge commit
+   ```
+
+   Se o passo 1 achou alargamento, devolver os arquivos dele antes do commit
+   e conferir que o código revertido compila com o schema mantido:
+
+   ```bash
+   git checkout HEAD -- <arquivos do alargamento>
+   bun run platform:check
+   ```
+
+   Commitar com mensagem em pt-BR, por exemplo
+   `git commit -m "Reverte <título da PR> (#<pr>)"`.
+
+3. Abrir a PR, mergear e acompanhar o run de `Deploy production` do commit
+   que chegou à `main`. Conferir os três SHAs e o recibo como em
+   [Atualizações automáticas](#atualizações-automáticas). Um run com
+   `state: "partial"` e `phase: "backend"` significa que o push do Convex
+   falhou, e o log não diz por quê: o publicador esconde a saída do
+   provedor, que pode conter credenciais. O frontend não foi publicado.
+   Comparar o `sha` do `/health` do Convex com o do `/build.json` e
+   reexecutar o run uma vez, como em
+   [Falhas de publicação](#falhas-de-publicação). Se falhar de novo e o
+   commit revertido mexia no schema, tratar como recusa do schema e corrigir
+   para frente em vez de reverter: alargar o schema, migrar os dados e só
+   depois estreitar, como nas fases B3 em diante da
+   [ADR 0010](../adr/0010-guarda-em-camadas-e-custo-dos-planos.md#fases).
+
+Um revert que só toca `undeployedPaths` normalmente termina com
+`state: "unchanged"`, nas condições do início deste documento: não há nada a
+republicar. A exceção é `.github/`: um workflow alterado vale desde o push,
+e o merge do revert é o que o desfaz.
+
+O revert devolve o código, não o estado. [Falhas de publicação](#falhas-de-publicação)
+já avisa que reverter não restaura o banco do corte nem desfaz efeitos
+externos. Também continuam os registros gravados pela versão com defeito, os
+webhooks entregues, os e-mails enviados e as consultas da captura ao fisco.
+Variáveis alteradas à mão no deployment também ficam, e o preflight do
+código revertido pode recusá-las e terminar em `failed-before-publication`.
