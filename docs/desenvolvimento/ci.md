@@ -342,9 +342,11 @@ todas as áreas dividido pelos workers. Quatro seeds de `--sequence.shuffle`
 `tests/setup/sequencer.ts`
 mantém uma fila só, dos arquivos mais longos aos mais curtos, porque o
 sequenciador padrão ordena projeto a projeto e o mais lento do último projeto
-alongava a suíte. O timeout só separa um teste travado de um lento. No CI,
-`--testTimeout=60000` vale para todos. `VITEST_MAX_WORKERS` e
-`VITEST_TEST_TIMEOUT` ajustam os dois limites sem mudar o resultado.
+alongava a suíte. O timeout só separa um teste travado de um lento. No CI, o
+limite é de 60 s, ou o do projeto quando ele pede mais, como os 120 s do
+`benchmark`: a opção de linha de comando sobrepõe o limite de cada projeto.
+`VITEST_MAX_WORKERS` e `VITEST_TEST_TIMEOUT` ajustam os dois limites sem mudar
+o resultado.
 
 A mesma lista dá a cada projeto a suíte do relatório do CI (`platform` ou
 `infrastructure`); `scripts/lib/ci.mjs` classifica cada arquivo
