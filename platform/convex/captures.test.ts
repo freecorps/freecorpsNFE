@@ -196,10 +196,36 @@ async function raw(f: Awaited<ReturnType<typeof fixture>>, token: Claim, bytes: 
   }))!;
   return batchId;
 }
-async function persist(f: Awaited<ReturnType<typeof fixture>>, token: Claim, bytes: Buffer) {
-  const batchId = await raw(f, token, bytes),
-    parsed = parseDistribution(bytes, "sandbox");
-  await f.t.mutation(internal.captureProcessing.describe, {
+/** Delivers the envelope at `position` of `bytes` to the batch, with its own stored file. */
+async function deliver(
+  f: Awaited<ReturnType<typeof fixture>>,
+  token: Claim,
+  batchId: Id<"captureBatches">,
+  bytes: Buffer,
+  position: number,
+) {
+  const e = parseDistribution(bytes, "sandbox").envelopes[position]!;
+  const storageId = await f.t.run((ctx) => ctx.storage.store(new Blob([Uint8Array.from(e.xml)])));
+  const saved = await f.t.mutation(internal.captureProcessing.envelope, {
+    ...token,
+    batchId,
+    position,
+    nsu: e.nsu,
+    schema: e.schema,
+    sha256: e.sha256,
+    size: e.xml.length,
+    storageId,
+  });
+  return { saved, storageId };
+}
+async function describeBatch(
+  f: Awaited<ReturnType<typeof fixture>>,
+  token: Claim,
+  batchId: Id<"captureBatches">,
+  bytes: Buffer,
+) {
+  const parsed = parseDistribution(bytes, "sandbox");
+  return f.t.mutation(internal.captureProcessing.describe, {
     ...token,
     batchId,
     status: parsed.status,
@@ -207,21 +233,13 @@ async function persist(f: Awaited<ReturnType<typeof fixture>>, token: Claim, byt
     maxNsu: parsed.maxNsu,
     count: parsed.envelopes.length,
   });
-  for (const [position, e] of parsed.envelopes.entries()) {
-    const storageId = await f.t.run((ctx) => ctx.storage.store(new Blob([Uint8Array.from(e.xml)])));
-    expect(
-      await f.t.mutation(internal.captureProcessing.envelope, {
-        ...token,
-        batchId,
-        position,
-        nsu: e.nsu,
-        schema: e.schema,
-        sha256: e.sha256,
-        size: e.xml.length,
-        storageId,
-      }),
-    ).toBe(true);
-  }
+}
+async function persist(f: Awaited<ReturnType<typeof fixture>>, token: Claim, bytes: Buffer) {
+  const batchId = await raw(f, token, bytes);
+  await describeBatch(f, token, batchId, bytes);
+  const count = parseDistribution(bytes, "sandbox").envelopes.length;
+  for (let position = 0; position < count; position++)
+    expect((await deliver(f, token, batchId, bytes, position)).saved).toBe(true);
   await f.t.mutation(internal.operations.recordOutcome, {
     ...token,
     outcome: { kind: "success", response: "{}" },
@@ -1423,6 +1441,125 @@ it("resumes a partially persisted batch without leaking or duplicating the first
       size: e.xml.length,
     }),
   ).toBe(false);
+});
+
+/** The lease ends; the recovered operation runs again through the real worker. */
+async function expireAndRerun(f: Awaited<ReturnType<typeof fixture>>, token: Claim) {
+  vi.setSystemTime(Date.now() + 60_001);
+  await f.t.mutation(internal.operations.recoverOne, { operationId: token.operationId });
+  const op = (await f.t.run((ctx) => ctx.db.get("operations", token.operationId)))!;
+  vi.setSystemTime(Math.max(Date.now(), op.nextAttemptAt));
+  await f.t.action(internal.operationWorker.run, {
+    operationId: op._id,
+    generation: op.generation,
+  });
+}
+const twoEnvelopes = () =>
+  distributionXml({
+    envelopes: [
+      { nsu: 1, xml: corpus("summary-authorized") },
+      { nsu: 2, xml: corpus("invoice-authorized") },
+    ],
+  });
+
+it("o envelope repetido na mesma posição não grava outro e tem o arquivo apagado (#123)", async () => {
+  const f = await fixture();
+  await f.command("activate");
+  const token = await claim(f);
+  const bytes = twoEnvelopes();
+  const batchId = await raw(f, token, bytes);
+  expect(await describeBatch(f, token, batchId, bytes)).toBe(true);
+  // convex-test serializes mutations, as OCC orders the real ones: the repetition comes second.
+  const first = await deliver(f, token, batchId, bytes, 0);
+  const repeated = await deliver(f, token, batchId, bytes, 0);
+  expect([first.saved, repeated.saved]).toEqual([true, true]);
+  expect((await deliver(f, token, batchId, bytes, 1)).saved).toBe(true);
+  await f.t.mutation(internal.operations.recordOutcome, {
+    ...token,
+    outcome: { kind: "success", response: "{}" },
+  });
+  await f.t.mutation(internal.operations.checkpoint, token);
+  expect((await f.command()).checkpoint).toBe(nsu(2));
+  const rows = await f.t.run(async (ctx) => ({
+    envelopes: (await ctx.db.query("captureEnvelopes").collect()).map((e) => e.nsu).sort(),
+    artifacts: (await ctx.db.query("documentArtifacts").collect()).length,
+    // The raw response and one file per envelope.
+    files: (await ctx.db.system.query("_storage").collect()).length,
+    first: await ctx.storage.getUrl(first.storageId),
+    repeated: await ctx.storage.getUrl(repeated.storageId),
+  }));
+  expect(rows).toMatchObject({
+    envelopes: [nsu(1), nsu(2)],
+    artifacts: 2,
+    files: 3,
+    repeated: null,
+  });
+  expect(rows.first).not.toBeNull();
+});
+
+it("a interrupção entre o describe e os envelopes retoma do lote guardado, sem outra consulta à fonte (#123)", async () => {
+  const f = await fixture();
+  await f.command("activate");
+  const old = await claim(f);
+  const bytes = twoEnvelopes();
+  const batchId = await raw(f, old, bytes);
+  expect(await describeBatch(f, old, batchId, bytes)).toBe(true);
+  // The worker stops here: the batch is described and no envelope is durable. The simulated
+  // source is open and would answer a new query with one NSU more.
+  const stream = (await f.command()).id;
+  await f.t.mutation(internal.testing.captureProof.set, {
+    streamId: stream,
+    xml: distributionXml({
+      last: 3,
+      max: 3,
+      envelopes: [{ nsu: 3, xml: corpus("event-110111") }],
+    }).toString(),
+  });
+  await f.t.mutation(internal.testing.captureProof.allowNow, { streamId: stream });
+  await expireAndRerun(f, old);
+  expect((await f.command()).checkpoint).toBe(nsu(2));
+  const proof = await f.t.query(internal.testing.captureProof.inspect, { streamId: stream });
+  expect(proof.calls).toBe(0);
+  expect(proof.envelopes.map((e) => e.nsu)).toEqual([nsu(1), nsu(2)]);
+  expect(await f.t.run((ctx) => ctx.db.query("captureBatches").collect())).toHaveLength(1);
+});
+
+it("um bruto tardio da mesma claim não substitui o lote guardado nem leva o checkpoint além dele (#123)", async () => {
+  const f = await fixture();
+  await f.command("activate");
+  const token = await claim(f);
+  const first = twoEnvelopes();
+  const batchId = await raw(f, token, first);
+  // A repeated execution of this claim stores a later answer, with one NSU more. A fenced claim
+  // never gets here: `captureClaim` refuses it first.
+  const late = distributionXml({
+    envelopes: [
+      { nsu: 1, xml: corpus("summary-authorized") },
+      { nsu: 2, xml: corpus("invoice-authorized") },
+      { nsu: 3, xml: corpus("event-110111") },
+    ],
+  });
+  const lateId = await f.t.run((ctx) => ctx.storage.store(new Blob([Uint8Array.from(late)])));
+  expect(
+    await f.t.mutation(internal.captureProcessing.raw, {
+      ...token,
+      rawId: lateId,
+      rawHash: createHash("sha256").update(late).digest("hex"),
+      nsu: nsu(0),
+      mode: "distNSU",
+    }),
+  ).toBe(batchId);
+  expect(
+    await f.t.run(async (ctx) => ({
+      batches: (await ctx.db.query("captureBatches").collect()).map((b) => b.rawHash),
+      late: await ctx.storage.getUrl(lateId),
+    })),
+  ).toEqual({ batches: [createHash("sha256").update(first).digest("hex")], late: null });
+  await expireAndRerun(f, token);
+  expect((await f.command()).checkpoint).toBe(nsu(2));
+  expect(
+    (await f.t.run((ctx) => ctx.db.query("captureEnvelopes").collect())).map((e) => e.nsu).sort(),
+  ).toEqual([nsu(1), nsu(2)]);
 });
 
 it("keeps an unavailable persisted batch in attention instead of silently querying again", async () => {
