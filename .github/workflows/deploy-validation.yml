@@ -56,10 +56,11 @@ jobs:
       - name: Install locked dependencies
         run: vp install --frozen-lockfile
       # Browser only: the ubuntu-24.04 image already has every library Chromium
-      # links against, as the Blacksmith one did (#51). --with-deps went through apt and added CJK and
-      # Thai fonts, Xvfb and library upgrades the headless M0 journeys do not
-      # use, 4 of the 11 minutes of the run on a slow mirror. A missing library
-      # fails the launch in the journeys, not silently.
+      # links against, as the Blacksmith one did (#51). --with-deps went
+      # through apt and added CJK and Thai fonts, Xvfb and library upgrades the
+      # headless M0 journeys do not use, 4 of the 11 minutes of the run on a
+      # slow mirror. A missing library fails the launch in the journeys, not
+      # silently.
       - name: Install Chromium for the published M0 journeys
         run: node apps/console/node_modules/playwright/cli.js install chromium
       - name: Publish the approved revision and verify both services

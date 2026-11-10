@@ -24,8 +24,10 @@ afirmação e as decisões ficam em `docs/v1.0/`:
 | `termos-de-uso-2026-11-01`           | 01/11/2026 (#428)               | `9473250bf91250e3bb6091f01eb1f6e05b6e5259a440027bd7761b3de23e1e3b` | Substituída em 02/11/2026 |
 | `termos-de-uso-2026-11-02`           | 02/11/2026 (#142)               | `3d0ebb439785d879900f7822b6d7bfa2480737ea0acdf8824db6498f85ba5984` | Substituída em 04/11/2026 |
 | `termos-de-uso-2026-11-04`           | 04/11/2026 (ADR 0012)           | `41a617856f796a8d6219d04eb4a5260effc3eb59669d6146c483ca7f2f130748` | Substituída em 05/11/2026 |
-| `termos-de-uso-2026-11-05`           | 05/11/2026 (#169)               | `6454cb58aab5a4608b3971ca3d564ebc13132d4cf7aca1cca14ef638ca15f726` | Atual                     |
-| `politica-de-privacidade-2026-11-01` | 01/11/2026 (#428)               | `02742f6e09412c1120dfde651216ce4c4c9c601a63fd453aaf3109dd04a3a899` | Atual                     |
+| `termos-de-uso-2026-11-05`           | 05/11/2026 (#169)               | `6454cb58aab5a4608b3971ca3d564ebc13132d4cf7aca1cca14ef638ca15f726` | Substituída em 09/11/2026 |
+| `termos-de-uso-2026-11-09`           | 09/11/2026                      | `5e724f85a52c0cdf3fcbfcdd29699c0e94f42007a70b0ea8ec355a67242ba64b` | Atual                     |
+| `politica-de-privacidade-2026-11-01` | 01/11/2026 (#428)               | `02742f6e09412c1120dfde651216ce4c4c9c601a63fd453aaf3109dd04a3a899` | Substituída em 09/11/2026 |
+| `politica-de-privacidade-2026-11-09` | 09/11/2026                      | `73bafea7430910be042f4afa890eb02cbfab3450fd4fa30018487b67065050c5` | Atual                     |
 
 O texto de `captura-fiscal-2026-10-22` é o mesmo desde que entrou no console.
 O histórico do Git mostra uma única mudança no componente, em 23/10/2026
@@ -168,6 +170,15 @@ com Sandbox" segue esse critério. O resto do texto é o da 1.2
 aceitam a 1.3 até 05/12/2026, meia-noite de Brasília, inclusive as que ainda
 não tinham aceitado a 1.2.
 
+A versão 1.4, `termos-de-uso-2026-11-09`, entra no console em 09/11/2026. Ela
+troca a Blacksmith pelo GitHub como suboperador que executa os jobs de
+integração contínua, publicação e backup, nos itens 7 e 8 da cláusula de
+operadora, porque todos os workflows passaram para o runner do GitHub. O
+resto do texto é o da 1.3. O item 7 promete aviso de 30 dias antes de trocar
+um suboperador; o mantenedor decidiu em 09/11/2026 fazer a troca de imediato
+porque o serviço não tem clientes, só organizações da própria Freecorps. As
+organizações existentes aceitam a 1.4 até 09/12/2026, meia-noite de Brasília.
+
 Cada versão é um arquivo `arquivo/termos-de-uso-AAAA-MM-DD.md`, imutável, no
 subconjunto aceito pelo console, e o servidor guarda a versão, o SHA-256 e a
 data em que entrou no console em `TERMS_OF_USE_ARCHIVE`
@@ -219,7 +230,10 @@ registrado com o SHA-256 e a data em `PRIVACY_POLICY_ARCHIVE`
 (`platform/convex/lib/privacyPolicyArchive.ts`); `PRIVACY_POLICY_VERSION` é a
 versão em vigor. `apps/console/src/privacy-policy.test.tsx` falha nas mesmas
 condições dos termos. A primeira versão, `politica-de-privacidade-2026-11-01`,
-vale desde 01/11/2026 (#428). Uma versão nova que mude o tratamento exige o
+vale desde 01/11/2026 (#428). A 1.1, `politica-de-privacidade-2026-11-09`,
+vale desde 09/11/2026: o GitHub passa a executar os jobs, inclusive o backup,
+no lugar da Blacksmith, que continua listada só pelos logs dos jobs que
+executou. Sem clientes, o mantenedor dispensou o aviso de 30 dias da seção 9. Uma versão nova que mude o tratamento exige o
 aviso de 30 dias da seção 9, por e-mail e no console; o aviso automático da
 seção 11 dos termos não cobre a política, e esse aviso é feito à parte.
 

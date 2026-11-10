@@ -60,7 +60,7 @@ jobs:
     name: Publish the fiscal production
     needs: [plan, validate]
     if: needs.validate.outputs.tested_sha == github.sha
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: nfse-production-release
     # actions: read lets the runner read this run's approvals; nothing else is added.

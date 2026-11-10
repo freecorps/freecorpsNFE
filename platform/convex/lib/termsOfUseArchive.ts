@@ -10,7 +10,9 @@
  * retired ABRASF NFS-e import from section 1 (#142); 1.2, on 04/11/2026, moves the paid plans and
  * their quotas to the subscription month and drops Pix from section 5A (ADR 0012); 1.3, on
  * 05/11/2026, says in sections 2 and 9 and in item 11 of the operator clause that a NF-e imported
- * into Sandbox keeps its fiscal validity and counts as Production for the guard (#169). Publishing
+ * into Sandbox keeps its fiscal validity and counts as Production for the guard (#169); 1.4, on
+ * 09/11/2026, names GitHub instead of Blacksmith as the sub-processor that runs the jobs, in items 7
+ * and 8 of the operator clause. Publishing
  * a new one adds the file,
  * its line here and the new current version, in the same change, and that change is deployed the
  * same day: `since` starts the 30 days of notice (docs/termos/README.md).
@@ -32,6 +34,10 @@ export const TERMS_OF_USE_ARCHIVE: Readonly<Record<string, { sha256: string; sin
     sha256: "6454cb58aab5a4608b3971ca3d564ebc13132d4cf7aca1cca14ef638ca15f726",
     since: "2026-11-05",
   },
+  "termos-de-uso-2026-11-09": {
+    sha256: "5e724f85a52c0cdf3fcbfcdd29699c0e94f42007a70b0ea8ec355a67242ba64b",
+    since: "2026-11-09",
+  },
 };
 /** Version an owner accepts in the console, at the organization's creation and after each change. */
-export const TERMS_OF_USE_VERSION: string | null = "termos-de-uso-2026-11-05";
+export const TERMS_OF_USE_VERSION: string | null = "termos-de-uso-2026-11-09";

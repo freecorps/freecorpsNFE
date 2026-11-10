@@ -1,8 +1,11 @@
 # Política de privacidade e retenção, D06: fontes e decisões
 
 > **Publicada em 01/11/2026 (#428).** O texto em vigor é o arquivo
-> [`politica-de-privacidade-2026-11-01.md`](../termos/arquivo/politica-de-privacidade-2026-11-01.md),
-> versão 1.0, mostrado sem login em `/privacidade`, com a versão, a data, o
+> [`politica-de-privacidade-2026-11-09.md`](../termos/arquivo/politica-de-privacidade-2026-11-09.md),
+> versão 1.1, de 09/11/2026, que troca a Blacksmith pelo GitHub na execução
+> dos jobs; a 1.0 é
+> [`politica-de-privacidade-2026-11-01.md`](../termos/arquivo/politica-de-privacidade-2026-11-01.md).
+> O texto em vigor é mostrado sem login em `/privacidade`, com a versão, a data, o
 > SHA-256 (`PRIVACY_POLICY_ARCHIVE`, `platform/convex/lib/privacyPolicyArchive.ts`)
 > e as versões anteriores. Ninguém aceita a política; os termos de uso apontam
 > para ela. Uma mudança é uma versão nova, num arquivo novo, com o aviso da

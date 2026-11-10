@@ -267,11 +267,11 @@ plano aguardando pagamento ou assinatura de cartão renovando não recebe aviso.
 A organização contrata pelos termos de uso, com a cláusula de operadora,
 aceitos por um owner no console (#586). Os textos e as versões estão em
 [Termos](../termos/README.md#termos-de-uso). A versão em vigor é
-`termos-de-uso-2026-11-05` (1.3), que entrou no console em 05/11/2026 (#169) e
-substituiu a 1.2, de 04/11/2026 (ADR 0012), a 1.1, de 02/11/2026 (#142), e a
-1.0, de 01/11/2026 (#428): as organizações criadas desde então a aceitam na
-criação, e as que já existiam têm até 05/12/2026, meia-noite de Brasília,
-para aceitar.
+`termos-de-uso-2026-11-09` (1.4), que entrou no console em 09/11/2026 e
+substituiu a 1.3, de 05/11/2026 (#169), a 1.2, de 04/11/2026 (ADR 0012), a
+1.1, de 02/11/2026 (#142), e a 1.0, de 01/11/2026 (#428): as organizações
+criadas desde então a aceitam na criação, e as que já existiam têm até
+09/12/2026, meia-noite de Brasília, para aceitar.
 
 - **Criação.** `termsOfUse.current` devolve a versão em vigor ao formulário
   de criação. `organizations.create` recebe a versão que a pessoa leu

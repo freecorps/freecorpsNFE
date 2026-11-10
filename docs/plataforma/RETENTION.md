@@ -222,7 +222,7 @@ ele, nenhum log stream no Convex e artefatos do Actions em até 30 dias; a
 retenção dos logs do Actions caiu de 90 para 30 dias. Logpush, OpenTelemetry,
 logs HTTP da zona e Email Sending ficam na retenção nativa de 30 dias. O painel Convex
 guarda só um histórico curto, sem integração configurada. Os workflows agora
-usam VMs efêmeras Blacksmith; falta confirmar a execução e conferir o descarte
+usam VMs efêmeras do GitHub (antes, da Blacksmith); falta confirmar a execução e conferir o descarte
 dos dados remanescentes no antigo VPS. O Worker de privacidade tem Workers Logs
 habilitado e exige conferência própria após ativação. O painel Convex oferece histórico recente;
 exportações para outro destino têm retenção própria a inventariar.
@@ -543,7 +543,7 @@ validade fiscal da emissão, que é simulada, mas não de uma NF-e real
 importada. O `tpAmb` do XML de uma nota importada no Sandbox pode ser 1, e o
 documento continua autêntico. Por isso uma nota recebida conta como Produção
 quando o próprio XML não declara homologação (`tpAmb` 2), seja qual for o
-ambiente em que está guardada. Os termos de uso 1.3
+ambiente em que está guardada. Os termos de uso desde a 1.3
 (`termos-de-uso-2026-11-05`, #169) dizem o mesmo nas seções 2 e 9 e no item
 11 da cláusula de operadora. Até o aceite de cada organização, vale a versão
 que ela aceitou, que ainda diz que o Sandbox não tem efeito fiscal; o código

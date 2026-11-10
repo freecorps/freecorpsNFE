@@ -83,7 +83,7 @@ Busca tem medição própria; não presumir que está dentro da franquia de banc
 | Cloudflare Workers         | Paid: US$ 5/mês, 10 milhões de requisições e 30 milhões de ms CPU; adicionais de US$ 0,30/milhão de requisições e US$ 0,02/milhão de ms. Assets estáticos não equivalem a chamadas dinâmicas. [Fonte](https://developers.cloudflare.com/workers/platform/pricing/) |
 | Cloudflare R2 Standard     | 10 GB-mês incluídos; US$ 0,015/GB-mês adicional. Operações A: 1 milhão incluído, depois US$ 4,50/milhão; B: 10 milhões, depois US$ 0,36/milhão. Saída gratuita. Há arredondamento por unidade faturável. [Fonte](https://developers.cloudflare.com/r2/pricing/)    |
 | Cloudflare Email Sending   | No Workers Paid, 3.000 envios/mês incluídos, depois US$ 0,35/mil. Destinatários arbitrários exigem Paid. Não acrescentar uma assinatura Resend: o código usa Cloudflare. [Fonte](https://developers.cloudflare.com/email-service/platform/pricing/)                |
-| Blacksmith                 | Ubuntu x64 de 2 vCPU: US$ 0,004/min, com 3.000 minutos gratuitos/mês. Backup e validação disputam a franquia; duração cresce com o snapshot. [Fonte](https://www.blacksmith.sh/pricing)                                                                            |
+| GitHub Actions             | Runner padrão `ubuntu-24.04`: gratuito e sem limite de minutos em repositório público, desde 09/11/2026 para todos os jobs, backup incluído. Antes, Blacksmith a US$ 0,004/min. [Fonte](https://docs.github.com/en/actions/concepts/billing-and-usage)             |
 
 Cloudflare Pro de zona, Workers Paid e R2 são produtos distintos. Não inferir
 que uma assinatura cobre todos. Domínio, suporte humano, cobrança, impostos,

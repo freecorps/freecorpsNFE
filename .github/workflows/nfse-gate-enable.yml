@@ -50,7 +50,7 @@ jobs:
     name: Enable the gate after another person's approval
     needs: plan
     if: github.ref == 'refs/heads/main'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: nfse-production-gate
     permissions:
