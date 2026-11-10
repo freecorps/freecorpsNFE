@@ -353,6 +353,8 @@ export default defineConfig({
     // formatador não os toca.
     ignorePatterns: [
       "platform/convex/_generated/**",
+      // O deploy do Convex regenera este código no checkout e a publicação exige a árvore limpa.
+      "packages/convex-rate-limiter/src/component/_generated/**",
       ".agents/**",
       ".claude/skills/**",
       "skills-lock.json",
@@ -360,7 +362,11 @@ export default defineConfig({
     ],
   },
   lint: {
-    ignorePatterns: ["platform/convex/_generated/**", "apps/console/public/developer/**"],
+    ignorePatterns: [
+      "platform/convex/_generated/**",
+      "packages/convex-rate-limiter/src/component/_generated/**",
+      "apps/console/public/developer/**",
+    ],
     // Os quatro plugins padrão do Oxlint mais `import`, que só monta o grafo de
     // módulos quando ligado aqui: num override, `import/no-cycle` não dispara.
     // As duas regras que o plugin liga por padrão repetem o typecheck e ficam
