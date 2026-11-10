@@ -503,7 +503,7 @@ pacote ainda não está no npm.
 
 Em 03/11/2026 o código passou ao repositório público
 `freecorps/freecorpsNFE`, sem o histórico anterior, que fica num repositório
-arquivado e privado (#267, decisão 6 de [ACCEPTANCE.md](../v1.0/ACCEPTANCE.md)).
+arquivado e privado (#267, decisão 6 do [registro de 26–29/10](../v1.0/EVIDENCE.md#decisões-do-mantenedor-de-2629102026)).
 Consultas anônimas às 19:53 UTC (16h53 em Brasília):
 `https://github.com/freecorps/freecorpsNFE`,
 `https://api.github.com/repos/freecorps/freecorpsNFE` e

@@ -10,7 +10,7 @@ import {
 import { requireIntegrationWriter } from "../lib/validation.mjs";
 import { checkPublication, requireRehearsalWindow } from "../lib/validation-deploy.mjs";
 
-// Desde a virada de 03/11/2026 (decisão 6 de docs/v1.0/ACCEPTANCE.md), só o
+// Desde a virada de 03/11/2026 (decisão 6 em docs/v1.0/EVIDENCE.md), só o
 // repositório público é origem aceita; o arquivado é recusado como qualquer outro.
 const sha = "a".repeat(40);
 const other = "external/freecorpsNFE";
