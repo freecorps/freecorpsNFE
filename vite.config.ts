@@ -363,6 +363,8 @@ export default defineConfig({
     ignorePatterns: ["platform/convex/_generated/**", "apps/console/public/developer/**"],
     // Os quatro plugins padrão do Oxlint mais `import`, que só monta o grafo de
     // módulos quando ligado aqui: num override, `import/no-cycle` não dispara.
+    // As duas regras que o plugin liga por padrão repetem o typecheck e ficam
+    // desligadas, para que ele não valha além do override de platform/convex.
     plugins: ["eslint", "typescript", "unicorn", "oxc", "import"],
     jsPlugins: [
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
@@ -373,6 +375,8 @@ export default defineConfig({
       "vite-plus/prefer-vite-plus-imports": "error",
       "freecorps/no-float-fiscal-values": "error",
       "freecorps/require-suppression-reason": "error",
+      "import/default": "off",
+      "import/namespace": "off",
     },
     overrides: [
       // O núcleo fiscal é quem implementa a aritmética decimal exata.
@@ -384,11 +388,15 @@ export default defineConfig({
       },
       // Sem ciclo de imports de valor no backend (`import type` não conta): num
       // ciclo, um módulo pode ler o export do outro ainda não inicializado (#112).
+      // `ignoreTypes` também ignora `import { type X }`, que com
+      // verbatimModuleSyntax ainda carrega o módulo; a regra do typescript exige
+      // `import type` quando todos os nomes são tipos.
       {
         files: ["platform/convex/**/*.ts"],
         rules: {
           "freecorps/require-access-helper-in-convex-functions": "error",
           "import/no-cycle": ["error", { ignoreTypes: true }],
+          "typescript/no-import-type-side-effects": "error",
         },
       },
       {

@@ -166,7 +166,14 @@ valor entre módulos do backend; `import type` some na compilação e não conta
 Num ciclo, a ordem de carga decide se um módulo lê o export do outro já
 inicializado ou `undefined`. O plugin `import` fica em `lint.plugins`, ao lado
 dos quatro padrão do Oxlint, porque só ali ele monta o grafo de módulos: ligado
-só no override, a regra não dispara.
+só no override, a regra não dispara. As duas regras que o plugin liga por
+padrão, `import/default` e `import/namespace`, repetem o typecheck e ficam
+desligadas em `lint.rules`.
+
+`ignoreTypes` também ignora `import { type X } from`, que com
+`verbatimModuleSyntax` ainda carrega o módulo. Por isso o mesmo override liga
+`typescript/no-import-type-side-effects`: quando todos os nomes importados são
+tipos, o import se escreve `import type`.
 
 Para quebrar um ciclo, mova a função que puxa a dependência de volta para um
 módulo do domínio que importa os dois lados. `createCompany` saiu de
