@@ -363,6 +363,9 @@ it.each(SEEDS)("semente %i: intercalação preserva as garantias do protocolo", 
               ...args,
               outcome: chosen,
             });
+            // `recordOutcome` answers true only for a success; it also records the other kinds
+            // and answers false. A refused outcome (absence outside reconciliation) throws and
+            // never reaches here, so the active claim in `calling` is what says it was recorded.
             if (active && op.stage === "calling") {
               settle(chosen.kind, op);
               calling = null;
