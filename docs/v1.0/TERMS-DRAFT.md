@@ -1,8 +1,11 @@
-> **Versão 1.3 publicada em 05/11/2026.** O texto em vigor é o arquivo
+> **Versão 1.4 publicada em 09/11/2026.** O texto em vigor é o arquivo
+> [`termos-de-uso-2026-11-09.md`](../termos/arquivo/termos-de-uso-2026-11-09.md),
+> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. Ela troca a
+> Blacksmith pelo GitHub nos itens 7 e 8 da cláusula. A 1.3,
 > [`termos-de-uso-2026-11-05.md`](../termos/arquivo/termos-de-uso-2026-11-05.md),
-> com a [cláusula de operadora](OPERADORA-DRAFT.md) no fim. A 1.2,
+> foi publicada em 05/11/2026 (#169), a 1.2,
 > [`termos-de-uso-2026-11-04.md`](../termos/arquivo/termos-de-uso-2026-11-04.md),
-> foi publicada em 04/11/2026 (ADR 0012), a 1.1,
+> em 04/11/2026 (ADR 0012), a 1.1,
 > [`termos-de-uso-2026-11-02.md`](../termos/arquivo/termos-de-uso-2026-11-02.md),
 > em 02/11/2026 (#142), e a 1.0,
 > [`termos-de-uso-2026-11-01.md`](../termos/arquivo/termos-de-uso-2026-11-01.md),

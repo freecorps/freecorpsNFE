@@ -31,7 +31,7 @@ jobs:
   publish:
     name: Publish production
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.approved_sha == github.sha)
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
     concurrency:

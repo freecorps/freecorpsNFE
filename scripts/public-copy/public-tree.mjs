@@ -713,6 +713,11 @@ export const findingAllowlist = [
       1,
       "Encarregado identificado na política de privacidade publicada",
     ],
+    [
+      "docs/termos/arquivo/politica-de-privacidade-2026-11-09.md",
+      1,
+      "Encarregado identificado na política de privacidade publicada",
+    ],
     ["apps/console/src/privacy-policy.test.tsx", 1, "Teste que confere o encarregado na política"],
     [
       "scripts/licenses/rights-relation.mjs",

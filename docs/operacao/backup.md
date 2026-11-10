@@ -57,7 +57,7 @@ jobs. Os dois executam `scripts/backup/backup-offsite.mjs` com o plano
 `deploy/offsite-backup.json` e o alvo de `deploy/platform-release.json`.
 
 O job `snapshot` roda às 00:00 e às 12:00 de Brasília (03:00/15:00 UTC), no
-runner `blacksmith-2vcpu-ubuntu-2404`, em VM efêmera:
+runner `ubuntu-24.04` do GitHub, em VM efêmera:
 
 1. Lê o SHA publicado em `/health` e as variáveis do deployment. Das chaves de
    custódia, guarda só fingerprints SHA-256 com prefixo de domínio, nunca o valor.
@@ -159,9 +159,9 @@ O snapshot não contém código, variáveis de ambiente nem funções agendadas.
 O código vem do `codeSha` do manifesto; as variáveis, da custódia separada.
 As funções agendadas seguem o [roteiro de D05](../plataforma/RETENTION.md#prova-de-d05).
 
-O job `check` roda 90 minutos depois de cada snapshot, em outra VM Blacksmith,
+O job `check` roda 90 minutos depois de cada snapshot, em outra VM do GitHub,
 sem depender da execução do snapshot. A perda de uma VM não impede o monitor;
-uma indisponibilidade da Blacksmith pode impedir os dois jobs de iniciar.
+uma indisponibilidade do GitHub Actions pode impedir os dois jobs de iniciar.
 Com um token R2 somente leitura, ele:
 
 - procura o manifesto mais recente e baixa a cifra para conferir tamanho e hash;
@@ -254,8 +254,7 @@ O R2 cobra armazenamento (US$ 0,015/GB-mês, com 10 GB gratuitos) e
 operações. Não cobra saída. São 28 cópias retidas. O tamanho real fica no
 recibo do `snapshot`, em `ciphertext.bytes`; multiplique por 28 para estimar
 o volume. As operações somam poucas centenas por mês. Os jobs `snapshot` e
-`check` rodam em Blacksmith de 2 vCPU; medir seus minutos reais, compartilhados
-com o restante do CI, em vez de presumir custo fixo por execução.
+`check` rodam no runner padrão do GitHub, gratuito em repositório público.
 
 O custo também inclui a origem: leitura do banco e dos arquivos, geração e
 download do ZIP no Convex, cerca de 60 vezes em um mês de 30 dias. A saída

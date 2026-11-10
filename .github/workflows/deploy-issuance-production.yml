@@ -29,7 +29,7 @@ jobs:
   plan:
     name: Versioned plan names the fiscal production deployment and its release
     if: github.ref == 'refs/heads/main'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,7 +60,7 @@ jobs:
     name: Publish the fiscal production
     needs: [plan, validate]
     if: needs.validate.outputs.tested_sha == github.sha
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: nfse-production-release
     # actions: read lets the runner read this run's approvals; nothing else is added.

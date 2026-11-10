@@ -30,8 +30,8 @@ jobs:
   snapshot:
     name: Encrypted snapshot
     if: github.ref == 'refs/heads/main' && (github.event.schedule == '0 3,15 * * *' || inputs.job == 'snapshot')
-    # A fresh Blacksmith VM; production credentials stay in the protected environment.
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    # A fresh GitHub-hosted VM; production credentials stay in the protected environment.
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment: offsite-backup
     steps:
@@ -73,7 +73,7 @@ jobs:
     name: Check latest copy
     if: github.ref == 'refs/heads/main' && (github.event.schedule == '30 4,16 * * *' || inputs.job == 'check')
     # A separate VM and schedule, without a dependency on the snapshot job.
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: offsite-backup
     permissions:
@@ -139,7 +139,7 @@ jobs:
   issuance-plan:
     name: Fiscal production deployment named
     if: github.ref == 'refs/heads/main'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       named: ${{ steps.plan.outputs.named }}
@@ -166,7 +166,7 @@ jobs:
     name: Encrypted snapshot of the fiscal production
     needs: issuance-plan
     if: needs.issuance-plan.outputs.named == 'true' && (github.event.schedule == '0 3,15 * * *' || inputs.job == 'snapshot')
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment: offsite-backup-issuance
     steps:
@@ -208,7 +208,7 @@ jobs:
     name: Check latest copy of the fiscal production
     needs: issuance-plan
     if: needs.issuance-plan.outputs.named == 'true' && (github.event.schedule == '30 4,16 * * *' || inputs.job == 'check')
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: offsite-backup-issuance
     permissions:

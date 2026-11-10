@@ -243,9 +243,9 @@ agent de navegador e `Accept: text/html`; o HTML não pode conter
 ## Backup externo
 
 O workflow `Offsite backup` lê a produção, mas não publica nada. A cada
-12 horas, uma VM Blacksmith exporta `elated-possum-295` com uma chave de
+12 horas, uma VM do GitHub exporta `elated-possum-295` com uma chave de
 deploy própria, guardada no environment `offsite-backup`, e envia a cópia
-cifrada ao R2. Outra VM Blacksmith confere a cópia 90 minutos depois. Ele
+cifrada ao R2. Outra VM do GitHub confere a cópia 90 minutos depois. Ele
 usa o grupo de concorrência `offsite-backup-*`, nunca `production`, para não
 cancelar uma publicação pendente. Um snapshot que coincide com uma publicação
 falha e é repetido no ciclo seguinte. Configuração, alerta e recuperação estão

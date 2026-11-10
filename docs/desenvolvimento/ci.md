@@ -1122,31 +1122,37 @@ O contrato da plataforma está em [API-REFERENCE.md](../v1.0/API-REFERENCE.md) e
 
 ### Onde cada job roda
 
-| Workflow            | Job                  | Runner                         |
-| ------------------- | -------------------- | ------------------------------ |
-| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404` |
-| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404` |
-| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404` |
-| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404` |
-| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404` |
+Todos os jobs rodam no runner padrão do GitHub, `ubuntu-24.04`, com 4 vCPUs,
+em VM efêmera. O repositório é público desde 03/11/2026, e esse runner é
+gratuito e sem limite de minutos em repositório público. Os jobs saíram da
+Blacksmith por decisão do mantenedor em 09/11/2026, quando a franquia
+mensal dela já tinha acabado.
 
-`Deploy validation` chama o `CI` como workflow
-reutilizável; o job de validação roda na Blacksmith também nesses
-casos. `Validate` não recebe segredos. Por decisão do mantenedor em 21/10/2026,
-produção e snapshot também usam Blacksmith, mantendo os environments
-`production` e `offsite-backup`, os secrets e as regras de concorrência.
-Cada job usa uma VM efêmera. Snapshot e monitor têm agendas independentes,
-mas compartilham o provedor Blacksmith: indisponibilidade do provedor pode
-impedir ambos de iniciar. O operador confere os horários das duas execuções.
+A troca mudou o suboperador que executa a publicação e o backup de produção.
+Os termos de uso 1.4 e a política de privacidade 1.1 nomeiam o GitHub no
+lugar da Blacksmith ([termos](../termos/README.md#termos-de-uso)). O aviso de
+30 dias que os termos prometem foi dispensado porque o serviço ainda não tem
+clientes.
 
-Os runners hospedados pelo GitHub não são usados. A escolha vem de quando o
-repositório era privado: os minutos gratuitos dos repositórios privados da
-organização se esgotaram, e a cobrança bloqueava jobs novos, que falhavam sem
-iniciar. O repositório é público desde 03/11/2026; trocar de runner é outra
-decisão. CI que não iniciou não é teste aprovado;
-registre esse bloqueio separadamente das falhas de código.
+`Deploy validation` e `Deploy NFS-e fiscal production` chamam o `CI` como
+workflow reutilizável. `Validate` não recebe segredos. Os environments, os
+secrets e as regras de concorrência não mudaram. Snapshot e monitor do backup
+têm agendas independentes, mas compartilham o GitHub Actions: uma
+indisponibilidade dele pode impedir ambos de iniciar. O operador confere os
+horários das duas execuções.
 
-### Orçamento da Blacksmith
+O runner do GitHub é mais lento que o x64 da Blacksmith e pode ter fila: o
+plano Free da organização admite 20 jobs simultâneos, somando todos os
+repositórios. CI que não iniciou não é teste aprovado; registre esse
+bloqueio separadamente das falhas de código.
+
+### Histórico: Blacksmith
+
+De 21/10 a 09/11/2026 todos os jobs rodaram na Blacksmith, escolhida quando
+o repositório era privado e os minutos gratuitos dos repositórios privados
+da organização se esgotaram. As medições abaixo são desse período.
+
+#### Orçamento da Blacksmith
 
 A organização tem 3.000 minutos gratuitos por mês na Blacksmith, medidos em
 minutos de runner x64 de 2 vCPUs e divididos entre os projetos da Freecorps,
@@ -1189,7 +1195,7 @@ merge na `main` passou a rodar o `CI` de novo, mas repetindo o que a PR
 aprovou. Medir os minutos cobrados dessas execuções antes de atualizar a
 estimativa acima.
 
-### Tempos
+#### Tempos
 
 `Validate` em PRs, antes no VPS e agora no x64 de 2 vCPUs da Blacksmith:
 
