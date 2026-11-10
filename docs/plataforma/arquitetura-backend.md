@@ -18,19 +18,47 @@ administrativos nem IDs internos de storage.
 
 Cada domínio segue o mesmo arranjo de arquivos:
 
-| Arquivo                           | Responsabilidade                                                      |
-| --------------------------------- | --------------------------------------------------------------------- |
-| `<domínio>.ts`                    | Queries e mutations do console e funções internas do domínio          |
-| `<domínio>Rest.ts`                | Rotas REST do domínio, montadas sobre o transporte comum              |
-| `<domínio>Worker.ts`              | Execução assíncrona em fila (Workpool) e actions Node                 |
-| `lib/<domínio>Schema.ts`          | Tabelas e índices, reunidos em `schema.ts`                            |
-| `lib/<domínio>Values.ts`          | Validators e tipos compartilhados pelas funções                       |
-| `lib/<domínio>Core.ts`/`Rules.ts` | Regras puras e testáveis, sem acesso ao banco                         |
-| `lib/<domínio>Access.ts`          | Autorização do domínio sobre organização, projeto, empresa e ambiente |
+| Arquivo                  | Responsabilidade                                                      |
+| ------------------------ | --------------------------------------------------------------------- |
+| `<domínio>.ts`           | Queries e mutations do console e funções internas do domínio          |
+| `<domínio>Rest.ts`       | Rotas REST do domínio, montadas sobre o transporte comum              |
+| `<domínio>Worker.ts`     | Execução assíncrona em fila (Workpool) e actions Node                 |
+| `lib/<domínio>Schema.ts` | Tabelas e índices, reunidos em `schema.ts`                            |
+| `lib/<domínio>Values.ts` | Validators e tipos compartilhados pelas funções                       |
+| `lib/<domínio>Rules.ts`  | Regras puras e testáveis, sem acesso ao banco                         |
+| `lib/<domínio>Core.ts`   | Regras do domínio que leem ou gravam com o `ctx` de quem chama        |
+| `lib/<domínio>Access.ts` | Autorização do domínio sobre organização, projeto, empresa e ambiente |
 
 `lib/organizationAccess.ts` e `lib/projectAccess.ts` são a base dos demais
 `*Access.ts`. Regras de autorização e de estado ficam na função que lê ou
 escreve; validação no formulário ou no contrato REST é só feedback.
+
+### Domínios em camadas
+
+`platform/convex/moduleLayers.test.ts` prova as camadas. Ele classifica cada
+módulo num domínio de uma lista ordenada, de baixo para cima (plataforma,
+auditoria, custódia, organizações, ..., REST, console, provas e a composição
+do app em `schema.ts`, `http.ts` e `crons.ts`), e reprova:
+
+- módulo sem domínio, ou em mais de um;
+- referência `internal.*` a um domínio acima, ou que não aponta para um módulo
+  (acesso por índice);
+- import de valor para um domínio acima entre módulos da mesma altura (`lib/`
+  com `lib/`, topo com topo). O topo usa qualquer helper de `lib/`, e um
+  módulo sem banco (sem `_generated/server`, direto ou por import) é
+  importável de qualquer domínio;
+- `lib/` importando um módulo do topo fora de `topForLib` (`environment`,
+  `buildInfo`, `auth` e `schema`);
+- `*Rest.ts` referenciado fora de `http.ts`, salvo a action Node das leituras
+  REST de documentos (`documentContentNode.ts`) e uma prova local;
+- `lib/*Schema.ts`, `*Values.ts` e `*Rules.ts` importando `_generated/server`
+  ou um módulo com banco.
+
+Importação e documentos formam um domínio só, porque se chamam nos dois
+sentidos. As arestas para cima que o código ainda tem ficam em `upward`, cada
+uma com o motivo; uma exceção que some do código também reprova. Imports só de
+tipo não contam, como no `import/no-cycle` do lint
+([lint.md](../desenvolvimento/lint.md)), que proíbe ciclo entre módulos.
 
 ## Pacotes e grafo de dependências
 

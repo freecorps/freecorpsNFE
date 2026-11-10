@@ -31,7 +31,7 @@ import { documentAccess, loadDocument } from "./lib/documentCore";
 import { authenticateKey } from "./lib/operationAccess";
 import { ensureConsoleProject, isConsoleProject } from "./lib/projectAccess";
 import { recordAudit, DAY } from "./lib/operationalAudit";
-import { requestCleanup } from "./importUpload";
+import { requestCleanup } from "./lib/importCore";
 import { environment } from "./lib/projectValues";
 import {
   baseEnvironment,

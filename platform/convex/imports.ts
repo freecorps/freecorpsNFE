@@ -36,6 +36,7 @@ import {
   importStates,
   expireFile,
   pendingNoteKey,
+  requestCleanup,
 } from "./lib/importCore";
 import {
   keyAccess,
@@ -50,7 +51,6 @@ import { requireMembership } from "./lib/organizationAccess";
 import { findCompany } from "./lib/companyAccess";
 import { deny } from "./lib/organizationAccess";
 import { hashApiKey } from "./lib/apiKeyCrypto";
-import { requestCleanup } from "./importUpload";
 import { requirePlatformEnvironment } from "./environment";
 import { requireTermsOfUse } from "./lib/termsOfUse";
 import { reserveUsage, commitUsage, rateUsage, pickLane, planFor } from "./lib/usageCore";

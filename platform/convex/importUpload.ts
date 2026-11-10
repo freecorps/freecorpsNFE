@@ -144,32 +144,6 @@ export const route = observedAction(async (ctx, request) => {
     if (storageId && !attached) await ctx.storage.delete(storageId);
   }
 }, "importUpload");
-/** One scheduled scanner owns a monotonically advancing storage window for this deployment. */
-export async function requestCleanup(ctx: MutationCtx, until: number) {
-  const state = await ctx.db
-    .query("importMaintenance")
-    .withIndex("by_key", (q) => q.eq("key", "storage-cleanup"))
-    .unique();
-  const nextAt = Date.now() + UPLOAD_TTL;
-  // Cover a full minute once; admitted imports must not all write the same global row.
-  // Rounding upward only extends the scanner's lifetime, never advances its safe cutoff.
-  const requestedUntil = Math.ceil(until / 60_000) * 60_000;
-  if (state?.nextAt !== undefined && state.requestedUntil >= requestedUntil) return;
-  if (state) {
-    await ctx.db.patch("importMaintenance", state._id, {
-      requestedUntil: Math.max(state.requestedUntil, requestedUntil),
-      ...(!state.nextAt ? { nextAt } : {}),
-    });
-    if (state.nextAt) return;
-  } else
-    await ctx.db.insert("importMaintenance", {
-      key: "storage-cleanup",
-      lastSweptAt: Date.now() - 1,
-      requestedUntil,
-      nextAt,
-    });
-  await ctx.scheduler.runAt(nextAt, internal.importUpload.cleanup, {});
-}
 async function sweepPage(
   ctx: MutationCtx,
   args: { cursor: string | null; after: number; before: number },

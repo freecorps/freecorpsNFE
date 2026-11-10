@@ -8,7 +8,8 @@ import { readTask, versionInfo } from "./lib/documentCore";
 import { contentNeed, type ContentNeed } from "./lib/documentContentPlan";
 import { environmentServed } from "./lib/environmentAccess";
 import { deny } from "./lib/organizationAccess";
-import { originalSource, originalSourceOf, type OriginalSource } from "./lib/documentOriginalRead";
+import { originalSourceOf } from "./lib/documentOriginalRead";
+import { originalSource, type OriginalSource } from "./lib/documentValues";
 import { stepArgs } from "./exports";
 import type { assistedCompany } from "./lib/exportSchema";
 

@@ -2,7 +2,8 @@ import type { WithoutSystemFields } from "convex/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { trackDatabaseRecord } from "./capacityCore";
-import { originalSourceOf, type OriginalSource } from "./documentOriginalRead";
+import { originalSourceOf } from "./documentOriginalRead";
+import type { OriginalSource } from "./documentValues";
 import { storageHash } from "./importValues";
 import { deny } from "./organizationAccess";
 

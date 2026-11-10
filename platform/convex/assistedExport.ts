@@ -20,7 +20,7 @@ import { readTask } from "./lib/documentCore";
 import { deny, findMembership, normalizeEmail } from "./lib/organizationAccess";
 import { closureOf, exportWindowOpen } from "./lib/organizationClosure";
 import { recordAudit, DAY } from "./lib/operationalAudit";
-import { requestCleanup } from "./importUpload";
+import { requestCleanup } from "./lib/importCore";
 
 /**
  * The assisted export of an archived organization (ADR 0009, §7, decisions of 30/10/2026). The
