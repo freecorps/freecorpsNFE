@@ -178,6 +178,8 @@ export default defineSchema({
     code: v.optional(v.string()),
     /** Metadata of an unreadable authority answer (uncertain outcome); never body values. */
     diagnostic: v.optional(responseDiagnostic),
+    /** When the vault closed a certificate use of this attempt: a request may have left. */
+    effectAt: v.optional(v.number()),
   }).index("by_operationId_and_generation_and_fence", ["operationId", "generation", "fence"]),
   operationAudit: defineTable({
     ...archiveOriginFields,

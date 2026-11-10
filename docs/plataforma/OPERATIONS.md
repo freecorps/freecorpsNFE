@@ -136,12 +136,12 @@ Só `operations.ts` e `lib/operationCore.ts` escrevem na tabela `operations`.
 Um domínio que precisa mexer na sua operação usa um destes helpers do núcleo,
 cada um com a cerca do seu momento:
 
-| Helper                 | Quando                                                                                                                                                                                                                                                                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `abandonBeforeEffect`  | A tentativa não enviou nada (gate, limite de uso, cofre, acesso perdido): volta a `ready` e pausa com o código, mantendo a incerteza que já tinha; `uncertain` a acrescenta quando um envio anterior da mesma operação pode ter chegado à fonte. Só em `running`, de `ready` ou `calling`; em `response` ou `checkpoint` recusa, pois perderia o resultado. |
-| `patchOperationDomain` | Progresso do domínio na tentativa em execução: `usageCaptureKey`, `captureReservation` e `refusalSweep`. Estado, estágio, geração e fence ficam fora do tipo.                                                                                                                                                                                               |
-| `setResult`            | Reescreve o DTO do resultado no checkpoint (`stage: "response"`) ou depois do sucesso, como no `onSucceeded`, até 32 KiB.                                                                                                                                                                                                                                   |
-| `continueOperation`    | Cria a operação seguinte com o ator e as épocas da que a pediu.                                                                                                                                                                                                                                                                                             |
+| Helper                 | Quando                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `abandonBeforeEffect`  | A tentativa não enviou nada (gate, limite de uso, cofre, acesso perdido): volta a `ready` e pausa com o código, mantendo a incerteza que já tinha; `uncertain` a acrescenta quando um envio anterior da mesma operação pode ter chegado à fonte. Só em `running`, de `ready` ou `calling`; em `response` ou `checkpoint` recusa, pois perderia o resultado. Recusa também a tentativa cujo uso do certificado o cofre já encerrou (`certificateUse.complete`, com sucesso ou falha): a requisição pode ter saído, e a tentativa só grava o resultado ou é recuperada como incerta. |
+| `patchOperationDomain` | Progresso do domínio na tentativa em execução: `usageCaptureKey`, `captureReservation` e `refusalSweep`. Estado, estágio, geração e fence ficam fora do tipo.                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `setResult`            | Reescreve o DTO do resultado no checkpoint (`stage: "response"`) ou depois do sucesso, como no `onSucceeded`, até 32 KiB.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `continueOperation`    | Cria a operação seguinte com o ator e as épocas da que a pediu.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 `operationWrites.test.ts` reprova `db.patch`, `db.replace`, `db.insert` ou
 `db.delete` com a tabela `"operations"` em qualquer outro módulo, e a forma
@@ -227,6 +227,20 @@ estados e recuperação. `node scripts/proofs/prove-operations.mjs` exige este w
 com `bun run dev`, usa fonte HTTP loopback e inspeciona o banco real.
 `testing/operationProof` e `testing/operationTransport` são funções internas
 recusadas fora do ambiente local, com dados exclusivamente sintéticos.
+
+`platform/convex/operationInterleaving.test.ts` prova as garantias sob
+intercalação. Cada semente fixa conduz uma operação, com relógio falso, por uma
+ordem aleatória de claims, worker real, `beginEffect`, `recordOutcome`,
+`checkpoint`, `publish`, `recoverOne`, `onComplete` duplicado ou tardio,
+pausa, retomada, abandono, lease vencida e tokens antigos ou com geração e
+fence cruzados. Depois de cada passo, confere: só a claim ativa grava; depois
+de `calling`, efeito que pode ter saído só é reconciliado ou retomado, e o
+executor nunca roda sobre operação incerta; um documento e um recibo de cada
+tipo por operação; `succeeded` só por `publish`; tentativas e recuperações
+dentro dos limites. A falha imprime a semente e os passos. O teste reprova o
+worker sem `op.uncertain ?` e `activeClaim` sem a conferência de geração ou de
+fence. O abandono depois de `certificateUse.complete` é provado em
+`certificates.test.ts`.
 
 A importação XML, a outbox e a captura NF-e já consomem esse protocolo. Cada
 módulo conserva seu contrato e aceite. A prova própria de operações usa um
