@@ -2,7 +2,7 @@
 
 O envio e as caixas de e-mail da plataforma passam pelo Ember Mail
 ([freecorps/mail](https://github.com/freecorps/mail)). É o serviço de e-mail
-da Freecorps, sobre o Cloudflare Email Service, o mesmo do GroceryOps. O
+da Freecorps, sobre o Cloudflare Email Service. O
 backend chama a API do serviço com `@freecorps/mail-sdk`. As caixas são lidas
 e respondidas no próprio Ember Mail (`mail.freecorps.com.br` e o aplicativo),
 não no console.
