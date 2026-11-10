@@ -37,6 +37,11 @@ export const companyScopeFields = {
   companyId: v.id("companies"),
   environment,
 };
+/**
+ * The function names are persisted on each operation and resolved only when it runs, so renaming
+ * or removing one breaks the pending operations that stored it: keep the old export as an alias
+ * until they are migrated or finished. `operationTasks.test.ts` checks every exported task.
+ */
 export const taskSpec = v.object({
   name: v.string(),
   workload,

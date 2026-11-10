@@ -106,6 +106,17 @@ transação que grava `state: succeeded` e os recibos finais. A importação XML
 callback para indexar versões visíveis no histórico. Não aceita referências
 vindas do cliente e não chama efeitos externos.
 
+A operação grava os nomes de executor, reconciliador, checkpoint e
+`onSucceeded` como texto (`módulo:função`), resolvidos só na hora de rodar.
+`platform/convex/operationTasks.test.ts` guarda a lista de todo nome que uma
+operação pode ter gravado e exige que cada tarefa exportada pelo produto use
+só nomes dela. Cada nome da lista precisa existir como função interna, action
+no executor e no reconciliador e mutation no checkpoint e no `onSucceeded`,
+com os argumentos e tipos que o protocolo passa. Renomear ou remover uma
+dessas funções quebra as operações pendentes que gravaram o nome antigo:
+mantenha o export antigo como alias e só tire o nome da lista depois de migrar
+ou encerrar essas operações.
+
 | Resultado do adaptador | Comportamento                                                      |
 | ---------------------- | ------------------------------------------------------------------ |
 | success + response     | Persiste resposta limitada a 32 KiB; avança para checkpoint        |
