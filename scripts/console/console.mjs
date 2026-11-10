@@ -38,8 +38,13 @@ try {
   const publishEnv = publishes ? consolePublicationEnvironment(process.env) : null;
   if (publishes) {
     requireIntegrationWriter(process.env, flags.includes("--bootstrap"));
-    if (execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).trim())
-      throw new Error("Commit all console and backend changes before publishing");
+    const dirty = execFileSync("git", ["status", "--porcelain"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    // Only the paths, which are public in this repository, so a CI run says what changed.
+    if (dirty)
+      throw new Error(`Commit all console and backend changes before publishing:\n${dirty}`);
   }
   console.log(`target: validation console (freecorpsnfe-validation), commit ${sha}`);
   if (command !== "publish") {

@@ -38,10 +38,17 @@ let release;
 let retainLock = false;
 
 /**
+ * Limite por teste no CI: 60 s, ou o do projeto quando ele pede mais, como o
+ * `benchmark`. A opção de linha de comando sobrepõe o `testTimeout` de cada
+ * projeto, então ela não pode ficar abaixo do maior deles.
+ */
+const ciTimeout = (projects) => Math.max(60_000, ...projects.map(({ timeout }) => timeout));
+
+/**
  * `vp test run` com relatório JSON numa pasta temporária. Devolve o JSON bruto
  * e o código de saída; o bruto nunca vai para `.ci-results`.
  */
-function runVitest(args) {
+function runVitest(args, timeout) {
   const temporary = mkdtempSync(join(tmpdir(), "fnfe-ci-"));
   const rawFile = join(temporary, "vitest.json");
   try {
@@ -53,7 +60,7 @@ function runVitest(args) {
         "test",
         "run",
         ...args,
-        "--testTimeout=60000",
+        `--testTimeout=${timeout}`,
         "--reporter=default",
         "--reporter=json",
         `--outputFile.json=${rawFile}`,
@@ -137,7 +144,7 @@ try {
     } else if (command === "test") {
       // A suíte inteira num processo (`bun run ci:test`); o grafo usa test-area.
       const metadata = JSON.parse(readFileSync(join(output, "revision.json"), "utf8"));
-      const { raw, status } = runVitest(["--maxWorkers=3"]);
+      const { raw, status } = runVitest(["--maxWorkers=3"], ciTimeout(testProjects));
       const report = sanitizeReport(raw, root, metadata, status);
       writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
       if (report.result !== "passed") process.exitCode = 1;
@@ -148,10 +155,10 @@ try {
       // Um recibo antigo nunca sobrevive a uma execução interrompida.
       rmSync(receipt, { force: true });
       const workers = process.env.VITEST_MAX_WORKERS?.trim() || "3";
-      const { raw, status } = runVitest([
-        ...areaProjects(area).flatMap((name) => ["--project", name]),
-        `--maxWorkers=${workers}`,
-      ]);
+      const { raw, status } = runVitest(
+        [...areaProjects(area).flatMap((name) => ["--project", name]), `--maxWorkers=${workers}`],
+        ciTimeout(testProjects.filter(({ name }) => name === area)),
+      );
       const report = areaReceipt(raw, root, area, status, process.env);
       mkdirSync(areaOutput, { recursive: true });
       writeFileSync(receipt, `${JSON.stringify(report, null, 2)}\n`);
