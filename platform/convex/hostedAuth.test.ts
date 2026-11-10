@@ -135,7 +135,7 @@ it("sends through the provider the operator chose, with its own credentials", ()
     accountId: FREECORPS_CLOUDFLARE_ACCOUNT,
     apiKey: "synthetic-provider-token",
   });
-  const account = "0123456789abcdef0123456789abcdef";
+  const account = "ffffffffffffffffffffffffffffffff";
   expect(
     accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_ACCOUNT_ID: account }).service,
   ).toMatchObject({

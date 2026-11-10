@@ -17,7 +17,7 @@ it("uses a local collector without any HTTP and refuses disabled delivery", asyn
 const service = {
   provider: "mail" as const,
   apiUrl: "https://mail.development.invalid",
-  apiKey: "synthetic-key-0123456789",
+  apiKey: "synthetic-key",
 };
 const accepted = () => Response.json({ id: "email-1" });
 function remote(extra: { siteUrl?: string } = {}) {
@@ -70,7 +70,7 @@ it("posts to the mail service with the deployment's key and explicit recipients"
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(String(fetch.mock.calls[0][0])).toBe("https://mail.development.invalid/emails");
   const headers = new Headers(fetch.mock.calls[0][1].headers);
-  expect(headers.get("authorization")).toBe("Bearer synthetic-key-0123456789");
+  expect(headers.get("authorization")).toBe("Bearer synthetic-key");
   expect(headers.get("idempotency-key")).toBeTruthy();
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
     to: [message.email],
@@ -136,8 +136,8 @@ it("delivers with the caller's idempotency key on every retry, and tells refused
 
 const emailSending = {
   provider: "cloudflare" as const,
-  accountId: "0123456789abcdef0123456789abcdef",
-  apiKey: "synthetic-key-0123456789",
+  accountId: "ffffffffffffffffffffffffffffffff",
+  apiKey: "synthetic-key",
 };
 const cloudflareMail = {
   from: "sender@development.invalid",
@@ -156,7 +156,7 @@ it("Email Sending: posts to the operator's account and requires the recipient qu
   );
   const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
   expect(url).toBe(
-    "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/email/sending/send",
+    "https://api.cloudflare.com/client/v4/accounts/ffffffffffffffffffffffffffffffff/email/sending/send",
   );
   expect(JSON.parse(init.body as string)).toMatchObject({
     to: [message.email],
