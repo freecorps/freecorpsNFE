@@ -1122,33 +1122,50 @@ O contrato da plataforma está em [API-REFERENCE.md](../v1.0/API-REFERENCE.md) e
 
 ### Onde cada job roda
 
-| Workflow            | Job                  | Runner                         |
-| ------------------- | -------------------- | ------------------------------ |
-| `CI`                | `Validate`           | `blacksmith-4vcpu-ubuntu-2404` |
-| `Deploy validation` | `Publish validation` | `blacksmith-4vcpu-ubuntu-2404` |
-| `Deploy production` | `Publish production` | `blacksmith-4vcpu-ubuntu-2404` |
-| `Offsite backup`    | `Encrypted snapshot` | `blacksmith-2vcpu-ubuntu-2404` |
-| `Offsite backup`    | `Check latest copy`  | `blacksmith-2vcpu-ubuntu-2404` |
+O repositório é público desde 03/11/2026, e o runner padrão do GitHub
+(`ubuntu-24.04`, 4 vCPUs) é gratuito e sem limite de minutos em repositório
+público. Por decisão do mantenedor em 09/11/2026, os jobs que só tratam
+código e dados sintéticos passaram para ele:
 
-`Deploy validation` chama o `CI` como workflow
-reutilizável; o job de validação roda na Blacksmith também nesses
-casos. `Validate` não recebe segredos. Por decisão do mantenedor em 21/10/2026,
-produção e snapshot também usam Blacksmith, mantendo os environments
-`production` e `offsite-backup`, os secrets e as regras de concorrência.
-Cada job usa uma VM efêmera. Snapshot e monitor têm agendas independentes,
-mas compartilham o provedor Blacksmith: indisponibilidade do provedor pode
-impedir ambos de iniciar. O operador confere os horários das duas execuções.
+| Workflow                                                                                                                       | Job                   | Runner         |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------- | -------------- |
+| `CI`                                                                                                                           | `Validate`            | `ubuntu-24.04` |
+| `Public scan`                                                                                                                  | `Public scan`         | `ubuntu-24.04` |
+| `Deploy validation`                                                                                                            | `Publish validation`  | `ubuntu-24.04` |
+| `Offsite backup`, `Deploy NFS-e fiscal production`, `NFS-e production gate, enable`, `NFS-e production probe and verification` | `plan` (sem segredos) | `ubuntu-24.04` |
+| `Fiscal capture`, `NFS-e production gate, emergency disable`, `Contribution terms`                                             | job único             | `ubuntu-24.04` |
 
-Os runners hospedados pelo GitHub não são usados. A escolha vem de quando o
-repositório era privado: os minutos gratuitos dos repositórios privados da
-organização se esgotaram, e a cobrança bloqueava jobs novos, que falhavam sem
-iniciar. O repositório é público desde 03/11/2026; trocar de runner é outra
-decisão. CI que não iniciou não é teste aprovado;
-registre esse bloqueio separadamente das falhas de código.
+Os jobs que recebem credenciais de produção ou processam dados de clientes
+continuam na Blacksmith:
+
+| Workflow                                                                    | Job                                                     | Runner                         |
+| --------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------ |
+| `Deploy production`                                                         | `Publish production`                                    | `blacksmith-4vcpu-ubuntu-2404` |
+| `Deploy NFS-e fiscal production`                                            | `Publish the fiscal production`                         | `blacksmith-4vcpu-ubuntu-2404` |
+| `Offsite backup`                                                            | `Encrypted snapshot`, `Check latest copy` e os da NFS-e | `blacksmith-2vcpu-ubuntu-2404` |
+| `NFS-e production gate, enable` e `NFS-e production probe and verification` | `enable`, `read`                                        | `blacksmith-2vcpu-ubuntu-2404` |
+
+A Blacksmith é suboperadora declarada nos termos de uso (cláusula 7) e na
+política de privacidade; o GitHub aparece só para código, integração contínua
+e publicação com dados sintéticos. Mover esses jobs troca o suboperador que
+processa os dados, o que exige o aviso aos clientes com 30 dias de
+antecedência e nova versão dos textos legais.
+
+`Deploy validation` chama o `CI` como workflow reutilizável, no mesmo runner
+do GitHub. `Validate` não recebe segredos. Cada job usa uma VM efêmera.
+Snapshot e monitor do backup têm agendas independentes, mas compartilham o
+provedor Blacksmith: indisponibilidade do provedor pode impedir ambos de
+iniciar. O operador confere os horários das duas execuções.
+
+O runner do GitHub é mais lento que o x64 da Blacksmith e pode ter fila: o
+plano Free da organização admite 20 jobs simultâneos somando todos os
+repositórios. CI que não iniciou não é teste aprovado; registre esse
+bloqueio separadamente das falhas de código.
 
 ### Orçamento da Blacksmith
 
-A organização tem 3.000 minutos gratuitos por mês na Blacksmith, medidos em
+Vale só para os jobs de produção da tabela acima. A organização tem 3.000
+minutos gratuitos por mês na Blacksmith, medidos em
 minutos de runner x64 de 2 vCPUs e divididos entre os projetos da Freecorps,
 este inclusive. Cada job é cobrado por minuto iniciado. Um minuto de 4 vCPUs
 conta 2; um de ARM com 2 vCPUs conta 0,625.

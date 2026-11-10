@@ -139,7 +139,7 @@ jobs:
   issuance-plan:
     name: Fiscal production deployment named
     if: github.ref == 'refs/heads/main'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       named: ${{ steps.plan.outputs.named }}

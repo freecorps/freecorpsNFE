@@ -34,14 +34,14 @@ concurrency:
 
 jobs:
   # Every check runs in one job: install once, then `vp run validate` runs the
-  # task graph in parallel. Blacksmith bills each started minute per vCPU. On
-  # 2 vCPUs the tests competed with builds and type checks and the job took 3
-  # to 7 minutes; 4 vCPUs finish in about half the minutes at a similar cost
+  # task graph in parallel. The standard GitHub-hosted runner is free for a
+  # public repository and has 4 vCPUs, where the tests no longer compete with
+  # builds and type checks as they did on 2
   # (docs/desenvolvimento/ci.md, Runners e custo). No secrets: this also
   # validates publications.
   validate:
     name: Validate
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # actions and pull-requests: read, only so a push on main can find the
     # merged pull request's run and download its task cache. The repository is
