@@ -1,6 +1,6 @@
 # ADR 0001 — Runtime do motor de emissão: Convex `"use node"` (Plano A)
 
-Data: 29/08/2026 · Status: **decidido** (gate da Fase 2 do plano)
+Data: 29/08/2026 · Status: **Aceita** (decidida no gate da Fase 2 do plano)
 
 ## Situação em 21/10/2026
 

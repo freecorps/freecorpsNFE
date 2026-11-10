@@ -124,6 +124,7 @@ it("classifies a new test file from the shared list", () => {
   expect(owners("scripts/public-copy/public-tree.test.ts")).toEqual(["repository"]);
   expect(owners("scripts/public-copy/public-identifiers.test.ts")).toEqual(["repository"]);
   expect(owners("tests/ci.changes.test.ts")).toEqual(["repository"]);
+  expect(owners("scripts/repo/adr-status.test.ts")).toEqual(["repository"]);
   expect(owners("scripts/public-copy/public-scan.test.ts")).toEqual(["tooling"]);
   // Nenhum projeto recolhe o restante: um teste novo sem dono reprova.
   expect(() => suiteFor("tests/novo.test.ts")).toThrow("no project");

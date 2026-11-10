@@ -1,5 +1,8 @@
 # Cofre versionado de certificados da plataforma
 
+Status: **Aceita** pelo mantenedor, que aprovou o plano antes da
+implementação. A data da decisão não foi registrada.
+
 ## Situação em 21/10/2026
 
 > O cofre legado citado aqui (`convex/vault.ts`, `convex/nfceVault.ts`)

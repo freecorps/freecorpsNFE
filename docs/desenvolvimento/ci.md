@@ -211,8 +211,9 @@ execução limpa de uma revisão, dispare o CI manualmente.
 (a base). Se todo arquivo mudado é documentação que só a formatação e a
 varredura leem, o job instala as dependências, roda `vp fmt --check`,
 `node scripts/public-copy/check-secrets.mjs` e os testes que leem toda a documentação
-versionada (`scripts/public-copy/public-identifiers.test.ts` e
-`scripts/public-copy/public-tree.test.ts`) e termina aprovado, sem executar o grafo nem
+versionada (`scripts/public-copy/public-identifiers.test.ts`,
+`scripts/public-copy/public-tree.test.ts` e `scripts/repo/adr-status.test.ts`)
+e termina aprovado, sem executar o grafo nem
 emitir `tested_sha`. O check obrigatório continua sendo o mesmo `Validate`:
 `paths-ignore` deixaria o check ausente.
 
@@ -287,7 +288,7 @@ local. `bun run ci:test` ainda roda a suíte inteira num processo só.
 | `packages`          | `packages/`                                               | 20 s    |
 | `console`           | `apps/*/src/` (jsdom por arquivo)                         | 20 s    |
 | `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus  | 60 s    |
-| `repository`        | Os três testes que leem a árvore inteira                  | 60 s    |
+| `repository`        | Os quatro testes que leem a árvore inteira                | 60 s    |
 | `benchmark`         | `*.benchmark.test.ts` de `platform/` e `tests/`           | 120 s   |
 
 Cada teste fica ao lado do código que exercita: os da plataforma em
@@ -304,7 +305,9 @@ projeto reprova `tests/ci.testProjects.test.ts`.
 
 `repository` reúne os testes cujas entradas são quase todo o repositório:
 `scripts/public-copy/public-identifiers.test.ts` (todo Markdown), `scripts/public-copy/public-tree.test.ts`
-(a lista do Git, para classificar cada arquivo da cópia pública) e
+(a lista do Git, para classificar cada arquivo da cópia pública),
+`scripts/repo/adr-status.test.ts` (todo Markdown, atrás de status de ADR fora
+do cabeçalho dela) e
 `tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
 documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
 de `tooling`, cerca de 95 s localmente, eles faziam a área inteira executar a

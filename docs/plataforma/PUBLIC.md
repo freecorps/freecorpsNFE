@@ -268,7 +268,7 @@ plataforma só lê a distribuição e não manifesta; a primeira captura real no
 site foi de uma empresa piloto, em 22/10/2026
 (evidência), sem nome de cliente.
 Não há linguagem de lançamento nem promessa de disponibilidade geral, preço ou
-plano. A [ADR 0007](../adr/0007-captura-fiscal-no-site.md) foi aceita em 26/10/2026.
+plano. A captura no site segue a [ADR 0007](../adr/0007-captura-fiscal-no-site.md).
 O guia da captura segue a decisão de 26/10/2026 da #442: só o Proprietário
 aceita a perda de uma lacuna, com motivo, também na captura de integração.
 

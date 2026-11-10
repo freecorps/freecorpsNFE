@@ -126,9 +126,9 @@ Em 03/11/2026 o dono trocou o mês civil dos planos pagos pelo período por
 aniversário, a partir da contratação, para a assinatura e para as cotas. Com
 isso, a escolha entre iniciar agora ou no próximo mês deixa de existir. O
 Gratuito continua no mês civil UTC. A decisão está na
-[ADR 0012](../adr/0012-periodo-por-aniversario.md) e está implementada no
-código: o mensal e o anual no cartão correm de aniversário a aniversário, e o
-anual é cobrado e começa na contratação. Ligar o
+[ADR 0012](../adr/0012-periodo-por-aniversario.md): o mensal e o anual no
+cartão correm de aniversário a aniversário, e o anual é cobrado e começa na
+contratação. Ligar o
 catálogo ou o anual ainda espera a prova hospedada; os termos de uso 1.2, com
 esse modelo, entraram no console em 04/11/2026
 ([BILLING.md](BILLING.md#período-por-aniversário-decidido-em-03112026)).

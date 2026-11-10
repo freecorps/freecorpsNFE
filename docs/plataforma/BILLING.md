@@ -39,8 +39,8 @@ hospedada e a ativação do anual ficam na #35
 ([Prova hospedada e ativação do anual](#prova-hospedada-e-ativação-do-anual-35)).
 Desde 03/11/2026, ligar o catálogo ou o anual também esperava uma versão nova
 dos termos de uso e a implementação da
-[ADR 0012](../adr/0012-periodo-por-aniversario.md): a ADR está implementada
-no código, e a versão 1.2 dos termos, com o período por aniversário, entrou
+[ADR 0012](../adr/0012-periodo-por-aniversario.md): o código já a segue, e a
+versão 1.2 dos termos, com o período por aniversário, entrou
 no console em 04/11/2026
 ([Período por aniversário](#período-por-aniversário-decidido-em-03112026)).
 
@@ -1404,10 +1404,11 @@ Sem prova, dependendo de validação operacional:
 
 ### Prova hospedada e ativação do anual (#35)
 
-Esta prova cobre o que os testes com Stripe simulado não cobrem, no modelo da
-[ADR 0012](../adr/0012-periodo-por-aniversario.md) implementado nas fatias
-2a e 2b: as datas que o Stripe de teste cobra e renova, com relógios de
-teste, e os eventos entregues a um backend hospedado, com a concessão gravada
+Esta prova cobre o que os testes com Stripe simulado não cobrem, no período por
+aniversário das fatias 2a e 2b da
+[ADR 0012](../adr/0012-periodo-por-aniversario.md): as datas que o Stripe de
+teste cobra e renova, com relógios de teste, e os eventos entregues a um
+backend hospedado, com a concessão gravada
 e lida pelo console conectado. Ela nunca rodou. Tem duas partes: a matriz de
 sandbox, só na API do Stripe de teste, e a jornada hospedada, no deployment
 de validação (`modest-seal-118`). As duas usam chave de teste e recursos
