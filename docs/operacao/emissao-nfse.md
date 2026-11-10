@@ -633,8 +633,8 @@ ficou bloqueado, e a decisão pendente da #198 era mudar o plano, tornar o
 repositório público ou emendar a ADR.
 
 Desde 03/11/2026 o código está no repositório público
-`freecorps/freecorpsNFE` (decisão 6 de
-[ACCEPTANCE.md](../v1.0/ACCEPTANCE.md), revista em 03/11/2026), e o plano
+`freecorps/freecorpsNFE` (decisão 6 do
+[registro de 26–29/10](../v1.0/EVIDENCE.md#decisões-do-mantenedor-de-2629102026), revista em 03/11/2026), e o plano
 Free oferece esses recursos em repositório público
 ([Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#required-reviewers),
 [About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)).

@@ -1,5 +1,5 @@
 // Monta, a partir de um commit, a árvore que vai para o repositório público
-// novo (#267, decisão 6 de docs/v1.0/ACCEPTANCE.md) e varre os bytes que
+// novo (#267, decisão 6 em docs/v1.0/EVIDENCE.md) e varre os bytes que
 // sairiam. Não publica, não cria repositório e não escreve no checkout.
 //
 //   node scripts/public-copy/public-tree.mjs --sha <rev> --out <pasta fora do repositório>

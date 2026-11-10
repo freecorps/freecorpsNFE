@@ -11,7 +11,7 @@ demonstração e o checklist de divulgação.
 Referência histórica da consolidação de 26/10/2026: `71b754a8c724cd0e2ccb3b3417f62f0fdf4e6e38`, a `main`
 depois do #502, com a consolidação de 26/10/2026.
 Cada publicação escolhe seu SHA e recorte destas notas. As lacunas e seus
-encaminhamentos estão em [ACCEPTANCE.md](ACCEPTANCE.md#pendências-atuais-e-condições-de-saída).
+encaminhamentos estão em [ACCEPTANCE.md](ACCEPTANCE.md#lacunas-e-condições-de-saída).
 
 ## Resumo
 

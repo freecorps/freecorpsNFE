@@ -1,5 +1,5 @@
-// Recibo dos workflows de operação num repositório público (decisão 6 de
-// docs/v1.0/ACCEPTANCE.md e "Evidência restrita" em docs/v1.0/EVIDENCE-STORAGE.md).
+// Recibo dos workflows de operação num repositório público (decisão 6 em
+// docs/v1.0/EVIDENCE.md e "Evidência restrita" em docs/v1.0/EVIDENCE-STORAGE.md).
 // O artefato do run é público: `receipt.json` leva só o que o log já mostra
 // (códigos, ids e estados) e o SHA-256 da resposta completa do Convex. A
 // resposta completa, que pode trazer nome de empresa, motivo e dados da nota,

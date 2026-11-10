@@ -136,7 +136,7 @@ pareceres por decisão própria, assumindo o risco, e registrou:
 - **Contribuições:** o mantenedor declara que o segundo autor humano do
   projeto aceitou os termos de `CONTRIBUICOES.md`.
 - **Histórico e refs:** o repositório público começa sem o histórico
-  deste (decisão 6 de [ACCEPTANCE.md](../v1.0/ACCEPTANCE.md), revista em
+  deste (decisão 6 do [registro de 26–29/10](../v1.0/EVIDENCE.md#decisões-do-mantenedor-de-2629102026), revista em
   03/11/2026). Metadados de commit e refs de PR antigos ficam no arquivo
   privado. A abertura segue a #267.
 - **XSDs:** redistribuídos dentro de fiscal-nfe e fiscal-nfse, sem alterar o

@@ -3,15 +3,15 @@
 Esta política define onde cada evidência nova fica guardada, por quanto tempo
 e como se confere. Ela complementa as regras de registro do
 [índice de evidências](EVIDENCE.md) e não muda nenhum recibo existente. Desde
-03/11/2026 o repositório é desenvolvido em público (decisão 6 da
-[matriz](ACCEPTANCE.md)): todo recibo versionado é público, e o que não pode
+03/11/2026 o repositório é desenvolvido em público (decisão 6 do
+[registro de 26–29/10](EVIDENCE.md#decisões-do-mantenedor-de-2629102026)): todo recibo versionado é público, e o que não pode
 ser segue a [evidência restrita](#evidência-restrita).
 
 ## Inventário de 20/10/2026
 
 O inventário, a linha de base e os testes que conferem os recibos são do
 repositório anterior, hoje `freecorps/freecorpsNFE-arquivo`, onde os recibos
-ficaram (decisão 6 da [matriz](ACCEPTANCE.md)); a cópia pública não traz
+ficaram (decisão 6 do [registro de 26–29/10](EVIDENCE.md#decisões-do-mantenedor-de-2629102026)); a cópia pública não traz
 nenhum deles.
 
 Medido sobre `d2c29bd` com `git ls-tree -l` (tamanho dos blobs, sem blocos
@@ -165,7 +165,7 @@ reduzir o checkout depois de provisionar a custódia:
 
 A remoção da árvore reduz o checkout; o histórico continua com os blobs e
 os commits antigos continuam íntegros. O repositório público começa
-sem esse histórico, que fica no arquivo privado (decisão 6 da
-[matriz](ACCEPTANCE.md)). Enquanto isso, quem precisa de um clone
+sem esse histórico, que fica no arquivo privado (decisão 6 do
+[registro de 26–29/10](EVIDENCE.md#decisões-do-mantenedor-de-2629102026)). Enquanto isso, quem precisa de um clone
 menor pode usar `git clone --filter=blob:limit=512k` e baixar os blobs sob
 demanda.

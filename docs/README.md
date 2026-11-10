@@ -18,7 +18,7 @@ agentes e aponta para as referências abaixo.
 
 O estado tem uma fonte por pergunta. [ACCEPTANCE.md](v1.0/ACCEPTANCE.md)
 mantém as capacidades com seus limites, os critérios de aceite e as lacunas
-que bloqueiam o aceite, cada uma com sua condição de saída, evidência e issue;
+que bloqueiam o aceite, cada uma com sua condição de saída e issue;
 [EVIDENCE.md](v1.0/EVIDENCE.md) cataloga os recibos e explica como registrar
 uma execução. O andamento, as próximas ações e o aceite ficam na issue de cada entrega,
 conforme a [ADR 0011](adr/0011-entregas-graduais.md). Não há lançamento

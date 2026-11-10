@@ -156,7 +156,7 @@ versionados do novo corte. Só então o `bootstrap` volta a valer.
 
 Em 03/11/2026 o bloco passou a apontar cópias sanitizadas dos três recibos,
 em `docs/v1.0/evidence/84/publico/`, as únicas da pasta de recibos que vão
-para o repositório público (decisão 6 de [ACCEPTANCE.md](../v1.0/ACCEPTANCE.md)).
+para o repositório público (decisão 6 do [registro de 26–29/10](../v1.0/EVIDENCE.md#decisões-do-mantenedor-de-2629102026)).
 Cada cópia registra em `sanitizedFrom` o SHA-256 do original, que continua no
 repositório arquivado, e o gate da pausa do app consumidor passou a se chamar
 `consumerTransition`. Os resultados registrados não mudaram.
