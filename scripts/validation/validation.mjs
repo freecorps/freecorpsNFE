@@ -86,7 +86,9 @@ async function main() {
       before = await probe(context, false);
       if (!before) throw new Error("Persistence probe was not created");
     }
-    runConvex(context, ["deploy", "--yes"]);
+    // As in deploy-platform.mjs: publish the committed `_generated`. Regenerating it on the runner
+    // can differ from the checkout and leave the tree dirty, and the console then refuses to publish.
+    runConvex(context, ["deploy", "--yes", "--codegen", "disable"]);
     const jobs = await backendRequest(context, "/api/query", {
       path: "_system/frontend/listCronJobs",
       args: {},
