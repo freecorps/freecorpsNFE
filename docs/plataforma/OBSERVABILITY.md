@@ -160,6 +160,10 @@ hora para nova notificação; a configuração não altera a fila fiscal.
 5. Autenticação: verificar avisos de consulta sem índice e leitura da limpeza
    `rateLimit.lastRequest`. O patch da versão 0.12.5 acrescenta esse índice,
    preservando o índice por chave, limites, contadores e janelas existentes.
+6. Publicação com defeito: não tem monitor próprio. Reverta pelo procedimento
+   de [Reverter uma publicação](../operacao/deploy-producao.md#reverter-uma-publicação):
+   o revert entra por PR, mantém o schema do Convex que a produção já usa e
+   não desfaz dados gravados nem efeitos externos.
 
 Após a ação, aguarde nova avaliação. O alerta só recupera com observação abaixo
 do limiar. Registre responsável, referência e resultado no acompanhamento.
