@@ -503,7 +503,6 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     validationMail([one.emails["owner-0"], part.emails["owner-0"], listed.emails["owner-0"]]);
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
-      const { to } = JSON.parse(init.body) as { to: string[] };
       return Response.json({ id: "email-1" });
     });
     vi.stubGlobal("fetch", fetch);

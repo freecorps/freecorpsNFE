@@ -523,18 +523,23 @@ async function sendAlertMail(
   text: string,
   idempotencyKey: string,
 ): Promise<"sent" | "failed" | "uncertain"> {
-  return await deliverMail(
-    destination,
-    {
-      from: destination.from,
-      name: "Freecorps Fiscal · Operação",
-      to: destination.to,
-      subject,
-      text,
-      idempotencyKey,
-    },
-    { timeoutMs: 15_000, retries: 0 },
-  );
+  try {
+    return await deliverMail(
+      destination,
+      {
+        from: destination.from,
+        name: "Freecorps Fiscal · Operação",
+        to: destination.to,
+        subject,
+        text,
+        idempotencyKey,
+      },
+      { timeoutMs: 15_000, retries: 0 },
+    );
+  } catch {
+    // Anything the client throws instead of answering: the service may have accepted it.
+    return "uncertain";
+  }
 }
 
 /** The text of the test e-mail: the run that sent it, nothing of a company. */
