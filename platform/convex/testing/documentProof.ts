@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
 import { requireLocalProof } from "./operationProof";
-import { createCompany } from "../lib/companyAccess";
+import { createCompany } from "../lib/companyCore";
 import { normalizeCnpj } from "@freecorps/contracts";
 
 /** Bounded, synthetic selector dataset; never available in a remote deployment. */

@@ -361,6 +361,9 @@ export default defineConfig({
   },
   lint: {
     ignorePatterns: ["platform/convex/_generated/**", "apps/console/public/developer/**"],
+    // Os quatro plugins padrão do Oxlint mais `import`, que só monta o grafo de
+    // módulos quando ligado aqui: num override, `import/no-cycle` não dispara.
+    plugins: ["eslint", "typescript", "unicorn", "oxc", "import"],
     jsPlugins: [
       { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
       // Regras do AGENTS.md como verificação mecânica (docs/desenvolvimento/lint.md).
@@ -379,9 +382,14 @@ export default defineConfig({
         files: ["**/worker-configuration.d.ts"],
         rules: { "freecorps/require-suppression-reason": "off" },
       },
+      // Sem ciclo de imports de valor no backend (`import type` não conta): num
+      // ciclo, um módulo pode ler o export do outro ainda não inicializado (#112).
       {
         files: ["platform/convex/**/*.ts"],
-        rules: { "freecorps/require-access-helper-in-convex-functions": "error" },
+        rules: {
+          "freecorps/require-access-helper-in-convex-functions": "error",
+          "import/no-cycle": ["error", { ignoreTypes: true }],
+        },
       },
       {
         files: ["**/*.test.{ts,tsx,mts,mjs,js}"],

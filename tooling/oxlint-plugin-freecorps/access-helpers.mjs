@@ -50,7 +50,6 @@ export const utilities = {
     "companyAudit",
     "onboardingState",
     "companyByCnpj",
-    "createCompany",
     "companyHistory",
   ],
   "lib/environmentAccess": [

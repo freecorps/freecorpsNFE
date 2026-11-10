@@ -1,5 +1,4 @@
 import { recordAudit } from "./operationalAudit";
-import { requireEntitySlot } from "./planCore";
 import { companyCapabilities, normalizeCnpj, type CompanyAddress } from "@freecorps/contracts";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -125,44 +124,6 @@ export function companyByCnpj(ctx: QueryCtx, organizationId: Id<"organizations">
     )
     .unique();
 }
-/** `registryFields` names the fields whose values came from the registry cache. */
-export async function createCompany(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  userId: string,
-  input: { cnpj: string; name: string; address: CompanyAddress },
-  kind: Doc<"companies">["kind"],
-  registryFields: ("name" | "address")[] = [],
-) {
-  const cnpj = companyCnpj(input.cnpj);
-  const fields = declaredFields(input.name, input.address);
-  const existing = await companyByCnpj(ctx, organizationId, cnpj);
-  if (existing) {
-    if (existing.kind !== kind) deny("COMPANY_KIND_CONFLICT");
-    return { company: existing, reused: true };
-  }
-  await requireEntitySlot(ctx, organizationId, "companies");
-  const now = Date.now();
-  const id = await ctx.db.insert("companies", {
-    organizationId,
-    cnpj,
-    ...fields,
-    kind,
-    declaredBy: userId,
-    declaredAt: now,
-    fieldSources: {
-      name: registryFields.includes("name") ? "registry" : kind,
-      address: registryFields.includes("address") ? "registry" : kind,
-    },
-    version: 1,
-    createdAt: now,
-    updatedAt: now,
-  });
-  const company = (await ctx.db.get("companies", id))!;
-  await companyAudit(ctx, company, userId, "company.created");
-  return { company, reused: false };
-}
-
 /**
  * The first reason a company cannot be deleted, or null. Documents, imports, issuance, capture,
  * projects (and through them keys, operations and exports), webhooks, Stripe and any
