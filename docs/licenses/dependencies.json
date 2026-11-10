@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "ee5ba3e4f8921cf4e15a0ccbbe41225a52c2984fedd2c7f0067ac2999106c12d",
+  "lockSha256": "8766573187d6f28d4832215f5e25a3dd41c2519ac546bec2ef7b8ad2ef8ec856",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -5508,10 +5508,10 @@
       "direct": []
     },
     {
-      "id": "node-forge@1.4.0",
+      "id": "node-forge@1.4.3",
       "declaredLicense": "(BSD-3-Clause OR GPL-2.0)",
-      "source": "https://registry.npmjs.org/node-forge/1.4.0",
-      "integrity": "sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ==",
+      "source": "https://registry.npmjs.org/node-forge/1.4.3",
+      "integrity": "sha512-P6wzfh6t70avmV8FrVEAd/36sOPJQ+hkaJVX1Laap9J/77m7M0eyozDvc8SwnDf4P7MP94gwbAAo0rg3YVXT+g==",
       "repository": "git+https://github.com/digitalbazaar/forge.git",
       "direct": [
         {
