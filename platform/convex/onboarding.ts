@@ -7,7 +7,8 @@ import {
   requireManager,
   requireMembership,
 } from "./lib/organizationAccess";
-import { createCompany, findCompany, onboardingState, summary } from "./lib/companyAccess";
+import { findCompany, onboardingState, summary } from "./lib/companyAccess";
+import { createCompany } from "./lib/companyCore";
 import { companySummary, onboardingMode } from "./lib/companyValues";
 
 export const get = query({

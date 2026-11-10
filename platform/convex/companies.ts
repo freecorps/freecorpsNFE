@@ -36,13 +36,13 @@ import {
   companyByCnpj,
   companyCnpj,
   companyHistory,
-  createCompany,
   declaredFields,
   findCompany,
   onboardingState,
   requireCompany,
   summary,
 } from "./lib/companyAccess";
+import { createCompany } from "./lib/companyCore";
 
 const scope = { organizationId: v.id("organizations"), companyId: v.id("companies") };
 /**
