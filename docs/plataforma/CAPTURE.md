@@ -1032,8 +1032,9 @@ por alerta pelo [Ember Mail](../operacao/email.md), o mesmo das contas:
   [caixa de operação](../operacao/email.md#caixas) no Ember Mail, e um
   [endereço de plantão](../operacao/operacao-email.md#aviso-fora-do-console)
   (#126);
-- `EMAIL_MODE=mail`, `MAIL_API_URL`, `MAIL_API_KEY` e `ACCOUNT_EMAIL_FROM`,
-  já exigidos pelo e-mail das contas;
+- `EMAIL_MODE` com o provedor e as credenciais dele (no site, `mail`,
+  `MAIL_API_URL` e `MAIL_API_KEY`) e `ACCOUNT_EMAIL_FROM`, já exigidos pelo
+  e-mail das contas;
 - só no perfil `installation`; desenvolvimento e validação nunca enviam.
 
 Sem algum deles, o alerta fica `unconfigured`: registrado, no log e na lista.

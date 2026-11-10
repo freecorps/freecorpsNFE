@@ -233,9 +233,8 @@ export const requestEmailChange = action({
               }
             : accounts.enabled
               ? {
-                  provider: "mail",
-                  apiUrl: accounts.apiUrl,
-                  apiKey: accounts.apiKey,
+                  provider: "remote",
+                  service: accounts.service,
                   from: accounts.from,
                   allowedRecipients: accounts.allowedRecipients,
                 }

@@ -1,5 +1,5 @@
 import type { Infer } from "convex/values";
-import { emailModeOf, mailServiceUrl } from "../../account-policy.mjs";
+import { mailServiceOf } from "../../account-policy.mjs";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
@@ -57,29 +57,27 @@ export type CaptureFinding = {
 const EMAIL = /^[^\s@<>,]+@[^\s@<>,]+\.[^\s@<>,]+$/;
 /**
  * Where the alert e-mails go: `FNFE_CAPTURE_ALERT_EMAIL` (one to five addresses, separated by
- * commas), sent through Ember Mail (`EMAIL_MODE=mail`, with `MAIL_API_URL`, `MAIL_API_KEY` and
- * `ACCOUNT_EMAIL_FROM`). Only the hosted installation sends;
+ * commas), sent through the provider of `EMAIL_MODE` (`mail` or `cloudflare`, with its credentials)
+ * from `ACCOUNT_EMAIL_FROM`, as the account e-mails. Only the hosted installation sends;
  * anything missing or malformed leaves the alerts `unconfigured`, still logged and listed.
  */
 export function captureAlertDestination() {
-  if (process.env.APP_ENV !== "installation" || emailModeOf(process.env) !== "mail") return null;
+  if (process.env.APP_ENV !== "installation") return null;
+  const service = mailServiceOf(process.env);
   const to = (process.env.FNFE_CAPTURE_ALERT_EMAIL ?? "")
     .split(",")
     .map((address) => address.trim().toLowerCase())
     .filter(Boolean);
   const from = process.env.ACCOUNT_EMAIL_FROM ?? "";
-  const apiUrl = process.env.MAIL_API_URL ?? "";
-  const apiKey = process.env.MAIL_API_KEY ?? "";
   if (
+    !service ||
     to.length < 1 ||
     to.length > 5 ||
     to.some((address) => !EMAIL.test(address)) ||
-    !EMAIL.test(from) ||
-    !mailServiceUrl(apiUrl) ||
-    apiKey.length < 20
+    !EMAIL.test(from)
   )
     return null;
-  return { to, from, apiUrl, apiKey };
+  return { to, from, service };
 }
 
 /**

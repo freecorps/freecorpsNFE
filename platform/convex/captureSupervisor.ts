@@ -512,7 +512,7 @@ export const deliver = internalAction({
 });
 
 /**
- * Hands one e-mail to Ember Mail: `sent` once it accepted the message, `failed` on a refusal (4xx),
+ * Hands one e-mail to the provider: `sent` once it accepted the message, `failed` on a refusal (4xx),
  * `uncertain` on a timeout, a 5xx or no answer, since it may have accepted it. No retry, as before:
  * an uncertain alert is not sent again. The idempotency key still makes a repeated call of the same
  * alert one e-mail in the service.
@@ -525,7 +525,7 @@ async function sendAlertMail(
 ): Promise<"sent" | "failed" | "uncertain"> {
   try {
     return await deliverMail(
-      destination,
+      destination.service,
       {
         from: destination.from,
         name: "Freecorps Fiscal · Operação",

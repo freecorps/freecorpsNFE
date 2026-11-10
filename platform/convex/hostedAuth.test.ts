@@ -4,7 +4,11 @@ import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
 import { register } from "../test-setup";
 import { signAuthRequest } from "../auth-transport";
-import { accountPolicy, recipientAllowed } from "../account-policy.mjs";
+import {
+  FREECORPS_CLOUDFLARE_ACCOUNT,
+  accountPolicy,
+  recipientAllowed,
+} from "../account-policy.mjs";
 import { accountSenderName } from "./lib/accountMail";
 import { modules } from "../../tests/helpers/convex-modules";
 
@@ -97,7 +101,7 @@ it("validates controlled configuration and keeps remote credentials out of local
   expect(() => accountPolicy({ EMAIL_MODE: "local", MAIL_API_KEY: "private" }, true)).toThrow();
   expect(() => accountPolicy({ EMAIL_MODE: "disabled", AUTH_PROXY_SECRET: secret })).toThrow();
 });
-it("reads the mail service from MAIL_*, with an HTTPS address, and the former mode name while switching", () => {
+it("sends through the provider the operator chose, with its own credentials", () => {
   const remote = {
     EMAIL_MODE: "mail",
     AUTH_PROXY_MODE: "signed",
@@ -107,23 +111,58 @@ it("reads the mail service from MAIL_*, with an HTTPS address, and the former mo
     ACCOUNT_EMAIL_FROM: "sender@example.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: "a@example.invalid",
   };
-  expect(accountPolicy(remote)).toMatchObject({
-    enabled: true,
+  expect(accountPolicy(remote).service).toEqual({
+    provider: "mail",
     apiUrl: "https://mail.development.invalid",
     apiKey: "synthetic-provider-token",
   });
-  // `cloudflare` is read as `mail`, and the former token is ignored, until the deployments switch.
-  expect(
-    accountPolicy({ ...remote, EMAIL_MODE: "cloudflare", CLOUDFLARE_EMAIL_API_TOKEN: "old" })
-      .enabled,
-  ).toBe(true);
   for (const MAIL_API_URL of [
     "",
     "http://mail.development.invalid",
     "https://u:p@mail.development.invalid",
   ])
     expect(() => accountPolicy({ ...remote, MAIL_API_URL })).toThrow();
-  expect(() => accountPolicy({ ...remote, EMAIL_MODE: "disabled" })).toThrow();
+  // Email Sending of the operator's account; without an account, the Freecorps one, as before.
+  const cloudflare = {
+    ...remote,
+    EMAIL_MODE: "cloudflare",
+    MAIL_API_URL: undefined,
+    MAIL_API_KEY: undefined,
+    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+  };
+  expect(accountPolicy(cloudflare).service).toEqual({
+    provider: "cloudflare",
+    accountId: FREECORPS_CLOUDFLARE_ACCOUNT,
+    apiKey: "synthetic-provider-token",
+  });
+  const account = "0123456789abcdef0123456789abcdef";
+  expect(
+    accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_ACCOUNT_ID: account }).service,
+  ).toMatchObject({
+    accountId: account,
+  });
+  expect(() => accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_ACCOUNT_ID: "nope" })).toThrow();
+  expect(() => accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_API_TOKEN: "" })).toThrow();
+  // Only the chosen provider counts: the other one's variables do not block a switch.
+  expect(
+    accountPolicy({ ...remote, CLOUDFLARE_EMAIL_API_TOKEN: "old-token" }).service?.provider,
+  ).toBe("mail");
+  // Disabled keeps no credential of either.
+  expect(() =>
+    accountPolicy({
+      ...remote,
+      EMAIL_MODE: "disabled",
+      ACCOUNT_EMAIL_FROM: "",
+      ACCOUNT_EMAIL_RECIPIENTS: "",
+    }),
+  ).toThrow();
+  expect(() =>
+    accountPolicy({
+      EMAIL_MODE: "disabled",
+      AUTH_PROXY_MODE: "disabled",
+      CLOUDFLARE_EMAIL_ACCOUNT_ID: account,
+    }),
+  ).toThrow();
 });
 it("names the sender without Validação only in the installation profile", () => {
   vi.stubEnv("APP_ENV", "installation");

@@ -1,9 +1,10 @@
 # E-mail de contas na validação
 
-O backend envia pelo [Ember Mail](../operacao/email.md), o serviço de e-mail da
-Freecorps, com `@freecorps/mail-sdk`. Até a troca, enviava direto pela API REST
-do Cloudflare Email Sending; o serviço usa o mesmo provedor e passa a cuidar da
-fila, dos eventos de entrega e das supressões.
+O backend envia pelo provedor de `EMAIL_MODE` ([provedores](../operacao/email.md#envio)):
+um Ember Mail, com `@freecorps/mail-sdk` (`mail`, o da Freecorps), ou o
+Email Sending de uma conta Cloudflare, pela API REST (`cloudflare`, como antes
+da troca). O Ember Mail usa o mesmo provedor e cuida também da fila, dos
+eventos de entrega e das supressões.
 O remetente preparado é `acesso@validacao.fiscal.freecorps.com.br`, na conta
 FreeCorps. O domínio e o token dedicado foram preparados em 10/09/2026.
 Na instalação (`prod:elated-possum-295`), o remetente passou a ser
@@ -29,7 +30,7 @@ credenciais remanescentes com envio desligado e provedores desconhecidos falham.
 
 | Variável no Convex de validação | Uso                                                                                                                                     |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `EMAIL_MODE`                    | `disabled` inicialmente; `mail` após ativação controlada (`cloudflare`, o nome anterior, é lido como `mail` durante a troca)            |
+| `EMAIL_MODE`                    | `disabled` inicialmente; `mail` após ativação controlada (`cloudflare` também é aceito, com `CLOUDFLARE_EMAIL_API_TOKEN`)               |
 | `AUTH_PROXY_MODE`               | Ausente/`disabled` inicialmente; `signed` na ativação                                                                                   |
 | `AUTH_PROXY_SECRET`             | 32 bytes aleatórios codificados em 64 caracteres hexadecimais; mesmo valor no Worker                                                    |
 | `MAIL_API_URL`                  | `https://mail-api.freecorps.com.br`, a API do Ember Mail                                                                                |
@@ -117,10 +118,11 @@ Veja a prova HTTP da renovação local.
 
 ## Entrega, códigos e sessão
 
-O adaptador chama o Ember Mail em `MAIL_API_URL`, com timeout de cinco segundos
-e sem repetição automática. O envio só conta quando o serviço o aceita (fila,
-com id); uma recusa (4xx) e uma resposta incerta (timeout, 5xx, sem resposta)
-falham com erro genérico. O conteúdo da resposta nunca vai para o cliente nem
+O adaptador chama o provedor com timeout de cinco segundos e sem repetição
+automática. O envio só conta quando o provedor o aceita: no Ember Mail, fila
+com id; no Email Sending, cada destinatário em `queued` ou `delivered`, sem
+bounce permanente, com a resposta limitada a 32 KiB. Uma recusa (4xx) e uma
+resposta incerta (timeout, 5xx, sem resposta) falham com erro genérico. O conteúdo da resposta nunca vai para o cliente nem
 para o log. Aceitação em fila não é prova de entrega na caixa de entrada; a
 entrega, os bounces e as supressões ficam no serviço.
 

@@ -1,4 +1,5 @@
 import { EmberMail } from "@freecorps/mail-sdk";
+import { boundedAuthBody } from "../../auth-transport";
 export interface AccountMessage {
   email: string;
   otp: string;
@@ -11,10 +12,9 @@ export type AccountMailConfiguration =
   | { provider: "disabled" }
   | { provider: "local"; capture: (message: AccountMessage) => Promise<unknown> }
   | {
-      provider: "mail";
-      /** Ember Mail (`MAIL_API_URL`) and this deployment's sending key (`MAIL_API_KEY`). */
-      apiUrl: string;
-      apiKey: string;
+      provider: "remote";
+      /** The provider `EMAIL_MODE` chose and its credentials (`mailServiceOf`). */
+      service: MailService | null;
       from: string;
       /** `any` only in the installation profile, with `ACCOUNT_EMAIL_RECIPIENTS=*`. */
       allowedRecipients: readonly string[] | "any";
@@ -53,8 +53,7 @@ export function createAccountMailProvider(config: AccountMailConfiguration): Acc
       },
     };
   if (
-    !config.apiUrl ||
-    !config.apiKey ||
+    !config.service?.apiKey ||
     !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(config.from) ||
     (config.allowedRecipients !== "any" && config.allowedRecipients.length === 0)
   )
@@ -93,19 +92,28 @@ export function createAccountMailProvider(config: AccountMailConfiguration): Acc
       const instructions = invitation
         ? `${link ? "Abra o link do convite e entre com este e-mail verificado. Se preferir, entre no painel, escolha Aceitar convite e cole o código. " : "Entre no painel com este e-mail verificado e escolha Aceitar convite. "}Confira a organização e o papel antes de aceitar. Válido por 72 horas, para um único uso.`
         : "Válido por dez minutos, para um único uso. Se você não solicitou esta mensagem, ignore-a.";
-      await sendAccountMail(config, {
-        name: accountSenderName(),
-        to: [message.email],
-        subject,
-        text: `${link ? `Abrir o convite: ${link}\n\n` : ""}${label}: ${message.otp}\n\n${instructions}`,
-        html: `${link ? `<p><a href="${link}">Abrir o convite</a></p>` : ""}<p>${label}: <strong>${message.otp}</strong></p><p>${instructions}</p>`,
-      });
+      await sendAccountMail(
+        { service: config.service, from: config.from },
+        {
+          name: accountSenderName(),
+          to: [message.email],
+          subject,
+          text: `${link ? `Abrir o convite: ${link}\n\n` : ""}${label}: ${message.otp}\n\n${instructions}`,
+          html: `${link ? `<p><a href="${link}">Abrir o convite</a></p>` : ""}<p>${label}: <strong>${message.otp}</strong></p><p>${instructions}</p>`,
+        },
+      );
     },
   };
 }
 
-/** Where the mail service is and the key that sends from this deployment. */
-export type MailService = { apiUrl: string; apiKey: string };
+/**
+ * The provider `EMAIL_MODE` chose: Email Sending of a Cloudflare account, called directly
+ * (`cloudflare`), or an Ember Mail (`mail`, freecorps/mail), which owns queue, retries, delivery
+ * events and suppressions. The operator chooses; Freecorps uses `mail`.
+ */
+export type MailService =
+  | { provider: "cloudflare"; accountId: string; apiKey: string }
+  | { provider: "mail"; apiUrl: string; apiKey: string };
 
 export type MailMessage = {
   from: string;
@@ -114,21 +122,30 @@ export type MailMessage = {
   subject: string;
   text: string;
   html?: string;
-  /** Same key, same e-mail: the service sends a retried call once (`Idempotency-Key`). */
+  /** Ember Mail: same key, same e-mail, so a retried call sends once. Email Sending has none. */
   idempotencyKey?: string;
 };
 
 /**
- * Hands one message to Ember Mail (freecorps/mail), which queues it and owns the provider, retries,
- * delivery events and suppressions. `sent` once the service accepted it (queued, under an id),
- * `failed` when it refused it (4xx: nothing went out), `uncertain` on a timeout, a 5xx or no
- * answer, since it may have been accepted. The answer body is never logged.
+ * Hands one message to the provider. `sent` once it accepted the message, `failed` when it refused
+ * it (4xx, or a permanent bounce: nothing went out), `uncertain` on a timeout, a 5xx, no answer or an
+ * unreadable one, since it may have been accepted. The answer body is never logged.
  */
 export async function deliverMail(
   service: MailService,
   message: MailMessage,
   options: { timeoutMs: number; retries: number },
 ): Promise<"sent" | "failed" | "uncertain"> {
+  return service.provider === "mail"
+    ? await deliverEmberMail(service, message, options)
+    : await deliverEmailSending(service, message, options.timeoutMs);
+}
+
+async function deliverEmberMail(
+  service: Extract<MailService, { provider: "mail" }>,
+  message: MailMessage,
+  options: { timeoutMs: number; retries: number },
+) {
   const mail = new EmberMail(service.apiKey, {
     baseUrl: service.apiUrl,
     timeoutMs: options.timeoutMs,
@@ -148,23 +165,78 @@ export async function deliverMail(
   return error.outcome === "not_sent" ? "failed" : "uncertain";
 }
 
+/** The Email Sending endpoint of one Cloudflare account. */
+export const emailSendingUrl = (accountId: string) =>
+  `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/sending/send`;
+
+/**
+ * Email Sending's REST API: fixed endpoint, no redirect, no retry. `sent` only when it answers
+ * `success` with every recipient queued or delivered and none bounced. The body is bounded.
+ */
+async function deliverEmailSending(
+  service: Extract<MailService, { provider: "cloudflare" }>,
+  message: MailMessage,
+  timeoutMs: number,
+): Promise<"sent" | "failed" | "uncertain"> {
+  let response: Response;
+  try {
+    response = await fetch(emailSendingUrl(service.accountId), {
+      method: "POST",
+      redirect: "error",
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { Authorization: `Bearer ${service.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: { address: message.from, name: message.name },
+        to: message.to,
+        subject: message.subject,
+        text: message.text,
+        ...(message.html ? { html: message.html } : {}),
+      }),
+    });
+  } catch {
+    return "uncertain";
+  }
+  if (response.status >= 400 && response.status < 500) return "failed";
+  if (!response.ok) return "uncertain";
+  let data: unknown;
+  try {
+    data = JSON.parse(new TextDecoder().decode(await boundedAuthBody(response)));
+  } catch {
+    return "uncertain";
+  }
+  const record = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null;
+  if (!record(data) || data.success !== true || !record(data.result)) return "uncertain";
+  const result = data.result;
+  for (const email of message.to) {
+    if (Array.isArray(result.permanent_bounces) && result.permanent_bounces.includes(email))
+      return "failed";
+    if (
+      ![result.delivered, result.queued].some((list) => Array.isArray(list) && list.includes(email))
+    )
+      return "uncertain";
+  }
+  return "sent";
+}
+
 /** A display name the service parses: quoted, without quotes, backslashes or line breaks. */
 function quotedName(name: string) {
   return `"${name.replace(/["\\\r\n]/g, "").trim()}"`;
 }
 
 /**
- * Account codes and notices: five seconds, no retry, as before the mail service (the person asks
- * for a new code). Resolves only once the service accepted the message; anything else throws a
- * generic error, since a timeout may still have been accepted. Shared by the account codes and the
- * notices of a new version of the terms of use (#594) and of the archive (ADR 0009).
+ * Account codes and notices: five seconds, no retry (the person asks for a new code). Resolves only
+ * once the provider accepted the message; anything else throws a generic error, since a timeout may
+ * still have been accepted. Shared by the account codes and the notices of a new version of the
+ * terms of use (#594) and of the archive (ADR 0009).
  */
 export async function sendAccountMail(
-  config: MailService & { from: string },
+  config: { service: MailService | null; from: string },
   message: { name: string; to: readonly string[]; subject: string; text: string; html?: string },
 ) {
+  if (!config.service) throw new Error("Account email delivery disabled");
   const delivery = await deliverMail(
-    config,
+    config.service,
     { from: config.from, ...message },
     { timeoutMs: 5000, retries: 0 },
   );

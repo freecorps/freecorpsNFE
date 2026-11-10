@@ -25,13 +25,17 @@ O remetente continua em `ACCOUNT_EMAIL_FROM`. A allowlist
 (`ACCOUNT_EMAIL_RECIPIENTS`), o proxy assinado e os limites por destinatário
 não mudaram ([e-mail de contas](../plataforma/ACCOUNT-EMAIL.md)).
 
-| Variável no Convex | Valor                                                                                               |
-| ------------------ | --------------------------------------------------------------------------------------------------- |
-| `EMAIL_MODE`       | `mail`                                                                                              |
-| `MAIL_API_URL`     | `https://mail-api.freecorps.com.br`                                                                 |
-| `MAIL_API_KEY`     | Chave `sending_access` do projeto no Ember Mail, restrita ao domínio do remetente, mantida no cofre |
+Quem opera escolhe o provedor em `EMAIL_MODE`. Só as variáveis do provedor
+escolhido contam; as do outro são ignoradas, e `disabled` não aceita nenhuma.
 
-Cada deployment tem a sua chave:
+| `EMAIL_MODE` | Provedor                                                                  | Variáveis                                                                                                        |
+| ------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `mail`       | um Ember Mail, que cuida da fila, dos eventos de entrega e das supressões | `MAIL_API_URL` (HTTPS) e `MAIL_API_KEY`, uma chave `sending_access` restrita ao domínio do remetente             |
+| `cloudflare` | o Email Sending de uma conta Cloudflare, chamado direto pela API REST     | `CLOUDFLARE_EMAIL_API_TOKEN` (Email Sending → Edit) e `CLOUDFLARE_EMAIL_ACCOUNT_ID`; sem a conta, a da Freecorps |
+| `disabled`   | nenhum                                                                    | nenhuma                                                                                                          |
+
+A Freecorps usa `mail`, com `MAIL_API_URL=https://mail-api.freecorps.com.br`.
+Cada deployment tem a sua chave, mantida no cofre:
 
 - **Instalação** (`prod:elated-possum-295`): projeto `nfe`, domínio
   `nfe.freecorps.com.br`, remetente `acesso@nfe.freecorps.com.br`.
@@ -40,15 +44,15 @@ Cada deployment tem a sua chave:
   `acesso@validacao.fiscal.freecorps.com.br`.
 
 Uma chave de um domínio não envia de outro. A chave não vai para `VITE_*`,
-logs, fixtures nem recibos. No GitHub environment `validation`,
-`VALIDATION_MAIL_API_KEY` substitui `VALIDATION_CLOUDFLARE_EMAIL_API_TOKEN`.
+logs, fixtures nem recibos.
 
 O desfecho de um envio:
 
-- **Aceito pelo serviço:** a mensagem está na fila do Ember Mail, com um id.
-  A entrega, os bounces e as supressões ficam no serviço (`GET /emails/:id`).
-  Aceitação não prova leitura nem entrega final.
-- **Recusado (4xx):** nada saiu.
+- **Aceito:** no Ember Mail, a mensagem está na fila, com um id, e a entrega,
+  os bounces e as supressões ficam no serviço (`GET /emails/:id`). No Email
+  Sending, cada destinatário voltou em `queued` ou `delivered`. Aceitação não
+  prova leitura nem entrega final.
+- **Recusado (4xx, ou bounce permanente no Email Sending):** nada saiu.
 - **Sem resposta, timeout ou 5xx:** incerto. Pode ter sido aceito.
 
 Os códigos de conta e os avisos têm cinco segundos e nenhuma retentativa,
@@ -106,32 +110,29 @@ Um envio de teste de cada remetente chegou. As regras de recebimento dos
 quatro endereços continuam apontando para o Worker `freecorpsnfe-privacy-mail`
 até a troca.
 
-A ordem evita que o login caia no meio da troca. O código novo lê
-`EMAIL_MODE=cloudflare` como `mail` e ignora `CLOUDFLARE_EMAIL_API_TOKEN`,
-então as variáveis novas entram antes e as antigas saem depois.
+O código novo aceita os dois provedores, então a publicação não depende da
+troca das variáveis: o envio segue pelo Email Sending até o passo 4.
 
-1. Antes do merge, em cada deployment (instalação e validação), definir
-   `MAIL_API_URL` e `MAIL_API_KEY`. O código atual ignora as duas em
-   runtime, mas o preflight da validação recusa nomes que não conhece: entre
-   este passo e o 4, outra publicação falha na validação. Faça os passos 1 a
-   4 em sequência.
-2. Decidir o destino das conversas atuais das tabelas `privacy*`. O schema
-   novo não tem essas tabelas, e o Convex só aceita retirá-las vazias. Os
-   pedidos de D02 precisam continuar no registro restrito pelo prazo de
-   cinco anos: exportar conversas, notas e originais para o registro privado
-   fora do snapshot antes de esvaziar as tabelas.
-3. Mover as regras de `privacidade@`, `seguranca@`, `suporte@` e `operacao@`
+1. Mover as regras de `privacidade@`, `seguranca@`, `suporte@` e `operacao@`
    (e o subendereçamento) para o Worker `ember-mail-prod`. Esperar a fila R2
    do Worker antigo esvaziar.
-4. Fazer o merge. O `Deploy production` publica o backend e o console.
-5. Trocar `EMAIL_MODE` para `mail` e remover `CLOUDFLARE_EMAIL_API_TOKEN`,
-   `FNFE_PRIVACY_*`, `FNFE_*_OPERATOR_EMAILS`, `INBOUND_EMAIL_SECRET` e os
-   segredos do GitHub correspondentes. Rodar o teste do alerta
+2. Exportar as conversas, as notas e os originais das tabelas `privacy*` para
+   o registro restrito, fora do snapshot (autorizado pelo mantenedor em
+   10/11/2026), e esvaziar as tabelas. O schema novo não as tem, e o Convex só
+   aceita retirá-las vazias. Os pedidos de D02 continuam no registro restrito
+   pelos cinco anos.
+3. Fazer o merge. O `Deploy production` publica o backend e o console.
+4. Em cada deployment (instalação e validação), definir `MAIL_API_URL` e
+   `MAIL_API_KEY`, trocar `EMAIL_MODE` para `mail` e remover
+   `CLOUDFLARE_EMAIL_API_TOKEN`, `FNFE_PRIVACY_*`, `FNFE_*_OPERATOR_EMAILS`,
+   `INBOUND_EMAIL_SECRET` e os segredos do GitHub correspondentes
+   (`VALIDATION_MAIL_API_KEY` entra no lugar de
+   `VALIDATION_CLOUDFLARE_EMAIL_API_TOKEN`). Rodar o teste do alerta
    (`scripts/deploy/capture-release.mjs alert_test`) e um código de conta na
    validação.
-6. Desligar o Worker `freecorpsnfe-privacy-mail` e apagar o bucket R2
+5. Desligar o Worker `freecorpsnfe-privacy-mail` e apagar o bucket R2
    `freecorpsnfe-privacy-mail`, já vazio. Revogar o token de Email Sending
    antigo.
 
-Para voltar antes do passo 6, basta reverter o merge e as regras: as
-variáveis antigas só saem no passo 5.
+Para voltar antes do passo 5, reverta as variáveis do passo 4 (o envio volta
+ao Email Sending) ou o merge e as regras.

@@ -14,12 +14,16 @@ it("uses a local collector without any HTTP and refuses disabled delivery", asyn
     "disabled",
   );
 });
-const service = { apiUrl: "https://mail.development.invalid", apiKey: "synthetic-key" };
+const service = {
+  provider: "mail" as const,
+  apiUrl: "https://mail.development.invalid",
+  apiKey: "synthetic-key-0123456789",
+};
 const accepted = () => Response.json({ id: "email-1" });
 function remote(extra: { siteUrl?: string } = {}) {
   return createAccountMailProvider({
-    provider: "mail",
-    ...service,
+    provider: "remote",
+    service,
     from: "sender@development.invalid",
     allowedRecipients: [message.email],
     ...extra,
@@ -66,7 +70,7 @@ it("posts to the mail service with the deployment's key and explicit recipients"
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(String(fetch.mock.calls[0][0])).toBe("https://mail.development.invalid/emails");
   const headers = new Headers(fetch.mock.calls[0][1].headers);
-  expect(headers.get("authorization")).toBe("Bearer synthetic-key");
+  expect(headers.get("authorization")).toBe("Bearer synthetic-key-0123456789");
   expect(headers.get("idempotency-key")).toBeTruthy();
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
     to: [message.email],
@@ -94,12 +98,11 @@ it("a refusal is rejected; a 5xx or no answer is unavailable, and is never retri
   await expect(remote().send(message)).rejects.toThrow("Account email provider unavailable");
   expect(fetch).toHaveBeenCalledTimes(3);
 });
-it("refuses to build the remote adapter without the service address", () => {
+it("refuses to build the remote adapter without a provider", () => {
   expect(() =>
     createAccountMailProvider({
-      provider: "mail",
-      apiUrl: "",
-      apiKey: "synthetic-key",
+      provider: "remote",
+      service: null,
       from: "sender@development.invalid",
       allowedRecipients: [message.email],
     }),
@@ -129,4 +132,72 @@ it("delivers with the caller's idempotency key on every retry, and tells refused
   expect(await deliverMail(service, mail, { timeoutMs: 1000, retries: 2 })).toBe("failed");
   fetch.mockImplementation(async () => accepted());
   expect(await deliverMail(service, mail, { timeoutMs: 1000, retries: 2 })).toBe("sent");
+});
+
+const emailSending = {
+  provider: "cloudflare" as const,
+  accountId: "0123456789abcdef0123456789abcdef",
+  apiKey: "synthetic-key-0123456789",
+};
+const cloudflareMail = {
+  from: "sender@development.invalid",
+  name: "Freecorps Fiscal",
+  to: [message.email],
+  subject: "Assunto",
+  text: "Texto",
+};
+it("Email Sending: posts to the operator's account and requires the recipient queued, never bounced", async () => {
+  const fetch = vi.fn(async () =>
+    Response.json({ success: true, result: { queued: [message.email], permanent_bounces: [] } }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  expect(await deliverMail(emailSending, cloudflareMail, { timeoutMs: 1000, retries: 0 })).toBe(
+    "sent",
+  );
+  const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+  expect(url).toBe(
+    "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/email/sending/send",
+  );
+  expect(JSON.parse(init.body as string)).toMatchObject({
+    to: [message.email],
+    from: { address: "sender@development.invalid", name: "Freecorps Fiscal" },
+  });
+  for (const [body, outcome] of [
+    [
+      { success: true, result: { delivered: [message.email], permanent_bounces: [message.email] } },
+      "failed",
+    ],
+    [{ success: true, result: { queued: ["other@development.invalid"] } }, "uncertain"],
+    [{ success: false }, "uncertain"],
+  ] as const) {
+    fetch.mockImplementation(async () => Response.json(body));
+    expect(await deliverMail(emailSending, cloudflareMail, { timeoutMs: 1000, retries: 0 })).toBe(
+      outcome,
+    );
+  }
+  fetch.mockImplementation(async () => new Response("private provider body", { status: 403 }));
+  expect(await deliverMail(emailSending, cloudflareMail, { timeoutMs: 1000, retries: 0 })).toBe(
+    "failed",
+  );
+  fetch.mockImplementation(async () => new Response("x".repeat(32769)));
+  expect(await deliverMail(emailSending, cloudflareMail, { timeoutMs: 1000, retries: 0 })).toBe(
+    "uncertain",
+  );
+  // No retry: one call per attempt.
+  expect(fetch).toHaveBeenCalledTimes(6);
+});
+it("Email Sending through the account adapter: codes go out, a refusal throws", async () => {
+  const fetch = vi.fn(async () =>
+    Response.json({ success: true, result: { queued: [message.email] } }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const provider = createAccountMailProvider({
+    provider: "remote",
+    service: emailSending,
+    from: "sender@development.invalid",
+    allowedRecipients: [message.email],
+  });
+  await provider.send(message);
+  fetch.mockImplementation(async () => new Response("{}", { status: 500 }));
+  await expect(provider.send(message)).rejects.toThrow("Account email provider unavailable");
 });
