@@ -649,12 +649,6 @@ export const findingAllowlist = [
     reason: "Links do CONTEXT-MAP.md de exemplo, dentro de bloco de código",
   },
   {
-    path: ".agents/skills/vercel-react-best-practices/AGENTS.md",
-    kind: "link-quebrado",
-    count: 3,
-    reason: "Regras da skill de terceiros que só vêm compiladas neste arquivo",
-  },
-  {
     path: "scripts/fiscal/prove-certificates-hosted.ts",
     kind: "email-externo",
     count: 1,

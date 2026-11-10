@@ -25,7 +25,7 @@ infraestrutura própria segue a licença do repositório
 
 | Seção | Fonte                                                                                                                                                                                                              |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1     | [README](../../README.md#o-que-existe), [ACCEPTANCE.md](ACCEPTANCE.md#capacidades-e-limites), [ISSUANCE.md](../plataforma/ISSUANCE.md), [LAUNCH.md](LAUNCH.md) e ADR 0007, §3                                      |
+| 1     | [README](../../README.md#o-que-dá-para-fazer), [ACCEPTANCE.md](ACCEPTANCE.md#capacidades-e-limites), [ISSUANCE.md](../plataforma/ISSUANCE.md), [LAUNCH.md](LAUNCH.md) e ADR 0007, §3                               |
 | 2     | [ADR 0007](../adr/0007-captura-fiscal-no-site.md), §1 e §2, e a tabela "Efeito" de [CAPTURE.md](../plataforma/CAPTURE.md#liberação-fiscal-no-site)                                                                 |
 | 3     | [ORGANIZATIONS.md](../plataforma/ORGANIZATIONS.md), [PROJECTS.md](../plataforma/PROJECTS.md) e [ACCOUNT-EMAIL.md](../plataforma/ACCOUNT-EMAIL.md)                                                                  |
 | 4     | [RETENTION.md](../plataforma/RETENTION.md#guarda-após-o-encerramento-d01), [USAGE.md](../plataforma/USAGE.md#admissão-e-recuperação)                                                                               |

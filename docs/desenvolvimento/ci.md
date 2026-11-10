@@ -212,7 +212,8 @@ execução limpa de uma revisão, dispare o CI manualmente.
 varredura leem, o job instala as dependências, roda `vp fmt --check`,
 `node scripts/public-copy/check-secrets.mjs` e os testes que leem toda a documentação
 versionada (`scripts/public-copy/public-identifiers.test.ts`,
-`scripts/public-copy/public-tree.test.ts` e `scripts/repo/adr-status.test.ts`)
+`scripts/public-copy/public-tree.test.ts`, `scripts/repo/adr-status.test.ts` e
+`scripts/repo/doc-links.test.ts`)
 e termina aprovado, sem executar o grafo nem
 emitir `tested_sha`. O check obrigatório continua sendo o mesmo `Validate`:
 `paths-ignore` deixaria o check ausente.
@@ -307,7 +308,8 @@ projeto reprova `tests/ci.testProjects.test.ts`.
 `scripts/public-copy/public-identifiers.test.ts` (todo Markdown), `scripts/public-copy/public-tree.test.ts`
 (a lista do Git, para classificar cada arquivo da cópia pública),
 `scripts/repo/adr-status.test.ts` (todo Markdown, atrás de status de ADR fora
-do cabeçalho dela) e
+do cabeçalho dela), `scripts/repo/doc-links.test.ts` (todo Markdown, atrás de
+link relativo para arquivo ou âncora que não existe) e
 `tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
 documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
 de `tooling`, cerca de 95 s localmente, eles faziam a área inteira executar a

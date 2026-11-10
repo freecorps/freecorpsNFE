@@ -483,7 +483,7 @@ sintéticos dos testes, o que fica confirmado vai de 298 bytes (resposta 137,
 sem documentos) a 376.531 bytes (50 NF-e completas de
 `tests/fixtures/nfe/4.00/invoice-authorized.xml`), 0,002% a 2% da reserva.
 A revisão técnica da #429 recomenda manter a reserva, que corresponde ao
-teto aceito pelo conector. A [proposta comercial](PLATFORM-PLAN-PROPOSAL.md#limites-técnicos-propostos-para-manutenção)
+teto aceito pelo conector. A [proposta comercial](PLATFORM-PLAN-PROPOSAL.md#limites-técnicos-e-condições-de-lançamento)
 explica o efeito no saldo e mantém o teto técnico de 120 consultas autorizadas
 por empresa em qualquer hora. Esses limites não aumentam com o preço do plano.
 

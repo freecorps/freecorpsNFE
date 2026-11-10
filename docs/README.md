@@ -34,7 +34,7 @@ uma cita o número antigo na primeira linha.
 
 ### 1. Preparar o ambiente
 
-Pré-requisitos e início rápido no [README principal](../README.md#desenvolvimento-local).
+Pré-requisitos e início rápido no [README principal](../README.md#quer-contribuir-leia-isto-antes).
 [worktrees.md](worktrees.md) é a referência para criar, preparar, iniciar e
 limpar ambientes locais, com portas, crons e contas de teste. `bun run help`
 lista cada script com a aplicação e o ambiente que ele atinge.

@@ -327,6 +327,7 @@ const mentions: Record<string, string> = {
   "scripts/deploy/platform-unchanged.test.ts -> docs/desenvolvimento/ci.md": "synthetic",
   "scripts/public-copy/public-tree.test.ts -> docs/operacao/backup.md": "synthetic",
   "scripts/repo/adr-status.test.ts -> docs/README.md": "synthetic",
+  "scripts/repo/doc-links.test.ts -> docs/ARQUITETURA.md": "synthetic",
   // tests/fixtureCorpus.test.ts checks that evidence exists; deleting a document
   // runs the graph.
   "tests/coverage-matrix.json -> docs/plataforma/IMPORTS.md": "existence",

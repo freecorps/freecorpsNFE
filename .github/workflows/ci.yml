@@ -92,7 +92,7 @@ jobs:
         run: |
           vp fmt --check
           node scripts/public-copy/check-secrets.mjs
-          vp test run scripts/public-copy/public-identifiers.test.ts scripts/public-copy/public-tree.test.ts scripts/repo/adr-status.test.ts
+          vp test run scripts/public-copy/public-identifiers.test.ts scripts/public-copy/public-tree.test.ts scripts/repo/adr-status.test.ts scripts/repo/doc-links.test.ts
       # Restores the newest cache this ref may read: its own (a previous push to
       # the pull request) or main's. The key follows the Vite+ guide: OS,
       # architecture and run, never source or lockfile hashes; Vite Task
