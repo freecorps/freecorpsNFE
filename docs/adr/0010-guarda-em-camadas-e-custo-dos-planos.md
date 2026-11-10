@@ -243,6 +243,8 @@ Resolve a antiga pendência 4
     no lugar de "o fim do mês civil corrente", nas duas vezes acima.
 
   Valores e prazos acima não mudam. A ADR 0012 ainda não está implementada.
+  (Nota posterior: a ADR 0012 foi implementada nas fatias 0 a 2b, com o
+  catálogo ainda desligado; ver o status dela.)
 
 ### 10. Importação e cota de notas do Gratuito
 

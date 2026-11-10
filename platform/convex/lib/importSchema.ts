@@ -205,8 +205,9 @@ export const importTables = {
     // ADR 0010, phase B: the gzip blob of `result`, `fiscalEvidence`, the items and the evidence
     // snapshot (`lib/documentContent.ts`), identified by the SHA-256 and size of its uncompressed
     // JSON, plus the card. Flat, so the storage inventories see the file field. B4 writes them
-    // after publication (`lib/documentContentWriter.ts`); nothing reads them yet, and the inline
-    // content stays required.
+    // after publication (`lib/documentContentWriter.ts`); the document readers resolve the blob
+    // through `storedRef` (`lib/documentContentPlan.ts`), and the cold tier, the cold archive and
+    // the storage inventory (`lib/storageHolders.ts`) follow the field.
     contentStorageId: v.optional(v.id("_storage")),
     // ADR 0010, phase C: the same blob, byte for byte, once moved to the cold tier's bucket
     // (`lib/coldObjects.ts`). Exactly one of the two locations is set; the hash, size and format

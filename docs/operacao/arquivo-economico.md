@@ -63,8 +63,10 @@ de 100 mil registros fiscais por pacote. Acima dele, a varredura recusa antes
 de qualquer remoção. O limite de ZIP descompactado é 3 GiB, incluindo a
 reserva para metadados e estrutura.
 
-O backup incremental da plataforma tem um limite global próprio de 1 GiB,
-incluindo arquivos. Acima dele, o preflight recusa. O limite do pacote frio
+O backup incremental da plataforma tem um limite próprio, incluindo arquivos:
+`maxSnapshotBytes`, 4 GiB no plano ativo, em formato 2; o formato 1 é
+limitado a 1 GiB ([backup.md](backup.md#custo)). Acima dele, o
+preflight recusa. O limite do pacote frio
 não amplia o do backup: a prova desta entrega não cobre o backup de uma
 conta Grande com 2 GiB ocupados, nem autoriza alegar essa capacidade testada.
 

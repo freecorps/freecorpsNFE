@@ -15,4 +15,9 @@ resultado fora dos limites. `quantize` exige escolha explícita entre `reject`,
 `truncate`, `half-up` e `half-even`; o modo `reject` recusa perda de precisão.
 Escalas fiscais pertencem ao pacote do modelo, não a este núcleo.
 
+`validateAccessKey` aceita só chave de acesso de NF-e modelo 55: uma chave
+válida de outro modelo, como a NFC-e 65, é recusada com o motivo `model`
+(`NFE_MODEL_MISMATCH`). É regra de projeto, não lacuna: a plataforma importa
+só NF-e 55, e aceitar outro modelo exige decisão e pacote próprios.
+
 Instalação: `npm install @freecorps/fiscal-core`. Licença em [LICENSING.md](LICENSING.md).
