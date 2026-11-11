@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "807068735cbdccbdac2ebe355793253085d0b6fdf23d56a16b61814f106ae321",
+  "lockSha256": "9f39b7f55abab73a584774989c9937b99d78b1df1ce4c0ee994ad5a453bb4363",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -3021,6 +3021,11 @@
           "workspace": ".",
           "kind": "devDependencies",
           "dependency": "@types/node-forge"
+        },
+        {
+          "workspace": "platform",
+          "kind": "devDependencies",
+          "dependency": "@types/node-forge"
         }
       ]
     },
@@ -3932,7 +3937,7 @@
       "direct": [
         {
           "workspace": ".",
-          "kind": "dependencies",
+          "kind": "devDependencies",
           "dependency": "convex"
         },
         {
@@ -4292,7 +4297,7 @@
       "direct": [
         {
           "workspace": ".",
-          "kind": "dependencies",
+          "kind": "devDependencies",
           "dependency": "fast-xml-parser"
         },
         {
@@ -5530,6 +5535,11 @@
       "direct": [
         {
           "workspace": ".",
+          "kind": "devDependencies",
+          "dependency": "node-forge"
+        },
+        {
+          "workspace": "platform",
           "kind": "dependencies",
           "dependency": "node-forge"
         }
@@ -5887,7 +5897,7 @@
       "direct": [
         {
           "workspace": ".",
-          "kind": "dependencies",
+          "kind": "devDependencies",
           "dependency": "react-dom"
         },
         {
@@ -5965,7 +5975,7 @@
       "direct": [
         {
           "workspace": ".",
-          "kind": "dependencies",
+          "kind": "devDependencies",
           "dependency": "react"
         },
         {
@@ -6895,7 +6905,7 @@
       "direct": [
         {
           "workspace": ".",
-          "kind": "dependencies",
+          "kind": "devDependencies",
           "dependency": "xml-crypto"
         },
         {

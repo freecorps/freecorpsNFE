@@ -34,6 +34,33 @@ Ao atualizar, edite a versão no manifest e rode `bunx vp install`; confira
 no diff do `bun.lock` que só mudaram os pacotes pretendidos. O Dependabot
 abre PRs apenas de GitHub Actions; atualização de npm não passa por ele.
 
+## Quem declara cada dependência
+
+Cada workspace declara no próprio `package.json` todo pacote que o código
+de execução dele importa: `platform` declara o que roda no Convex,
+`apps/console` e `apps/docs` o que entra no site, cada `packages/*` o
+que o pacote publicado leva. Testes, configurações de build e jornadas e2e
+dos workspaces usam o tooling da raiz (`vite-plus`, `convex-test`,
+`@testing-library/*`, `@axe-core/playwright` e afins).
+
+A raiz não tem `dependencies`. O `devDependencies` dela traz só esse
+tooling e os pacotes que o código da própria raiz usa: `scripts/`,
+`tests/`, `tooling/`, `deploy/`, `examples/` e `.github/scripts/`.
+Entre eles, `convex` sustenta os backups (`convex/values`) e o CLI que
+`scripts/deploy/deploy-platform.mjs` executa a partir do `node_modules` da
+raiz; `node-forge` e `xml-crypto` servem ao gerador do corpus e aos
+helpers de teste; `fast-xml-parser` ao teste do corpus; `react` e
+`react-dom` ao teste do site público.
+
+O Bun instala o que a raiz declara num `node_modules` que todo workspace
+enxerga, e o knip trata a raiz como fonte de qualquer workspace. Por isso um
+import que só a raiz declara passa na instalação, nos testes e no knip, e
+some quando o workspace é instalado sozinho. O teste
+`scripts/build/workspace-manifests.test.ts` reprova um `dependencies` na
+raiz e um pacote que o código de execução da `platform` importa sem
+declarar; os pacotes de `packages/*` passam por `ci:boundaries`. O mesmo
+pacote pode aparecer em mais de um manifest, sempre na mesma versão exata.
+
 ## Patches e componentes modificados
 
 Dois pacotes rodam com patch, aplicado pelo `patchedDependencies` da raiz:
