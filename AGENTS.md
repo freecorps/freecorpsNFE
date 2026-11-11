@@ -114,7 +114,7 @@ do dev: preserve processos, servidores, setup do editor e alterações locais.
   revogada, sem escopo ou sem concessão e dado de outra organização, projeto ou
   empresa. Esconder botão é só UX.
 - **Contratos.** Schema ou validator mudou: funções, serializers, telas,
-  webhooks, SDK e exemplos (`bun run contracts:check`).
+  webhooks, SDK e exemplos (`bun run contracts:check` e `bun run sdk:prove`).
 - **Desfechos.** Duplicidade, rejeição, timeout, reconciliação, retry, limite
   de uso e cancelamento; a tela mostra o estado persistido.
 - **Telas.** Carregamento, vazio, erro e dados, navegação, filtros e rota

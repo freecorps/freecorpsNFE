@@ -355,7 +355,6 @@ export default defineConfig({
     ignorePatterns: [
       "platform/convex/_generated/**",
       "packages/convex-rate-limiter/src/component/_generated/**",
-      "apps/console/public/developer/**",
     ],
     // Os quatro plugins padrão do Oxlint mais `import`, que só monta o grafo de
     // módulos quando ligado aqui: num override, `import/no-cycle` não dispara.

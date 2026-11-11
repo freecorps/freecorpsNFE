@@ -288,13 +288,13 @@ export const edits = [
     count: 1,
     reason: historicoOut,
   },
-  ...["docs/v1.0/SDK.md", "apps/console/public/developer/SDK.md"].map((path) => ({
-    path,
+  {
+    path: "docs/v1.0/SDK.md",
     find: literal(" O serviço legado tem\ncontrato próprio em `docs/historico/legado/API.md`."),
     replace: "",
     count: 1,
     reason: historicoOut,
-  })),
+  },
   {
     path: "packages/fiscal-nfse/src/danfse.ts",
     find: literal(", ver docs/historico/PESQUISA-FISCAL.md)"),

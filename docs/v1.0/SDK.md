@@ -97,10 +97,10 @@ bun run sdk:build
 bun run sdk:prove
 ```
 
-O gerador produz [OpenAPI](openapi.json), a referência em
-`docs/v1.0/API-REFERENCE.md` no repositório e os
-downloads do console. Ele não lê variáveis de ambiente ou credenciais. O check
-recusa artefatos desatualizados.
+O gerador produz [OpenAPI](openapi.json) e a referência em
+`docs/v1.0/API-REFERENCE.md` no repositório. Ele não lê variáveis de ambiente
+ou credenciais. O check recusa artefatos desatualizados. Os downloads de
+`/developer/` saem do OpenAPI, deste guia e de `examples/` no build do console.
 
 ### Versionamento
 

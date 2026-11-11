@@ -248,12 +248,13 @@ como FOSS, nem emissão ou captura fiscal real como consequência da publicaçã
 de um pacote. Documentação externa usa os
 arquivos selecionados pelo gerador do site; não publicar `docs/` por inteiro.
 
-O site também serve os arquivos de `apps/console/public/`. Nesta revisão,
+O site também serve os arquivos de `apps/console/public/` e, em `/developer/`,
+as cópias que o build faz do OpenAPI, do SDK.md e de `examples/`. Nesta revisão,
 `examples/nfe-demonstracao.xml` corresponde por SHA-256 a
 `tests/fixtures/nfe/4.00/invoice-alphanumeric.xml`, do gerador sintético,
 com certificado de teste embutido. A origem foi conferida, mas esse download
 continua sujeito ao aceite próprio do site; não autoriza copiar o corpus
-inteiro. Os exemplos de código de `public/developer/` têm escopo MIT explícito;
+inteiro. Os exemplos de código de `/developer/` têm escopo MIT explícito;
 isso não relicencia automaticamente o XML, OpenAPI, SDK.md ou os demais textos.
 Geist e Geist Mono 5.3.0 trazem quatro WOFF2 e dois textos OFL em `public/fonts/`;
 o painel importa outras cinco WOFF2 e cinco WOFF do `@fontsource`, que saem em

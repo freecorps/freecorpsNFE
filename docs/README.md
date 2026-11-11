@@ -101,9 +101,10 @@ pode perder, em forma resumida; o detalhe fica na referência principal.
 ### 4. Implementar
 
 Convenções de código em [AGENTS.md](../AGENTS.md#convenções-e-gosto). Uma
-mudança de contrato REST começa em `packages/contracts`; `openapi.json`,
-`API-REFERENCE.md` e as cópias públicas saem de `bun run contracts:generate`
-([SDK.md](v1.0/SDK.md)). Atualize o contrato do domínio na mesma PR que muda o
+mudança de contrato REST começa em `packages/contracts`; `openapi.json` e
+`API-REFERENCE.md` saem de `bun run contracts:generate` ([SDK.md](v1.0/SDK.md)),
+e o build do console copia o contrato, o SDK.md e os exemplos para
+`/developer/`. Atualize o contrato do domínio na mesma PR que muda o
 comportamento.
 
 ### 5. Validar

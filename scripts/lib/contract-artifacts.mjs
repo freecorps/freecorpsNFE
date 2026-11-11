@@ -7,10 +7,9 @@ import { format } from "vite-plus/fmt";
  * relative to the repository root. `contracts:generate` writes these bytes and
  * `contracts:check` compares them, so both use this single rendering.
  * @param {{ paths: Record<string, Record<string, object>> }} document
- * @param {string} root
  * @returns {Promise<Record<string, string>>}
  */
-export async function renderContractArtifacts(document, root = ".") {
+export async function renderContractArtifacts(document) {
   /** @type {Record<string, string>} */
   const sources = {
     "docs/v1.0/openapi.json": JSON.stringify(document, null, 2) + "\n",
@@ -29,23 +28,6 @@ export async function renderContractArtifacts(document, root = ".") {
         .join("\n") +
       "\n\nSchemas completos, opcionais, limites e respostas estão em [openapi.json](openapi.json).\n",
   };
-  sources["apps/console/public/developer/openapi.json"] = sources["docs/v1.0/openapi.json"];
-  for (const name of [
-    "quickstart.ts",
-    "quickstart-curl.mjs",
-    "sdk-webhook-receiver.mjs",
-    "nfse-issuance.ts",
-  ])
-    sources[`apps/console/public/developer/${name}`] = readFileSync(
-      join(root, "examples", name),
-      "utf8",
-    );
-  // A cópia pública fica fora de docs/: links para documentos internos do
-  // repositório não resolvem lá, então viram texto e mantêm o rótulo.
-  sources["apps/console/public/developer/SDK.md"] = readFileSync(
-    join(root, "docs/v1.0/SDK.md"),
-    "utf8",
-  ).replace(/\[([^\]]+)\]\(\.\.\/[^)]*\)/g, "$1");
   /** @type {Record<string, string>} */
   const artifacts = {};
   for (const [path, source] of Object.entries(sources)) {

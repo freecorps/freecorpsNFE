@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { landing } from "../apps/console/src/site/render.tsx";
 import { taskEntryHref } from "../apps/console/src/console-task.ts";
 import { safeRedirect } from "../apps/console/src/session-handoff.ts";
+import { developerPlugin, developerSources } from "../apps/console/developer-plugin.ts";
 import { landingStyles, publicSitePlugin, publication } from "../apps/console/site-plugin.ts";
 import { ContractProvider, ErrorCodes, Operations } from "../apps/docs/app/components/contract.tsx";
 import { contractData } from "../apps/docs/app/lib/contract.server.ts";
@@ -604,5 +605,122 @@ describe("distribuição pública estática", () => {
       "https://example.test/",
     ])
       expect(() => publication(value)).toThrow();
+  });
+});
+
+// #158: /developer/ is rendered from its sources by the console build; nothing
+// under apps/console/public/developer/ is versioned.
+describe("arquivos de /developer/", () => {
+  const emitted = () => {
+    const files: { fileName: string; source: string }[] = [];
+    developerPlugin().generateBundle.call({ emitFile: (file) => files.push(file) });
+    return new Map(files.map((file) => [file.fileName, file.source]));
+  };
+
+  it("gera no build os seis arquivos com os bytes das fontes", () => {
+    const files = emitted();
+    expect([...files.keys()].sort()).toEqual(
+      [
+        "SDK.md",
+        "nfse-issuance.ts",
+        "openapi.json",
+        "quickstart-curl.mjs",
+        "quickstart.ts",
+        "sdk-webhook-receiver.mjs",
+      ].map((name) => `developer/${name}`),
+    );
+    for (const [name, source] of Object.entries(developerSources))
+      if (name !== "SDK.md")
+        expect(files.get(`developer/${name}`), name).toBe(readFileSync(source, "utf8"));
+    // The guide keeps its text; only the links into the repository's docs, which the site does
+    // not serve, become labels.
+    const guide = readFileSync("docs/v1.0/SDK.md", "utf8");
+    const copy = files.get("developer/SDK.md")!;
+    expect(guide).toMatch(/\]\(\.\.\//);
+    expect(copy).not.toMatch(/\]\(\.\.\//);
+    expect(copy).toContain("[OpenAPI](openapi.json)");
+    expect(copy).toContain("descritos em DOCUMENTS.md.");
+    const lines = guide.split("\n");
+    expect(copy.split("\n")).toHaveLength(lines.length);
+    for (const line of lines.filter((line) => !line.includes("](../")))
+      expect(copy).toContain(line);
+  });
+
+  it("cobre todo endereço de /developer/ que o console e os guias citam", () => {
+    const sources = [
+      ...readdirSync(content).map((file) => join(content, file)),
+      "apps/docs/app/lib/markdown.server.ts",
+      ...readdirSync("apps/console/src", { recursive: true, encoding: "utf8" })
+        .filter((file) => /.tsx?$/.test(file))
+        .map((file) => join("apps/console/src", file)),
+      "packages/sdk/README.md",
+    ];
+    const cited = new Set(
+      sources.flatMap((file) =>
+        [
+          ...readFileSync(file, "utf8").matchAll(/\/developer\/([\w.-]+\.(?:json|md|ts|mjs))\b/g),
+        ].map((m) => m[1]),
+      ),
+    );
+    expect(cited.size).toBeGreaterThan(0);
+    for (const name of cited) expect(Object.keys(developerSources), name).toContain(name);
+  });
+
+  it("recusa o build com uma cópia esquecida em public/developer/", () => {
+    const leftover = mkdtempSync(join(tmpdir(), "developer-"));
+    try {
+      expect(() => developerPlugin(undefined, leftover).buildStart()).toThrow(
+        /não é mais versionado/,
+      );
+      rmSync(leftover, { recursive: true });
+      expect(() => developerPlugin(undefined, leftover).buildStart()).not.toThrow();
+    } finally {
+      rmSync(leftover, { recursive: true, force: true });
+    }
+  });
+
+  it("serve no desenvolvimento só os arquivos gerados", () => {
+    let middleware: (req: unknown, res: unknown, next: () => void) => void = () => {};
+    developerPlugin().configureServer({
+      middlewares: { use: (handler: typeof middleware) => (middleware = handler) },
+    } as unknown as Parameters<ReturnType<typeof developerPlugin>["configureServer"]>[0]);
+    const get = (url: string, method = "GET") => {
+      const res = {
+        type: "",
+        body: undefined as string | undefined,
+        passed: false,
+        setHeader(name: string, value: string) {
+          if (name === "Content-Type") this.type = value;
+        },
+        end(body?: string) {
+          this.body = body;
+        },
+      };
+      middleware({ url, method }, res, () => (res.passed = true));
+      return res;
+    };
+    const files = emitted();
+    const curl = get("/developer/quickstart-curl.mjs?download");
+    expect(curl.type).toBe("text/javascript; charset=utf-8");
+    expect(curl.body).toBe(files.get("developer/quickstart-curl.mjs"));
+    expect(get("/developer/openapi.json").type).toBe("application/json");
+    const head = get("/developer/SDK.md", "HEAD");
+    expect([head.type, head.body, head.passed]).toEqual([
+      "text/markdown; charset=utf-8",
+      undefined,
+      false,
+    ]);
+    expect(get("/developer/openapi.json", "POST").passed).toBe(true);
+    for (const path of [
+      "/developer/",
+      "/developer/keys",
+      "/developer/..%2Fpackage.json",
+      "/developer/toString",
+      "/app/org/developer/SDK.md",
+    ]) {
+      const res = get(path);
+      expect(res.passed, path).toBe(true);
+      expect(res.body, path).toBeUndefined();
+    }
   });
 });

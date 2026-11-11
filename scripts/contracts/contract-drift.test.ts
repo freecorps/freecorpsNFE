@@ -13,11 +13,7 @@ import { repoRoot } from "../lib/repo-root.mjs";
 // checkout; a regeneração grava numa pasta temporária.
 const root = repoRoot;
 const temporary: string[] = [];
-const derivedFromRoutes = [
-  "docs/v1.0/openapi.json",
-  "docs/v1.0/API-REFERENCE.md",
-  "apps/console/public/developer/openapi.json",
-];
+const derivedFromRoutes = ["docs/v1.0/openapi.json", "docs/v1.0/API-REFERENCE.md"];
 type Route = (typeof routes)[keyof typeof routes];
 const mutable = routes as unknown as Record<string, Route>;
 
@@ -36,7 +32,7 @@ afterEach(() => {
 });
 
 it("accepts the committed derived artifacts of the current contract", async () => {
-  expect(staleContractArtifacts(await renderContractArtifacts(openApi(), root), root)).toEqual([]);
+  expect(staleContractArtifacts(await renderContractArtifacts(openApi()), root)).toEqual([]);
 });
 
 it.each([
@@ -61,38 +57,30 @@ it.each([
   async ({ apply }) => {
     const restore = apply();
     try {
-      const changed = await renderContractArtifacts(openApi(), root);
+      const changed = await renderContractArtifacts(openApi());
       expect(staleContractArtifacts(changed, root)).toEqual(derivedFromRoutes);
       expect(staleContractArtifacts(changed, regenerate(changed))).toEqual([]);
     } finally {
       restore();
     }
-    expect(staleContractArtifacts(await renderContractArtifacts(openApi(), root), root)).toEqual(
-      [],
-    );
+    expect(staleContractArtifacts(await renderContractArtifacts(openApi()), root)).toEqual([]);
   },
 );
 
 it("rejects a hand-edited or missing derived file while the contract is unchanged", async () => {
-  const current = await renderContractArtifacts(openApi(), root);
+  const current = await renderContractArtifacts(openApi());
   const folder = regenerate(current);
-  writeFileSync(
-    join(folder, "apps/console/public/developer/openapi.json"),
-    current["apps/console/public/developer/openapi.json"] + "\n",
-  );
-  unlinkSync(join(folder, "apps/console/public/developer/SDK.md"));
+  writeFileSync(join(folder, "docs/v1.0/openapi.json"), current["docs/v1.0/openapi.json"] + "\n");
+  unlinkSync(join(folder, "docs/v1.0/API-REFERENCE.md"));
   expect(staleContractArtifacts(current, folder)).toEqual([
-    "apps/console/public/developer/openapi.json",
-    "apps/console/public/developer/SDK.md",
+    "docs/v1.0/openapi.json",
+    "docs/v1.0/API-REFERENCE.md",
   ]);
   // Uma cópia com fim de linha do Windows continua concordante.
   writeFileSync(
-    join(folder, "apps/console/public/developer/openapi.json"),
-    current["apps/console/public/developer/openapi.json"].replaceAll("\n", "\r\n"),
+    join(folder, "docs/v1.0/openapi.json"),
+    current["docs/v1.0/openapi.json"].replaceAll("\n", "\r\n"),
   );
-  writeFileSync(
-    join(folder, "apps/console/public/developer/SDK.md"),
-    current["apps/console/public/developer/SDK.md"],
-  );
+  writeFileSync(join(folder, "docs/v1.0/API-REFERENCE.md"), current["docs/v1.0/API-REFERENCE.md"]);
   expect(staleContractArtifacts(current, folder)).toEqual([]);
 });

@@ -43,14 +43,7 @@
       "project": ["**/*.{ts,mjs}"],
     },
     "apps/console": {
-      "entry": [
-        "src/main.tsx",
-        "e2e/**/*.{mjs,ts}",
-        "src/**/*.test.{ts,tsx}",
-        // Exemplos públicos servidos como arquivo estático em /developer/ e citados pela
-        // documentação pública (apps/docs/content) e pelo console.
-        "public/developer/*.{ts,mjs}",
-      ],
+      "entry": ["src/main.tsx", "e2e/**/*.{mjs,ts}", "src/**/*.test.{ts,tsx}"],
       "project": ["**/*.{ts,tsx,mjs}"],
     },
     "apps/docs": {

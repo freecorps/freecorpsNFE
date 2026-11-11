@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 import { thirdPartyNotices } from "../../scripts/lib/bundle-notices.mjs";
+import { developerPlugin } from "./developer-plugin.ts";
 import { shadersPlugin } from "./shaders-plugin.ts";
 import { publicSitePlugin } from "./site-plugin.ts";
 import { worktreePlugin } from "./worktree-plugin.ts";
@@ -10,6 +11,7 @@ export default defineConfig({
   plugins: [
     react(),
     publicSitePlugin(),
+    developerPlugin(),
     shadersPlugin(),
     worktreePlugin(),
     zxingPlugin(),
