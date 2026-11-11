@@ -1,8 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { builtinModules } from "node:module";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vite-plus/test";
+import { repoRoot } from "../lib/repo-root.mjs";
 
 /**
  * Cada workspace declara o que o código de execução dele importa, e a raiz só
@@ -12,7 +13,7 @@ import { describe, expect, it } from "vite-plus/test";
  * que só a raiz declara resolve no repositório e some quando o workspace é
  * instalado sozinho (#156).
  */
-const root = resolve(import.meta.dirname, "../..");
+const root = repoRoot;
 
 type Manifest = {
   dependencies?: Record<string, string>;
