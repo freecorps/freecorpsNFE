@@ -747,6 +747,7 @@ export const gitleaksAllowlist = [
     "Chave sintética da fixture de assinatura NF-e, gerada para os testes",
   ],
   ["platform/convex/billing.test.ts", "stripe-access-token", 3, "rk_test/rk_live sintéticos"],
+  ["platform/convex/httpSurface.test.ts", "stripe-access-token", 1, "rk_test sintético"],
   ["platform/convex/lib/captureGap.test.ts", "generic-api-key", 1, "Segredo de webhook sintético"],
   ["platform/convex/issuanceRest.test.ts", "generic-api-key", 1, "Chave de idempotência do teste"],
   ["packages/sdk/index.test.ts", "generic-api-key", 1, "SHA-256 do OpenAPI publicado"],
