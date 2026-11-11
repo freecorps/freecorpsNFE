@@ -12,7 +12,6 @@
         ".github/scripts/*.mjs",
         "tests/**/*.test.ts",
         "tests/setup/*.ts",
-        "lib/**/*.test.ts",
         "tooling/**/*.test.ts",
         "deploy/**/*.{ts,mjs}",
         "examples/**/*.{ts,mjs}",
@@ -27,7 +26,6 @@
       "project": [
         "scripts/**/*.{mjs,ts}",
         "tests/**/*.{ts,tsx,mjs}",
-        "lib/**/*.{ts,mjs}",
         "tooling/**/*.{mjs,ts}",
         ".github/scripts/**/*.mjs",
         "deploy/**/*.{ts,mjs}",

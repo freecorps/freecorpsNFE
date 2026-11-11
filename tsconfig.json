@@ -23,7 +23,6 @@
     "platform/convex",
     "tests",
     "scripts",
-    "lib",
     "tooling",
     "vite.config.ts",
     "packages",

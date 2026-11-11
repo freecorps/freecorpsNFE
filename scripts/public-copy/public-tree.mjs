@@ -126,7 +126,6 @@ export const rules = [
     "deploy/",
     ".github/",
     "examples/",
-    "lib/",
     "tooling/",
     "patches/",
     "LICENSES/",

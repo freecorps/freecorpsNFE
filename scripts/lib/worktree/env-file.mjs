@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { isLocalWorktreeSiteUrl } from "../../../lib/worktree-local.ts";
+import { isLocalWorktreeSiteUrl } from "../worktree-local.ts";
 import { localUrls } from "./deployment.mjs";
 import { fail } from "./exec.mjs";
 

@@ -1,6 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { canonicalEntries, sha256, parseReferencePayload } from "../../lib/reference-dataset";
+import {
+  canonicalEntries,
+  sha256,
+  parseReferencePayload,
+} from "../../platform/convex/lib/referenceDataset";
 import type { ReferenceEntry, ReferenceManifest } from "../../packages/contracts/src/references";
 import { municipalitySource, ncmSource } from "../../packages/contracts/src/references";
 

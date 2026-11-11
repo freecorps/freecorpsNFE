@@ -1,4 +1,4 @@
-import { canonicalEntries, sha256 } from "../../lib/reference-dataset";
+import { canonicalEntries, sha256 } from "../../platform/convex/lib/referenceDataset";
 import type {
   ReferenceDataset,
   ReferenceEntry,

@@ -38,7 +38,6 @@ await withLocalBrowser(root, "registry", async () => {
       "packages",
       "tests",
       "scripts",
-      "lib",
     )
       .split(/\r?\n/)
       .sort())

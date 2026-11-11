@@ -325,9 +325,10 @@ node scripts/console/prove-public-site.mjs
 A prova lê os arquivos compilados, sem executar JavaScript, confere em cada
 página da landing e da documentação um `h1`, texto no `main`, ausência de
 script inline, atributo `style` e travessão, links locais existentes e
-ausência do chunk de protótipo. Protótipos continuam disponíveis apenas
-no servidor de desenvolvimento; o build recusa a apresentação fictícia mesmo
-por URL direta. As jornadas reais do painel não foram substituídas por demos.
+nenhum chunk das telas de `apps/console/src/dev/`, como o protótipo e a
+referência de componentes. Essas telas só existem no servidor de
+desenvolvimento; o build recusa a apresentação fictícia mesmo por URL direta.
+As jornadas reais do painel não foram substituídas por demos.
 
 ### Ajuda e condições de acesso (#519)
 

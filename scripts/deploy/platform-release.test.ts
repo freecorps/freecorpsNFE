@@ -557,13 +557,13 @@ it("CODEOWNERS cobre o que o publicador importa e o que ele roda com node, inclu
     viteTasks,
     notRun,
   );
-  // Os scripts chamados por caminho, o import dinâmico, o .ts fora de scripts/ e a tarefa ci:docs.
+  // Os scripts chamados por caminho, o import dinâmico, o .ts importado por um .mjs e a tarefa ci:docs.
   expect(graph).toEqual(
     expect.arrayContaining([
       "scripts/build/build-fiscal-packages.mjs",
       "scripts/selfhost.mjs",
       "scripts/lib/selfhost-server.mjs",
-      "lib/worktree-local.ts",
+      "scripts/lib/worktree-local.ts",
       "vite.config.ts",
       "apps/docs/scripts/build.mjs",
       "apps/docs/scripts/output.mjs",

@@ -45,11 +45,11 @@ import { buttonClass } from "./ui/button";
 import { SandboxOnly } from "./sandbox-only";
 
 const Prototype = import.meta.env.DEV
-  ? lazy(() => import("./prototype").then((m) => ({ default: m.Prototype })))
+  ? lazy(() => import("./dev/prototype").then((m) => ({ default: m.Prototype })))
   : null;
 /** Referência interna dos componentes, só no desenvolvimento (fora do build publicado). */
 const ComponentReference = import.meta.env.DEV
-  ? lazy(() => import("./component-reference").then((m) => ({ default: m.ComponentReference })))
+  ? lazy(() => import("./dev/component-reference").then((m) => ({ default: m.ComponentReference })))
   : null;
 
 /**

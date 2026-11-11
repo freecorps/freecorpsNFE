@@ -244,14 +244,15 @@ só a copia para a saída do console; uma falha da documentação aparece na
 própria tarefa ([PUBLIC.md](../plataforma/PUBLIC.md#fontes-e-construção)).
 `scripts/console/console.mjs` executa `scripts/console/prove-public-site.mjs` depois do build:
 landing e páginas da documentação legíveis sem JavaScript, sem script ou estilo
-inline, referências locais existentes e ausência de protótipo no bundle.
+inline, referências locais existentes e nenhum chunk das telas de
+desenvolvimento (`apps/console/src/dev/`) no bundle.
 `tests/publicSite.test.ts` confere os links e o contrato da documentação
 pública, além do opt-in de indexação.
 
 ### Tipos
 
 `tsconfig.platform.json` estende o `tsconfig.json` da raiz e confere a
-plataforma, os pacotes, `tests/` inteiro, os scripts e `lib/`. A raiz inclui a
+plataforma, os pacotes, `tests/` inteiro e os scripts. A raiz inclui a
 mesma árvore porque o editor e o lint type-aware de `vp check` precisam de um
 projeto que contenha cada arquivo; nenhum comando confere os tipos por ela.
 Até a #345, um `tsconfig.legacy.json` conferia o backoffice de `src/`, o motor

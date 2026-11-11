@@ -8,7 +8,7 @@ import {
   WORKTREE_CONVEX_PORT_END,
   WORKTREE_CONVEX_PORT_START,
   WORKTREE_CONVEX_PORT_STRIDE,
-} from "../lib/worktree-local.ts";
+} from "../scripts/lib/worktree-local.ts";
 import { portIsAvailable, resolveConvexPort } from "../scripts/lib/worktree/registry.mjs";
 
 // Um processo alheio segurando a porta, como o backend Convex local de outro

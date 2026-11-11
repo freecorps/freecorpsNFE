@@ -48,6 +48,28 @@ O rate-limiter da plataforma não é patch: é o pacote do workspace
 derivado do `@convex-dev/rate-limiter` 0.3.2, com código, testes e versão
 próprios. As decisões de 09/11/2026 sobre cada patch estão na #142.
 
+## Duas versões do TypeScript
+
+A raiz instala o TypeScript duas vezes, e as duas têm uso:
+
+- `typescript-7`, alias `npm:` do `typescript@7.0.2`, é o compilador nativo,
+  cerca de quatro vezes mais rápido que o 6.0. Confere os tipos da plataforma,
+  dos pacotes e do console por `scripts/build/typecheck.mjs` (`build`,
+  `platform:check`, `ci:typecheck` e o `check` dos workspaces) e lista os
+  arquivos de cada projeto em `scripts/ci/check-changed.mjs`.
+- `typescript` 6.0 é o `tsc` do editor, das builds que emitem código
+  (pacotes fiscais, contratos e declarações do SDK), de `xml:check`, do
+  `check` de `fiscal-nfe` e `fiscal-nfse` e das provas de consumidor do SDK e
+  da distribuição. É também a API de compilador estável dos scripts e testes
+  que leem o código com `import ts from "typescript"` (fronteiras de pacotes,
+  inventário de licenças, camadas do backend); o 7 só traz uma API instável,
+  em `typescript/unstable/*`.
+
+Nenhuma das duas sai por ora: tirar o 6.0 quebra as builds e as provas que
+leem o código, que dependem da API estável; tirar o 7 só deixa as checagens
+mais lentas. [ci.md](desenvolvimento/ci.md#tipos) descreve o uso de cada uma no
+CI.
+
 ## Correções de segurança
 
 O projeto instala e audita com Bun 1.4.0, selecionado pelo Vite+:

@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { worktreeConvexPorts, worktreeSiteUrl } from "../../../lib/worktree-local.ts";
+import { worktreeConvexPorts, worktreeSiteUrl } from "../worktree-local.ts";
 import {
   localPortArgs,
   runConvexStreaming,

@@ -11,7 +11,6 @@ const tooling = [
   "scripts/**/*.test.ts",
   "tooling/**/*.test.ts",
   "apps/console/e2e/**/*.test.ts",
-  "lib/worktree*.test.ts",
   ".agents/skills/*/scripts/*.test.ts",
   "apps/docs/scripts/**/*.test.ts",
   "tests/{worktree,validation,ci.,fixtureCorpus}*.test.ts",

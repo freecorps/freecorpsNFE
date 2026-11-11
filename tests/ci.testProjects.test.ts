@@ -113,7 +113,7 @@ it("classifies a new test file from the shared list", () => {
   expect(owners("platform/convex/exports.benchmark.test.ts")).toEqual(["benchmark"]);
   expect(owners("tests/worktreeSetup.benchmark.test.ts")).toEqual(["benchmark"]);
   expect(owners("tests/worktreeSafety.test.ts")).toEqual(["tooling"]);
-  expect(owners("lib/worktree-local.test.ts")).toEqual(["tooling"]);
+  expect(owners("scripts/lib/worktree-local.test.ts")).toEqual(["tooling"]);
   // Os prefixos do backoffice legado, aposentado na #345, não têm mais dono.
   expect(owners("tests/convex.core.test.ts")).toEqual([]);
   expect(owners("tests/engine.novo.test.ts")).toEqual([]);

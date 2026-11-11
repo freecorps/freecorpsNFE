@@ -33,9 +33,9 @@ import {
   controlProps,
   firstPage,
   type PageCursor,
-} from "./ui";
-import { EnvironmentStamp } from "./environment-stamp";
-import { ProductionNote } from "./issuance-production";
+} from "../ui";
+import { EnvironmentStamp } from "../environment-stamp";
+import { ProductionNote } from "../issuance-production";
 
 /**
  * Referência interna dos componentes (só no desenvolvimento, `/console/componentes`): todos os

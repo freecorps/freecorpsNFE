@@ -73,10 +73,14 @@ for (const file of files) {
     links++;
   }
 }
-assert.ok(
-  !readdirSync(join(dist, "assets")).some((file) => file.startsWith("prototype-")),
-  "Prototype chunk in production build",
+// The development screens (apps/console/src/dev/) load only under import.meta.env.DEV; their
+// chunks are named after the file, so none may reach the published build.
+const devScreens = readdirSync(new URL("../../apps/console/src/dev/", import.meta.url))
+  .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+  .map((file) => `${file.replace(/\.tsx?$/, "")}-`);
+assert.ok(devScreens.length > 0, "No development screen in apps/console/src/dev");
+const devChunks = readdirSync(join(dist, "assets")).filter((file) =>
+  devScreens.some((prefix) => file.startsWith(prefix)),
 );
-console.log(
-  JSON.stringify({ pages: files.length, links, withoutJavaScript: true, prototypeChunk: false }),
-);
+assert.deepEqual(devChunks, [], "Development screen chunk in production build");
+console.log(JSON.stringify({ pages: files.length, links, withoutJavaScript: true, devChunks: 0 }));
