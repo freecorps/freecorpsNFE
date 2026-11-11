@@ -132,7 +132,7 @@ já confere o acesso também reprova, para que a lista de exceções não envelh
 Limites: a regra lê um arquivo por vez; o que atravessa arquivos passa pelas
 listas de `access-helpers.mjs`, conferidas no módulo de cada função. Ela não
 correlaciona condições: duas checagens sob `if (a)` e `if (!a)` separados não
-somam. Um `return` antecipado sem checagem não é conferido, nem o que ele
+somam. O encadeamento opcional (`a?.b(check(ctx))`) não conta como ramo. Um `return` antecipado sem checagem não é conferido, nem o que ele
 devolve de um `ctx.db.get` anterior. O teste de cada domínio e
 `platform/convex/publicSurface.test.ts` continuam provando o comportamento.
 
