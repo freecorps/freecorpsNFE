@@ -4,13 +4,14 @@ import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "./schema";
-import { mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { requireMembership } from "./lib/organizationAccess";
 import { register } from "../test-setup";
 import { validationTarget } from "../../scripts/lib/validation.mjs";
 import { modules } from "../../tests/helpers/convex-modules";
 import {
   publicFunctions,
+  refusals,
   sample,
   sweepIsolation,
   type Outcome,
@@ -58,8 +59,6 @@ const answersWithoutSession: Record<string, { reason: string; value: unknown }> 
 const argumentOverrides: Record<string, Record<string, unknown>> = {
   "invitations:send": { email: "convite@validation.invalid" },
 };
-// Recusas que não revelam se o registro existe.
-const refusals = ["UNAUTHENTICATED", "ACCESS_DENIED", "NOT_FOUND"];
 
 async function callWithoutSession(fn: PublicFunction) {
   const t = convexTest(schema, modules);
@@ -130,9 +129,10 @@ it("refuses a direct call without session to every public function with forged I
 //
 // Duas organizações, A e B, com um documento mínimo de cada tabela (tests/helpers/isolation-sweep.ts).
 // Cada função é chamada como owner de A e como operator de A sem concessão de empresa: c0 com os
-// ids de A, c1 com os de B, c2 com `organizationId` de A e o resto de B, c3 com a empresa de A
-// pelo operator. O oráculo reprova B na resposta, escrita em B, resposta a B diferente da
-// resposta a um id inexistente, erro sem código e query que muda quando B ganha outro lote.
+// ids de A, c1 com os de B, c2 com `organizationId` de A e o resto de B, c3 com os ids de A pelo
+// operator. O oráculo reprova B (ou a empresa de A, no c3) na resposta, escrita ou agendamento
+// com eles, resposta a B diferente da resposta a um id inexistente, erro sem código e leitura que
+// muda quando B ganha outro lote.
 
 // Argumentos fixos, iguais em todos os casos, que levam a chamada com ids de A além da
 // validação de formato. Os ids continuam vindo do caso.
@@ -143,9 +143,10 @@ const isolationOverrides: Record<string, Record<string, unknown>> = {
   "projects:grantCompany": { scopes: ["documents:read"], environments: ["sandbox"] },
 };
 
-// Funções que recusam o owner de A mesmo com os ids de A: os dados gerados não as alcançam, e a
-// varredura prova só que B recebe a mesma recusa de um id inexistente. Cada entrada cita o teste
-// que prova o isolamento delas com dados reais.
+// Funções em que o owner de A, com os ids de A, não chega ao que leria: recusa, erro sem código
+// ou conteúdo corrompido, porque os dados gerados não alcançam o caminho. A varredura prova só
+// que B recebe a mesma recusa de um id inexistente. Cada entrada cita o teste que prova o
+// isolamento com dados reais.
 const unreachedFromA: Record<string, string> = {
   "access:diagnostics":
     "sonda da validação, só para operator e sem argumento de escopo (access.test.ts)",
@@ -154,8 +155,24 @@ const unreachedFromA: Record<string, string> = {
     "exige envelope cifrado real; certificates.test.ts, 'rewrap recusa estranho, ... certificado de outra empresa'",
   "companies:setGrant":
     "o membro citado pelos registros de A é o próprio owner; companies.test.ts, 'forged IDs never cross them'",
+  "contentRead:documentDetailToken":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "contentRead:documentItemsToken":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "contentRead:importDetailToken":
+    "exige conteúdo de documento real; imports.test.ts, 'isolates detail selectors by organization, company and file'",
+  "documentContentNode:documentDetailRead":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:documentItemsRead":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:importDetailRead":
+    "exige conteúdo de documento real; imports.test.ts, 'isolates detail selectors by organization, company and file'",
   "exportDownloads:ticket":
     "exige parte de exportação concluída e vigente; exports.test.ts, 'refuses download tickets for a part of another project, organization or member'",
+  "issuanceConsole:detail":
+    "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
+  "issuanceConsole:resubmission":
+    "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
 };
 
 // Achado do oráculo aceito, com a prova de que não expõe B. A chave é a linha do achado.
@@ -179,19 +196,27 @@ it("keeps every public function inside the caller's organization and company gra
   const findings = await sweepIsolation(await publicFunctions(), {
     overrides: isolationOverrides,
     onCall: (fn, caller, which, outcome: Outcome) => {
-      if (caller === "owner" && which === "c0" && !outcome.resolved)
-        if (refusals.includes(outcome.code)) refusedA.push(fn);
+      if (caller !== "owner" || which !== "c0" || outcome.resolved) return;
+      const { code } = outcome;
+      if (refusals.includes(code) || code === "SEM_CODIGO" || code.endsWith("_CORRUPT"))
+        refusedA.push(fn);
     },
   });
-  expect(findings.map(line).filter((found) => !isolationExceptions[found])).toEqual([]);
+  // Em texto, para que a falha mostre todos os achados, sem a abreviação das listas longas.
+  expect(
+    findings
+      .map(line)
+      .filter((found) => !isolationExceptions[found])
+      .join("\n"),
+  ).toBe("");
   // A lista de não alcançadas acompanha o código: uma função que passa a alcançar sai dela.
   expect(refusedA.sort()).toEqual(Object.keys(unreachedFromA).sort());
   for (const found of Object.keys(isolationExceptions)) expect(findings.map(line)).toContain(found);
 }, 300_000);
 
-// Meta-teste: cada oráculo reprova uma função vazada de propósito. Todas conferem a membership
-// da organização pedida e depois confiam no id da empresa, o erro que a varredura existe para
-// pegar.
+// Meta-teste: cada oráculo reprova uma função vazada de propósito, quase sempre a que confere a
+// membership da organização pedida e depois confia no id da empresa, o erro que a varredura
+// existe para pegar.
 const company = { organizationId: v.id("organizations"), companyId: v.id("companies") };
 const leaky = {
   get: query({
@@ -222,6 +247,61 @@ const leaky = {
       await ctx.db.patch("companies", args.companyId, { name: "Renomeada por fora" });
     },
   }),
+  // O efeito fica para depois: agenda a escrita com o id de B.
+  schedule: mutation({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      await ctx.scheduler.runAfter(0, makeFunctionReference<"mutation">("leaky:rename"), args);
+    },
+  }),
+  // Falha sem código só quando a empresa é de outra organização.
+  throws: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const found = await ctx.db.get("companies", args.companyId);
+      if (found && found.organizationId !== args.organizationId)
+        throw new Error("empresa de outra organização");
+      return null;
+    },
+  }),
+  // Lista as empresas da organização sem olhar a concessão de quem chama.
+  listAll: query({
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const all = await ctx.db.query("companies").take(100);
+      return all.filter((c) => c.organizationId === args.organizationId).map((c) => c.name);
+    },
+  }),
+  // Seleciona a organização pelo slug, sem membership.
+  bySlug: query({
+    args: { slug: v.string() },
+    handler: async (ctx, args) => {
+      const found = await ctx.db
+        .query("organizations")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+        .unique();
+      return found?.name ?? null;
+    },
+  }),
+  // Confere só o primeiro id da lista e devolve todos.
+  firstOnly: query({
+    args: { organizationId: v.id("organizations"), companyIds: v.array(v.id("companies")) },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const first = await ctx.db.get("companies", args.companyIds[0]!);
+      if (first?.organizationId !== args.organizationId) return [];
+      return Promise.all(args.companyIds.map((id) => ctx.db.get("companies", id)));
+    },
+  }),
+  // A contagem atravessa uma action.
+  countAction: action({
+    args: { organizationId: v.id("organizations") },
+    handler: (ctx, args): Promise<number> =>
+      ctx.runQuery(makeFunctionReference<"query", typeof args, number>("leaky:count"), args),
+  }),
 };
 
 it("reproves a deliberately leaky function in each oracle", async () => {
@@ -240,4 +320,20 @@ it("reproves a deliberately leaky function in each oracle", async () => {
   );
   expect(problems("leaky:count")).toContain("owner c0: muda com lote extra de B");
   expect(problems("leaky:rename")).toContainEqual(expect.stringMatching(/^owner c2: escreveu em /));
+  expect(problems("leaky:schedule")).toContainEqual(
+    expect.stringMatching(/^owner c2: escreveu em \d+_scheduled_functions/),
+  );
+  expect(problems("leaky:throws")).toContainEqual(
+    expect.stringMatching(/^owner c2: erro sem código: .*empresa de outra organização/),
+  );
+  expect(problems("leaky:listAll")).toContainEqual(
+    expect.stringMatching(/^operator c3: resposta traz inquilino-a-7c1e-empresa/),
+  );
+  expect(problems("leaky:bySlug")).toContainEqual(
+    expect.stringMatching(/^owner c1: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:firstOnly")).toContainEqual(
+    expect.stringMatching(/^owner c2: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:countAction")).toContain("owner c0: muda com lote extra de B");
 }, 60_000);

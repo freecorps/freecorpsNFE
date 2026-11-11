@@ -424,19 +424,25 @@ organizações, A e B, recebem um documento mínimo de cada tabela do schema,
 gerado do validador por `tests/helpers/isolation-sweep.ts`, e cada função
 pública é chamada como owner de A e como operator de A sem concessão de
 empresa: com os ids de A (c0), com os de B (c1), com `organizationId` de A e o
-resto de B (c2) e com a empresa de A pelo operator (c3). Ids públicos em
-`v.string()` (`documentId`, `issuanceId`, o `companyId` de `companies:get`)
-têm a tabela declarada no helper, e um argumento de texto terminado em `Id`
-sem tabela reprova. Reprovam o CI: id ou marcador de B, ou da empresa de A no
-c3, na resposta; escrita nesses documentos; resposta aos ids de B diferente da
-resposta aos mesmos ids trocados por inexistentes; erro sem código; e query
-que muda quando B ganha um segundo lote. O teste declara as funções que nem
-com os ids de A passam da checagem e os achados aceitos, cada um com o teste
-de domínio que prova o isolamento, e prova que uma função vazada de propósito
-reprova em cada oráculo. Limites: os documentos gerados são mínimos, e um
-caminho que só um estado específico alcança (emissão com snapshot, certificado
-com envelope) pode recusar antes do ponto que leria B; as rotas REST com a
-chave de A e ids de B ainda não entram na varredura.
+resto de B, e listas com um id de cada (c2), e com os ids de A pelo operator
+(c3). Seletores em texto (`documentId`, `issuanceId`, o `slug` de
+`organizations:context`, os `actors` de `observability:names`) têm a tabela
+declarada no helper, e um argumento de texto fora desse mapa e da lista de
+texto comum reprova. Reprovam o CI: id ou marcador de B, ou da empresa de A no
+c3, na resposta; escrita ou agendamento que toque esses documentos; resposta
+aos ids de B diferente da resposta aos mesmos ids trocados por inexistentes;
+erro sem código; e query, ou action que respondeu sem escrever, que muda
+quando B ganha um segundo lote. Como na seção sem sessão, `ACCESS_DENIED` e
+`NOT_FOUND` contam como a mesma recusa: um id de outra organização e um id
+inexistente podem receber códigos diferentes, o que só distingue quem já tem
+o id. O teste declara as funções em que nem os ids de A chegam ao que seria
+lido (recusa, erro sem código ou conteúdo corrompido) e os achados aceitos,
+cada um com o teste de domínio que prova o isolamento, e prova com funções
+vazadas de propósito que cada oráculo reprova. Limites: os documentos gerados
+são mínimos, e um caminho que só um estado específico alcança (conteúdo de
+documento, certificado com envelope) pode recusar antes do ponto que leria B;
+tabelas de componentes (auth, filas) ficam fora da conferência de escrita; as
+rotas REST com a chave de A e ids de B ainda não entram na varredura.
 
 `platform/convex/httpSurface.test.ts` faz o mesmo com as rotas HTTP: percorre
 `http.getRoutes()`, inclusive as do componente de auth, e exige de cada rota

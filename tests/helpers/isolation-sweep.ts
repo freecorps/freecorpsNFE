@@ -49,6 +49,13 @@ export async function publicFunctions(modules: Modules = platformModules) {
   return found.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const carriesId = (validator: Validator): boolean =>
+  validator.type === "id" ||
+  (["array", "union"].includes(validator.type) &&
+    [validator.value as Validator | Validator[]].flat().some(carriesId)) ||
+  (validator.type === "object" &&
+    Object.values(validator.value as Record<string, Field>).some((f) => carriesId(f.fieldType)));
+
 /**
  * Valor mínimo aceito pelo validador. `id` decide cada id pela tabela; sem ele, o id é forjado
  * no formato do convex-test, sem documento correspondente.
@@ -77,9 +84,11 @@ export function sample(
     case "literal":
       return validator.value;
     case "union": {
-      // Um cursor `string | null` começa do início; o resto usa o primeiro membro.
+      // Sem id em jogo, `null` é o estado vivo (`revokedAt`, cursor do início); com id, o
+      // primeiro membro, o mesmo que a ordem das tabelas segue.
       const members = validator.value as Validator[];
-      return sample(members.find((m) => m.type === "null") ?? members[0]!, id, text);
+      const empty = members.some(carriesId) ? undefined : members.find((m) => m.type === "null");
+      return sample(empty ?? members[0]!, id, text);
     }
     case "array":
       return [];
@@ -101,12 +110,6 @@ export function sample(
 
 type Tables = Record<string, string[]>;
 type Tenant = { name: string; marker: string; ids: Tables };
-type Tenants = {
-  a: Tenant;
-  b: Tenant;
-  /** O que só pertence à empresa de A, invisível ao operator sem concessão. */
-  companyA: { marker: string; ids: Set<string> };
-};
 
 const tableJson = (name: string) =>
   (schema.tables as unknown as Record<string, { validator: { json: Validator } }>)[name]!.validator
@@ -143,27 +146,66 @@ const seedOrder = (() => {
   for (const name of tableNames) visit(name, []);
   return order;
 })();
-/** Tabela que pertence a uma organização: exige, direta ou indiretamente, um id dela. */
-const tenantScoped = (name: string): boolean =>
-  name === "organizations" || requires.get(name)!.some(tenantScoped);
-/** Tabela de uma empresa: exige, direta ou indiretamente, o id de uma empresa. */
-const companyScoped = (name: string): boolean =>
-  name === "companies" || requires.get(name)!.some(companyScoped);
+/**
+ * Tabela que pertence a `root`: exige, direta ou indiretamente, um id dela, ou o leva como campo
+ * opcional do primeiro nível (`billingEvents.organizationId`, `onboarding.companyId`).
+ */
+const scopedBy = (root: string, field: string) => {
+  const memo = new Map<string, boolean>();
+  const scoped = (name: string): boolean =>
+    memo.get(name) ??
+    (memo
+      .set(
+        name,
+        name === root ||
+          tableFields(name)[field]?.fieldType.tableName === root ||
+          requires.get(name)!.some(scoped),
+      )
+      .get(name) as boolean);
+  return scoped;
+};
+const tenantScoped = scopedBy("organizations", "organizationId");
+const companyScoped = scopedBy("companies", "companyId");
 /** Tabelas da plataforma, sem dono: referências, filas de manutenção, e-mail de desenvolvimento. */
 const globalTables = tableNames.filter((name) => !tenantScoped(name));
 
 /**
  * Campos que levam o documento mínimo ao estado comum, para que a chamada com ids de A passe da
  * checagem de acesso e o mesmo caminho com ids de B prove a recusa: concessão de projeto ativa e
- * com todos os escopos, versão publicada completa, operação concluída, endpoint ativo.
+ * com todos os escopos, versão publicada completa, operação concluída, endpoint ativo, emissão
+ * com tomador legível. `text` é o texto marcado do inquilino.
  */
-const coherent: Record<string, Record<string, unknown>> = {
-  projectCompanies: { active: true, scopes: [...integrationScopes], environments: ["sandbox"] },
-  documentVersions: { state: "complete" },
-  operations: { state: "succeeded" },
-  webhookEndpoints: { active: true },
-  documentExports: { state: "succeeded", membershipVersion: 1 },
-  importFiles: { state: "accepted" },
+const coherent: Record<string, (text: string) => Record<string, unknown>> = {
+  projectCompanies: () => ({
+    active: true,
+    scopes: [...integrationScopes],
+    environments: ["sandbox"],
+  }),
+  documentVersions: () => ({ state: "complete" }),
+  operations: () => ({ state: "succeeded" }),
+  webhookEndpoints: () => ({ active: true }),
+  documentExports: () => ({ state: "succeeded", membershipVersion: 1 }),
+  importFiles: () => ({ state: "accepted" }),
+  issuances: (text) => ({
+    snapshot: JSON.stringify({
+      issueDate: text,
+      competence: text,
+      market: "domestic",
+      amount: { currency: "BRL", value: "1.00" },
+      taker: {
+        kind: "national",
+        document: text,
+        name: text,
+        address: {
+          municipalityCode: text,
+          postalCode: text,
+          street: text,
+          number: text,
+          district: text,
+        },
+      },
+    }),
+  }),
 };
 /**
  * Tabelas cujos registros o console cria pelo projeto de console (`kind: "console"`); o projeto
@@ -196,7 +238,10 @@ async function seedTables(ctx: Ctx, tenant: Tenant, tables: string[], into: Tabl
   const text = (table: string) =>
     companyScoped(table) ? `${tenant.marker}-empresa` : tenant.marker;
   for (const table of seedOrder.filter((t) => tables.includes(t))) {
-    const doc = { ...(sample(tableJson(table), id, text(table)) as object), ...coherent[table] };
+    const doc = {
+      ...(sample(tableJson(table), id, text(table)) as object),
+      ...coherent[table]?.(text(table)),
+    };
     (into[table] ??= []).push(await ctx.db.insert(table, doc));
   }
   for (const table of tables)
@@ -259,7 +304,9 @@ async function tenantsTest(modules: Modules = platformModules) {
     marker: `${a.marker}-empresa`,
     ids: new Set(scoped.filter(companyScoped).flatMap((table) => a.ids[table] ?? [])),
   };
-  return { t, tenants: { a, b, companyA } satisfies Tenants, owner, operator };
+  // O slug gerado de cada organização é o marcador do inquilino.
+  const slugs = new Map([a, b].map((tenant) => [tenant.ids.organizations![0]!, tenant.marker]));
+  return { t, a, b, companyA, slugs, owner, operator };
 }
 
 /** Um segundo lote de B: uma query que só lê A não muda com ele. */
@@ -274,16 +321,18 @@ async function seedMoreOfB(t: PlatformTest, b: Tenant) {
   });
 }
 
-/** Todos os documentos das tabelas do schema, por id. */
+/** Todos os documentos das tabelas do schema e os agendamentos, com os argumentos, por id. */
 async function snapshot(t: PlatformTest) {
   const rows = await t.run(async (ctx) => {
     const all: [string, string][] = [];
+    const add = (doc: { _id: unknown }) =>
+      all.push([
+        String(doc._id),
+        JSON.stringify(doc, (_, v) => (typeof v === "bigint" ? `${v}n` : v)),
+      ]);
     for (const table of tableNames)
-      for (const doc of await ctx.db.query(table as TableNames).collect())
-        all.push([
-          String(doc._id),
-          JSON.stringify(doc, (_, v) => (typeof v === "bigint" ? `${v}n` : v)),
-        ]);
+      for (const doc of await ctx.db.query(table as TableNames).collect()) add(doc);
+    for (const job of await ctx.db.system.query("_scheduled_functions").collect()) add(job);
     return all;
   });
   return new Map(rows);
@@ -293,11 +342,12 @@ async function snapshot(t: PlatformTest) {
 // Varredura
 
 /**
- * Ids públicos declarados como texto, pelo nome do argumento. O mesmo nome com outro sentido
- * numa função fica em `stringIdsByFunction`. Um argumento de texto terminado em `Id` ou `Ids`
- * sem tabela reprova a varredura: a função nova precisa dizer o que ele seleciona.
+ * O que cada argumento de texto seleciona: a tabela do id (`companies`) ou uma forma derivada
+ * dele (`organizations#slug`, `memberships#actor`). O mesmo nome com outro sentido numa função
+ * fica em `textSelectorsByFunction`. Um texto fora destes mapas e de `plainText` reprova a
+ * varredura: a função nova precisa dizer se ele seleciona algo.
  */
-const stringIds: Record<string, string> = {
+const textSelectors: Record<string, string> = {
   company: "companies",
   companyId: "companies",
   companyIds: "companies",
@@ -307,29 +357,102 @@ const stringIds: Record<string, string> = {
   versionId: "documentVersions",
   issuanceId: "issuances",
   batch: "imports",
+  slug: "organizations#slug",
+  remembered: "organizations#slug",
+  actor: "memberships#actor",
+  actors: "memberships#actor",
 };
-const stringIdsByFunction: Record<string, Record<string, string>> = {
+const textSelectorsByFunction: Record<string, Record<string, string>> = {
   "documentDownloads:ticket": { artifactId: "documentArtifacts" },
   "issuanceConsole:artifactTicket": { artifactId: "issuanceArtifacts" },
   "observability:investigate": { reference: "operations" },
+  // O slug de criação é o nome pedido, não um seletor; a disponibilidade dele é pública.
+  "organizations:create": { slug: "" },
 };
+/** Argumentos de texto que não selecionam registro: conteúdo, chaves de idempotência, filtros. */
+const plainText = new Set([
+  "action",
+  "activityCode",
+  "campinasDpsSeries",
+  "city",
+  "cnae",
+  "cnpj",
+  "code",
+  "competence",
+  "complement",
+  "confirmation",
+  "contextKey",
+  "country",
+  "cTribMun",
+  "cTribNac",
+  "currency",
+  "cursor",
+  "date",
+  "description",
+  "district",
+  "document",
+  "domesticActivityCode",
+  "dpsSeries",
+  "email",
+  "endCursor",
+  "exportActivityCode",
+  "externalReference",
+  "from",
+  "idempotencyKey",
+  "issRate",
+  "issueDate",
+  "issuerEmail",
+  "key",
+  "kind",
+  "label",
+  "lc116Item",
+  "municipalityCode",
+  "municipalRegistration",
+  "name",
+  "nbs",
+  "nif",
+  "number",
+  "password",
+  "period",
+  "postalCode",
+  "q",
+  "reason",
+  "secret",
+  "series",
+  "sha256",
+  "state",
+  "street",
+  "terms",
+  "termsOfUse",
+  "to",
+  "token",
+  "transferToken",
+  "url",
+  "value",
+  "version",
+  "cIndOp",
+  "cst",
+  "cClassTrib",
+]);
 
 /**
- * c0: só ids de A; c1: só ids de B; c2: `organizationId` de A com os outros ids de B;
- * c3: ids de A, pelo operator sem concessão da empresa de A.
+ * c0: só ids de A; c1: só ids de B; c2: `organizationId` de A com os outros ids de B, e listas
+ * com um id de A e um de B; c3: ids de A, pelo operator sem concessão da empresa de A.
  */
 type Case = "c0" | "c1" | "c2" | "c3";
 type Caller = "owner" | "operator";
 type Finding = { fn: string; caller: Caller; case: Case; problem: string };
 
-type Resolve = (table: string) => string;
-const tableOf = (fn: string, name: string) => stringIdsByFunction[fn]?.[name] ?? stringIds[name];
+/** Resolve um seletor (`tabela` ou `tabela#forma`) para o valor passado à função. */
+type Resolve = (selector: string) => string;
+const selectorOf = (fn: string, name: string) =>
+  textSelectorsByFunction[fn]?.[name] ?? textSelectors[name];
 const idCount = (fn: string, validator: Validator, name = ""): number => {
   switch (validator.type) {
     case "id":
       return 1;
     case "string":
-      return tableOf(fn, name) ? 1 : 0;
+      return selectorOf(fn, name) ? 1 : 0;
     case "array":
       return idCount(fn, validator.value as Validator, name);
     case "union":
@@ -344,21 +467,26 @@ const idCount = (fn: string, validator: Validator, name = ""): number => {
   }
 };
 
-/** Argumentos de `fn` com cada id, inclusive os em texto, resolvido por `resolve`. */
-function argsFor(fn: PublicFunction, resolve: Resolve): Record<string, unknown> {
-  const walk = (validator: Validator, name: string): unknown => {
+/**
+ * Argumentos de `fn` com cada id, inclusive os em texto, resolvido por `resolve`. Com `also`, toda
+ * lista de ids leva antes um valor de `also` (o id de A no c2).
+ */
+function argsFor(fn: PublicFunction, resolve: Resolve, also?: Resolve): Record<string, unknown> {
+  const walk = (validator: Validator, name: string, by: Resolve): unknown => {
     switch (validator.type) {
       case "id":
-        return resolve(validator.tableName!);
+        return by(validator.tableName!);
       case "string": {
-        const table = tableOf(fn.name, name);
-        if (table) return resolve(table);
-        if (/Ids?$/.test(name)) throw new Error(`${fn.name}: ${name} é texto sem tabela`);
+        const selector = selectorOf(fn.name, name);
+        if (selector) return by(selector);
+        if (selector !== "" && !plainText.has(name))
+          throw new Error(`${fn.name}: o texto ${name} não diz se seleciona um registro`);
         return sample(validator);
       }
       case "array": {
         const item = validator.value as Validator;
-        return idCount(fn.name, item, name) > 0 ? [walk(item, name)] : [];
+        if (idCount(fn.name, item, name) === 0) return [];
+        return also ? [walk(item, name, also), walk(item, name, by)] : [walk(item, name, by)];
       }
       case "union": {
         // O membro com mais ids alcança a checagem de cada um; sem ids, fica a amostra.
@@ -368,6 +496,7 @@ function argsFor(fn: PublicFunction, resolve: Resolve): Record<string, unknown> 
           ? walk(
               members.find((m) => idCount(fn.name, m, name) === best)!,
               name,
+              by,
             )
           : sample(validator);
       }
@@ -375,13 +504,13 @@ function argsFor(fn: PublicFunction, resolve: Resolve): Record<string, unknown> 
         return Object.fromEntries(
           Object.entries(validator.value as Record<string, Field>)
             .filter(([key, field]) => !field.optional || idCount(fn.name, field.fieldType, key) > 0)
-            .map(([key, field]) => [key, walk(field.fieldType, key)]),
+            .map(([key, field]) => [key, walk(field.fieldType, key, by)]),
         );
       default:
         return sample(validator);
     }
   };
-  return walk(fn.args, "") as Record<string, unknown>;
+  return walk(fn.args, "", resolve) as Record<string, unknown>;
 }
 
 export type Outcome =
@@ -391,19 +520,25 @@ const serialize = (value: unknown) =>
   JSON.stringify(value, (_, v) =>
     typeof v === "bigint" ? `${v}n` : v instanceof ArrayBuffer ? `bytes:${v.byteLength}` : v,
   ) ?? "undefined";
-/** Recusas que não dizem se o registro existe; a varredura as trata como uma só. */
-const refusals = ["UNAUTHENTICATED", "ACCESS_DENIED", "NOT_FOUND"];
+/**
+ * Recusas que a varredura trata como uma só, como a seção sem sessão: um id de outra organização
+ * recebe `ACCESS_DENIED` e um inexistente, `NOT_FOUND`. Distinguir os dois exige já ter o id,
+ * que o Convex não deixa adivinhar; o conteúdo do registro continua fechado.
+ */
+export const refusals = ["UNAUTHENTICATED", "ACCESS_DENIED", "NOT_FOUND"];
 /** Um id no formato do convex-test que nenhum documento usa. */
 const ghost = (table: string) => `${"9".repeat(Math.max(1, 32 - table.length))}${table}`;
 
 /**
  * Chama cada função de `functions` nos casos c0 a c3, num banco novo por função, e devolve o que
  * o oráculo encontrou:
- * - a resposta traz um id ou o marcador do que o chamador não pode ver;
- * - a chamada escreveu nesses documentos ou criou um que os cita;
- * - a resposta aos ids de B difere da resposta aos mesmos ids trocados por inexistentes;
- * - um erro sem código;
- * - a query muda quando B ganha um lote extra.
+ * - a resposta traz um id ou o marcador do que o chamador não pode ver (B, ou a empresa de A
+ *   no c3);
+ * - a chamada escreveu nesses documentos, criou um que os cita ou agendou função com eles;
+ * - a resposta aos ids de B difere da resposta aos mesmos ids trocados por inexistentes, com as
+ *   `refusals` fundidas numa só;
+ * - um erro sem código fora do c0;
+ * - a query, ou a action que respondeu sem escrever, muda quando B ganha um lote extra.
  * `overrides` completa argumentos que precisam passar da validação de formato.
  */
 export async function sweepIsolation(
@@ -416,42 +551,50 @@ export async function sweepIsolation(
 ) {
   const findings: Finding[] = [];
   for (const fn of functions) {
-    const { t, tenants, owner, operator } = await tenantsTest(options.modules);
-    const { a, b, companyA } = tenants;
+    const { t, a, b, companyA, slugs, owner, operator } = await tenantsTest(options.modules);
     const pick = (tenant: Tenant) => (table: string) => {
       const id = tenant.ids[table]?.[0];
       if (!id) throw new Error(`${fn.name}: tabela ${table} sem documento de ${tenant.name}`);
       return id;
     };
-    const resolvers: Record<Case, Resolve> = {
+    const ids: Record<Case, (table: string) => string> = {
       c0: pick(a),
       c1: pick(b),
       c2: (table) => (table === "organizations" ? pick(a) : pick(b))(table),
       c3: pick(a),
     };
+    const forms: Record<string, (id: string) => string> = {
+      slug: (id) => slugs.get(id) ?? `slug-${id}`,
+      actor: (id) => `member:${id}`,
+    };
     const bIds = new Set(
       Object.entries(b.ids)
         .filter(([table]) => !globalTables.includes(table))
-        .flatMap(([, ids]) => ids),
+        .flatMap(([, list]) => list),
     );
     const forbidden = (which: Case) =>
       which === "c3"
         ? { markers: [companyA.marker], ids: companyA.ids }
         : { markers: [b.marker], ids: bIds };
-    /** Os argumentos do caso e os ids que eles levam. */
+    /** Os argumentos do caso e os valores de seleção que eles levam. */
     const argsOf = (which: Case, ghosts = false) => {
       const passed: string[] = [];
-      const args = argsFor(fn, (table) => {
-        const real = resolvers[which](table);
-        const id = ghosts && forbidden(which).ids.has(real) ? ghost(table) : real;
-        passed.push(id);
-        return id;
-      });
+      const by =
+        (choose: (table: string) => string): Resolve =>
+        (selector) => {
+          const [table, form] = selector.split("#") as [string, string | undefined];
+          const real = choose(table);
+          const id = ghosts && forbidden(which).ids.has(real) ? ghost(table) : real;
+          const value = form ? forms[form]!(id) : id;
+          passed.push(value);
+          return value;
+        };
+      const args = argsFor(fn, by(ids[which]), which === "c2" ? by(pick(a)) : undefined);
       return { args: { ...args, ...options.overrides?.[fn.name] }, passed };
     };
     const own = serialize(argsOf("c0").args);
     // Um caso cujos argumentos repetem os de c0 (função sem ids, ou só com o da organização em
-    // c2) não testa nada novo; c3 só se aplica a quem seleciona algo da empresa de A.
+    // c2) não testa nada novo, salvo pelo operator: c3 o chama sempre com os ids de A.
     const differs = (which: Case) => serialize(argsOf(which).args) !== own;
     const plan: [Caller, Case][] = [
       ...(differs("c1")
@@ -460,9 +603,7 @@ export async function sweepIsolation(
       ...(differs("c2")
         ? (["owner", "operator"] as const).map((c) => [c, "c2"] as [Caller, Case])
         : []),
-      ...([...companyA.ids].some((id) => own.includes(id))
-        ? [["operator", "c3"] as [Caller, Case]]
-        : []),
+      ["operator", "c3"],
       ["owner", "c0"],
     ];
     const call = async (caller: Caller, args: Record<string, unknown>): Promise<Outcome> => {
@@ -485,45 +626,50 @@ export async function sweepIsolation(
         };
       }
     };
-    /** A resposta sem os ids que o chamador mandou, com as recusas fundidas numa só. */
+    /** A resposta sem os valores que o chamador mandou, com as recusas fundidas. */
     const shape = (outcome: Outcome, passed: string[]) => {
       const text = outcome.resolved
         ? serialize(outcome.value)
         : refusals.includes(outcome.code)
           ? "recusa"
           : `erro ${outcome.code} ${serialize(outcome.data)}`;
-      return passed.reduce((out, id) => out.replaceAll(id, "<id>"), text);
+      return passed.reduce((out, value) => out.replaceAll(value, "<id>"), text);
     };
-    const outcomes = new Map<string, Outcome>();
+    // O que respondeu sem escrever repete quando B ganha outro lote.
+    const repeat = new Map<string, Outcome>();
     for (const [caller, which] of plan) {
       const report = (problem: string) =>
         findings.push({ fn: fn.name, caller, case: which, problem });
       const { args, passed } = argsOf(which);
-      const before = fn.kind === "query" ? null : await snapshot(t);
+      const before = await snapshot(t);
       const outcome = await call(caller, args);
-      outcomes.set(`${caller} ${which}`, outcome);
       options.onCall?.(fn.name, caller, which, outcome);
-      const { markers, ids } = forbidden(which);
+      const { markers, ids: hidden } = forbidden(which);
       // Um id que o chamador mandou e volta ecoado não revela nada; o resto, sim.
       const leaked = (text: string, echo: boolean) =>
         markers.find((m) => text.includes(m)) ??
-        [...ids].find((id) => text.includes(id) && (echo || !passed.includes(id)));
+        [...hidden].find((id) => text.includes(id) && (echo || !passed.includes(id)));
       if (outcome.resolved) {
         const found = leaked(serialize(outcome.value), false);
         if (found) report(`resposta traz ${found}`);
       } else if (outcome.code === "SEM_CODIGO" && which !== "c0")
         report(`erro sem código: ${outcome.message.slice(0, 160)}`);
-      if (before) {
-        const after = await snapshot(t);
-        for (const [id, doc] of after) {
-          if (before.get(id) === doc) continue;
-          const found = (before.has(id) && ids.has(id) ? id : undefined) ?? leaked(doc, true);
-          if (found) report(`escreveu em ${id} (${found})`);
-        }
-        for (const id of before.keys()) if (!after.has(id) && ids.has(id)) report(`apagou ${id}`);
+      const after = await snapshot(t);
+      let wrote = false;
+      for (const [id, doc] of after) {
+        if (before.get(id) === doc) continue;
+        wrote = true;
+        const found = (before.has(id) && hidden.has(id) ? id : undefined) ?? leaked(doc, true);
+        if (found) report(`escreveu em ${id} (${found})`);
       }
-      if (which !== "c0") {
-        const ghosts = argsOf(which, true);
+      for (const id of before.keys()) {
+        if (after.has(id)) continue;
+        wrote = true;
+        if (hidden.has(id)) report(`apagou ${id}`);
+      }
+      if (fn.kind !== "mutation" && !wrote) repeat.set(`${caller} ${which}`, outcome);
+      const ghosts = argsOf(which, true);
+      if (which !== "c0" && serialize(ghosts.args) !== serialize(args)) {
         const expected = shape(await call(caller, ghosts.args), ghosts.passed);
         const got = shape(outcome, passed);
         if (got !== expected)
@@ -532,12 +678,13 @@ export async function sweepIsolation(
           );
       }
     }
-    if (fn.kind === "query") {
+    if (repeat.size) {
       await seedMoreOfB(t, b);
       for (const [caller, which] of plan) {
+        const first = repeat.get(`${caller} ${which}`);
+        if (!first) continue;
         const { args, passed } = argsOf(which);
-        const again = shape(await call(caller, args), passed);
-        if (shape(outcomes.get(`${caller} ${which}`)!, passed) !== again)
+        if (shape(first, passed) !== shape(await call(caller, args), passed))
           findings.push({ fn: fn.name, caller, case: which, problem: "muda com lote extra de B" });
       }
     }
