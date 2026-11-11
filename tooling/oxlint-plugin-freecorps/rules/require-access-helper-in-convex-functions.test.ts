@@ -8,7 +8,7 @@ RuleTester.it = it;
 const header = `
 import { action, httpAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { requireMembership, audit } from "./lib/organizationAccess";
+import { requireMembership, requireUser, audit } from "./lib/organizationAccess";
 import { documentAccess } from "./lib/documentCore";
 import { readOther } from "./lib/other";
 `;
@@ -54,6 +54,47 @@ new RuleTester().run("require-access-helper-in-convex-functions", rule, {
       await ctx.runQuery(internal.widgets.authorize, args);
       return ctx.runMutation(internal.widgets.save, args);
     } });`),
+    // Action que delega a uma interna registrada em `delegates` (access-helpers.mjs).
+    module(`export const read = action({ args: {}, handler: async (ctx, args) => {
+      const cert = await ctx.runQuery(internal.certificates.authorizeRewrap, args);
+      await ctx.runMutation(internal.certificates.saveRewrap, { id: cert._id });
+    } });`),
+    // A interna registrada confere antes de tocar em dado, no módulo dela.
+    module(
+      `export const reserve = internalMutation({ args: {}, handler: async (ctx, args) => {
+        await requireMembership(ctx, args.organizationId);
+        return ctx.db.insert("certificates", {});
+      } });
+      export const authorizeRewrap = internalQuery({ args: {}, handler: (ctx, args) => requireMembership(ctx, args.o) });`,
+      "platform/convex/certificates.ts",
+    ),
+    // Os dois ramos conferem: vale para o que vem depois.
+    module(`export const list = query({ args: {}, handler: async (ctx, args) => {
+      if (args.keyHash) await documentAccess(ctx, args);
+      else await requireMembership(ctx, args.organizationId);
+      return ctx.db.query("widgets").collect();
+    } });`),
+    module(`export const list = query({ args: {}, handler: async (ctx, args) => {
+      const actor = args.keyHash ? await documentAccess(ctx, args) : await requireUser(ctx);
+      return ctx.db.query("widgets").collect();
+    } });`),
+    // Um ramo que sai da função não precisa conferir; o que segue confere.
+    module(`export const list = query({ args: {}, handler: async (ctx, args) => {
+      if (!args.organizationId) return null;
+      if (args.keyHash) {
+        await documentAccess(ctx, args);
+        return ctx.db.query("fiscalDocuments").take(1);
+      }
+      await requireMembership(ctx, args.organizationId);
+      return ctx.db.query("widgets").collect();
+    } });`),
+    // Depois da checagem, os ramos tocam à vontade.
+    module(`export const list = query({ args: {}, handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      if (args.all) return ctx.db.query("widgets").collect();
+      for (const id of args.ids) await ctx.db.patch("widgets", id, {});
+      return args.ids.length && ctx.db.query("widgets").first();
+    } });`),
     // Contexto desestruturado também é lido.
     module(`export const list = query({ args: {}, handler: async ({ db, ...ctx }, args) => {
       await requireMembership(ctx, args.organizationId);
@@ -81,6 +122,78 @@ new RuleTester().run("require-access-helper-in-convex-functions", rule, {
     ),
   ],
   invalid: [
+    // Checagem num ramo só não vale para o que vem depois (#131).
+    ...[
+      `if (args.strict) await requireMembership(ctx, args.organizationId);`,
+      `const actor = args.keyHash ? null : await requireMembership(ctx, args.organizationId);`,
+      `args.strict && (await requireMembership(ctx, args.organizationId));`,
+      `args.strict || (await requireMembership(ctx, args.organizationId));`,
+      `switch (args.kind) { case "a": await requireMembership(ctx, args.organizationId); break; default: }`,
+      `switch (args.kind) { default: await requireMembership(ctx, args.organizationId); }`,
+      `try { await requireMembership(ctx, args.organizationId); } catch {}`,
+      `try { await audit(ctx, args); } catch { await requireMembership(ctx, args.organizationId); }`,
+      `for (const id of args.ids) await requireMembership(ctx, id);`,
+      `while (args.retry) await requireMembership(ctx, args.organizationId);`,
+      `await Promise.all(args.ids.map((id) => requireMembership(ctx, id)));`,
+      `let ok = args.ok; ok ||= await requireMembership(ctx, args.organizationId);`,
+      `if (args.strict) { await requireMembership(ctx, args.organizationId); } else {}`,
+    ].map((check) => ({
+      ...module(`export const list = query({ args: {}, handler: async (ctx, args) => {
+        ${check}
+        return ctx.db.query("widgets").collect();
+      } });`),
+      errors: [{ messageId: "dataFirst" as const }],
+    })),
+    {
+      // Função local chamada num ramo: a checagem dela também não vale depois.
+      ...module(`async function scoped(c, organizationId) { await requireMembership(c, organizationId); }
+      export const list = query({ args: {}, handler: async (ctx, args) => {
+        if (args.strict) await scoped(ctx, args.organizationId);
+        return ctx.db.query("widgets").collect();
+      } });`),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // Interna do mesmo módulo chamada num ramo.
+      ...module(`export const authorize = internalQuery({ args: {}, handler: (ctx, args) => requireMembership(ctx, args.o) });
+      export const run = action({ args: {}, handler: async (ctx, args) => {
+        if (args.strict) await ctx.runQuery(internal.widgets.authorize, args);
+        return ctx.runMutation(internal.widgets.save, args);
+      } });`),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // A categoria `delegada` saiu: a delegação conferida dispensa marcador.
+      ...module(`// freecorps-access: delegada — certificates.reserve confere com requireCompany
+      export const upload = action({ args: {}, handler: async (ctx, args) => ctx.runMutation(internal.certificates.reserve, args) });`),
+      errors: [{ messageId: "badMarker" }],
+    },
+    {
+      // Interna fora de `delegates` não conta como checagem.
+      ...module(
+        `export const run = action({ args: {}, handler: async (ctx, args) => ctx.runQuery(internal.certificates.encrypted, args) });`,
+      ),
+      errors: [{ messageId: "dataFirst" }],
+    },
+    {
+      // O destino registrado que perde o helper reprova no módulo dele.
+      ...module(
+        `export const reserve = internalMutation({ args: {}, handler: (ctx, args) => ctx.db.insert("certificates", {}) });
+        export const authorizeRewrap = internalQuery({ args: {}, handler: async (ctx, args) => {
+          if (args.strict) await requireMembership(ctx, args.o);
+          return ctx.db.get("certificates", args.id);
+        } });`,
+        "platform/convex/certificates.ts",
+      ),
+      errors: [{ messageId: "delegateUnchecked" }, { messageId: "delegateUnchecked" }],
+    },
+    {
+      ...module(
+        `export const reserve = internalMutation({ args: {}, handler: (ctx, args) => requireMembership(ctx, args.o) });`,
+        "platform/convex/certificates.ts",
+      ),
+      errors: [{ messageId: "delegateMissing" }],
+    },
     {
       ...module(`export const list = query({ args: {}, handler: async (ctx, args) => {
         const rows = await ctx.db.query("widgets").collect();
@@ -177,7 +290,7 @@ new RuleTester().run("require-access-helper-in-convex-functions", rule, {
       errors: [{ messageId: "badMarker" }],
     },
     {
-      ...module(`// freecorps-access: delegada — requireMembership já confere aqui mesmo
+      ...module(`// freecorps-access: sem-tenant — requireMembership já confere aqui mesmo
       export const list = query({ args: {}, handler: async (ctx, args) => {
         await requireMembership(ctx, args.organizationId);
         return ctx.db.query("widgets").collect();

@@ -107,10 +107,25 @@ export const wrappers = {
   importHistory: ["historyPlan"],
 };
 
+/**
+ * Funções internas que conferem o acesso antes de tocar em dado. Uma função pública de outro
+ * módulo que as chama por `ctx.runQuery/runMutation/runAction(internal.<módulo>.<fn>)` conta
+ * como checada; ao lintar o módulo delas, a regra confere que cada uma confere primeiro.
+ */
+export const delegates = {
+  certificates: ["reserve", "authorizeRewrap"],
+  contentRead: [
+    "documentDetail",
+    "documentItemsPage",
+    "documentVersionsPage",
+    "importDetail",
+    "importHistory",
+  ],
+};
+
 /** Categorias aceitas no marcador `// freecorps-access: <categoria> — <motivo>`. */
 export const exemptions = {
   "sem-tenant": "lê só a sessão ou a conta de quem chama, sem dado de organização",
-  delegada: "repassa a uma função que confere o acesso; o motivo nomeia essa função",
   ticket: "rota HTTP autorizada por um ticket emitido depois da checagem",
   assinatura: "webhook recebido, autenticado pela assinatura do remetente antes de qualquer efeito",
 };

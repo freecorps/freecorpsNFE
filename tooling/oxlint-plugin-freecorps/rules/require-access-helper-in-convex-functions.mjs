@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import { defineRule } from "vite-plus/lint/plugins";
 import { memberPath, slashPath, unwrap } from "../lib/ast.mjs";
-import { checks, exemptions, wrappers } from "../access-helpers.mjs";
+import { checks, delegates, exemptions, wrappers } from "../access-helpers.mjs";
 
 /**
  * Toda função pública do Convex (query, mutation, action, httpAction e
@@ -9,7 +9,14 @@ import { checks, exemptions, wrappers } from "../access-helpers.mjs";
  * Funções internas ficam de fora: só o servidor as chama.
  *
  * - Checagem: chamada a uma função de `checks` ou `wrappers`
- *   (access-helpers.mjs), importada ou do próprio módulo.
+ *   (access-helpers.mjs), importada ou do próprio módulo, ou
+ *   `ctx.runQuery/runMutation/runAction(internal.<módulo>.<fn>)` em que `fn` confere o acesso
+ *   primeiro: do mesmo arquivo, lida ali, ou registrada em `delegates`, conferida ao lintar o
+ *   módulo dela.
+ * - Caminhos: a regra segue os ramos de `if` e `?:`. Depois deles, conta a checagem feita em
+ *   todos os ramos que seguem adiante; um ramo que sai da função (`return`, `throw`) não
+ *   precisa conferir. A checagem no lado direito de `&&`, `||` e `??`, em `switch`, laço,
+ *   `try` com `catch`, `catch` ou função aninhada não vale para o que vem depois.
  * - Toque em dado: `ctx.db.query/insert/patch/replace/delete`, `ctx.db.system`,
  *   `ctx.runQuery/runMutation/runAction`, `ctx.scheduler`, `ctx.storage` e
  *   qualquer função importada que receba `ctx`.
@@ -27,6 +34,7 @@ const DB_TOUCH = new Set(["query", "insert", "patch", "replace", "delete", "syst
 const CTX_TOUCH = new Set(["runQuery", "runMutation", "runAction", "scheduler", "storage"]);
 const MARKER = /^\s*freecorps-access:\s*(\S+)\s+(?:—|--?)\s+(\S.{9,})$/;
 const MARKER_PREFIX = /^\s*freecorps-access\b/;
+const LOGICAL_ASSIGNMENT = new Set(["&&=", "||=", "??="]);
 const SKIP_KEYS = new Set([
   "parent",
   "type",
@@ -45,7 +53,7 @@ const isFunction = (node) =>
   node?.type === "FunctionExpression" ||
   node?.type === "FunctionDeclaration";
 
-class Decided extends Error {
+class Touched extends Error {
   constructor(event) {
     super(event.kind);
     this.event = event;
@@ -69,6 +77,10 @@ export default defineRule({
         "O wrapper `{{fn}}` (access-helpers.mjs) toca dado ({{what}}) antes de conferir o acesso.",
       wrapperMissing:
         "access-helpers.mjs registra `{{fn}}` como wrapper deste módulo, mas ele não existe aqui.",
+      delegateUnchecked:
+        "A interna `{{fn}}` (delegates em access-helpers.mjs) toca dado ({{what}}) antes de conferir o acesso.",
+      delegateMissing:
+        "access-helpers.mjs registra `{{fn}}` em delegates deste módulo, mas não há internalQuery, internalMutation ou internalAction com esse nome aqui.",
       badMarker:
         "Marcador inválido. Formato: `// freecorps-access: <categoria> — <motivo com 10+ caracteres>`; categorias: {{categories}}.",
       needlessMarker:
@@ -155,26 +167,34 @@ export default defineRule({
     const UNREADABLE = "ctx numa forma que a regra não lê";
 
     /**
-     * `ctx.runQuery(internal.<este módulo>.fn, ...)` em que `fn` é uma função interna deste
-     * arquivo cujo handler confere o acesso antes de tocar em dado.
+     * `ctx.runQuery(internal.<módulo>.fn, ...)` em que `fn` confere o acesso antes de tocar em
+     * dado: uma função interna deste arquivo, lida aqui, ou uma registrada em `delegates`, que a
+     * regra confere ao lintar o módulo dela.
      */
     function delegatesToCheck(reference, stack) {
       const path = memberPath(reference);
-      const prefix = ["internal", ...self.split("/")];
-      if (!path || path.length !== prefix.length + 1 || prefix.some((p, i) => path[i] !== p))
-        return false;
+      if (!path || path.length < 3 || path[0] !== "internal") return false;
+      const module = path.slice(1, -1).join("/");
       const name = path.at(-1);
+      if (module !== self) return delegates[module]?.includes(name) ?? false;
       const key = `internal:${name}`;
       if (!internals.has(name) || stack.has(key)) return false;
       const fn = handlerOf(internals.get(name));
       const ctx = fn && contextOf(fn.params[0]);
       if (!ctx) return false;
-      return scan(fn, ctx, new Set([...stack, key])).event?.kind === "check";
+      const { event, checked } = scan(fn, ctx, new Set([...stack, key]));
+      return !event && checked;
     }
 
-    /** Primeiro evento decisivo do corpo de `fn`, com `ctx` vindo de `contextOf`. */
-    function scan(fn, ctx, stack) {
-      const state = { loaded: null };
+    /**
+     * Percorre o corpo de `fn`, com `ctx` vindo de `contextOf`, seguindo os caminhos: cada ramo
+     * começa do estado de antes dele, e depois do ramo vale o que todos os ramos que seguem
+     * adiante conferiram. Devolve o primeiro toque sem checagem (`event`), se o caminho que segue
+     * até o fim conferiu (`checked`) e o `ctx.db.get` feito antes da checagem (`loaded`).
+     * `checked` de entrada diz que quem chamou `fn` já conferiu.
+     */
+    function scan(fn, ctx, stack, checked = false) {
+      let loaded = null;
       const { names, aliases } = ctx;
       const isCtx = (node) => {
         const target = unwrap(node);
@@ -182,85 +202,174 @@ export default defineRule({
           target?.type === "Identifier" && (names.has(target.name) || aliases.has(target.name))
         );
       };
-      function classify(call) {
+      function touch(state, what, node) {
+        if (!state.checked) throw new Touched({ kind: "touch", what, node });
+      }
+      function classify(call, state) {
         const callee = unwrap(call.callee);
         if (callee.type === "Identifier" && !aliases.has(callee.name)) {
           const name = callee.name;
           const imported = imports.get(name);
-          if ((imported && isCheckImport(imported)) || (!imported && ownChecks.has(name)))
-            throw new Decided({ kind: "check", name });
-          if (!imported && locals.has(name)) return follow(name, call);
-          if (call.arguments.some(isCtx))
-            throw new Decided({ kind: "touch", what: `${name}(ctx)`, node: call });
+          if ((imported && isCheckImport(imported)) || (!imported && ownChecks.has(name))) {
+            state.checked = true;
+            return;
+          }
+          if (!imported && locals.has(name)) return follow(name, call, state);
+          if (call.arguments.some(isCtx)) touch(state, `${name}(ctx)`, call);
           return;
         }
         const written = memberPath(callee);
         if (written?.length === 2 && locals.has(written.join(".")))
-          return follow(written.join("."), call);
+          return follow(written.join("."), call, state);
         // `{ db }` desestruturado: `db.query(...)` é `ctx.db.query(...)`.
         const path =
           written && aliases.has(written[0])
             ? ["ctx", aliases.get(written[0]), ...written.slice(1)]
             : written;
         if (!path || !(names.has(path[0]) || (written && aliases.has(written[0])))) {
-          if (call.arguments.some(isCtx)) {
-            const what = path ? `${path.join(".")}(ctx)` : "chamada com ctx";
-            throw new Decided({ kind: "touch", what, node: call });
-          }
+          if (call.arguments.some(isCtx))
+            touch(state, path ? `${path.join(".")}(ctx)` : "chamada com ctx", call);
           return;
         }
         if (path[1] === "db" && path[2] === "get") {
-          state.loaded ??= { what: "ctx.db.get", node: call };
+          if (!state.checked) loaded ??= { what: "ctx.db.get", node: call };
           return;
         }
-        if (RUNNERS.has(path[1]) && delegatesToCheck(call.arguments[0], stack))
-          throw new Decided({ kind: "check", name: memberPath(call.arguments[0]).join(".") });
+        if (RUNNERS.has(path[1]) && delegatesToCheck(call.arguments[0], stack)) {
+          state.checked = true;
+          return;
+        }
         if ((path[1] === "db" && DB_TOUCH.has(path[2])) || CTX_TOUCH.has(path[1]))
-          throw new Decided({ kind: "touch", what: path.slice(0, 3).join("."), node: call });
+          touch(state, path.slice(0, 3).join("."), call);
       }
       /** Segue uma função local do arquivo, com o `ctx` repassado na mesma posição. */
-      function follow(name, call) {
+      function follow(name, call, state) {
         if (stack.has(name)) return;
         const target = locals.get(name);
         const passed = { names: new Set(), aliases: new Map() };
-        call.arguments.forEach((argument, index) => {
+        for (const [index, argument] of call.arguments.entries()) {
           const value = unwrap(argument);
-          if (value?.type !== "Identifier") return;
+          if (value?.type !== "Identifier") continue;
           const param = target.params[index];
           if (names.has(value.name)) {
             const inner = contextOf(param);
-            if (!inner) throw new Decided({ kind: "touch", what: UNREADABLE, node: call });
+            if (!inner) return touch(state, UNREADABLE, call);
             inner.names.forEach((n) => passed.names.add(n));
             inner.aliases.forEach((prop, local) => passed.aliases.set(local, prop));
           } else if (aliases.has(value.name) && param?.type === "Identifier")
             passed.aliases.set(param.name, aliases.get(value.name));
-        });
+        }
         if (!passed.names.size && !passed.aliases.size) return;
-        const inner = scan(target, passed, new Set([...stack, name]));
-        if (inner.event) throw new Decided(inner.event);
-        if (inner.loaded && !state.loaded) state.loaded = inner.loaded;
+        const inner = scan(target, passed, new Set([...stack, name]), state.checked);
+        if (inner.event) throw new Touched(inner.event);
+        if (inner.checked) state.checked = true;
+        loaded ??= inner.loaded;
       }
-      function visit(node) {
-        if (!node || typeof node.type !== "string") return;
+
+      const fork = (state) => ({ checked: state.checked });
+      /** Depois de dois ramos: vale o que conferiram os que seguem adiante. */
+      function join(state, branches) {
+        const open = branches.filter(([ended]) => !ended).map(([, branch]) => branch);
+        const ends = branches.filter(([ended]) => ended).map(([, branch]) => branch);
+        state.checked = (open.length ? open : ends).every((branch) => branch.checked);
+        return !open.length;
+      }
+      /** Percorre `node` na ordem de execução; `true` quando todo caminho sai da função ali. */
+      function walk(node, state) {
+        if (!node || typeof node.type !== "string") return false;
+        if (isFunction(node)) {
+          // Função aninhada: pode rodar depois, ou nunca. Toca sob o estado de agora.
+          walk(node.body, fork(state));
+          return false;
+        }
+        switch (node.type) {
+          case "IfStatement":
+          case "ConditionalExpression": {
+            walk(node.test, state);
+            const yes = fork(state);
+            const no = fork(state);
+            return join(state, [
+              [walk(node.consequent, yes), yes],
+              [walk(node.alternate, no), no],
+            ]);
+          }
+          case "LogicalExpression":
+            walk(node.left, state);
+            walk(node.right, fork(state));
+            return false;
+          case "AssignmentExpression":
+            if (!LOGICAL_ASSIGNMENT.has(node.operator)) break;
+            walk(node.left, state);
+            walk(node.right, fork(state));
+            return false;
+          case "SwitchStatement":
+            walk(node.discriminant, state);
+            for (const option of node.cases) walk(option, fork(state));
+            return false;
+          case "TryStatement": {
+            // Com `catch`, o bloco pode parar em qualquer ponto e o `catch` engolir a recusa.
+            const ended = walk(node.block, node.handler ? fork(state) : state);
+            if (node.handler) walk(node.handler, fork(state));
+            return walk(node.finalizer, state) || (!node.handler && ended);
+          }
+          case "WhileStatement":
+            walk(node.test, state);
+            walk(node.body, fork(state));
+            return false;
+          case "ForStatement": {
+            walk(node.init, state);
+            walk(node.test, state);
+            const loop = fork(state);
+            walk(node.body, loop);
+            walk(node.update, loop);
+            return false;
+          }
+          case "ForInStatement":
+          case "ForOfStatement":
+            walk(node.right, state);
+            walk(node.body, fork(state));
+            return false;
+          case "LabeledStatement":
+            walk(node.body, fork(state));
+            return false;
+          case "ReturnStatement":
+          case "ThrowStatement":
+            walk(node.argument, state);
+            return true;
+          case "BreakStatement":
+          case "ContinueStatement":
+            // Só aparecem em laço, `switch` ou rótulo, que já correm num estado à parte.
+            return true;
+          case "BlockStatement":
+            for (const statement of node.body) if (walk(statement, state)) return true;
+            return false;
+          case "SwitchCase":
+            walk(node.test, state);
+            for (const statement of node.consequent) if (walk(statement, state)) return true;
+            return false;
+          case "CallExpression":
+            walk(node.callee, state);
+            for (const argument of node.arguments) walk(argument, state);
+            classify(node, state);
+            return false;
+        }
         for (const key of Object.keys(node)) {
           if (SKIP_KEYS.has(key)) continue;
           const value = node[key];
-          if (Array.isArray(value)) value.forEach(visit);
-          else if (value && typeof value === "object") visit(value);
+          if (Array.isArray(value)) for (const child of value) walk(child, state);
+          else if (value && typeof value === "object") walk(value, state);
         }
-        if (node.type === "CallExpression") classify(node);
+        return false;
       }
+
+      const state = { checked };
       try {
-        visit(fn.body);
+        walk(fn.body, state);
       } catch (error) {
-        if (error instanceof Decided) {
-          const event = error.event;
-          // A folga: `ctx.db.get` antes da checagem só vale se a checagem vier depois.
-          return { event, loaded: state.loaded };
-        }
+        if (error instanceof Touched) return { event: error.event, checked: false, loaded };
         throw error;
       }
-      return { event: null, loaded: state.loaded };
+      return { event: null, checked: state.checked, loaded };
     }
 
     function handlerOf(call) {
@@ -300,9 +409,9 @@ export default defineRule({
     function verdict(fn) {
       const ctx = contextOf(fn.params[0]);
       if (!ctx) return { ok: false, messageId: "dataFirst", what: UNREADABLE, node: fn.params[0] };
-      const { event, loaded } = scan(fn, ctx, new Set());
-      if (event?.kind === "check") return { ok: true, checked: true };
+      const { event, checked, loaded } = scan(fn, ctx, new Set());
       if (event) return { ok: false, messageId: "dataFirst", what: event.what, node: event.node };
+      if (checked) return { ok: true, checked: true };
       if (loaded) return { ok: false, messageId: "noCheck", what: loaded.what, node: loaded.node };
       return { ok: true, checked: false };
     }
@@ -389,6 +498,25 @@ export default defineRule({
           checkFunction(unwrap(call.callee).name, call, statement ?? call);
         }
 
+        for (const name of delegates[self] ?? []) {
+          const fn = internals.has(name) && handlerOf(internals.get(name));
+          if (!fn) {
+            context.report({ node: program, messageId: "delegateMissing", data: { fn: name } });
+            continue;
+          }
+          const ctx = contextOf(fn.params[0]);
+          const { event, checked, loaded } = ctx
+            ? scan(fn, ctx, new Set([`internal:${name}`]))
+            : { event: { kind: "touch", what: UNREADABLE, node: fn.params[0] }, loaded: null };
+          if (checked) continue;
+          const problem = event ?? loaded ?? { what: "nenhuma checagem", node: fn };
+          context.report({
+            node: problem.node ?? fn,
+            messageId: "delegateUnchecked",
+            data: { fn: name, what: problem.what },
+          });
+        }
+
         for (const name of wrappers[self] ?? []) {
           const fn = locals.get(name);
           if (!fn) {
@@ -397,11 +525,11 @@ export default defineRule({
           }
           const ctx = contextOf(fn.params[0]);
           ownChecks.delete(name);
-          const { event, loaded } = ctx
+          const { event, checked, loaded } = ctx
             ? scan(fn, ctx, new Set([name]))
             : { event: { kind: "touch", what: UNREADABLE, node: fn.params[0] }, loaded: null };
           ownChecks.add(name);
-          if (event?.kind === "check") continue;
+          if (checked) continue;
           const problem = event ?? loaded ?? { what: "nenhuma checagem", node: fn };
           context.report({
             node: problem.node ?? fn,
