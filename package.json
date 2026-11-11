@@ -71,7 +71,7 @@
     "licenses:check": "node scripts/licenses/inventory-licenses.mjs --check && node scripts/licenses/check-first-party-licenses.mjs && node scripts/licenses/prepare-package-notices.mjs --check",
     "distribution:prove": "bun scripts/distribution/prove-distribution.mjs",
     "secrets:check": "node scripts/public-copy/check-secrets.mjs",
-    "knip:check": "knip --include files,dependencies --no-progress",
+    "knip:check": "knip --include files,dependencies,exports,types,nsExports,nsTypes --no-progress",
     "public:tree": "node scripts/public-copy/public-tree.mjs"
   },
   "devDependencies": {

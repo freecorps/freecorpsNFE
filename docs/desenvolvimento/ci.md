@@ -620,12 +620,14 @@ cada área com o Vitest substituído e confere que, juntas, elas rodam cada
 projeto do Vitest uma vez, sem arquivo, `--changed` ou `--shard`, e que
 `scripts/ci/ci.mjs test` roda a suíte toda.
 
-### Arquivos e dependências sem uso
+### Arquivos, dependências e exports sem uso
 
-`ci:knip` (`bun run knip:check`) roda o knip com `--include files,dependencies`
-sobre os workspaces do `package.json`, com a configuração de `knip.jsonc`.
-Reprova arquivo que nenhuma entrada alcança e dependência declarada num
-manifest sem import no workspace. A checagem de `exports` fica de fora.
+`ci:knip` (`bun run knip:check`) roda o knip sobre os workspaces do
+`package.json`, com a configuração de `knip.jsonc`. Reprova arquivo que nenhuma
+entrada alcança, dependência declarada num manifest sem import no workspace e,
+só em `platform/convex/lib/`, export que nenhum outro arquivo usa. Os outros
+workspaces ainda não passam na checagem de exports e ficam de fora por
+`ignoreIssues`.
 
 O knip lê os comandos do `package.json` e dos workflows e as configurações das
 ferramentas que reconhece. O que ele não enxerga entra em `knip.jsonc` com o
@@ -636,13 +638,22 @@ dependências carregadas sem import (`oxfmt`, `oxlint` e `oxlint-tsgolint`, na
 versão que o Vite+ exige, e `contracts` e `zod` do SDK, empacotados por caminho
 relativo).
 
-Um helper órfão de `platform/convex/lib/` não aparece: o plugin Convex do knip
-toma `convex/**` como entrada, porque o Convex publica todo módulo da pasta, e
-os testes da plataforma carregam a pasta inteira por `import.meta.glob`.
+Em `platform/`, as entradas são o que o Convex publica como função
+(`convex/*.ts` e `convex/testing/*.ts`) e os testes, no lugar do `convex/**` do
+plugin Convex, desligado ali. O plugin Vite fica desligado em todos os
+workspaces: ele faz de cada arquivo de um `import.meta.glob` uma entrada sem
+conferência de exports, e o glob do convex-test
+(`tests/helpers/convex-modules.ts`) alcança `platform/convex/**` inteiro. As
+entradas que ele achava, o script do `index.html` do console, as figuras que a
+landing carrega por glob e o plugin do Oxlint de `vite.config.ts`, ficam
+declaradas em `knip.jsonc`. O `_generated/api.d.ts` importa cada módulo como
+namespace, por isso a checagem inclui `nsExports` e `nsTypes`: um helper órfão
+de `lib/` aparece como export sem uso mesmo depois do `convex codegen`. Um
+export usado só no próprio arquivo não reprova.
 
-Quando a tarefa reprova, remova o arquivo ou a dependência órfã. Se o uso for
-real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o motivo,
-em vez de ignorar o achado.
+Quando a tarefa reprova, remova o arquivo, a dependência ou o export órfão. Se
+o uso for real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o
+motivo, em vez de ignorar o achado.
 
 Todo script de `scripts/` e de `scripts/<domínio>/` é entrada do knip, porque
 cada um é chamado pelo caminho. Um roteiro que nenhum comando, workflow ou

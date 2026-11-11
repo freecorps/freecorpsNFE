@@ -223,8 +223,8 @@ export default defineConfig({
       // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
       // entre as entradas registradas.
       "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
-      // Arquivos e dependências sem uso (knip.jsonc). Lê manifests e node_modules,
-      // que o Vite Task não rastreia como entrada.
+      // Arquivos, dependências e exports de platform/convex/lib/ sem uso (knip.jsonc). Lê
+      // manifests e node_modules, que o Vite Task não rastreia como entrada.
       "ci:knip": { command: "bun run knip:check", cache: false },
       "ci:typecheck": {
         command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",

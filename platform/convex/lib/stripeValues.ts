@@ -54,7 +54,6 @@ export const stripeEventState = v.union(
   v.literal("failed"),
   v.literal("refund"),
 );
-export type StripeEventState = Infer<typeof stripeEventState>;
 /** What happened to an issued charge after a full refund or lost dispute. */
 export const stripeRefundAction = v.union(
   v.literal("suggested"),
@@ -120,4 +119,3 @@ export const connectionView = v.object({
   version: v.number(),
   createdAt: v.number(),
 });
-export type ConnectionView = Infer<typeof connectionView>;

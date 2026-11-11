@@ -109,8 +109,3 @@ export function planEnded(plan: { endsAt: number | null }, now: number) {
 export function usagePeriod(now: number) {
   return new Date(now).toISOString().slice(0, 7);
 }
-/** First instant of the civil UTC month after the one of `now` (as `usagePeriod`). */
-export function nextUsagePeriodStart(now: number) {
-  const date = new Date(now);
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
-}
