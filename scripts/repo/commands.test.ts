@@ -20,13 +20,19 @@ describe("catálogo de comandos", () => {
   });
 
   it("não deixa documentação, skills ou t3.json citar script inexistente", () => {
-    const files = execFileSync("git", ["ls-files", "--", "*.md", "t3.json"], {
-      cwd: root,
-      encoding: "utf8",
-    })
-      .split("\n")
-      .filter(Boolean);
+    // Skills de terceiros (skills-lock.json) citam scripts de outros projetos.
+    const external = Object.keys(JSON.parse(read("skills-lock.json")).skills).map(
+      (name) => `.agents/skills/${name}/`,
+    );
+    const files = execFileSync(
+      "git",
+      ["-c", "core.quotePath=false", "ls-files", "-z", "--", "*.md", "t3.json"],
+      { cwd: root, encoding: "utf8" },
+    )
+      .split("\0")
+      .filter((file) => file && !external.some((prefix) => file.startsWith(prefix)));
     expect(files).toContain("docs/worktrees.md");
+    expect(files).toContain(".agents/skills/verify-console/SKILL.md");
     for (const file of files) {
       const text = read(file);
       // Página aposentada guarda o registro do que foi feito, com os comandos da época.

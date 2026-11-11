@@ -19,8 +19,8 @@ sem valores em argumentos, exemplos ou logs.
 A ajuda deve permitir descoberta incremental: comando, subcomando e opções.
 Inclua exemplos reais em `--help`, com alvo e efeitos claros. Neste projeto,
 consulte `package.json` e `scripts/lib/commands.mjs`; um script público novo
-entra no catálogo de `bun run help`. Preserve Bun, Vite+ e os scripts
-`worktree:*` como pontos de entrada documentados.
+entra no catálogo de `bun run help`. Preserve Bun, Vite+, `bun run worktree`
+e seus atalhos `worktree:*` como pontos de entrada documentados.
 
 ## Resultado observável
 
