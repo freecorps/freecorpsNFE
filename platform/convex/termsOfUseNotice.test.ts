@@ -128,12 +128,13 @@ const mailbox = (t: PlatformTest) =>
 function validationMail(recipients: string[]) {
   for (const [key, value] of Object.entries({
     APP_ENV: "validation",
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     SITE_URL: "https://freecorpsnfe-validation.freecorps.workers.dev",
     CONVEX_SITE_URL: "https://modest-seal-118.convex.site",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: "a".repeat(64),
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
     ACCOUNT_EMAIL_FROM: "sender@validation.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: recipients.join(","),
   }))
@@ -146,13 +147,14 @@ function installationMail() {
     PRODUCT_ENV: "sandbox",
     FISCAL_ENV: "disabled",
     FNFE_CRONS: "off",
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     SITE_URL: "https://console.operator.invalid",
     CONVEX_SITE_URL: "https://api.operator.invalid",
     API_URL: "https://rest.operator.invalid",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: "a".repeat(64),
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
     ACCOUNT_EMAIL_FROM: "sender@operator.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: "*",
   }))
@@ -165,7 +167,8 @@ function mailDisabled() {
     EMAIL_MODE: "disabled",
     SITE_URL: "https://freecorpsnfe-validation.freecorps.workers.dev",
     CONVEX_SITE_URL: "https://modest-seal-118.convex.site",
-    CLOUDFLARE_EMAIL_API_TOKEN: "",
+    MAIL_API_URL: "",
+    MAIL_API_KEY: "",
     ACCOUNT_EMAIL_FROM: "",
     ACCOUNT_EMAIL_RECIPIENTS: "",
   }))
@@ -415,7 +418,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
       const body = JSON.parse(init.body);
       payloads.push(body);
-      return Response.json({ success: true, result: { queued: body.to, permanent_bounces: [] } });
+      return Response.json({ id: "email-1" });
     });
     publish(SECOND);
     await run(t);
@@ -456,7 +459,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
         if (typeof init.body !== "string") throw new Error("Expected JSON request");
         const body = JSON.parse(init.body);
         sent.push(body.to);
-        return Response.json({ success: true, result: { queued: body.to, permanent_bounces: [] } });
+        return Response.json({ id: "email-1" });
       }),
     );
     publish(FIRST);
@@ -500,8 +503,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     validationMail([one.emails["owner-0"], part.emails["owner-0"], listed.emails["owner-0"]]);
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
-      const { to } = JSON.parse(init.body) as { to: string[] };
-      return Response.json({ success: true, result: { queued: to, permanent_bounces: [] } });
+      return Response.json({ id: "email-1" });
     });
     vi.stubGlobal("fetch", fetch);
     publish(FIRST);
@@ -568,13 +570,13 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
       const { to } = JSON.parse(init.body) as { to: string[] };
-      // The bounce of one address does not touch the others' messages.
-      return Response.json({
-        success: true,
-        result: to.includes(bounced)
-          ? { queued: [], permanent_bounces: to }
-          : { queued: to, permanent_bounces: [] },
-      });
+      // The refusal of one address does not touch the others' messages.
+      return to.includes(bounced)
+        ? Response.json(
+            { statusCode: 422, name: "validation_error", message: "refused" },
+            { status: 422 },
+          )
+        : Response.json({ id: `email-${to[0]}` });
     });
     vi.stubGlobal("fetch", fetch);
     vi.spyOn(console, "warn").mockImplementation(() => {});

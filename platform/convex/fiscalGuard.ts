@@ -131,8 +131,8 @@ async function expireBatch(
   const { del, drain, all, parent, blob } = purger(ctx, b);
   /**
    * A stored file goes only when no row of another organization holds it, read over the same
-   * holders as cold archive (`storageHolders`). Rows of this one go with it; reference data and
-   * privacy mail never belong to it. More than `SHARED` holders in one table keep the file; the
+   * holders as cold archive (`storageHolders`). Rows of this one go with it; reference data never
+   * belongs to it. More than `SHARED` holders in one table keep the file; the
    * row goes anyway and the kept file is logged. A holder whose owner cannot be read keeps the
    * file too; in the early removal it throws instead, so the batch is undone and retried at the
    * next check. At the deadline it must not stop the guard.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "8766573187d6f28d4832215f5e25a3dd41c2519ac546bec2ef7b8ad2ef8ec856",
+  "lockSha256": "807068735cbdccbdac2ebe355793253085d0b6fdf23d56a16b61814f106ae321",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -1009,6 +1009,20 @@
           "workspace": "apps/console",
           "kind": "dependencies",
           "dependency": "@fontsource/geist"
+        }
+      ]
+    },
+    {
+      "id": "@freecorps/mail-sdk@0.1.1",
+      "declaredLicense": "MIT",
+      "source": "https://registry.npmjs.org/%40freecorps%2Fmail-sdk/0.1.1",
+      "integrity": "sha512-9j1jmuTEE6WwVsZ9j4w5VlZqGTS8miMu83btttobzJ2epu2YVlgUWh1ZJztagGKt1XQ4IZxlfTgo9SXuTM5Rqw==",
+      "repository": "git+https://github.com/freecorps/mail.git",
+      "direct": [
+        {
+          "workspace": "platform",
+          "kind": "dependencies",
+          "dependency": "@freecorps/mail-sdk"
         }
       ]
     },
@@ -5809,20 +5823,6 @@
       "integrity": "sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==",
       "repository": "git://github.com/pngjs/pngjs.git",
       "direct": []
-    },
-    {
-      "id": "postal-mime@4.1.4",
-      "declaredLicense": "MIT-0",
-      "source": "https://registry.npmjs.org/postal-mime/4.1.4",
-      "integrity": "sha512-+6Qsn7Q2TSLMScfN4X2VQIclPRKgDAtKhytQex3fVSV/+HgVaawtsQGzKYDQLQIBR7b4Vfg+88WRGvuF/kwLSw==",
-      "repository": "git+https://github.com/postalsys/postal-mime.git",
-      "direct": [
-        {
-          "workspace": "platform",
-          "kind": "dependencies",
-          "dependency": "postal-mime"
-        }
-      ]
     },
     {
       "id": "postcss@8.5.31",

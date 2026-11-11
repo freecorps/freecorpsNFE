@@ -89,24 +89,23 @@ na chave `run.tasks`; o Vite Task as executa em ordem de dependência, até quat
 ao mesmo tempo, e agrupa a saída de cada uma no log, com um resumo no final que
 diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
-| Tarefa              | Comando                                                                | Depende de                         | Cache               |
-| ------------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
-| `ci:packages`       | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
-| `ci:sdk`            | `bun run sdk:prove`                                                    | `ci:packages`                      | não: registro e Git |
-| `ci:contracts`      | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
-| `ci:xml-prove`      | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
-| `ci:distribution`   | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
-| `ci:check`          | `vp check`                                                             | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:secrets`        | `node scripts/public-copy/check-secrets.mjs`                           |                                    | não: índice do Git  |
-| `ci:knip`           | `bun run knip:check`                                                   |                                    | não: manifests      |
-| `ci:typecheck`      | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:test:<área>`    | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                      | sim                 |
-| `ci:tests`          | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`              | não: revisão        |
-| `ci:tooling`        | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
-| `ci:docs`           | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
-| `ci:console`        | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
-| `ci:auth-worker`    | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
-| `ci:privacy-worker` | `node scripts/proofs/prove-privacy-mail-worker.mjs`                    |                                    | sim                 |
+| Tarefa            | Comando                                                                | Depende de                         | Cache               |
+| ----------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
+| `ci:packages`     | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
+| `ci:sdk`          | `bun run sdk:prove`                                                    | `ci:packages`                      | não: registro e Git |
+| `ci:contracts`    | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
+| `ci:xml-prove`    | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
+| `ci:distribution` | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
+| `ci:check`        | `vp check`                                                             | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:secrets`      | `node scripts/public-copy/check-secrets.mjs`                           |                                    | não: índice do Git  |
+| `ci:knip`         | `bun run knip:check`                                                   |                                    | não: manifests      |
+| `ci:typecheck`    | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk`            | sim                 |
+| `ci:test:<área>`  | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                      | sim                 |
+| `ci:tests`        | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`              | não: revisão        |
+| `ci:tooling`      | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
+| `ci:docs`         | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
+| `ci:console`      | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| `ci:auth-worker`  | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
 
 As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
 `ci:distribution` instalam os tarballs num consumidor limpo com dependências do

@@ -71,7 +71,7 @@ export function validationChildEnv(env, key) {
   const result = Object.fromEntries(
     Object.entries(env).filter(
       ([name]) =>
-        !/^(CLOUDFLARE_|ACCOUNT_|AUTH_PROXY_|CONVEX_|VALIDATION_|FNFE_|VITE_|CLERK_|RESEND_|BETTER_AUTH_|NODE_OPTIONS$)/i.test(
+        !/^(CLOUDFLARE_|MAIL_|ACCOUNT_|AUTH_PROXY_|CONVEX_|VALIDATION_|FNFE_|VITE_|CLERK_|RESEND_|BETTER_AUTH_|NODE_OPTIONS$)/i.test(
           name,
         ),
     ),

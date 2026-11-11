@@ -1,5 +1,12 @@
 # E-mail de segurança
 
+> **Aposentado.** Esta caixa passou para o Ember Mail, com o envio da
+> plataforma: veja [E-mail pelo Ember Mail](email.md). O Worker
+> `freecorpsnfe-privacy-mail`, as tabelas `privacy*` e a página do console
+> saíram do código, com os comandos `deploy:mail`, `platform:privacy-worker`
+> e `ci:privacy-worker`. O texto abaixo é o registro do que foi feito: não
+> execute os passos dele.
+
 Canal privado para relatos de vulnerabilidade, acompanhado pela
 [#266](https://github.com/freecorps/freecorpsNFE-arquivo/issues/266). O endereço é
 `seguranca@nfe.freecorps.com.br`, no mesmo subdomínio da caixa de

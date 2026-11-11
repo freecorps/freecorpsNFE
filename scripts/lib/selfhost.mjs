@@ -27,7 +27,7 @@ export function isolatedEnv() {
   return Object.fromEntries(
     Object.entries(process.env).filter(
       ([name]) =>
-        !/^(CONVEX_|VITE_|FNFE_|APP_ENV$|PRODUCT_ENV$|FISCAL_ENV$|SITE_URL$|BETTER_AUTH_|AUTH_PROXY_|ACCOUNT_|EMAIL_|WEBHOOK_|CLOUDFLARE_|VALIDATION_|NODE_OPTIONS$)/i.test(
+        !/^(CONVEX_|VITE_|FNFE_|APP_ENV$|PRODUCT_ENV$|FISCAL_ENV$|SITE_URL$|BETTER_AUTH_|AUTH_PROXY_|ACCOUNT_|EMAIL_|WEBHOOK_|CLOUDFLARE_|MAIL_|VALIDATION_|NODE_OPTIONS$)/i.test(
           name,
         ),
     ),

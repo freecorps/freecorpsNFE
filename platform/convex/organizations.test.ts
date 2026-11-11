@@ -438,12 +438,13 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
     recipient = await actor(t);
   for (const [key, value] of Object.entries({
     APP_ENV: "validation",
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     SITE_URL: "https://freecorpsnfe-validation.freecorps.workers.dev",
     CONVEX_SITE_URL: "https://modest-seal-118.convex.site",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: "a".repeat(64),
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
     ACCOUNT_EMAIL_FROM: "sender@validation.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: recipient.email,
   }))
@@ -470,10 +471,7 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
   fetch.mockImplementation(async (_url, init) => {
     if (typeof init.body !== "string") throw new Error("Expected JSON request");
     payloads.push(JSON.parse(init.body));
-    return Response.json({
-      success: true,
-      result: { queued: [recipient.email], permanent_bounces: [] },
-    });
+    return Response.json({ id: "email-1" });
   });
   const second = await org.owner.client.action(api.invitations.send, args);
   expect(second.delivered).toBe(true);

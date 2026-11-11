@@ -258,7 +258,6 @@ jobs:
             .ci-results/83/tarballs.json
             .ci-results/summary.md
             .browser-results/auth-worker/report.json
-            .browser-results/privacy-worker/report.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14

@@ -23,7 +23,6 @@ import "./fiscal.css";
 // não nas páginas, porque o chunk compartilhado carregaria o CSS antes deste arquivo, antes da
 // base e dos componentes, que passariam a vencer os arranjos da tela.
 import "./companies.css";
-import "./privacy-inbox.css";
 import { applyTheme } from "./ui/theme";
 
 // public/theme.js já aplicou o tema; aqui só a meta theme-color e o color-scheme definitivos.

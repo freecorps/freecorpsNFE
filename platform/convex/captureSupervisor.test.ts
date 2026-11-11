@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { CLOUDFLARE_EMAIL_SEND_URL } from "./lib/accountMail";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { captureAttention } from "./lib/captureAttention";
 import { raiseCaptureAlert } from "./lib/captureSupervision";
@@ -57,8 +56,9 @@ const site = {
 };
 /** The site with the operational e-mail configured (`captureAlertDestination`). */
 const mail = {
-  EMAIL_MODE: "cloudflare",
-  CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-email-token-0123456789",
+  EMAIL_MODE: "mail",
+  MAIL_API_URL: "https://mail.development.invalid",
+  MAIL_API_KEY: "synthetic-email-token-0123456789",
   ACCOUNT_EMAIL_FROM: "nao-responda@operator.invalid",
   ACCOUNT_EMAIL_RECIPIENTS: "pessoa@operator.invalid",
   FNFE_CAPTURE_ALERT_EMAIL: "operacao@operator.invalid, plantao@operator.invalid",
@@ -792,7 +792,7 @@ describe("e-mail operacional", () => {
       });
       expect(fetch).toHaveBeenCalledTimes(1);
       const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
-      expect(url).toBe(CLOUDFLARE_EMAIL_SEND_URL);
+      expect(String(url)).toBe("https://mail.development.invalid/emails");
       const body = JSON.parse(init.body as string) as {
         to: string[];
         subject: string;

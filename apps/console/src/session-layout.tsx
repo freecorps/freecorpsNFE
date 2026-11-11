@@ -111,7 +111,6 @@ export function SessionMessage({
 }
 
 type Profile = FunctionReturnType<typeof api.account.profile>;
-type Mailboxes = FunctionReturnType<typeof api.privacyMail.mailboxes>;
 
 export function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -133,17 +132,13 @@ export function ProtectedLayout() {
       asking
         ? {
             profile: { query: api.account.profile, args: {} },
-            mailboxes: { query: api.privacyMail.mailboxes, args: {} },
           }
         : {},
     [asking],
   );
   const answers: {
     profile?: Profile | Error;
-    mailboxes?: Mailboxes | Error;
   } = useQueries(profileQuery);
-  const mailboxes =
-    !isAuthenticated || answers.mailboxes instanceof Error ? undefined : answers.mailboxes;
   const current = isAuthenticated ? session : undefined;
   const needsProfile = !!current && (local || !current.role);
   const profileAnswer = needsProfile ? answers.profile : undefined;
@@ -206,10 +201,6 @@ export function ProtectedLayout() {
   const shell = {
     tools: {
       diagnostics: current?.role === "operator",
-      privacy: mailboxes?.privacy === true,
-      security: mailboxes?.security === true,
-      support: mailboxes?.support === true,
-      operation: mailboxes?.operation === true,
       prototype: import.meta.env.DEV,
       components: import.meta.env.DEV,
     },

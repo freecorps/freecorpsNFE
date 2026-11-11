@@ -25,7 +25,7 @@ export const consumedDocumentation = [
   "CONTRIBUTING.md",
   "docs/worktrees.md",
   "docs/operacao/deploy-producao.md",
-  "docs/operacao/*-email.md",
+  "docs/operacao/email.md",
   // Frase de aceite lida por scripts/contribution-terms.mjs e o teste dele.
   "CONTRIBUICOES.md",
   // Licenças: distribuição, inventário e cópia nos pacotes.

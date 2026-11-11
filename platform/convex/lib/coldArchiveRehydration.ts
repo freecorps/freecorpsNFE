@@ -317,8 +317,7 @@ export const REHYDRATION_MARGIN = 0.1;
 export const UPLOAD_WINDOW = 70 * 60_000;
 /**
  * How old a blob must be before the orphan collection judges it: longer than any flow of the
- * platform takes between storing a blob and recording it (an action, at most 10 minutes), as the
- * privacy mail collector does (`ORPHAN_GRACE`).
+ * platform takes between storing a blob and recording it (an action, at most 10 minutes).
  */
 export const UPLOAD_ORPHAN_GRACE = 60 * 60_000;
 /**

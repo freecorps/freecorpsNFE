@@ -1,5 +1,12 @@
 # E-mail de privacidade
 
+> **Aposentado.** Esta caixa passou para o Ember Mail, com o envio da
+> plataforma: veja [E-mail pelo Ember Mail](email.md). O Worker
+> `freecorpsnfe-privacy-mail`, as tabelas `privacy*` e a página do console
+> saíram do código, com os comandos `deploy:mail`, `platform:privacy-worker`
+> e `ci:privacy-worker`. O texto abaixo é o registro do que foi feito: não
+> execute os passos dele.
+
 Endereço escolhido pelo mantenedor em 21/10/2026:
 `privacidade@nfe.freecorps.com.br`. A caixa é lida e respondida em
 `/console/privacidade`. O procedimento de atendimento e os campos do registro

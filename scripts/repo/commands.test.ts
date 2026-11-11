@@ -11,10 +11,6 @@ import { repoRoot } from "../lib/repo-root.mjs";
 const root = repoRoot;
 const read = (file: string) => readFileSync(join(root, file), "utf8");
 const scripts: Record<string, string> = JSON.parse(read("package.json")).scripts;
-const mailDocs = ["privacidade", "seguranca", "suporte", "operacao"].map(
-  (inbox) => `docs/operacao/${inbox}-email.md`,
-);
-
 describe("catálogo de comandos", () => {
   it("descreve cada script da raiz e só os que existem", () => {
     const active = Object.keys(scripts).filter((name) => !(name in renamed));
@@ -39,7 +35,7 @@ describe("catálogo de comandos", () => {
       "CONTRIBUTING.md",
       "docs/worktrees.md",
       "docs/operacao/deploy-producao.md",
-      ...mailDocs,
+      "docs/operacao/email.md",
     ]) {
       const cited = [...read(file).matchAll(/(?:bun|vp) run ([a-z][\w:.-]*[\w])/g)].map(
         ([, name]) => name,
@@ -49,28 +45,6 @@ describe("catálogo de comandos", () => {
           name in commands || /^(test(:|$)|validate$|ci:)/.test(name),
           `${file}: ${name}`,
         ).toBe(true);
-    }
-  });
-});
-
-describe("publicação do Worker de e-mail", () => {
-  it("publica o Worker freecorpsnfe-privacy-mail pela configuração dele", () => {
-    const command = scripts["deploy:mail"] ?? "";
-    const config = command.match(/(?:--config|-c)[ =](\S+)/)?.[1];
-    expect(command).toMatch(/\bwrangler\S*\s+deploy\b/);
-    expect(config).toBeDefined();
-    expect(read(config!)).toMatch(/"name":\s*"freecorpsnfe-privacy-mail"/);
-  });
-
-  it("os roteiros das caixas publicam só pelo script", () => {
-    // As seções datadas são registros do que foi rodado na época e ficam como estão.
-    const dated = /^[^\n]* \d{2}\/\d{2}\/\d{4}/;
-    for (const file of mailDocs) {
-      const current = read(file)
-        .split(/^## /m)
-        .filter((section) => !dated.test(section))
-        .join("");
-      expect(current).not.toMatch(/wrangler\S*\s+deploy/);
     }
   });
 });

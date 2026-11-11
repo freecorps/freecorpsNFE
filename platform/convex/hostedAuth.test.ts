@@ -4,7 +4,11 @@ import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
 import { register } from "../test-setup";
 import { signAuthRequest } from "../auth-transport";
-import { accountPolicy, recipientAllowed } from "../account-policy.mjs";
+import {
+  FREECORPS_CLOUDFLARE_ACCOUNT,
+  accountPolicy,
+  recipientAllowed,
+} from "../account-policy.mjs";
 import { accountSenderName } from "./lib/accountMail";
 import { modules } from "../../tests/helpers/convex-modules";
 
@@ -25,13 +29,14 @@ beforeEach(() => {
     FISCAL_ENV: "disabled",
     FNFE_CRONS: "off",
     WEBHOOK_MODE: "disabled",
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     SITE_URL: origin,
     CONVEX_SITE_URL: site,
     BETTER_AUTH_SECRET: "synthetic-better-auth-secret-not-for-deployment",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: secret,
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token-only",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token-only",
     ACCOUNT_EMAIL_FROM: "sender@validation.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: `${email},${missing}`,
   }))
@@ -41,10 +46,7 @@ beforeEach(() => {
     vi.fn(async (_url, init) => {
       const body = JSON.parse(init.body);
       messages.push(body);
-      return Response.json({
-        success: true,
-        result: { queued: body.to, delivered: [], permanent_bounces: [] },
-      });
+      return Response.json({ id: "email-1" });
     }),
   );
 });
@@ -95,11 +97,72 @@ async function signup(t: ReturnType<typeof setup>) {
 }
 it("validates controlled configuration and keeps remote credentials out of local worktrees", () => {
   expect(accountPolicy({ EMAIL_MODE: "disabled" }).enabled).toBe(false);
-  expect(() => accountPolicy({ EMAIL_MODE: "cloudflare" })).toThrow();
-  expect(() =>
-    accountPolicy({ EMAIL_MODE: "local", CLOUDFLARE_EMAIL_API_TOKEN: "private" }, true),
-  ).toThrow();
+  expect(() => accountPolicy({ EMAIL_MODE: "mail" })).toThrow();
+  expect(() => accountPolicy({ EMAIL_MODE: "local", MAIL_API_KEY: "private" }, true)).toThrow();
   expect(() => accountPolicy({ EMAIL_MODE: "disabled", AUTH_PROXY_SECRET: secret })).toThrow();
+});
+it("sends through the provider the operator chose, with its own credentials", () => {
+  const remote = {
+    EMAIL_MODE: "mail",
+    AUTH_PROXY_MODE: "signed",
+    AUTH_PROXY_SECRET: secret,
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
+    ACCOUNT_EMAIL_FROM: "sender@example.invalid",
+    ACCOUNT_EMAIL_RECIPIENTS: "a@example.invalid",
+  };
+  expect(accountPolicy(remote).service).toEqual({
+    provider: "mail",
+    apiUrl: "https://mail.development.invalid",
+    apiKey: "synthetic-provider-token",
+  });
+  for (const MAIL_API_URL of [
+    "",
+    "http://mail.development.invalid",
+    "https://u:p@mail.development.invalid",
+  ])
+    expect(() => accountPolicy({ ...remote, MAIL_API_URL })).toThrow();
+  // Email Sending of the operator's account; without an account, the Freecorps one, as before.
+  const cloudflare = {
+    ...remote,
+    EMAIL_MODE: "cloudflare",
+    MAIL_API_URL: undefined,
+    MAIL_API_KEY: undefined,
+    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+  };
+  expect(accountPolicy(cloudflare).service).toEqual({
+    provider: "cloudflare",
+    accountId: FREECORPS_CLOUDFLARE_ACCOUNT,
+    apiKey: "synthetic-provider-token",
+  });
+  const account = "ffffffffffffffffffffffffffffffff";
+  expect(
+    accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_ACCOUNT_ID: account }).service,
+  ).toMatchObject({
+    accountId: account,
+  });
+  expect(() => accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_ACCOUNT_ID: "nope" })).toThrow();
+  expect(() => accountPolicy({ ...cloudflare, CLOUDFLARE_EMAIL_API_TOKEN: "" })).toThrow();
+  // Only the chosen provider counts: the other one's variables do not block a switch.
+  expect(
+    accountPolicy({ ...remote, CLOUDFLARE_EMAIL_API_TOKEN: "old-token" }).service?.provider,
+  ).toBe("mail");
+  // Disabled keeps no credential of either.
+  expect(() =>
+    accountPolicy({
+      ...remote,
+      EMAIL_MODE: "disabled",
+      ACCOUNT_EMAIL_FROM: "",
+      ACCOUNT_EMAIL_RECIPIENTS: "",
+    }),
+  ).toThrow();
+  expect(() =>
+    accountPolicy({
+      EMAIL_MODE: "disabled",
+      AUTH_PROXY_MODE: "disabled",
+      CLOUDFLARE_EMAIL_ACCOUNT_ID: account,
+    }),
+  ).toThrow();
 });
 it("names the sender without Validação only in the installation profile", () => {
   vi.stubEnv("APP_ENV", "installation");
@@ -110,10 +173,11 @@ it("names the sender without Validação only in the installation profile", () =
 });
 it("lifts the allowlist with * only in the installation profile (#428)", () => {
   const remote = {
-    EMAIL_MODE: "cloudflare",
+    EMAIL_MODE: "mail",
     AUTH_PROXY_MODE: "signed",
     AUTH_PROXY_SECRET: secret,
-    CLOUDFLARE_EMAIL_API_TOKEN: "synthetic-provider-token",
+    MAIL_API_URL: "https://mail.development.invalid",
+    MAIL_API_KEY: "synthetic-provider-token",
     ACCOUNT_EMAIL_FROM: "sender@example.invalid",
     ACCOUNT_EMAIL_RECIPIENTS: "*",
   };
@@ -335,7 +399,8 @@ it("keeps unverified accounts blocked when mail is disabled and verifies only re
   const t = setup();
   await signup(t);
   for (const name of [
-    "CLOUDFLARE_EMAIL_API_TOKEN",
+    "MAIL_API_URL",
+    "MAIL_API_KEY",
     "ACCOUNT_EMAIL_FROM",
     "ACCOUNT_EMAIL_RECIPIENTS",
   ])
