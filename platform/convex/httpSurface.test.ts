@@ -43,8 +43,10 @@ type Expected = {
   probe?: string;
   headers?: Record<string, string>;
   status: number;
-  /** Corpo exato, sem o `requestId`, que é conferido à parte contra o `X-Request-Id`. */
+  /** Corpo exato; com `requestId`, sem ele, que é conferido à parte. */
   body?: unknown;
+  /** O corpo traz `requestId`, não vazio e igual ao cabeçalho `X-Request-Id`. */
+  requestId?: true;
   /** Cabeçalhos exatos da resposta; `null` exige a ausência. */
   responseHeaders?: Record<string, string | null>;
 };
@@ -62,6 +64,7 @@ const key = (): Expected => ({
   credential: "chave",
   status: 401,
   body: { error: refusal("INVALID_API_KEY").error },
+  requestId: true,
 });
 // Um ticket forjado no formato certo chega à conferência dele, não só à do formato.
 const forged = "f".repeat(72);
@@ -69,6 +72,7 @@ const ticket = (code: string, headers: Record<string, string>, notFound?: string
   credential: "ticket",
   headers,
   status: refusal(code).status,
+  requestId: true,
   body: {
     error: { ...refusal(code).error, ...(notFound ? { message: notFound } : {}) },
   },
@@ -206,8 +210,14 @@ async function handlerMarker(handler: PublicHttpAction, path: string, method: st
     for (const [name, value] of Object.entries((await modules[file]!()) as Record<string, unknown>))
       if (value === handler) return marker(readModule(file), `export const ${name}\\b`);
   }
-  const literal = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return marker(routerSource, `http\\.route\\(\\{\\s*path: "${literal}",\\s*method: "${method}"`);
+  // `getRoutes` escreve o prefixo como `/prefixo/*`; em http.ts ele é `pathPrefix: "/prefixo/"`.
+  const prefix = path.endsWith("*");
+  const literal = (prefix ? path.slice(0, -1) : path).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const field = prefix ? "pathPrefix" : "path";
+  return marker(
+    routerSource,
+    `http\\.route\\(\\{\\s*${field}: "${literal}",\\s*method: "${method}"`,
+  );
 }
 function readModule(file: string) {
   return readFileSync(new URL(`./${modulePath(file)}.ts`, import.meta.url), "utf8");
@@ -254,10 +264,15 @@ async function probe(router: HttpRouter, path: string, method: string, expected:
     let actual: unknown = text;
     if (typeof expected.body !== "string") {
       try {
-        const { requestId, ...rest } = JSON.parse(text) as Record<string, unknown>;
-        if (requestId !== (response.headers.get("X-Request-Id") ?? undefined))
-          problems.push("requestId diferente do X-Request-Id");
-        actual = rest;
+        const parsed = JSON.parse(text) as Record<string, unknown>;
+        actual = parsed;
+        if (expected.requestId) {
+          const { requestId, ...rest } = parsed;
+          if (typeof requestId !== "string" || !requestId) problems.push("corpo sem requestId");
+          else if (requestId !== response.headers.get("X-Request-Id"))
+            problems.push("requestId diferente do X-Request-Id");
+          actual = rest;
+        }
       } catch {
         actual = text;
       }
@@ -301,7 +316,7 @@ async function audit(router: HttpRouter, table: Record<string, Expected>) {
     else {
       const marker = await handlerMarker(handler, path, method);
       if (marker !== expectedMarker[credential])
-        failures.push(`${name}: marcador ${marker ?? "ausente"}, classe ${expected.credential}`);
+        failures.push(`${name}: marcador ${marker ?? "ausente"}, classe ${credential}`);
     }
     for (const problem of await probe(router, path, method, expected))
       failures.push(`${name}: ${problem}`);
@@ -352,6 +367,7 @@ it("fails a new route that answers 200 without credential", async () => {
   // Declarada como rota de chave, ela continua reprovando pela resposta.
   expect(await audit(router, subset(real, { "GET /v1/leak": key() }))).toEqual([
     "GET /v1/leak: status 200, esperado 401",
+    "GET /v1/leak: corpo sem requestId",
     'GET /v1/leak: corpo {"ok":true}',
   ]);
 });
@@ -363,7 +379,10 @@ it("fails a refusal that writes, a stale class and a class that contradicts the 
       method: "GET",
       handler: httpAction(async (ctx) => {
         await ctx.storage.store(new Blob(["x"]));
-        return Response.json({ error: refusal("INVALID_API_KEY").error }, { status: 401 });
+        return Response.json(
+          { error: refusal("INVALID_API_KEY").error, requestId: "r" },
+          { status: 401, headers: { "X-Request-Id": "r" } },
+        );
       }),
     }),
   );
