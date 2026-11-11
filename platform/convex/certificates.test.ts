@@ -286,6 +286,93 @@ it("rewrap preserves certificate identity and records the new master key version
   });
   expect(JSON.stringify(events)).not.toContain(f.material.password.toString());
 });
+it("rewrap recusa estranho, sessão ausente, operador sem gestão, certificado de outra empresa e revisão antiga sem regravar nem auditar (#134)", async () => {
+  const f = await fixture(),
+    id = await f.upload(),
+    operator = await actor(f.t);
+  await f.t.action(internal.certificateWorker.validate, { id });
+  // Another company of the same organization, with its own certificate.
+  const sibling = await f.owner.client.mutation(api.companies.create, {
+    organizationId: f.scope.organizationId,
+    cnpj: "11222333000181",
+    name: "Outra empresa sintética",
+    address: {
+      street: "Rua teste",
+      number: "2",
+      complement: "",
+      district: "Centro",
+      city: "São Paulo",
+      state: "SP",
+      postalCode: "01000000",
+    },
+  });
+  const foreign = await f.owner.client.action(api.certificateWorker.upload, {
+    organizationId: f.scope.organizationId,
+    companyId: sibling.companyId,
+    pfx: Uint8Array.from(f.material.pfx).buffer,
+    password: f.material.password.toString(),
+  });
+  // An operator with the company granted: only the manager requirement refuses it.
+  await f.t.run(async (ctx) => {
+    const membershipId = await ctx.db.insert("memberships", {
+      organizationId: f.scope.organizationId,
+      authUserId: operator.user._id,
+      name: "Operador",
+      email: operator.user.email,
+      role: "operator",
+      state: "active",
+      version: 1,
+      joinedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    await ctx.db.insert("companyGrants", {
+      ...f.scope,
+      membershipId,
+      membershipEpoch: 0,
+      active: true,
+      version: 1,
+      updatedAt: Date.now(),
+    });
+  });
+  const outsider = await actor(f.t);
+  const effects = () =>
+    f.t.run(async (ctx) => ({
+      certificates: await Promise.all(
+        [id, foreign].map(async (cert) => {
+          const row = (await ctx.db.get("certificates", cert))!;
+          return [row.envelope?.keyVersion, row.envelopeRevision];
+        }),
+      ),
+      audit: (await ctx.db.query("certificateAudit").collect()).length,
+    }));
+  const before = await effects();
+  // A rewrap that went through would move both envelopes to v2.
+  vi.stubEnv("FNFE_PLATFORM_CERT_KEYS", JSON.stringify({ ...ring, active: "v2" }));
+  // Refused before any decryption: a refusal from the save would surface as
+  // CERTIFICATE_ROTATION_FAILED instead.
+  for (const [client, code] of [
+    [outsider.client, "ACCESS_DENIED"],
+    [operator.client, "ACCESS_DENIED"],
+    [f.t, "UNAUTHENTICATED"],
+  ] as const)
+    await expect(client.action(api.certificateWorker.rewrap, { ...f.scope, id })).rejects.toThrow(
+      code,
+    );
+  // The certificate id is a selector: under this company's scope, the sibling's is not found.
+  await expect(
+    f.owner.client.action(api.certificateWorker.rewrap, { ...f.scope, id: foreign }),
+  ).rejects.toThrow("ACCESS_DENIED");
+  // A rewrap computed from an envelope that changed meanwhile is not saved.
+  const current = (await f.t.query(internal.certificates.encrypted, { id }))!;
+  await expect(
+    f.owner.client.mutation(internal.certificates.saveRewrap, {
+      id,
+      revision: current.envelopeRevision - 1,
+      envelope: current.envelope!,
+    }),
+  ).rejects.toThrow("CERTIFICATE_CHANGED");
+  expect(await effects()).toEqual(before);
+});
 it("an operation with an old pin is denied even when its access grants still exist", async () => {
   const f = await fixture(),
     id = await f.upload();

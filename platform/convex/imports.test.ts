@@ -1253,6 +1253,60 @@ it("envio sem resposta: reconsulta, ticket novo e confirmação não duplicam o 
     }),
   ).rejects.toThrow("NOT_FOUND");
 });
+it("ticket de upload vencido ou de pessoa com acesso trocado não guarda blob nem reserva bytes (#134)", async () => {
+  const f = await fixture(),
+    owner = await person(f.t, f.scope.organizationId, "owner");
+  const spec = (name: string) => ({
+    name,
+    size: f.bytes.length,
+    sha256: createHash("sha256").update(f.bytes).digest("hex"),
+  });
+  const batch = await owner.mutation(api.imports.reserve, {
+    organizationId: f.scope.organizationId,
+    companyId: f.scope.companyId,
+    environment: "sandbox",
+    key: "denied-ticket",
+    files: [spec("a.xml"), spec("b.xml")],
+  });
+  const [a, b] = batch.fileIds as [Id<"importFiles">, Id<"importFiles">];
+  const send = async (token: string) => {
+    const response = await f.t.fetch("/v1/import-upload", {
+      method: "POST",
+      headers: { "X-Upload-Token": token },
+      body: new Uint8Array(f.bytes),
+    });
+    const body = (await response.json()) as { error?: { code: string } };
+    return { status: response.status, code: body.error?.code };
+  };
+  const effects = () =>
+    f.t.run(async (ctx) => ({
+      blobs: (await ctx.db.system.query("_storage").take(10)).length,
+      capacity: (await ctx.db.query("capacityEvents").collect()).length,
+      files: (await Promise.all([a, b].map((id) => ctx.db.get("importFiles", id)))).map((file) => [
+        file?.state,
+        file?.storageId ?? null,
+      ]),
+    }));
+  const before = await effects();
+  expect(before.files).toEqual([
+    ["reserved", null],
+    ["reserved", null],
+  ]);
+  // The token lives 15 minutes and the reservation a day: past the token, only the token expired.
+  const expired = await owner.mutation(api.imports.upload, { fileId: a });
+  vi.setSystemTime(expired.expiresAt);
+  expect(await send(expired.token)).toEqual({ status: 409, code: "UPLOAD_EXPIRED" });
+  // The member's access changed after the ticket was issued: still a manager, another version.
+  const changed = await owner.mutation(api.imports.upload, { fileId: b });
+  await f.t.run((ctx) =>
+    ctx.db.patch("memberships", owner.membershipId, { role: "admin", version: 2 }),
+  );
+  expect(await send(changed.token)).toEqual({ status: 409, code: "ACCESS_REVOKED" });
+  expect(await effects()).toEqual(before);
+  // Control: a ticket issued now, under the current access, uploads the same file.
+  const fresh = await owner.mutation(api.imports.upload, { fileId: a });
+  expect((await send(fresh.token)).status).toBe(200);
+});
 it("leitura não reserva importação e operador precisa da concessão da empresa", async () => {
   const f = await fixture(),
     viewer = await person(f.t, f.scope.organizationId, "viewer"),

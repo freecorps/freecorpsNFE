@@ -421,11 +421,13 @@ function sign(body: string, secret = WEBHOOK_SECRET, at = s(Date.now())) {
   return `t=${at},v1=${createHmac("sha256", secret).update(`${at}.${body}`).digest("hex")}`;
 }
 let eventSeq = 0;
-async function deliver(f: Fixture, event: Json, signature?: string) {
+/** `signature` is the header, or a signer of the exact body sent. */
+async function deliver(f: Fixture, event: Json, signature?: string | ((body: string) => string)) {
   const body = JSON.stringify({ id: `evt_${++eventSeq}`, livemode: false, ...event });
+  const header = typeof signature === "function" ? signature(body) : (signature ?? sign(body));
   const response = await f.t.fetch("/v1/billing/stripe/events", {
     method: "POST",
-    headers: { "content-type": "application/json", "stripe-signature": signature ?? sign(body) },
+    headers: { "content-type": "application/json", "stripe-signature": header },
     body,
   });
   return { status: response.status, code: ((await response.json()) as { code: string }).code };
@@ -1048,28 +1050,18 @@ describe("permissões e isolamento", () => {
     ]);
   });
 
-  it("recusa assinatura inválida sem registrar nada", async () => {
+  it("recusa assinatura de outro segredo, vencida ou ausente sem registrar nada", async () => {
     const f = await fixture();
-    const body = JSON.stringify({
-      id: "evt_x",
-      type: "invoice.paid",
-      livemode: false,
-      data: { object: { id: "in_1" } },
+    const event = { type: "invoice.paid", data: { object: { id: "in_1" } } };
+    // Each signature covers the exact body sent, so only the secret or the time is wrong.
+    expect(await deliver(f, event, (body) => sign(body, "whsec_outro_segredo_sint"))).toEqual({
+      status: 400,
+      code: "SIGNATURE_INVALID",
     });
     expect(
-      await deliver(
-        f,
-        { type: "invoice.paid", data: { object: { id: "in_1" } } },
-        sign(body, "whsec_outro_segredo_sint"),
-      ),
-    ).toEqual({ status: 400, code: "SIGNATURE_INVALID" });
-    expect(
-      await deliver(
-        f,
-        { type: "invoice.paid", data: { object: { id: "in_1" } } },
-        sign(body, WEBHOOK_SECRET, s(Date.now()) - 3600),
-      ),
-    ).toMatchObject({ status: 400 });
+      await deliver(f, event, (body) => sign(body, WEBHOOK_SECRET, s(Date.now()) - 3600)),
+    ).toEqual({ status: 400, code: "SIGNATURE_EXPIRED" });
+    expect(await deliver(f, event, "")).toEqual({ status: 400, code: "SIGNATURE_MISSING" });
     expect(await f.t.run((ctx) => ctx.db.query("billingEvents").collect())).toEqual([]);
   });
 });
