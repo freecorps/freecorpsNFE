@@ -133,8 +133,11 @@ Limites: a regra lê um arquivo por vez; o que atravessa arquivos passa pelas
 listas de `access-helpers.mjs`, conferidas no módulo de cada função. Ela não
 correlaciona condições: duas checagens sob `if (a)` e `if (!a)` separados não
 somam. O encadeamento opcional (`a?.b(check(ctx))`) não conta como ramo. Um `return` antecipado sem checagem não é conferido, nem o que ele
-devolve de um `ctx.db.get` anterior. O teste de cada domínio e
-`platform/convex/publicSurface.test.ts` continuam provando o comportamento.
+devolve de um `ctx.db.get` anterior. O teste de cada domínio,
+`platform/convex/publicSurface.test.ts` e
+`platform/convex/httpSurface.test.ts` continuam provando o comportamento; o
+último também confere que a classe de credencial de cada rota HTTP bate com o
+marcador do handler.
 
 ## no-wall-clock-in-tests
 

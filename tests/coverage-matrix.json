@@ -124,6 +124,7 @@
       "evidence": [
         "platform/convex/keys.test.ts",
         "platform/convex/publicSurface.test.ts",
+        "platform/convex/httpSurface.test.ts",
         "apps/console/src/secret-once.test.tsx",
         "apps/console/e2e/keys.mjs",
         "docs/v1.0/evidence/68/README.md"
