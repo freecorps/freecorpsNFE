@@ -1,8 +1,13 @@
-// Arquivos e dependências sem uso (`bun run knip:check`, tarefa `ci:knip` do grafo
-// `validate`). A checagem de `exports` fica de fora por enquanto. Cada exceção diz por
-// que o knip não enxerga o uso; docs/desenvolvimento/ci.md descreve a tarefa.
+// Arquivos, dependências e, em platform/convex/lib/, exports sem uso (`bun run knip:check`,
+// tarefa `ci:knip` do grafo `validate`). Cada exceção diz por que o knip não enxerga o uso;
+// docs/desenvolvimento/ci.md descreve a tarefa.
 {
   "$schema": "https://unpkg.com/knip@6.42.1/schema.json",
+  // Exports só conferidos em convex/lib/: os outros workspaces ainda não passam na checagem.
+  // O _generated/api.d.ts importa cada módulo como namespace, por isso entram nsExports e
+  // nsTypes. Um export usado só no próprio arquivo não é código morto.
+  "ignoreIssues": { "!platform/convex/lib/**": ["exports", "types", "nsExports", "nsTypes"] },
+  "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
       "entry": [
@@ -22,6 +27,8 @@
         // ci.testProjects.test.ts lê pelo caminho.
         "tests/fixtures/file-isolation/**",
         "tests/fixtures/mock-scan/**",
+        // Plugin do Oxlint que vite.config.ts carrega pelo caminho (jsPlugins).
+        "tooling/oxlint-plugin-freecorps/index.mjs",
       ],
       "project": [
         "scripts/**/*.{mjs,ts}",
@@ -34,16 +41,36 @@
       // Fixadas na versão exata que o Vite+ exige (docs/desenvolvimento/ci.md,
       // Instalação reproduzível); o Vite+ as carrega, nenhum arquivo as importa.
       "ignoreDependencies": ["oxfmt", "oxlint", "oxlint-tsgolint"],
+      // Desligado em todos os workspaces: o plugin Vite trata cada arquivo de um
+      // import.meta.glob como entrada sem conferência de exports, e o glob do convex-test
+      // (tests/helpers/convex-modules.ts) alcança todo platform/convex/**. As entradas que
+      // o plugin achava ficam declaradas abaixo.
+      "vite": false,
     },
     "platform": {
-      // O plugin Convex do knip toma convex/** como entrada, porque o Convex publica todo
-      // módulo da pasta; os testes também carregam a pasta inteira por import.meta.glob.
-      // Por isso um helper órfão de convex/lib/ não aparece aqui.
-      "entry": ["test-setup.ts", "installation.ts", "account-policy.mjs"],
+      // O que o Convex publica como função, em vez do convex/** do plugin Convex, que faria
+      // de cada helper de convex/lib/ uma entrada e esconderia o órfão.
+      "entry": [
+        "test-setup.ts",
+        "installation.ts",
+        "account-policy.mjs",
+        "convex/*.ts",
+        "convex/testing/*.ts",
+        "convex/**/*.test.ts",
+      ],
       "project": ["**/*.{ts,mjs}"],
+      "convex": false,
     },
     "apps/console": {
-      "entry": ["src/main.tsx", "e2e/**/*.{mjs,ts}", "src/**/*.test.{ts,tsx}"],
+      "entry": [
+        "src/main.tsx",
+        "e2e/**/*.{mjs,ts}",
+        "src/**/*.test.{ts,tsx}",
+        // Script do index.html e figuras que site/landing/client.ts carrega por
+        // import.meta.glob.
+        "src/entry.ts",
+        "src/site/landing/figures/*.client.ts",
+      ],
       "project": ["**/*.{ts,tsx,mjs}"],
     },
     "apps/docs": {

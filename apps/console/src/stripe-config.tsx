@@ -3,6 +3,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "./convex-query";
 import { api } from "../../../platform/convex/_generated/api";
 import type { Id } from "../../../platform/convex/_generated/dataModel";
+import { DEFAULT_DESCRIPTION } from "../../../platform/convex/lib/stripeValues";
 import type { Organization } from "./organizations";
 import { Feedback } from "./project-sections";
 import { useAsyncAction } from "./async-action";
@@ -30,7 +31,6 @@ export type ConfigDraft = {
   refundPolicy: Config["refundPolicy"];
   active: boolean;
 };
-export const DEFAULT_DESCRIPTION = "{itens} — cobrança {cobranca}, competência {periodo}";
 export function draftOf(connection?: Pick<Connection, "name" | "config" | "active">): ConfigDraft {
   const c = connection?.config;
   return {

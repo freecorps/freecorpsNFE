@@ -157,7 +157,7 @@ export const commands = {
   "knip:check": [
     "repositório",
     "nenhum",
-    "Procura arquivos e dependências sem uso nos workspaces (knip.jsonc); não confere exports",
+    "Procura arquivos e dependências sem uso nos workspaces e exports sem uso em platform/convex/lib/ (knip.jsonc)",
   ],
   "public:tree": [
     "repositório",

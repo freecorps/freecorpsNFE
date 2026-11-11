@@ -81,7 +81,6 @@ export const nfseProfileFields = {
 export const nfseProfileInput = v.object(nfseProfileFields);
 export type NfseProfileInput = Infer<typeof nfseProfileInput>;
 export type NfseActivity = Infer<typeof nfseActivity>;
-export type IbsCbsClassification = Infer<typeof ibsCbsClassification>;
 
 /** DPS numbering of a series and environment of the company. */
 export const dpsSequenceView = v.object({

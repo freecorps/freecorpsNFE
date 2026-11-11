@@ -160,7 +160,6 @@ export function coldObjects(config: ColdConfig | null = coldConfig()) {
     },
   };
 }
-export type ColdObjects = ReturnType<typeof coldObjects>;
 
 /**
  * Key of a version's content in the bucket, named by its hash. The prefix carries what the lock
