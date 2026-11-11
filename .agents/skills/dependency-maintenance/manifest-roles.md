@@ -19,3 +19,8 @@ Justifique cada entrada adicionada ou movida:
 Preserve as fronteiras de `packages/*` verificadas por
 `scripts/build/check-package-boundaries.mjs`. A instalação na raiz não prova que
 um pacote funciona num consumidor independente.
+
+Declare a entrada no workspace cujo código de execução a importa, nunca só
+na raiz ([DEPENDENCIAS.md](../../../docs/DEPENDENCIAS.md#quem-declara-cada-dependência)).
+A raiz não tem `dependencies`; o `devDependencies` dela é do tooling e do
+que o código da própria raiz importa ou executa.
