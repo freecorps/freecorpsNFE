@@ -195,11 +195,6 @@ const paymentLink =
   '<gPgtoVinc><gPgto nPag="1" idTransacao="000123-SINTETICA"><tpMeioPgto>03</tpMeioPgto><CNPJReceb>11444777000161</CNPJReceb><CNPJBasePSP>12345678</CNPJBasePSP></gPgto><gPgto nPag="2" idTransacao="TX-SINTETICA-02"><tpMeioPgto>17</tpMeioPgto><CNPJReceb>11222333000181</CNPJReceb><CNPJBasePSP>11222333</CNPJBasePSP></gPgto></gPgtoVinc>';
 const cases = [
   [
-    "bytes-limit",
-    "x".repeat(2 * 1024 * 1024 + 1),
-    checks("failed", "not_checked", "not_checked", "not_checked"),
-  ],
-  [
     "invoice-prefixed",
     sign(
       invoice()
@@ -478,7 +473,6 @@ for (const [id, xml, expected] of cases) {
         : "not_checked",
   };
   const parsingErrors = {
-    "bytes-limit": "XML_TOO_LARGE",
     "invalid-utf8": "XML_ENCODING_INVALID",
     "depth-limit": "XML_LIMIT_EXCEEDED",
     "nodes-limit": "XML_LIMIT_EXCEEDED",

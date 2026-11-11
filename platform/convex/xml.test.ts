@@ -21,6 +21,16 @@ it.each(corpus.cases)("Node adapter preserves corpus result: $id", async ({ id }
     processNfe(bytes, { source: "synthetic", evaluatedAt: corpus.evaluatedAt }),
   );
 });
+it("Node adapter preserves the size rejection one byte over 2 MiB", async () => {
+  const bytes = new Uint8Array(2 * 1024 * 1024 + 1).fill(0x78);
+  const result = await convexTest(schema, modules).action(internal.xml.validate, {
+    bytes: bytes.buffer,
+    evaluatedAt: corpus.evaluatedAt,
+  });
+  const expected = processNfe(bytes, { source: "synthetic", evaluatedAt: corpus.evaluatedAt });
+  expect(expected.checks.parsing.code).toBe("XML_TOO_LARGE");
+  expect(JSON.parse(result.json)).toEqual(expected);
+});
 it("refuses the proof action in a fiscal production environment", async () => {
   vi.stubEnv("FISCAL_ENV", "production");
   await expect(

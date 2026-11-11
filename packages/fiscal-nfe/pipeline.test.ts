@@ -94,7 +94,7 @@ describe("shared NF-e corpus", () => {
     expect(bytes.equals(copy)).toBe(true);
     for (const [stage, code] of Object.entries(entry.expectedCodes))
       expect(result.checks[stage as keyof typeof result.checks].code).toBe(code);
-    if (entry.id !== "bytes-limit") expect(result.metadata?.versions.parser).toBe(corpus.parser);
+    expect(result.metadata?.versions.parser).toBe(corpus.parser);
     expect(result.checks.certificateTrust.status).toBe("not_checked");
     expect(JSON.stringify(result.checks)).not.toContain("<");
   });
@@ -164,8 +164,45 @@ describe("shared NF-e corpus", () => {
       value: { declared: "1.2345", coefficient: "12345", scale: 4 },
     });
   });
+  it("rejects a well-formed document one byte over the size limit before any other stage", () => {
+    // Built in memory instead of a 2 MiB corpus file (#159): a well-formed invoice padded with one
+    // repeated text element up to the exact size. Unsigned, so the at-limit case skips signature
+    // canonicalization, whose re-read XML would be larger than the padded input.
+    const padded = (size: number) => {
+      const xml = fixture("invoice-unsigned").toString();
+      const shell = Buffer.byteLength(xml) + "<xPad></xPad>".length;
+      const bytes = Buffer.from(
+        xml.replace("</NFe>", `<xPad>${"x".repeat(size - shell)}</xPad></NFe>`),
+      );
+      expect(bytes.byteLength).toBe(size);
+      return bytes;
+    };
+    expect(LIMITS.bytes).toBe(2_097_152);
+    const atLimit = processNfe(padded(LIMITS.bytes), { source: "synthetic" });
+    expect(atLimit.checks.parsing).toEqual({ status: "passed", code: "XML_PARSED" });
+    const bytes = padded(LIMITS.bytes + 1),
+      copy = Buffer.from(bytes),
+      result = processNfe(bytes, { source: "synthetic", evaluatedAt: corpus.evaluatedAt });
+    expect(bytes.equals(copy)).toBe(true);
+    expect(
+      Object.fromEntries(
+        Object.entries(result.checks).map(([stage, check]) => [stage, [check.status, check.code]]),
+      ),
+    ).toEqual({
+      parsing: ["failed", "XML_TOO_LARGE"],
+      xsd: ["not_checked", "NOT_CHECKED"],
+      signature: ["not_checked", "NOT_CHECKED"],
+      identity: ["not_checked", "NOT_CHECKED"],
+      normalization: ["not_checked", "NOT_CHECKED"],
+      certificateTrust: ["not_checked", "NOT_CHECKED"],
+      originTrust: ["not_checked", "FISCAL_ORIGIN_NOT_AUTHENTICATED"],
+      certificateTime: ["not_checked", "NOT_CHECKED"],
+      fiscalEvidence: ["not_checked", "NOT_CHECKED"],
+    });
+    expect(result).toMatchObject({ metadata: null, parsing: null, normalized: null });
+    expect(JSON.stringify(result.checks)).not.toContain("<");
+  });
   it.each([
-    ["bytes", () => new Uint8Array(LIMITS.bytes + 1), "XML_TOO_LARGE"],
     ["encoding", () => new Uint8Array([0xc3, 0x28]), "XML_ENCODING_INVALID"],
     [
       "depth",
