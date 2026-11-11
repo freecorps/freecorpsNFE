@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "./schema";
 import { action, mutation, query } from "./_generated/server";
@@ -130,9 +130,10 @@ it("refuses a direct call without session to every public function with forged I
 // Duas organizações, A e B, com um documento mínimo de cada tabela (tests/helpers/isolation-sweep.ts).
 // Cada função é chamada como owner de A e como operator de A sem concessão de empresa: c0 com os
 // ids de A, c1 com os de B, c2 com `organizationId` de A e o resto de B, c3 com os ids de A pelo
-// operator. O oráculo reprova B (ou a empresa de A, no c3) na resposta, escrita ou agendamento
-// com eles, resposta a B diferente da resposta a um id inexistente, erro sem código e leitura que
-// muda quando B ganha outro lote.
+// operator, c4 com um só seletor de B. O oráculo reprova B (ou a empresa de A, no c3) na resposta
+// ou no erro, escrita, arquivo ou agendamento com eles, resposta a B diferente da resposta a um
+// id inexistente, erro sem código e leitura que muda quando B, ou a empresa de A, ganha outro
+// lote.
 
 const address = {
   street: "Rua sintética",
@@ -152,6 +153,8 @@ const isolationOverrides: Record<string, Record<string, unknown>> = {
   "keys:rotate": { scopes: ["documents:read"], expiresAt: Date.UTC(2027, 0, 1) },
   "companies:create": { cnpj: "11222333000181", name: "Empresa sintética", address },
   "companies:update": { name: "Empresa sintética", address },
+  "observability:audit": { from: 0, until: 300 * 86_400_000 },
+  "issuanceConsole:cancel": { reasonCode: "1", reason: "Cancelamento sintético de teste" },
   "webhooks:create": {
     name: "Webhook",
     url: "https://webhook.example.com/fnfe",
@@ -182,20 +185,60 @@ const unreachedFromA: Record<string, string> = {
     "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
   "contentRead:documentItemsToken":
     "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
-  "contentRead:importDetailToken":
-    "exige conteúdo de documento real; imports.test.ts, 'isolates detail selectors by organization, company and file'",
   "documentContentNode:documentDetailRead":
     "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
   "documentContentNode:documentItemsRead":
     "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
-  "documentContentNode:importDetailRead":
-    "exige conteúdo de documento real; imports.test.ts, 'isolates detail selectors by organization, company and file'",
+  "documents:list":
+    "cada linha exige o documento normalizado completo; consoleAccess.test.ts, 'consulta de documentos, downloads e exportação', e cada linha passa por loadScopedDocument",
   "exportDownloads:ticket":
     "exige parte de exportação concluída e vigente; exports.test.ts, 'refuses download tickets for a part of another project, organization or member'",
   "issuanceConsole:detail":
     "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
   "issuanceConsole:resubmission":
     "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
+};
+
+// Funções cuja resposta ao owner de A, com os ids de A, não traz id nem texto de A. Flags,
+// permissões e contagens não carregam dado do inquilino, e o lote extra de B confere que não o
+// somam; as listagens que os dados gerados deixam vazias citam o teste que as prova com dados.
+const flag = "flag, permissão ou estado sem dado do inquilino";
+const count = "contagem; o lote extra de B confere que ela não soma B";
+const created = "devolve só o registro que acabou de criar";
+const token = "token opaco do plano de leitura; o conteúdo vem da action, conferida à parte";
+const answersWithoutA: Record<string, string> = {
+  "access:session": "sessão de quem chama",
+  "account:capabilities": flag,
+  "account:profile": "perfil de quem chama",
+  "billing:overview": "cobrança desligada no ambiente da varredura",
+  "captureRelease:status": flag,
+  "captures:history":
+    "o fluxo gerado não tem histórico; captures.test.ts, 'the history obeys the capture's access and the stream's organization (#433)'",
+  "companies:deletion": flag,
+  "contentRead:documentVersionsToken": token,
+  "contentRead:importDetailToken": token,
+  "contentRead:importHistoryToken": token,
+  "deployment:current": flag,
+  "deployment:environments": flag,
+  "documentContentNode:documentVersionsRead":
+    "as versões geradas não têm conteúdo legível; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:importHistoryRead":
+    "o arquivo gerado não tem histórico legível; imports.test.ts, 'isolates detail selectors by organization, company and file'",
+  "documents:canProcess": flag,
+  "documents:summaryCount": count,
+  "documents:unclassified":
+    "o artefato gerado já tem documento; consoleAccess.test.ts, 'consulta de documentos, downloads e exportação'",
+  "documents:unclassifiedCount": count,
+  "exports:environments": flag,
+  "invitations:send": created,
+  "keys:create": created,
+  "plans:overview": "catálogo de planos desligado no ambiente da varredura",
+  "projects:companyGrant": flag,
+  "projects:offeredEnvironments": flag,
+  "refusalReprocess:canRead": flag,
+  "refusalReprocess:canRequest": flag,
+  "refusalReprocess:status": flag,
+  "termsOfUse:current": "termos vigentes da plataforma, iguais para todos",
 };
 
 // Achado do oráculo aceito, com a prova de que não expõe B. A chave é a linha do achado.
@@ -220,13 +263,17 @@ it("keeps every public function inside the caller's organization and company gra
   // vem antes do acesso, e os casos de B não provam nada.
   const c0 = new Map<string, string | null>();
   const unreached = new Set<string>();
-  const findings = await sweepIsolation(await publicFunctions(), {
+  const withoutA = new Set<string>();
+  const functions = await publicFunctions();
+  const kinds = new Map(functions.map((fn) => [fn.name, fn.kind]));
+  const findings = await sweepIsolation(functions, {
     overrides: isolationOverrides,
-    onCall: (fn, caller, which, outcome: Outcome) => {
+    onCall: (fn, caller, which, outcome: Outcome, { bringsA }) => {
       if (caller !== "owner") return;
       const code = outcome.resolved ? null : outcome.code;
       if (which === "c0") {
         c0.set(fn, code);
+        if (outcome.resolved && !bringsA && kinds.get(fn) !== "mutation") withoutA.add(fn);
         if (code && (refusals.includes(code) || code === "SEM_CODIGO" || code.endsWith("_CORRUPT")))
           unreached.add(fn);
       } else if (code && code === c0.get(fn)) unreached.add(fn);
@@ -243,6 +290,8 @@ it("keeps every public function inside the caller's organization and company gra
   // A lista de não alcançadas acompanha o código: uma função que passa a alcançar sai dela.
   expect(refusedA.sort()).toEqual(Object.keys(unreachedFromA).sort());
   for (const found of Object.keys(isolationExceptions)) expect(findings.map(line)).toContain(found);
+  // Resposta de A sem nada de A: uma listagem vazia não mostraria o que deixasse de filtrar.
+  expect([...withoutA].sort()).toEqual(Object.keys(answersWithoutA).sort());
 }, 300_000);
 
 // Meta-teste: cada oráculo reprova uma função vazada de propósito, quase sempre a que confere a
@@ -336,6 +385,27 @@ const leaky = {
       return all.filter((d) => d.organizationId === args.organizationId).length;
     },
   }),
+  // Confere a empresa e confia no projeto.
+  child: query({
+    args: { ...company, projectId: v.id("projects") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const owned = await ctx.db.get("companies", args.companyId);
+      if (owned?.organizationId !== args.organizationId) return null;
+      return ctx.db.get("projects", args.projectId);
+    },
+  }),
+  // Recusa, mas leva o nome da empresa de outra organização no erro.
+  errorLeak: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const found = await ctx.db.get("companies", args.companyId);
+      if (found && found.organizationId !== args.organizationId)
+        throw new ConvexError({ code: "ACCESS_DENIED", name: found.name });
+      return null;
+    },
+  }),
   // A contagem atravessa uma action.
   countAction: action({
     args: { organizationId: v.id("organizations") },
@@ -376,6 +446,12 @@ it("reproves a deliberately leaky function in each oracle", async () => {
     expect.stringMatching(/^owner c2: resposta traz inquilino-b/),
   );
   expect(problems("leaky:countAction")).toContain("owner c0: muda com lote extra de B");
+  expect(problems("leaky:child")).toContainEqual(
+    expect.stringMatching(/^owner c4:projects: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:errorLeak")).toContainEqual(
+    expect.stringMatching(/^owner c2: erro traz inquilino-b/),
+  );
   expect(problems("leaky:countDocuments")).toContain(
     "operator c3: muda com lote extra da empresa de A",
   );

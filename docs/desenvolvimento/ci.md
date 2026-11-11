@@ -424,12 +424,13 @@ organizações, A e B, recebem um documento mínimo de cada tabela do schema,
 gerado do validador por `tests/helpers/isolation-sweep.ts`, e cada função
 pública é chamada como owner de A e como operator de A sem concessão de
 empresa: com os ids de A (c0), com os de B (c1), com `organizationId` de A e o
-resto de B, e listas com um id de cada (c2), e com os ids de A pelo operator
-(c3). Seletores em texto (`documentId`, `issuanceId`, o `slug` de
+resto de B, e listas com um id de cada (c2), com os ids de A pelo operator
+(c3) e, quando há dois seletores ou mais, com um só deles de B (c4, o pai
+conferido e o filho confiado). Seletores em texto (`documentId`, `issuanceId`, o `slug` de
 `organizations:context`, os `actors` de `observability:names`) têm a tabela
 declarada no helper, e um argumento de texto fora desse mapa e da lista de
 texto comum reprova. Reprovam o CI: id ou marcador de B, ou da empresa de A no
-c3, na resposta; escrita, arquivo ou agendamento que toque esses documentos;
+c3, na resposta ou nos dados e na mensagem de um erro; escrita, arquivo ou agendamento que toque esses documentos;
 resposta aos ids de B diferente da resposta aos mesmos ids trocados por
 inexistentes; erro sem código; e query, ou action que respondeu sem escrever,
 que muda quando B ganha um segundo lote ou, para o operator no c3, quando a
@@ -439,8 +440,11 @@ inexistente podem receber códigos diferentes, o que só distingue quem já tem
 o id. O c0 roda primeiro, no banco recém-semeado, e o teste declara as
 funções em que nem os ids de A chegam ao que seria lido: recusa, erro sem
 código, conteúdo corrompido ou a mesma recusa de domínio que os ids de B
-recebem, sinal de uma validação anterior ao acesso. Cada uma, como cada achado
-aceito, cita o teste de domínio que prova o isolamento. Funções vazadas de
+recebem, sinal de uma validação anterior ao acesso. Também declara as leituras
+cuja resposta a A não traz id nem texto de A, em que uma listagem vazia
+esconderia o filtro que faltasse. Cada uma, como cada achado aceito, cita o
+teste de domínio que prova o isolamento ou diz por que a resposta não carrega
+dado do inquilino. Funções vazadas de
 propósito provam que cada oráculo reprova. Limites: os documentos gerados são
 mínimos, e um caminho que só um estado específico alcança (conteúdo de
 documento, certificado com envelope) pode recusar antes do ponto que leria B;

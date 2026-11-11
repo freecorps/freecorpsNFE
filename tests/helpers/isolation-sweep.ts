@@ -173,20 +173,35 @@ const globalTables = tableNames.filter((name) => !tenantScoped(name));
  * Campos que levam o documento mínimo ao estado comum, para que a chamada com ids de A passe da
  * checagem de acesso e o mesmo caminho com ids de B prove a recusa: concessão de projeto ativa e
  * com todos os escopos, versão publicada completa, operação concluída, endpoint ativo, emissão
- * com tomador legível. `text` é o texto marcado do inquilino.
+ * com tomador legível, chave vigente, nota na listagem sem filtro, ator que o membro reconhece.
+ * `text` é o texto marcado do inquilino; `id`, o documento dele numa tabela.
  */
-const coherent: Record<string, (text: string) => Record<string, unknown>> = {
+const coherent: Record<
+  string,
+  (text: string, id: (table: string) => unknown) => Record<string, unknown>
+> = {
   projectCompanies: () => ({
     active: true,
     scopes: [...integrationScopes],
     environments: ["sandbox"],
   }),
-  documentVersions: () => ({ state: "complete" }),
+  documentVersions: (text) => ({
+    state: "complete",
+    result: JSON.stringify({ document: { key: text } }),
+  }),
   operations: () => ({ state: "succeeded" }),
   webhookEndpoints: () => ({ active: true }),
-  documentExports: () => ({ state: "succeeded", membershipVersion: 1 }),
+  documentExports: (_, id) => ({
+    state: "succeeded",
+    membershipVersion: 1,
+    actor: `member:${String(id("memberships"))}`,
+  }),
+  operationalAudit: (_, id) => ({ actor: `member:${String(id("memberships"))}` }),
   importFiles: () => ({ state: "accepted" }),
   coldArchiveRuns: () => ({ reason: "free_inactive" }),
+  apiKeys: () => ({ expiresAt: Date.UTC(2100, 0, 1) }),
+  documentListings: () => ({ filterKey: "*:*" }),
+  webhookAttempts: (text) => ({ code: text }),
   issuances: (text) => ({
     snapshot: JSON.stringify({
       issueDate: text,
@@ -229,20 +244,28 @@ type Ctx = {
  * o de tabelas de empresa leva também `-empresa`.
  */
 async function seedTables(ctx: Ctx, tenant: Tenant, tables: string[], into: Tables) {
-  const storage = await ctx.storage.store(new Blob([tenant.marker]));
-  (into._storage ??= []).push(storage);
-  const id = (table: string) =>
+  const text = (table: string) =>
+    companyScoped(table) ? `${tenant.marker}-empresa` : tenant.marker;
+  // Um arquivo da organização e um da empresa, marcados como o texto das tabelas que os citam.
+  const files = {
+    organization: await ctx.storage.store(new Blob([tenant.marker])),
+    company: await ctx.storage.store(new Blob([`${tenant.marker}-empresa`])),
+  };
+  (into._storage ??= []).push(files.organization);
+  (into["_storage#empresa"] ??= []).push(files.company);
+  const idIn = (owner: string) => (table: string) =>
     table === "_storage"
-      ? storage
+      ? companyScoped(owner)
+        ? files.company
+        : files.organization
       : table.startsWith("_")
         ? `1${table}`
         : (into[table]?.[0] ?? tenant.ids[table]?.[0] ?? `1${table}`);
-  const text = (table: string) =>
-    companyScoped(table) ? `${tenant.marker}-empresa` : tenant.marker;
+  const id = idIn("");
   for (const table of seedOrder.filter((t) => tables.includes(t))) {
     const doc = {
-      ...(sample(tableJson(table), id, text(table)) as object),
-      ...coherent[table]?.(text(table)),
+      ...(sample(tableJson(table), idIn(table), text(table)) as object),
+      ...coherent[table]?.(text(table), idIn(table)),
     };
     (into[table] ??= []).push(await ctx.db.insert(table, doc));
   }
@@ -304,7 +327,9 @@ async function tenantsTest(modules: Modules = platformModules) {
   );
   const companyA = {
     marker: `${a.marker}-empresa`,
-    ids: new Set(scoped.filter(companyScoped).flatMap((table) => a.ids[table] ?? [])),
+    ids: new Set(
+      [...scoped.filter(companyScoped), "_storage#empresa"].flatMap((table) => a.ids[table] ?? []),
+    ),
   };
   // O slug gerado de cada organização é o marcador do inquilino.
   const slugs = new Map([a, b].map((tenant) => [tenant.ids.organizations![0]!, tenant.marker]));
@@ -458,9 +483,10 @@ const plainText = new Set([
 
 /**
  * c0: só ids de A; c1: só ids de B; c2: `organizationId` de A com os outros ids de B, e listas
- * com um id de A e um de B; c3: ids de A, pelo operator sem concessão da empresa de A.
+ * com um id de A e um de B; c3: ids de A, pelo operator sem concessão da empresa de A;
+ * `c4:<tabela>`: ids de A, salvo o daquela tabela, de B (confere o pai e confia no filho).
  */
-type Case = "c0" | "c1" | "c2" | "c3";
+type Case = "c0" | "c1" | "c2" | "c3" | `c4:${string}`;
 type Caller = "owner" | "operator";
 type Finding = { fn: string; caller: Caller; case: Case; problem: string };
 
@@ -551,10 +577,10 @@ export const refusals = ["UNAUTHENTICATED", "ACCESS_DENIED", "NOT_FOUND"];
 const ghost = (table: string) => `${"9".repeat(Math.max(1, 32 - table.length))}${table}`;
 
 /**
- * Chama cada função de `functions` nos casos c0 a c3, num banco novo por função, e devolve o que
+ * Chama cada função de `functions` nos casos c0 a c4, num banco novo por função, e devolve o que
  * o oráculo encontrou:
- * - a resposta traz um id ou o marcador do que o chamador não pode ver (B, ou a empresa de A
- *   no c3);
+ * - a resposta, ou os dados e a mensagem de um erro, traz um id ou o marcador do que o chamador
+ *   não pode ver (B, ou a empresa de A no c3);
  * - a chamada escreveu nesses documentos, criou um que os cita ou agendou função com eles;
  * - a resposta aos ids de B difere da resposta aos mesmos ids trocados por inexistentes, com as
  *   `refusals` fundidas numa só;
@@ -568,7 +594,13 @@ export async function sweepIsolation(
   options: {
     modules?: Modules;
     overrides?: Record<string, Record<string, unknown>>;
-    onCall?: (fn: string, caller: Caller, which: Case, outcome: Outcome) => void;
+    onCall?: (
+      fn: string,
+      caller: Caller,
+      which: Case,
+      outcome: Outcome,
+      seen: { bringsA: boolean },
+    ) => void;
   } = {},
 ) {
   const findings: Finding[] = [];
@@ -579,16 +611,23 @@ export async function sweepIsolation(
       if (!id) throw new Error(`${fn.name}: tabela ${table} sem documento de ${tenant.name}`);
       return id;
     };
-    const ids: Record<Case, (table: string) => string> = {
-      c0: pick(a),
-      c1: pick(b),
-      c2: (table) => (table === "organizations" ? pick(a) : pick(b))(table),
-      c3: pick(a),
-    };
+    const ids = (which: Case): ((table: string) => string) =>
+      which === "c1"
+        ? pick(b)
+        : which === "c2"
+          ? (table) => (table === "organizations" ? pick(a) : pick(b))(table)
+          : which.startsWith("c4:")
+            ? (table) => (table === which.slice(3) ? pick(b) : pick(a))(table)
+            : pick(a);
     const forms: Record<string, (id: string) => string> = {
       slug: (id) => slugs.get(id) ?? `slug-${id}`,
       actor: (id) => `member:${id}`,
     };
+    const aIds = new Set(
+      Object.entries(a.ids)
+        .filter(([table]) => !globalTables.includes(table))
+        .flatMap(([, list]) => list),
+    );
     const bIds = new Set(
       Object.entries(b.ids)
         .filter(([table]) => !globalTables.includes(table))
@@ -611,10 +650,17 @@ export async function sweepIsolation(
           passed.push(value);
           return value;
         };
-      const args = argsFor(fn, by(ids[which]), which === "c2" ? by(pick(a)) : undefined);
+      const args = argsFor(fn, by(ids(which)), which === "c2" ? by(pick(a)) : undefined);
       return { args: { ...args, ...options.overrides?.[fn.name] }, passed };
     };
     const own = serialize(argsOf("c0").args);
+    // As tabelas que os argumentos selecionam, além da organização.
+    const selected = new Set<string>();
+    argsFor(fn, (selector) => {
+      const table = selector.split("#")[0]!;
+      if (table !== "organizations") selected.add(table);
+      return pick(a)(table);
+    });
     // Um caso cujos argumentos repetem os de c0 (função sem ids, ou só com o da organização em
     // c2) não testa nada novo, salvo pelo operator: c3 o chama sempre com os ids de A.
     const differs = (which: Case) => serialize(argsOf(which).args) !== own;
@@ -628,6 +674,10 @@ export async function sweepIsolation(
         ? (["owner", "operator"] as const).map((c) => [c, "c2"] as [Caller, Case])
         : []),
       ["operator", "c3"],
+      // Com dois seletores ou mais, cada um vem de B sozinho, os outros de A.
+      ...(selected.size > 1
+        ? [...selected].map((table) => ["owner", `c4:${table}`] as [Caller, Case])
+        : []),
     ];
     const call = async (caller: Caller, args: Record<string, unknown>): Promise<Outcome> => {
       const client = caller === "owner" ? owner : operator;
@@ -666,7 +716,11 @@ export async function sweepIsolation(
       const { args, passed } = argsOf(which);
       const before = await snapshot(t);
       const outcome = await call(caller, args);
-      options.onCall?.(fn.name, caller, which, outcome);
+      // A resposta de A traz algo de A: sem isso, uma listagem vazia não mostra o que filtraria.
+      const text = outcome.resolved ? serialize(outcome.value) : "";
+      options.onCall?.(fn.name, caller, which, outcome, {
+        bringsA: text.includes(a.marker) || [...aIds].some((id) => text.includes(id)),
+      });
       const { markers, ids: hidden } = forbidden(which);
       // Um id que o chamador mandou e volta ecoado não revela nada; o resto, sim.
       const leaked = (text: string, echo: boolean) =>
@@ -675,8 +729,12 @@ export async function sweepIsolation(
       if (outcome.resolved) {
         const found = leaked(serialize(outcome.value), false);
         if (found) report(`resposta traz ${found}`);
-      } else if (outcome.code === "SEM_CODIGO" && which !== "c0")
-        report(`erro sem código: ${outcome.message.slice(0, 160)}`);
+      } else {
+        const found = leaked(`${serialize(outcome.data)} ${outcome.message}`, false);
+        if (found) report(`erro traz ${found}`);
+        if (outcome.code === "SEM_CODIGO" && which !== "c0")
+          report(`erro sem código: ${outcome.message.slice(0, 160)}`);
+      }
       const after = await snapshot(t);
       let wrote = false;
       for (const [id, doc] of after) {
