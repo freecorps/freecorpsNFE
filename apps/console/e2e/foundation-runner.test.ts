@@ -1,3 +1,5 @@
+// e2e/ is outside the console tsconfig; linted alone, this file needs the Node types named here.
+/// <reference types="node" />
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
 const fixture = vi.hoisted(() => ({
@@ -6,6 +8,7 @@ const fixture = vi.hoisted(() => ({
   close: vi.fn(),
   newPage: vi.fn(),
   contextClose: vi.fn(),
+  read: vi.fn(),
   write: vi.fn(),
   fetch: vi.fn(),
   axe: vi.fn(),
@@ -19,7 +22,7 @@ vi.mock("../../../scripts/lib/local-browser.mjs", () => ({
 vi.mock("node:child_process", () => ({ execFileSync: () => "fixture" }));
 vi.mock("node:fs", () => ({
   mkdirSync: vi.fn(),
-  readFileSync: vi.fn(),
+  readFileSync: fixture.read,
   writeFileSync: fixture.write,
 }));
 vi.mock("../../../scripts/lib/worktree/paths.mjs", () => ({
@@ -85,6 +88,7 @@ it.each(["launch", "page", "page-close"])(
 // Only exercises runner control flow. These no-op UI responses and synthetic
 // RPC values do not prove authentication, accessibility or an XML runtime.
 function simulateCompletedJourney() {
+  fixture.read.mockReturnValue(Buffer.from("<NFe/>"));
   const locator = {
     fill: async () => {},
     click: async () => {},
@@ -119,7 +123,7 @@ function simulateCompletedJourney() {
     return { withTags: () => ({ analyze: async () => ({ violations: [] }) }) };
   });
   fixture.fetch.mockImplementation(async (_url, options) => {
-    const { path } = JSON.parse(options.body);
+    const { path, args } = JSON.parse(options.body);
     if (path === "mail:inbox") {
       return {
         json: async () => ({
@@ -131,11 +135,16 @@ function simulateCompletedJourney() {
         }),
       };
     }
-    expect(path).toBe("xml:extract");
+    expect(path).toBe("xml:validate");
+    expect(args.bytes).toEqual({ $bytes: Buffer.from("<NFe/>").toString("base64") });
+    const processed = {
+      checks: { parsing: { code: "XML_PARSED" } },
+      parsing: { document: { products: [{ unitPrice: "12.3456789012" }] } },
+    };
     return {
       json: async () => ({
         status: "success",
-        value: { json: '{"items":[{"unitPrice":"12.3456789012"}]}', runtime: "v24.synthetic" },
+        value: { json: JSON.stringify(processed), runtime: "v24.synthetic" },
       }),
     };
   });

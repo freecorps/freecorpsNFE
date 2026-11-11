@@ -48,7 +48,7 @@
         "platform/convex/account.test.ts",
         "platform/convex/lib/accountMail.test.ts",
         "tests/worktreeSafety.test.ts",
-        "packages/fiscal-nfe/index.test.ts",
+        "platform/convex/xml.test.ts",
         "packages/contracts/index.test.ts",
         "apps/console/e2e/foundation.mjs"
       ]

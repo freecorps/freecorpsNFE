@@ -40,9 +40,12 @@ pertencem à NF-e. Não é uma biblioteca XML genérica. `fiscal-core` contém s
 decimais exatos e tipos de resultados/versões compartilhados. Não antecipamos
 um modelo universal, `br-documents` ou um pacote de fixtures sem consumidor.
 
-O export anterior `parseNfe(string)` permanece apenas para o protótipo B00,
-com suas verificações `not-checked` e fixture mínima. O pipeline novo recebe
-`Uint8Array` e não transforma esse extrator antigo em documento validado.
+O extrator antigo `parseNfe(string)`, com `MAX_XML_BYTES` e `FiscalXmlError`,
+existe na 0.1.0 publicada e saiu do código-fonte; a próxima versão publicada
+será minor, por ser mudança incompatível. Quem o usava passa os bytes originais
+a `parseNfeModel` ou `processNfe`: o limite de tamanho fica em `LIMITS.bytes`,
+e a recusa vem como `NfeError`, com o código em `code`, ou em `checks.parsing`
+do resultado de `processNfe`.
 
 ## Estruturas e etapas
 

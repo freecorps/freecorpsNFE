@@ -1,7 +1,5 @@
-import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
-import { parseNfe } from "../fiscal-nfe/src/index";
-import { canPreview, isPrototypeScreen, sampleDocument, screenContracts } from "./src/index";
+import { canPreview, isPrototypeScreen, screenContracts } from "./src/index";
 import { normalizeCnpj } from "./src/companies";
 import { routes } from "./src/external";
 import { integrationScopes, scopesWithoutRestRoute } from "./src/projects";
@@ -15,15 +13,6 @@ it("shares the alphanumeric CNPJ contract with the versioned NF-e corpus", () =>
   expect(normalizeCnpj(parsed.document.issuer.document)).toBe(parsed.document.issuer.document);
   // Parsing does not produce the normalized document DTO or persisted import metadata.
   expect(parsed.metadata.versions.normalizer).toBeNull();
-});
-it("keeps the screen example consistent with the independent XML fixture", () => {
-  const parsed = parseNfe(
-    readFileSync(new URL("../fiscal-nfe/fixtures/minimal.xml", import.meta.url), "utf8"),
-  );
-  expect(sampleDocument.key).toBe(parsed.key);
-  expect(sampleDocument.number).toBe(parsed.number);
-  expect(sampleDocument.total).toBe(parsed.total);
-  expect(sampleDocument.items).toEqual(parsed.items.map(({ number: _number, ...item }) => item));
 });
 it("hides administration from readers and rejects arbitrary route keys", () => {
   expect(canPreview("documento", "viewer")).toBe(true);
