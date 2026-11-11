@@ -419,6 +419,16 @@ e `NOT_FOUND` reprova o CI. Funções que carregam o registro antes de checar a
 sessão recusam o ID forjado com `NOT_FOUND`; papéis, membership e dados reais
 de outra organização continuam cobertos pelos testes de cada domínio.
 
+`platform/convex/httpSurface.test.ts` faz o mesmo com as rotas HTTP: percorre
+`http.getRoutes()`, inclusive as do componente de auth, e exige de cada rota
+uma classe de credencial (`chave`, `ticket`, `preflight`, `assinatura`,
+`público` ou `sessão`). Cada rota é chamada sem credencial num banco vazio e
+precisa responder o status e o corpo declarados, sem escrever em tabela,
+arquivo ou agendamento. A classe também precisa bater com o marcador
+`freecorps-access:` do handler. Rota sem classe, classe de rota que não
+existe, resposta divergente ou escrita reprovam o CI; o próprio arquivo prova
+que uma rota nova que responda 200 sem credencial reprova.
+
 ### Isolamento
 
 `convex-test` cria bancos em memória por instância. Casos de filesystem usam
