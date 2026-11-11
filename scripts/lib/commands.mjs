@@ -229,6 +229,11 @@ export const commands = {
   ],
   "worktree:dev": ["plataforma", "worktree", "Sessão local do worktree, chamada por dev"],
   "worktree:cleanup": ["repositório", "worktree", "Encerra os processos registrados do worktree"],
+  "worktree:reap": [
+    "repositório",
+    "worktree",
+    "Encerra processos deixados rodando por worktrees apagados",
+  ],
   "worktree:finish": [
     "repositório",
     "worktree",

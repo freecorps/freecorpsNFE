@@ -3,7 +3,10 @@ import { existsSync, readdirSync, readlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { sleepSync } from "./exec.mjs";
+import { resolveWorktreesRoot } from "./location.mjs";
 import { defaultWorktreesRoot, isWindows } from "./paths.mjs";
+import { mainWorktreePath } from "./registry.mjs";
 
 /**
  * Editores e agentes apagam o diretório do worktree sem rodar
@@ -106,37 +109,34 @@ export function listUserProcesses() {
   return [...byPid].map(([pid, paths]) => ({ pid, paths }));
 }
 
-async function terminate(pids) {
-  for (const pid of pids) {
-    try {
-      process.kill(pid, "SIGTERM");
-    } catch {
-      // Já saiu.
-    }
-  }
-  await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
-  for (const pid of pids) {
-    try {
-      process.kill(pid, "SIGKILL");
-    } catch {
-      // Saiu depois do SIGTERM.
-    }
+/** SIGTERM, um segundo de prazo e SIGKILL em quem não saiu. */
+function terminate(pids) {
+  for (const pid of pids) signalQuietly(pid, "SIGTERM");
+  if (pids.length === 0) return;
+  sleepSync(1000);
+  for (const pid of pids) signalQuietly(pid, "SIGKILL");
+}
+
+function signalQuietly(pid, signal) {
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // Já saiu.
   }
 }
 
 /**
  * Para todo processo deixado por um worktree apagado deste checkout e limpa o
- * registro do Git desses worktrees. Seguro de rodar de qualquer lugar: só toca
- * processos cujo diretório de worktree sumiu. `extraParents` recebe o diretório
- * de worktrees configurado (`resolveWorktreesRoot`), que mora em `location.mjs`.
+ * registro do Git desses worktrees. Só toca processos cujo diretório de
+ * worktree sumiu. A busca de processos é POSIX; o `git worktree prune` roda em
+ * toda plataforma.
  */
-export async function reapOrphanedWorktrees(mainRoot, { quiet = false, extraParents = [] } = {}) {
-  if (isWindows) return [];
-  const parents = [...new Set([...worktreeParentDirs(mainRoot), ...extraParents])];
-  const orphans = findOrphanedProcesses(listUserProcesses(), parents);
-  if (orphans.length > 0) {
-    await terminate(orphans.map(({ pid }) => pid));
-    if (!quiet) {
+export function reapOrphanedWorktrees(mainRoot, { quiet = false, parents } = {}) {
+  let orphans = [];
+  if (!isWindows) {
+    orphans = findOrphanedProcesses(listUserProcesses(), parents ?? worktreeParentDirs(mainRoot));
+    terminate(orphans.map(({ pid }) => pid));
+    if (orphans.length > 0 && !quiet) {
       const worktrees = [...new Set(orphans.map(({ worktree }) => basename(worktree)))];
       console.log(
         `Parei ${orphans.length} processo(s) deixados por worktrees apagados: ${worktrees.join(", ")}.`,
@@ -147,15 +147,24 @@ export async function reapOrphanedWorktrees(mainRoot, { quiet = false, extraPare
   return orphans;
 }
 
-/** Equivalente POSIX da varredura de executores do Windows em `exec.mjs`. */
-export function stopPosixNodeExecutors(nodeExecutable) {
-  const target = resolve(nodeExecutable);
-  for (const { pid, paths } of listUserProcesses()) {
-    if (pid === process.pid || paths[0] !== target) continue;
+/**
+ * Ponto de entrada de setup, cleanup e `worktree reap`, a partir de qualquer
+ * checkout do repositório. Inclui o diretório de worktrees configurado
+ * (`worktree config --set-dir`). É limpeza de melhor esforço: fora de um
+ * repositório Git, ou se a listagem falhar, não faz nada em vez de derrubar o
+ * comando que a chamou.
+ */
+export function reapDeletedWorktrees(root, options = {}) {
+  try {
+    const mainRoot = mainWorktreePath(root);
+    const parents = worktreeParentDirs(mainRoot);
     try {
-      process.kill(pid, "SIGTERM");
+      parents.push(resolveWorktreesRoot(mainRoot).path);
     } catch {
-      // Já saiu.
+      // Configuração inválida: o `worktree config` já reclama dela.
     }
+    return reapOrphanedWorktrees(mainRoot, { ...options, parents: [...new Set(parents)] });
+  } catch {
+    return [];
   }
 }

@@ -143,8 +143,8 @@ try {
       await (await import("./lib/worktree/session.mjs")).cleanup();
       break;
     case "reap": {
-      const { reapDeletedWorktrees } = await import("./lib/worktree/session.mjs");
-      const reaped = await reapDeletedWorktrees(currentRoot);
+      const { reapDeletedWorktrees } = await import("./lib/worktree/orphans.mjs");
+      const reaped = reapDeletedWorktrees(currentRoot);
       if (reaped.length === 0) console.log("Nenhum processo deixado por worktree apagado.");
       break;
     }
