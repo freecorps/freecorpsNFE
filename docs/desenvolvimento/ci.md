@@ -422,12 +422,20 @@ de outra organização continuam cobertos pelos testes de cada domínio.
 `platform/convex/httpSurface.test.ts` faz o mesmo com as rotas HTTP: percorre
 `http.getRoutes()`, inclusive as do componente de auth, e exige de cada rota
 uma classe de credencial (`chave`, `ticket`, `preflight`, `assinatura`,
-`público` ou `sessão`). Cada rota é chamada sem credencial num banco vazio e
-precisa responder o status e o corpo declarados, sem escrever em tabela,
-arquivo ou agendamento. A classe também precisa bater com o marcador
-`freecorps-access:` do handler. Rota sem classe, classe de rota que não
-existe, resposta divergente ou escrita reprovam o CI; o próprio arquivo prova
-que uma rota nova que responda 200 sem credencial reprova.
+`público` ou `sessão`). Cada rota é chamada sem credencial válida num banco
+vazio, com um ticket forjado nas rotas de ticket, e precisa responder o status
+e o corpo declarados, sem escrever em tabela do app, arquivo ou agendamento. A
+classe também precisa bater com o marcador `freecorps-access:` do handler.
+Rota sem classe, classe de rota que não existe, resposta divergente ou escrita
+reprovam o CI; o próprio arquivo prova que uma rota nova que responda 200 sem
+credencial reprova.
+
+Limites: as tabelas dos componentes (auth, limites, filas) ficam fora da
+conferência de escrita. Rota de prefixo recebe uma sonda só, o que cobre as
+rotas REST porque o transporte confere a chave antes de despachar, mas não
+cada endpoint do Better Auth. Num banco vazio, o `NOT_FOUND` dos downloads e
+da conexão Stripe não separa a falta de credencial da falta do registro; o
+ticket e a assinatura continuam provados nos testes de cada domínio.
 
 ### Isolamento
 

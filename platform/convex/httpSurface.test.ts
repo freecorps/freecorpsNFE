@@ -13,9 +13,9 @@ import { modulePath, modules } from "../../tests/helpers/convex-modules";
 
 // Varredura da superfície HTTP do Convex da plataforma: toda rota de
 // `http.getRoutes()`, inclusive as do componente de auth, precisa de uma
-// classe de credencial abaixo. Cada uma é chamada sem credencial num banco
-// vazio e precisa recusar com o status e a forma declarados, sem escrever nada.
-// Os testes de cada domínio continuam provando a chamada com credencial.
+// classe de credencial abaixo. Cada uma é chamada sem credencial válida num
+// banco vazio e precisa responder o status e a forma declarados, sem escrever
+// nada. Os testes de cada domínio continuam provando a chamada com credencial.
 const SITE = "http://localhost:5199";
 const CONVEX_SITE = "http://127.0.0.1:3257";
 const FOREIGN = "https://outra-origem.invalid";
@@ -63,8 +63,11 @@ const key = (): Expected => ({
   status: 401,
   body: { error: refusal("INVALID_API_KEY").error },
 });
-const ticket = (code: string, notFound?: string): Expected => ({
+// Um ticket forjado no formato certo chega à conferência dele, não só à do formato.
+const forged = "f".repeat(72);
+const ticket = (code: string, headers: Record<string, string>, notFound?: string): Expected => ({
   credential: "ticket",
+  headers,
   status: refusal(code).status,
   body: {
     error: { ...refusal(code).error, ...(notFound ? { message: notFound } : {}) },
@@ -117,9 +120,18 @@ const routes: Record<string, Expected> = {
   "PATCH /v1/webhook-endpoints/*": key(),
   "POST /v1/webhook-endpoints/*": key(),
 
-  "GET /v1/document-download": ticket("NOT_FOUND", "Documento não encontrado."),
-  "GET /v1/export-download": ticket("NOT_FOUND", "Exportação não encontrada."),
-  "POST /v1/import-upload": ticket("UPLOAD_EXPIRED"),
+  // O console é a única origem aceita no download do documento; com ela, a recusa vem do ticket.
+  "GET /v1/document-download": ticket(
+    "NOT_FOUND",
+    { Origin: SITE, "X-Download-Token": forged },
+    "Documento não encontrado.",
+  ),
+  "GET /v1/export-download": ticket(
+    "NOT_FOUND",
+    { "X-Download-Token": forged },
+    "Exportação não encontrada.",
+  ),
+  "POST /v1/import-upload": ticket("UPLOAD_EXPIRED", { "X-Upload-Token": forged }),
   "OPTIONS /v1/document-download": preflight(403),
   "OPTIONS /v1/export-download": preflight(403),
   "OPTIONS /v1/import-upload": preflight(204),
@@ -184,7 +196,7 @@ const routeKey = (method: string, path: string) => `${method} ${path}`;
  * Marcador do handler: o comentário acima do export que é o handler, num dos módulos que http.ts
  * importa, ou o da rota inline em http.ts. O handler de um componente não tem marcador.
  */
-async function handlerMarker(handler: PublicHttpAction, path: string) {
+async function handlerMarker(handler: PublicHttpAction, path: string, method: string) {
   const marker = (source: string, anchor: string) =>
     new RegExp(`// freecorps-access: (\\S+) — [^\\n]*\\n${anchor}`).exec(source)?.[1] ?? null;
   const routerSource = readModule(httpModule);
@@ -194,7 +206,8 @@ async function handlerMarker(handler: PublicHttpAction, path: string) {
     for (const [name, value] of Object.entries((await modules[file]!()) as Record<string, unknown>))
       if (value === handler) return marker(readModule(file), `export const ${name}\\b`);
   }
-  return marker(routerSource, `http\\.route\\(\\{\\s*path: "${path}"`);
+  const literal = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return marker(routerSource, `http\\.route\\(\\{\\s*path: "${literal}",\\s*method: "${method}"`);
 }
 function readModule(file: string) {
   return readFileSync(new URL(`./${modulePath(file)}.ts`, import.meta.url), "utf8");
@@ -272,6 +285,8 @@ async function audit(router: HttpRouter, table: Record<string, Expected>) {
       failures.push(`${name}: rota sem classe de credencial`);
       continue;
     }
+    if ((expected.credential === "preflight") !== (method === "OPTIONS"))
+      failures.push(`${name}: preflight é a classe de OPTIONS, e só dele`);
     // O preflight segue a rota que ele abre; os outros, a própria classe.
     const owner =
       expected.credential === "preflight"
@@ -284,7 +299,7 @@ async function audit(router: HttpRouter, table: Record<string, Expected>) {
     if (!credential || credential === "preflight")
       failures.push(`${name}: preflight sem rota a que pertença`);
     else {
-      const marker = await handlerMarker(handler, path);
+      const marker = await handlerMarker(handler, path, method);
       if (marker !== expectedMarker[credential])
         failures.push(`${name}: marcador ${marker ?? "ausente"}, classe ${expected.credential}`);
     }
