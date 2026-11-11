@@ -190,11 +190,17 @@ await withLocalBrowser(root, "foundation", async () => {
     await page.goto(`${site}/missing-foundation-page`);
     await page.getByRole("heading", { name: "Página não encontrada." }).waitFor();
     await capture("not-found-mobile");
-    const xml = readFileSync(join(root, "packages/fiscal-nfe/fixtures/minimal.xml"), "utf8");
-    const extracted = await rpc("action", "xml:extract", { xml });
-    assert.equal(JSON.parse(extracted.json).items[0].unitPrice, "12.3456789012");
-    assert.match(extracted.runtime, /^v24\./);
-    report.scenarios.push(`xml-real-node-action-${extracted.runtime}`);
+    // The import pipeline in the Node runtime, with a synthetic corpus invoice.
+    const bytes = readFileSync(join(root, "tests/fixtures/nfe/4.00/invoice-signed.xml"));
+    const validated = await rpc("action", "xml:validate", {
+      bytes: { $bytes: bytes.toString("base64") },
+      evaluatedAt: "2026-09-12T15:00:00Z",
+    });
+    const processed = JSON.parse(validated.json);
+    assert.equal(processed.checks.parsing.code, "XML_PARSED");
+    assert.equal(processed.parsing.document.products[0].unitPrice, "12.3456789012");
+    assert.match(validated.runtime, /^v24\./);
+    report.scenarios.push(`xml-real-node-action-${validated.runtime}`);
     report.result = "passed";
   } catch (error) {
     finalization.fail(error);

@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
-import { parseNfe, processNfe } from "./src/index";
+import { processNfe } from "./src/index";
 import { scanMarkup } from "./src/markup";
 import { LIMITS, decodeXml } from "./src/xml";
 
@@ -28,8 +27,6 @@ describe("scanMarkup", () => {
     const hidden = "<b/>".repeat(4);
     expect(scanMarkup(`<?pi <a><a><a> <!-- ?><r/>`, { depth: 1, nodes: 1 })).toBeNull();
     expect(scanMarkup(`<r><?pi <!--?>${hidden}<!----></r>`, { depth: 2, nodes: 4 })).toBe("limit");
-    const xml = readFileSync(new URL("./fixtures/minimal.xml", import.meta.url), "utf8");
-    expect(parseNfe(xml.replace("<NFe", "<?note a < b?><NFe")).number).toBe("000000001");
   });
   it("counts elements whose name starts with a character JavaScript calls space", () => {
     expect(scanMarkup("<r><﻿/>< /></r>", { depth: 1, nodes: 3 })).toBeNull();
@@ -50,7 +47,7 @@ describe("scanMarkup", () => {
 
 // Com o regex que recomeçava em cada `<` depois de uma falha, esses arquivos no
 // limite de bytes ocupavam a importação por minutos; o custo linear foi medido
-// na PR, não aqui. Aqui fica o desfecho nas três entradas: a recusa na
+// na PR, não aqui. Aqui fica o desfecho nas duas entradas: a recusa na
 // primeira abertura sem fechamento.
 describe.each([
   ["comments", "<!--"],
@@ -66,8 +63,5 @@ describe.each([
       expect.objectContaining({ code: "XML_MALFORMED" }),
     );
     expect(processNfe(encode(xml)).checks.parsing.code).toBe("XML_MALFORMED");
-  });
-  it("is rejected as malformed by the legacy parser", () => {
-    expect(() => parseNfe(xml)).toThrow("XML_MALFORMED");
   });
 });

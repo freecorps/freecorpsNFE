@@ -34,7 +34,6 @@
   "dependencies": {
     "@freecorps/fiscal-core": "workspace:*",
     "@xmldom/xmldom": "0.8.15",
-    "fast-xml-parser": "5.11.2",
     "libxml2-wasm": "0.7.2",
     "pdf-lib": "1.17.1",
     "xml-crypto": "6.4.0"

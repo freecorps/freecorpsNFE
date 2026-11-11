@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Synthetic extraction fixture. Not valid for issuance, XSD or signature verification. -->
-<NFe xmlns="http://www.portalfiscal.inf.br/nfe"><infNFe Id="NFe35260900000000000000550010000000011000000000" versao="4.00"><ide><mod>55</mod><serie>001</serie><nNF>000000001</nNF><dhEmi>2026-09-10T10:00:00-03:00</dhEmi></ide><emit><CNPJ>00000000000000</CNPJ><xNome>Empresa &amp; Exemplo</xNome></emit><det nItem="1"><prod><cProd>0001</cProd><xProd>Produto de demonstração</xProd><qCom>2.0000</qCom><vUnCom>12.3456789012</vUnCom><vProd>24.69</vProd></prod></det><total><ICMSTot><vNF>24.69</vNF></ICMSTot></total></infNFe></NFe>
