@@ -37,7 +37,8 @@ uma cita o número antigo na primeira linha.
 Pré-requisitos e início rápido no [README principal](../README.md#quer-contribuir-leia-isto-antes).
 [worktrees.md](worktrees.md) é a referência para criar, preparar, iniciar e
 limpar ambientes locais, com portas, crons e contas de teste. `bun run help`
-lista cada script com a aplicação e o ambiente que ele atinge.
+lista cada script e cada roteiro rodado pelo caminho, com a aplicação e o
+ambiente que ele atinge.
 
 ### 2. Localizar o domínio
 

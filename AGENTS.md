@@ -126,8 +126,9 @@ do dev: preserve processos, servidores, setup do editor e alterações locais.
 
 Bun na versão de `package.json` e Vite+; `vp install --frozen-lockfile`
 instala ([README.md](README.md)). `bun run help` lista os scripts com aplicação
-e ambiente; script novo entra em `scripts/lib/commands.mjs`. `bun run dev` roda
-só em worktree, com Convex local e console; `vp dev` pula esse roteador. No
+e ambiente; script novo, com atalho ou rodado pelo caminho, entra em
+`scripts/lib/commands.mjs`. `bun run dev` roda só em worktree, com Convex local
+e console; `vp dev` pula esse roteador. No
 Windows, passe temporários por `$TEMP` (o Python não vê o `/tmp` do Git Bash).
 Em worktree, crie a branch a partir de `origin/main`; `git switch main` falha.
 

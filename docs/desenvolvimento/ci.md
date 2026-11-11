@@ -670,7 +670,7 @@ mais de um domínio usa ficam em `scripts/lib/`.
 | `public-copy/`  | Varredura pública, `pre-push` e varredura de credenciais                        |
 | `repo/`         | Catálogo de `bun run help` e guardas do próprio repositório                     |
 | `validation/`   | Deployment de validação e diagnóstico do smoke                                  |
-| `worktree/`     | `bun run dev`, prova de isolamento e testes do ciclo de vida dos worktrees      |
+| `worktree/`     | `bun run dev` e testes do ciclo de vida dos worktrees                           |
 
 Seis arquivos ficam na raiz de `scripts/`, porque algo de fora do checkout os
 chama pelo caminho:
@@ -692,7 +692,10 @@ gravaria os recibos fora da raiz. `scripts/repo/scripts-layout.test.ts`
 reprova arquivo novo solto na raiz de `scripts/`, cálculo de raiz pela própria
 pasta ou pela pasta de execução e caminho de `scripts/` citado
 por `package.json`, workflow, `vite.config.ts`, `knip.jsonc` ou `CODEOWNERS`
-que não existe.
+que não existe. `scripts/repo/commands.test.ts` reprova ponto de entrada de
+`scripts/` que nenhum `package.json`, workflow, `vite.config.ts`, hook do Git
+ou outro script alcançável cita e que não está nos roteiros de
+`scripts/lib/commands.mjs`.
 
 ### Segredos no repositório
 
@@ -1049,17 +1052,19 @@ Os recibos de entregas anteriores são históricos: ficam em
 roteiro no `codeSha` registrado (`git show <codeSha>:scripts/<roteiro>`), não à
 versão atual. Os roteiros `prove-webhook-checks.mjs`, `prove-sdk-checks.mjs`,
 `prove-usage.mjs` e `prove-operational-support.mjs` foram removidos porque o
-`validate` cobre o que repetiam.
+`validate` cobre o que repetiam. `prove-reference-availability.mjs`,
+`prove-document-expiry.mjs` e `prove-hosted-webhooks.mjs` saíram na #154:
+nenhum runbook ou aceite pedia nova execução, e o aceite de webhooks
+hospedados (B07) conserva o recibo registrado. Ficam no histórico do Git.
 
 As demais provas `scripts/<domínio>/prove-*` são roteiros próprios, fora do CI
 obrigatório e sem esse executor. Exigem ambiente local, Convex local ou
 operador, e não usam dados fiscais reais. Entre elas: `prove-usage-load.mjs`
 (10 mil e 100 mil documentos sintéticos), `prove-operations.mjs` (Workpool
 real e fonte HTTP loopback), `prove-selfhost.mjs` (servidor Docker, receptor
-HTTPS e recuperação), `prove-reference-availability.mjs`,
-`prove-smoke-diagnostics.mjs` (também executado por
-`tests/validationSmoke.test.ts`) e `prove-document-expiry.mjs`, que só fala
-com o backend local do worktree, embora grave em `.ci-results/hosted-79-80`.
+HTTPS e recuperação) e `prove-smoke-diagnostics.mjs` (também executado por
+`tests/validationSmoke.test.ts`). O catálogo de `bun run help` lista cada
+roteiro chamado por caminho, com aplicação e ambiente.
 
 Os roteiros hospedados não compartilham uma única guarda de destino. Cada um
 confere o próprio alvo antes de escrever:
@@ -1073,21 +1078,13 @@ confere o próprio alvo antes de escrever:
   cobre essa recusa, inclusive de credencial do tipo `prod` e de outro host,
   antes de qualquer chamada de rede. Os outros roteiros abaixo não passam por
   esse helper nem por esse teste.
-- `prove-hosted-rate-limits.mjs` exige a mesma credencial da instalação
-  `elated-possum-295` que `prove-hosted-webhooks.mjs`, confere que o
-  `/health` público serve o SHA informado com `appEnv: installation` e
-  `productEnv: sandbox`, e só cria orçamentos sintéticos com prefixo aleatório
-  no componente `rateLimiter`. No fim, reseta cada um e confere que nenhum
-  ficou com a configuração de partições.
-- `prove-hosted-webhooks.mjs` exige a credencial da instalação
-  `elated-possum-295`, deployment Convex do tipo `prod`, e chama a REST pelo
-  Worker público. Antes de escrever, confere que `/health` e `/build.json`
-  servem o SHA informado, que o ambiente é `APP_ENV=installation`,
-  `PRODUCT_ENV=sandbox`, `FISCAL_ENV=disabled`, `FNFE_CRONS=off` e
-  `WEBHOOK_MODE=https`, que não há crons e que o inventário de endpoints e
-  entregas está completo. Cria só organizações sintéticas e, no fim, compara
-  ambiente, SHA e endpoints ativos com o estado inicial. O tipo `prod` do
-  Convex não é produção fiscal: o ambiente continua sandbox.
+- `prove-hosted-rate-limits.mjs` exige a credencial do operador da instalação
+  `elated-possum-295`, confere que o `/health` público serve o SHA informado
+  com `appEnv: installation` e `productEnv: sandbox`, e só cria orçamentos
+  sintéticos com prefixo aleatório no componente `rateLimiter`. No fim, reseta
+  cada um e confere que nenhum ficou com a configuração de partições. O
+  [README do componente](../../packages/convex-rate-limiter/README.md) a exige
+  antes do aceite de mudanças no limitador.
 - `prove-certificates-hosted.ts` publica num deployment `dev` isolado, com
   referência `dev/issue-77-certificates-proof` em
   `.ci-results/77/hosted-target.json`; recusa `modest-seal-118`, exige deploy
