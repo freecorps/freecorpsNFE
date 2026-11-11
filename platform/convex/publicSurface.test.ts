@@ -1,17 +1,29 @@
 import { isDeepStrictEqual } from "node:util";
 import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
+import { ConvexError, v } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import schema from "./schema";
+import { action, mutation, query } from "./_generated/server";
+import { requireMembership } from "./lib/organizationAccess";
 import { register } from "../test-setup";
 import { validationTarget } from "../../scripts/lib/validation.mjs";
-import { modulePath, modules } from "../../tests/helpers/convex-modules";
+import { modules } from "../../tests/helpers/convex-modules";
+import {
+  publicFunctions,
+  refusals,
+  sample,
+  sweepIsolation,
+  type Outcome,
+  type PublicFunction,
+} from "../../tests/helpers/isolation-sweep";
 
 // Varredura da superfície pública do Convex da plataforma: descobre toda
 // query, mutation e action pública de platform/convex, inclusive módulos
-// novos, e a chama diretamente, sem sessão e com IDs forjados. Uma função que
-// responda sem estar declarada abaixo reprova o CI. Os testes de cada domínio
-// continuam cobrindo papéis, membership e dados reais de outra organização.
+// novos, e a chama diretamente. A primeira seção chama sem sessão e com IDs
+// forjados; a segunda, com sessão em A e ids de outra organização (#132).
+// Uma função que responda fora do declarado abaixo reprova o CI. Os testes de
+// cada domínio continuam cobrindo papéis, membership e o fluxo completo.
 beforeEach(() => {
   for (const [name, value] of Object.entries(validationTarget.environment))
     vi.stubEnv(name, value as string);
@@ -21,82 +33,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
-
-type Validator = {
-  type: string;
-  value?: unknown;
-  tableName?: string;
-  keys?: Validator;
-  values?: { fieldType: Validator };
-};
-type Kind = "query" | "mutation" | "action";
-type Registered = {
-  isPublic?: boolean;
-  isQuery?: boolean;
-  isMutation?: boolean;
-  isAction?: boolean;
-  exportArgs?: () => string;
-};
-
-// Valor mínimo aceito pelo validador. IDs forjados usam o formato do
-// convex-test para a tabela pedida; nenhum documento correspondente existe.
-function sample(validator: Validator): unknown {
-  switch (validator.type) {
-    case "string":
-      return "forjado";
-    case "number":
-      return 1;
-    case "bigint":
-      return 1n;
-    case "boolean":
-      return false;
-    case "null":
-      return null;
-    case "bytes":
-      return new ArrayBuffer(1);
-    case "any":
-      return "forjado";
-    case "id":
-      return `1${validator.tableName}`;
-    case "literal":
-      return validator.value;
-    case "union":
-      return sample((validator.value as Validator[])[0]);
-    case "array":
-      return [];
-    case "record":
-      return {};
-    case "object":
-      return Object.fromEntries(
-        Object.entries(
-          validator.value as Record<string, { fieldType: Validator; optional: boolean }>,
-        )
-          .filter(([, field]) => !field.optional)
-          .map(([name, field]) => [name, sample(field.fieldType)]),
-      );
-    default:
-      throw new Error(`Validador sem amostra: ${validator.type}`);
-  }
-}
-
-async function publicFunctions() {
-  const found: { name: string; kind: Kind; args: unknown }[] = [];
-  for (const [path, load] of Object.entries(modules)) {
-    if (path.includes("/_generated/") || path.endsWith(".config.ts")) continue;
-    const module = modulePath(path);
-    for (const [name, value] of Object.entries((await load()) as Record<string, Registered>)) {
-      if (!value?.isPublic || !value.exportArgs) continue;
-      const kind = value.isQuery ? "query" : value.isMutation ? "mutation" : "action";
-      found.push({
-        name: `${module}:${name}`,
-        kind,
-        args: sample(JSON.parse(value.exportArgs()) as Validator),
-      });
-    }
-  }
-  return found.sort((a, b) => a.name.localeCompare(b.name));
-}
 
 // Funções públicas que respondem sem sessão de propósito. Cada entrada diz o
 // que devolve; nenhuma pode expor dado de organização, projeto ou empresa.
@@ -121,14 +59,12 @@ const answersWithoutSession: Record<string, { reason: string; value: unknown }> 
 const argumentOverrides: Record<string, Record<string, unknown>> = {
   "invitations:send": { email: "convite@validation.invalid" },
 };
-// Recusas que não revelam se o registro existe.
-const refusals = ["UNAUTHENTICATED", "ACCESS_DENIED", "NOT_FOUND"];
 
-async function callWithoutSession(fn: { name: string; kind: Kind; args: unknown }) {
+async function callWithoutSession(fn: PublicFunction) {
   const t = convexTest(schema, modules);
   register(t);
   type Args = Record<string, unknown>;
-  const args: Args = { ...(fn.args as Args), ...argumentOverrides[fn.name] };
+  const args: Args = { ...(sample(fn.args) as Args), ...argumentOverrides[fn.name] };
   try {
     const value =
       fn.kind === "query"
@@ -163,7 +99,12 @@ it("enumerates every public Convex function of the platform, including new modul
     ]),
   );
   expect(new Set(functions.map((fn) => fn.kind))).toEqual(new Set(["query", "mutation", "action"]));
-  for (const name of [...Object.keys(answersWithoutSession), ...Object.keys(argumentOverrides)])
+  for (const name of [
+    ...Object.keys(answersWithoutSession),
+    ...Object.keys(argumentOverrides),
+    ...Object.keys(isolationOverrides),
+    ...Object.keys(unreachedFromA),
+  ])
     expect(names).toContain(name);
 });
 
@@ -182,3 +123,336 @@ it("refuses a direct call without session to every public function with forged I
   }
   expect(leaks).toEqual([]);
 });
+
+// ---------------------------------------------------------------------------------------------
+// Isolamento entre organizações e empresas (#132)
+//
+// Duas organizações, A e B, com um documento mínimo de cada tabela (tests/helpers/isolation-sweep.ts).
+// Cada função é chamada como owner de A e como operator de A sem concessão de empresa: c0 com os
+// ids de A, c1 com os de B, c2 com `organizationId` de A e o resto de B, c3 com os ids de A pelo
+// operator, c4 com um só seletor de B. O oráculo reprova B (ou a empresa de A, no c3) na resposta
+// ou no erro, escrita, arquivo ou agendamento com eles, resposta a B diferente da resposta a um
+// id inexistente, erro sem código e leitura que muda quando B, ou a empresa de A, ganha outro
+// lote.
+
+const address = {
+  street: "Rua sintética",
+  number: "1",
+  complement: "",
+  district: "Centro",
+  city: "São Paulo",
+  state: "SP",
+  postalCode: "01000000",
+};
+// Argumentos fixos, iguais em todos os casos, que levam a chamada com ids de A além da
+// validação de formato. Os ids continuam vindo do caso.
+const isolationOverrides: Record<string, Record<string, unknown>> = {
+  ...argumentOverrides,
+  "projects:grantCompany": { scopes: ["documents:read"], environments: ["sandbox"] },
+  "keys:create": { scopes: ["documents:read"], expiresAt: Date.UTC(2027, 0, 1) },
+  "keys:rotate": { scopes: ["documents:read"], expiresAt: Date.UTC(2027, 0, 1) },
+  "companies:create": { cnpj: "11222333000181", name: "Empresa sintética", address },
+  "companies:update": { name: "Empresa sintética", address },
+  "observability:audit": { from: 0, until: 300 * 86_400_000 },
+  "issuanceConsole:cancel": { reasonCode: "1", reason: "Cancelamento sintético de teste" },
+  "webhooks:create": {
+    name: "Webhook",
+    url: "https://webhook.example.com/fnfe",
+    events: ["document.received"],
+  },
+  "webhooks:update": {
+    name: "Webhook",
+    url: "https://webhook.example.com/fnfe",
+    events: ["document.received"],
+  },
+};
+
+// Funções em que o owner de A, com os ids de A, não chega ao que leria: recusa, erro sem código
+// ou conteúdo corrompido, porque os dados gerados não alcançam o caminho. A varredura prova só
+// que B recebe a mesma recusa de um id inexistente. Cada entrada cita o teste que prova o
+// isolamento com dados reais.
+const unreachedFromA: Record<string, string> = {
+  "access:diagnostics":
+    "sonda da validação, só para operator e sem argumento de escopo (access.test.ts)",
+  "access:overview": "papel da sessão na validação, sem argumento de escopo (access.test.ts)",
+  "certificateWorker:rewrap":
+    "exige envelope cifrado real; certificates.test.ts, 'rewrap recusa estranho, ... certificado de outra empresa'",
+  "companies:create":
+    "a confirmação pela consulta exige campos escolhidos; companies.test.ts, 'consulta antes do cadastro só para owner/admin da organização dona da consulta'",
+  "companies:setGrant":
+    "o membro citado pelos registros de A é o próprio owner; companies.test.ts, 'forged IDs never cross them'",
+  "contentRead:documentDetailToken":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "contentRead:documentItemsToken":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:documentDetailRead":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:documentItemsRead":
+    "exige conteúdo de documento real; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documents:list":
+    "cada linha exige o documento normalizado completo; consoleAccess.test.ts, 'consulta de documentos, downloads e exportação', e cada linha passa por loadScopedDocument",
+  "exportDownloads:ticket":
+    "exige parte de exportação concluída e vigente; exports.test.ts, 'refuses download tickets for a part of another project, organization or member'",
+  "issuanceConsole:detail":
+    "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
+  "issuanceConsole:resubmission":
+    "exige o snapshot completo da emissão; issuanceConsole.test.ts, 'isola organizações e empresas'",
+};
+
+// Funções cuja resposta ao owner de A, com os ids de A, não traz id nem texto de A. Flags,
+// permissões e contagens não carregam dado do inquilino, e o lote extra de B confere que não o
+// somam; as listagens que os dados gerados deixam vazias citam o teste que as prova com dados.
+const flag = "flag, permissão ou estado sem dado do inquilino";
+const count = "contagem; o lote extra de B confere que ela não soma B";
+const created = "devolve só o registro que acabou de criar";
+const token = "token opaco do plano de leitura; o conteúdo vem da action, conferida à parte";
+const answersWithoutA: Record<string, string> = {
+  "access:session": "sessão de quem chama",
+  "account:capabilities": flag,
+  "account:profile": "perfil de quem chama",
+  "billing:overview": "cobrança desligada no ambiente da varredura",
+  "captureRelease:status": flag,
+  "captures:history":
+    "o fluxo gerado não tem histórico; captures.test.ts, 'the history obeys the capture's access and the stream's organization (#433)'",
+  "companies:deletion": flag,
+  "contentRead:documentVersionsToken": token,
+  "contentRead:importDetailToken": token,
+  "contentRead:importHistoryToken": token,
+  "deployment:current": flag,
+  "deployment:environments": flag,
+  "documentContentNode:documentVersionsRead":
+    "as versões geradas não têm conteúdo legível; documents.test.ts, 'rejects foreign documents, versions and artifacts'",
+  "documentContentNode:importHistoryRead":
+    "o arquivo gerado não tem histórico legível; imports.test.ts, 'isolates detail selectors by organization, company and file'",
+  "documents:canProcess": flag,
+  "documents:summaryCount": count,
+  "documents:unclassified":
+    "o artefato gerado já tem documento; consoleAccess.test.ts, 'consulta de documentos, downloads e exportação'",
+  "documents:unclassifiedCount": count,
+  "exports:environments": flag,
+  "invitations:send": created,
+  "keys:create": created,
+  "plans:overview": "catálogo de planos desligado no ambiente da varredura",
+  "projects:companyGrant": flag,
+  "projects:offeredEnvironments": flag,
+  "refusalReprocess:canRead": flag,
+  "refusalReprocess:canRequest": flag,
+  "refusalReprocess:status": flag,
+  "termsOfUse:current": "termos vigentes da plataforma, iguais para todos",
+};
+
+// Achado do oráculo aceito, com a prova de que não expõe B. A chave é a linha do achado.
+const isolationExceptions: Record<string, string> = {};
+
+const sweepEnvironment = () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.UTC(2026, 10, 4, 12));
+  vi.stubEnv("FNFE_WEBHOOK_MASTER_KEY", "ab".repeat(32));
+  // Nenhuma chamada da varredura sai para a rede (Stripe, consulta de CNPJ, webhooks).
+  vi.stubGlobal("fetch", async () => {
+    throw new Error("rede desligada na varredura de isolamento");
+  });
+};
+const line = (f: { fn: string; caller: string; case: string; problem: string }) =>
+  `${f.fn} [${f.caller} ${f.case}] ${f.problem}`;
+
+it("keeps every public function inside the caller's organization and company grants", async () => {
+  sweepEnvironment();
+  // O c0 do owner vem primeiro. Ele não chega ao que leria quando recusa, falha sem código ou
+  // acha o conteúdo corrompido, ou quando a validação que o barra também barra os ids de B: ela
+  // vem antes do acesso, e os casos de B não provam nada.
+  const c0 = new Map<string, string | null>();
+  const unreached = new Set<string>();
+  const withoutA = new Set<string>();
+  const functions = await publicFunctions();
+  const kinds = new Map(functions.map((fn) => [fn.name, fn.kind]));
+  const findings = await sweepIsolation(functions, {
+    overrides: isolationOverrides,
+    onCall: (fn, caller, which, outcome: Outcome, { bringsA }) => {
+      if (caller !== "owner") return;
+      const code = outcome.resolved ? null : outcome.code;
+      if (which === "c0") {
+        c0.set(fn, code);
+        if (outcome.resolved && !bringsA && kinds.get(fn) !== "mutation") withoutA.add(fn);
+        if (code && (refusals.includes(code) || code === "SEM_CODIGO" || code.endsWith("_CORRUPT")))
+          unreached.add(fn);
+      } else if (code && code === c0.get(fn)) unreached.add(fn);
+    },
+  });
+  const refusedA = [...unreached];
+  // Em texto, para que a falha mostre todos os achados, sem a abreviação das listas longas.
+  expect(
+    findings
+      .map(line)
+      .filter((found) => !isolationExceptions[found])
+      .join("\n"),
+  ).toBe("");
+  // A lista de não alcançadas acompanha o código: uma função que passa a alcançar sai dela.
+  expect(refusedA.sort()).toEqual(Object.keys(unreachedFromA).sort());
+  for (const found of Object.keys(isolationExceptions)) expect(findings.map(line)).toContain(found);
+  // Resposta de A sem nada de A: uma listagem vazia não mostraria o que deixasse de filtrar.
+  expect([...withoutA].sort()).toEqual(Object.keys(answersWithoutA).sort());
+}, 300_000);
+
+// Meta-teste: cada oráculo reprova uma função vazada de propósito, quase sempre a que confere a
+// membership da organização pedida e depois confia no id da empresa, o erro que a varredura
+// existe para pegar.
+const company = { organizationId: v.id("organizations"), companyId: v.id("companies") };
+const leaky = {
+  get: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      return ctx.db.get("companies", args.companyId);
+    },
+  }),
+  exists: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      return (await ctx.db.get("companies", args.companyId)) !== null;
+    },
+  }),
+  count: query({
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      return (await ctx.db.query("companies").take(100)).length;
+    },
+  }),
+  rename: mutation({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      await ctx.db.patch("companies", args.companyId, { name: "Renomeada por fora" });
+    },
+  }),
+  // O efeito fica para depois: agenda a escrita com o id de B.
+  schedule: mutation({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      await ctx.scheduler.runAfter(0, makeFunctionReference<"mutation">("leaky:rename"), args);
+    },
+  }),
+  // Falha sem código só quando a empresa é de outra organização.
+  throws: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const found = await ctx.db.get("companies", args.companyId);
+      if (found && found.organizationId !== args.organizationId)
+        throw new Error("empresa de outra organização");
+      return null;
+    },
+  }),
+  // Lista as empresas da organização sem olhar a concessão de quem chama.
+  listAll: query({
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const all = await ctx.db.query("companies").take(100);
+      return all.filter((c) => c.organizationId === args.organizationId).map((c) => c.name);
+    },
+  }),
+  // Seleciona a organização pelo slug, sem membership.
+  bySlug: query({
+    args: { slug: v.string() },
+    handler: async (ctx, args) => {
+      const found = await ctx.db
+        .query("organizations")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+        .unique();
+      return found?.name ?? null;
+    },
+  }),
+  // Confere só o primeiro id da lista e devolve todos.
+  firstOnly: query({
+    args: { organizationId: v.id("organizations"), companyIds: v.array(v.id("companies")) },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const first = await ctx.db.get("companies", args.companyIds[0]!);
+      if (first?.organizationId !== args.organizationId) return [];
+      return Promise.all(args.companyIds.map((id) => ctx.db.get("companies", id)));
+    },
+  }),
+  // Conta os documentos da organização sem filtrar pela concessão de quem chama.
+  countDocuments: query({
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const all = await ctx.db.query("fiscalDocuments").take(100);
+      return all.filter((d) => d.organizationId === args.organizationId).length;
+    },
+  }),
+  // Confere a empresa e confia no projeto.
+  child: query({
+    args: { ...company, projectId: v.id("projects") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const owned = await ctx.db.get("companies", args.companyId);
+      if (owned?.organizationId !== args.organizationId) return null;
+      return ctx.db.get("projects", args.projectId);
+    },
+  }),
+  // Recusa, mas leva o nome da empresa de outra organização no erro.
+  errorLeak: query({
+    args: company,
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const found = await ctx.db.get("companies", args.companyId);
+      if (found && found.organizationId !== args.organizationId)
+        throw new ConvexError({ code: "ACCESS_DENIED", name: found.name });
+      return null;
+    },
+  }),
+  // A contagem atravessa uma action.
+  countAction: action({
+    args: { organizationId: v.id("organizations") },
+    handler: (ctx, args): Promise<number> =>
+      ctx.runQuery(makeFunctionReference<"query", typeof args, number>("leaky:count"), args),
+  }),
+};
+
+it("reproves a deliberately leaky function in each oracle", async () => {
+  sweepEnvironment();
+  const leakyModule = { "../../platform/convex/leaky.ts": async () => leaky };
+  const findings = await sweepIsolation(await publicFunctions(leakyModule), {
+    modules: { ...modules, ...leakyModule },
+  });
+  const problems = (fn: string) =>
+    findings.filter((f) => f.fn === fn).map((f) => `${f.caller} ${f.case}: ${f.problem}`);
+  expect(problems("leaky:get")).toContainEqual(
+    expect.stringMatching(/^owner c2: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:exists")).toContainEqual(
+    expect.stringMatching(/^owner c2: responde diferente de um id inexistente/),
+  );
+  expect(problems("leaky:count")).toContain("owner c0: muda com lote extra de B");
+  expect(problems("leaky:rename")).toContainEqual(expect.stringMatching(/^owner c2: escreveu em /));
+  expect(problems("leaky:schedule")).toContainEqual(
+    expect.stringMatching(/^owner c2: escreveu em \d+_scheduled_functions/),
+  );
+  expect(problems("leaky:throws")).toContainEqual(
+    expect.stringMatching(/^owner c2: erro sem código: .*empresa de outra organização/),
+  );
+  expect(problems("leaky:listAll")).toContainEqual(
+    expect.stringMatching(/^operator c3: resposta traz inquilino-a-7c1e-empresa/),
+  );
+  expect(problems("leaky:bySlug")).toContainEqual(
+    expect.stringMatching(/^owner c1: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:firstOnly")).toContainEqual(
+    expect.stringMatching(/^owner c2: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:countAction")).toContain("owner c0: muda com lote extra de B");
+  expect(problems("leaky:child")).toContainEqual(
+    expect.stringMatching(/^owner c4:projects: resposta traz inquilino-b/),
+  );
+  expect(problems("leaky:errorLeak")).toContainEqual(
+    expect.stringMatching(/^owner c2: erro traz inquilino-b/),
+  );
+  expect(problems("leaky:countDocuments")).toContain(
+    "operator c3: muda com lote extra da empresa de A",
+  );
+}, 60_000);
