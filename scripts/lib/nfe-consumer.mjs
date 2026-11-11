@@ -21,6 +21,12 @@ const cases = manifest.cases.map((entry) => {
     result,
   };
 });
+// The size limit has no corpus file (#159): the installed package refuses 2 MiB plus one byte.
+const oversized = processNfe(Buffer.alloc(2 * 1024 * 1024 + 1, "x"), {
+  source: "synthetic",
+  evaluatedAt: manifest.evaluatedAt,
+});
+assert.deepEqual(oversized.checks.parsing, { status: "failed", code: "XML_TOO_LARGE" });
 const evidence = ["invoice-authorized", "event-110111"].map(
   (id) => cases.find((c) => c.id === id).result,
 );

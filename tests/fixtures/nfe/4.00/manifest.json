@@ -9,34 +9,6 @@
   "redistribution": "Project-generated synthetic data; no real credential or fiscal document",
   "cases": [
     {
-      "id": "bytes-limit",
-      "path": "bytes-limit.xml",
-      "sha256": "71ac24a75f6bc57bc51b43b3d13c3009aa243986b77a92102a3097c9e53123e9",
-      "origin": "scripts/fiscal/generate-nfe-corpus.mjs",
-      "expected": {
-        "parsing": "failed",
-        "xsd": "not_checked",
-        "signature": "not_checked",
-        "identity": "not_checked",
-        "normalization": "not_checked",
-        "certificateTrust": "not_checked",
-        "originTrust": "not_checked",
-        "certificateTime": "not_checked",
-        "fiscalEvidence": "not_checked"
-      },
-      "expectedCodes": {
-        "parsing": "XML_TOO_LARGE",
-        "xsd": "NOT_CHECKED",
-        "identity": "NOT_CHECKED",
-        "normalization": "NOT_CHECKED",
-        "signature": "NOT_CHECKED",
-        "certificateTrust": "NOT_CHECKED",
-        "certificateTime": "NOT_CHECKED",
-        "originTrust": "FISCAL_ORIGIN_NOT_AUTHENTICATED",
-        "fiscalEvidence": "NOT_CHECKED"
-      }
-    },
-    {
       "id": "invoice-prefixed",
       "path": "invoice-prefixed.xml",
       "sha256": "2232631a8a84d386e6ecb62209e2f7e795ca0ceb1fd62d340d38f9eaf48ba1ae",
