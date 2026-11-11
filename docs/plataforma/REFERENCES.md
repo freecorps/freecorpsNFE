@@ -129,7 +129,8 @@ console.log(result.data.status, result.data.manifest.version);
 
 Não foi criado `fiscal-references`. Os consumidores atuais precisam do DTO no
 SDK, da regra de vigência no backend e da pesquisa no console. Contratos puros
-ficam em `packages/contracts`, validação do arquivo em `lib/reference-dataset.ts`,
+ficam em `packages/contracts`, validação do arquivo em
+`platform/convex/lib/referenceDataset.ts`,
 coleta em `scripts/` e persistência no Convex. Nenhum deles exige um pacote
 distribuível com payloads oficiais. Uma extração futura depende de consumo
 independente demonstrado e da revisão de distribuição.

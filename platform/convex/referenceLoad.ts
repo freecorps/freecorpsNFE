@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { parseReferencePayload } from "../../lib/reference-dataset";
+import { parseReferencePayload } from "./lib/referenceDataset";
 import type { Id } from "./_generated/dataModel";
 
 /** Operator-only ingestion. No URLs supplied by clients, credentials, or automatic publication. */

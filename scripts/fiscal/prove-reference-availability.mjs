@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { referenceLocal } from "../lib/reference-local.mjs";
-import { canonicalEntries, sha256 } from "../../lib/reference-dataset.ts";
+import { canonicalEntries, sha256 } from "../../platform/convex/lib/referenceDataset.ts";
 import { normalizeCnpj } from "../../packages/fiscal-core/src/cnpj.ts";
 import { repoRoot, repoUrl } from "../lib/repo-root.mjs";
 import { termsAcceptance } from "../lib/organization-terms.mjs";

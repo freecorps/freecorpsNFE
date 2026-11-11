@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { worktreeConvexPorts } from "../../../lib/worktree-local.ts";
+import { worktreeConvexPorts } from "../worktree-local.ts";
 import { readLocalConfig } from "./deployment.mjs";
 import { fail, git, tryGit } from "./exec.mjs";
 import {

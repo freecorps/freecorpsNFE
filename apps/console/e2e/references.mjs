@@ -32,7 +32,6 @@ await withLocalBrowser(root, "references", async () => {
       "platform",
       "packages",
       "apps",
-      "lib",
       "scripts",
       "tests",
     )

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { referenceCorpus } from "../../tests/helpers/reference-corpus";
-import { sha256 } from "../../lib/reference-dataset";
+import { sha256 } from "../../platform/convex/lib/referenceDataset";
 import { repoRoot } from "../lib/repo-root.mjs";
 const root = join(repoRoot, "tests/fixtures/references/1.0");
 mkdirSync(root, { recursive: true });

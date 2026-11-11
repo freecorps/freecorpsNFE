@@ -18,7 +18,7 @@ import {
 } from "./lib/stripeEvent";
 import { splitStreet } from "./lib/stripeAddress";
 import { normalizeIssuanceInput } from "./lib/issuanceCore";
-import { canonicalEntries, sha256 } from "../../lib/reference-dataset";
+import { canonicalEntries, sha256 } from "./lib/referenceDataset";
 import type { StripeCharge, StripeConnectionConfig } from "./lib/stripeValues";
 import { modules } from "../../tests/helpers/convex-modules";
 

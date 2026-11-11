@@ -1,4 +1,4 @@
-import { worktreeConvexPorts, worktreeSiteUrl } from "../../../lib/worktree-local.ts";
+import { worktreeConvexPorts, worktreeSiteUrl } from "../worktree-local.ts";
 import {
   localPortArgs,
   runConvexStreaming,

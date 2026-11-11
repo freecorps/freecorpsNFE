@@ -5,7 +5,7 @@ import { api, internal, components } from "./_generated/api";
 import { register } from "../test-setup";
 import { referenceCorpus } from "../../tests/helpers/reference-corpus";
 import { hashApiKey } from "./lib/apiKeyCrypto";
-import { canonicalEntries, sha256 } from "../../lib/reference-dataset";
+import { canonicalEntries, sha256 } from "./lib/referenceDataset";
 import { FreecorpsClient } from "../../packages/sdk/src/index";
 import { routes } from "../../packages/contracts/src/external";
 import { referencePage, referenceLookup } from "../../packages/contracts/src/references";

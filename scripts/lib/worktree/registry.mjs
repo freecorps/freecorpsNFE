@@ -19,7 +19,7 @@ import {
   WORKTREE_FRONTEND_ALLOCATION_START,
   WORKTREE_FRONTEND_PORT_END,
   worktreeConvexPorts,
-} from "../../../lib/worktree-local.ts";
+} from "../worktree-local.ts";
 import { readLocalConfig } from "./deployment.mjs";
 import { fail, git, replaceFileSync, sleepSync } from "./exec.mjs";
 import { currentRoot, normalizePath, worktreePaths } from "./paths.mjs";

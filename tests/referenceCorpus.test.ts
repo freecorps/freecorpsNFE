@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vite-plus/test";
 import manifest from "./fixtures/references/1.0/manifest.json";
-import { parseReferencePayload, sha256 } from "../lib/reference-dataset";
+import { parseReferencePayload, sha256 } from "../platform/convex/lib/referenceDataset";
 import { referenceValidity } from "../packages/contracts/src/references";
 
 it.each(manifest.files)("reproduz a origem, os hashes e a vigência de $file", async (file) => {

@@ -13,9 +13,9 @@ import {
   type PrototypeScreen,
   type ScreenError,
 } from "@freecorps/contracts";
-import { Button, buttonClass } from "./ui/button";
-import { DataTable } from "./ui/data-table";
-import { FormField, Select } from "./ui/form";
+import { Button, buttonClass } from "../ui/button";
+import { DataTable } from "../ui/data-table";
+import { FormField, Select } from "../ui/form";
 import {
   Callout,
   Card,
@@ -24,8 +24,8 @@ import {
   PageHeader,
   StatusBadge,
   type Tone,
-} from "./ui/layout";
-import { TabNav, tabLinkClass } from "./ui/tabs";
+} from "../ui/layout";
+import { TabNav, tabLinkClass } from "../ui/tabs";
 
 const errors: Partial<Record<PrototypeScreen, ScreenError>> = {
   onboarding: {

@@ -20,11 +20,12 @@ const page = (href: string) =>
   `<!doctype html><html><body><h1>Página</h1><main><p>${"texto ".repeat(120)}</p>` +
   `<a href="${href}">entrada</a></main></body></html>`;
 
-function prove(landingLink: string, docsLink = "/docs/") {
+function prove(landingLink: string, docsLink = "/docs/", assets: string[] = []) {
   const dist = mkdtempSync(join(tmpdir(), "fnfe-public-site-"));
   dirs.push(dist);
   mkdirSync(join(dist, "docs"), { recursive: true });
   mkdirSync(join(dist, "assets"));
+  for (const asset of assets) writeFileSync(join(dist, "assets", asset), "");
   writeFileSync(join(dist, "index.html"), page(landingLink));
   writeFileSync(join(dist, "docs/index.html"), page(docsLink));
   writeFileSync(join(dist, "docs/search.json"), "[]");
@@ -62,6 +63,22 @@ describe("prova do site público: links para o console", () => {
       const onLanding = prove(href);
       expect([href, onLanding.status]).toEqual([href, 1]);
       expect(onLanding.stderr).toContain(`index.html: ${href}`);
+    }
+  });
+});
+
+describe("prova do site público: telas de desenvolvimento", () => {
+  it("aceita o bundle sem os chunks das telas de apps/console/src/dev", () => {
+    const result = prove("/console", "/docs/", ["index-abc123.js", "routes-abc123.js"]);
+    expect([result.status, result.stderr]).toEqual([0, ""]);
+    expect(JSON.parse(result.stdout)).toMatchObject({ devChunks: 0 });
+  });
+
+  it("recusa o bundle com o protótipo ou a referência de componentes", () => {
+    for (const chunk of ["prototype-abc123.js", "component-reference-abc123.js"]) {
+      const result = prove("/console", "/docs/", ["index-abc123.js", chunk]);
+      expect([chunk, result.status]).toEqual([chunk, 1]);
+      expect(result.stderr).toContain(chunk);
     }
   });
 });

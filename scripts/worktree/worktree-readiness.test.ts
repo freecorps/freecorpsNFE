@@ -329,8 +329,10 @@ it("CLI status funciona sem node_modules e não expõe conteúdo inválido", asy
     recursive: true,
   });
   cpSync(resolve("scripts/worktree.mjs"), join(paths.root, "scripts/worktree.mjs"));
-  mkdirSync(join(paths.root, "lib"));
-  cpSync(resolve("lib/worktree-local.ts"), join(paths.root, "lib/worktree-local.ts"));
+  cpSync(
+    resolve("scripts/lib/worktree-local.ts"),
+    join(paths.root, "scripts/lib/worktree-local.ts"),
+  );
   writeFileSync(paths.appFile, '{"app":"private-fixture"}');
   const cli = pathToFileURL(join(paths.root, "scripts/worktree.mjs")).href;
   const runner = childScript(

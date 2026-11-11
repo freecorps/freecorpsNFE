@@ -5,7 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-import { isLocalWorktreeSiteUrl } from "../../../lib/worktree-local.ts";
+import { isLocalWorktreeSiteUrl } from "../worktree-local.ts";
 import { localUrls, readLocalConfig } from "./deployment.mjs";
 import { PLATFORM_BACKEND_ENV, readEnvFile } from "./env-file.mjs";
 import { commandResult, fail } from "./exec.mjs";
