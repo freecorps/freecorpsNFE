@@ -61,7 +61,15 @@ servidor as chama, e quem chama já conferiu.
 
 - **Checagem** é uma chamada a uma função de `checks` ou `wrappers` em
   `tooling/oxlint-plugin-freecorps/access-helpers.mjs`, importada ou do próprio
-  módulo.
+  módulo, ou a uma função interna que confere primeiro (veja
+  [Delegação](#delegação)).
+- **Caminhos:** a regra segue os ramos de `if` e `?:`. Depois deles, só conta a
+  checagem feita em todos os ramos que seguem adiante; um ramo que sai da
+  função (`return`, `throw`) não precisa conferir. Uma checagem no lado direito
+  de `&&`, `||`, `??` ou `||=`, num `case`, num laço, no `try` de um
+  `try/catch`, no `catch` ou numa função aninhada (callback de `map`, por
+  exemplo) pode não rodar, e não vale para o que vem depois. Dentro do próprio
+  ramo, ela vale até o fim dele.
 - **Contexto** é o primeiro parâmetro do handler, inteiro (`ctx`) ou
   desestruturado (`{ db }`, `{ runQuery: run }`); uma forma que a regra não lê,
   como padrão aninhado, reprova.
@@ -74,8 +82,6 @@ servidor as chama, e quem chama já conferiu.
   pode agir sobre ele. Um `ctx.db.get` sem checagem depois reprova.
 - A regra segue as funções locais do arquivo, inclusive as guardadas num
   objeto (`selectors.x(ctx)`), com o `ctx` repassado.
-- Uma action que chama `ctx.runQuery(internal.<este módulo>.fn)` passa quando
-  o handler de `fn`, no mesmo arquivo, confere o acesso primeiro.
 
 ### Helpers de acesso
 
@@ -92,6 +98,20 @@ classificação. `wrappers` são funções fora dos `*Access.ts` que conferem an
 de ler, como `documentAccess` e `issuanceAccess`. Ao lintar o módulo de um
 wrapper, a regra confere que ele chama uma checagem antes de tocar em dado.
 
+### Delegação
+
+Uma action que chama `ctx.runQuery`, `ctx.runMutation` ou `ctx.runAction` com
+`internal.<módulo>.<fn>` confere o acesso quando `fn` confere antes de tocar em
+dado:
+
+- `fn` do mesmo arquivo: a regra lê o handler ali mesmo;
+- `fn` de outro módulo: precisa estar em `delegates` de `access-helpers.mjs`.
+  Ao lintar o módulo de `fn`, a regra confere que o handler chama uma checagem
+  antes do primeiro toque em dado e reprova a entrada que não existe. Tirar o
+  helper do destino, ou movê-lo para um ramo, reprova ali.
+
+Uma interna de outro módulo fora de `delegates` é toque em dado.
+
 ### Exceções
 
 Uma função pública que não passa pela checagem leva, logo acima do export:
@@ -103,17 +123,18 @@ Uma função pública que não passa pela checagem leva, logo acima do export:
 | Categoria    | Quando usar                                                                                     |
 | ------------ | ----------------------------------------------------------------------------------------------- |
 | `sem-tenant` | Lê só a sessão ou a conta de quem chama, sem dado de organização (`account:profile`, `/health`) |
-| `delegada`   | Repassa a uma função de outro módulo que confere o acesso; o motivo nomeia essa função          |
 | `ticket`     | Rota HTTP autorizada por um ticket emitido depois da checagem (downloads, upload)               |
 | `assinatura` | Webhook recebido, autenticado pela assinatura do remetente antes de qualquer efeito             |
 
 Categoria desconhecida ou motivo curto reprova. Um marcador numa função que
 já confere o acesso também reprova, para que a lista de exceções não envelheça.
 
-Limites: a regra segue a ordem do código-fonte, não os desvios de fluxo, e não
-atravessa arquivos. Uma exceção `delegada` confia que o destino confere; o
-teste de cada domínio e `platform/convex/publicSurface.test.ts` continuam
-provando o comportamento.
+Limites: a regra lê um arquivo por vez; o que atravessa arquivos passa pelas
+listas de `access-helpers.mjs`, conferidas no módulo de cada função. Ela não
+correlaciona condições: duas checagens sob `if (a)` e `if (!a)` separados não
+somam. Um `return` antecipado sem checagem não é conferido, nem o que ele
+devolve de um `ctx.db.get` anterior. O teste de cada domínio e
+`platform/convex/publicSurface.test.ts` continuam provando o comportamento.
 
 ## no-wall-clock-in-tests
 

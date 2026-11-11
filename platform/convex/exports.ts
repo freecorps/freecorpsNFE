@@ -67,10 +67,13 @@ export async function createExport(
   keyHash?: string,
 ) {
   if (!/^[\x21-\x7e]{1,128}$/.test(args.key)) return deny("INVALID_REQUEST");
-  const member = keyHash
-    ? null
-    : (await requireMembership(ctx, args.organizationId, { closed: "export" })).membership;
-  const key = keyHash ? await authenticateKey(ctx, keyHash) : null;
+  const { member, key } = keyHash
+    ? { member: null, key: await authenticateKey(ctx, keyHash) }
+    : {
+        member: (await requireMembership(ctx, args.organizationId, { closed: "export" }))
+          .membership,
+        key: null,
+      };
   const environment = args.environment;
   let epochs: { accessVersion?: string; projectEpoch?: number; grantEpoch?: number } = {};
   if (args.selection.kind === "organization") {

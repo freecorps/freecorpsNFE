@@ -13,7 +13,6 @@ import {
 import { validateCertificate } from "./lib/certificateValidation";
 import { deny } from "./lib/organizationAccess";
 
-// freecorps-access: delegada — certificates.reserve confere com requireCompany antes de reservar
 export const upload = action({
   args: { ...certificateScope, pfx: v.bytes(), password: v.string() },
   returns: v.id("certificates"),
@@ -94,7 +93,6 @@ export async function validatePendingCertificate(
   await ctx.runMutation(internal.certificates.finish, { id: cert._id, ...outcome });
   return null;
 }
-// freecorps-access: delegada — certificates.authorizeRewrap confere com requireCompany
 export const rewrap = action({
   args: { ...certificateScope, id: v.id("certificates") },
   returns: v.null(),

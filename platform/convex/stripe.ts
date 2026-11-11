@@ -20,7 +20,12 @@ import { nfseProfileOf } from "./lib/nfseProfile";
 import { municipalityState } from "./lib/nfseProfileRules";
 import { humanAccess, memberAccess, projectAccess } from "./lib/operationAccess";
 import { boundedPagination, deny, limitOrganizationAction } from "./lib/organizationAccess";
-import { integrationAudit, requireGrantableCompany, requireProject } from "./lib/projectAccess";
+import {
+  integrationActor,
+  integrationAudit,
+  requireGrantableCompany,
+  requireProject,
+} from "./lib/projectAccess";
 import { findCompany } from "./lib/companyAccess";
 import { assertOrganizationHot, inCustody, stableJson } from "./lib/coldArchiveCore";
 import { scopeFields } from "./lib/operationValues";
@@ -254,7 +259,6 @@ async function disableInCustody(
   await integrationAudit(ctx, project, user._id, "stripe.connection_disabled", connection._id);
   return view((await ctx.db.get("stripeConnections", connection._id))!);
 }
-// freecorps-access: delegada — inCustody só escolhe o caminho; manageAccess e disableInCustody conferem
 export const updateConnection = mutation({
   args: {
     connectionId: v.id("stripeConnections"),
@@ -267,6 +271,8 @@ export const updateConnection = mutation({
   handler: async (ctx, args) => {
     const connection = await ctx.db.get("stripeConnections", args.connectionId);
     if (!connection) return deny("NOT_FOUND");
+    // Both paths start with this check; doing it first keeps the custody state from outsiders.
+    await integrationActor(ctx, connection.organizationId, { archived: "allowed" });
     if (await inCustody(ctx, connection.organizationId))
       return disableInCustody(ctx, connection, args);
     // Access first: whoever lacks it learns nothing about the configuration rules.
