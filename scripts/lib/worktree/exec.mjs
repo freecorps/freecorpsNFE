@@ -6,6 +6,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, renameSync, rmSync } from "node:fs";
 
+import { stopPosixNodeExecutors } from "./orphans.mjs";
 import { isWindows } from "./paths.mjs";
 
 /** Separa erro esperado de operador de crash de verdade na CLI. */
@@ -122,11 +123,17 @@ export async function stopProcessTree(pid) {
 }
 
 /**
- * O Convex sobe executores Node destacados que sobrevivem ao `convex dev` no
- * Windows e seguram um handle no diretório do worktree, o que impede a remoção.
+ * O Convex sobe executores Node destacados que sobrevivem ao `convex dev` e ao
+ * backend. No Windows seguram um handle no diretório do worktree, o que impede
+ * a remoção; no macOS e no Linux são adotados pelo launchd/init e rodam para
+ * sempre, segurando o runtime Node do worktree aberto.
  */
 export function stopWorktreeNodeExecutors(nodeExecutable) {
-  if (!isWindows || !existsSync(nodeExecutable)) return;
+  if (!isWindows) {
+    stopPosixNodeExecutors(nodeExecutable);
+    return;
+  }
+  if (!existsSync(nodeExecutable)) return;
   const escaped = nodeExecutable.replaceAll("'", "''");
   const script = [
     `$target = [IO.Path]::GetFullPath('${escaped}')`,

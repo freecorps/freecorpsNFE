@@ -20,6 +20,8 @@ import {
   syncBackendEnvironment,
 } from "./convex-local.mjs";
 import { readLocalConfig } from "./deployment.mjs";
+import { resolveWorktreesRoot } from "./location.mjs";
+import { reapOrphanedWorktrees } from "./orphans.mjs";
 import {
   ensureBackendEnvFile,
   readEnvFile,
@@ -42,7 +44,7 @@ import {
   requestedWorktreeApp,
   worktreePaths,
 } from "./paths.mjs";
-import { resolveConvexPort, resolveFrontendPort } from "./registry.mjs";
+import { mainWorktreePath, resolveConvexPort, resolveFrontendPort } from "./registry.mjs";
 import { readProcessIdentity, stopRecordedProcesses } from "./process-identity.mjs";
 import { assertLegacySeedProfile, syncWorktree } from "./sync.mjs";
 import {
@@ -196,10 +198,24 @@ async function startFrontendWithRetry(paths, config, trackFrontend) {
   );
 }
 
+/**
+ * Para o que ficou rodando de worktrees apagados deste checkout. O T3 Code roda
+ * o setup a cada worktree novo, então cada um limpa o que os anteriores
+ * deixaram quando foram apagados sem `worktree:cleanup`.
+ */
+export async function reapDeletedWorktrees(root, options = {}) {
+  const mainRoot = mainWorktreePath(root);
+  return reapOrphanedWorktrees(mainRoot, {
+    quiet: options.quiet,
+    extraParents: [resolveWorktreesRoot(mainRoot).path],
+  });
+}
+
 export async function setup(options = {}) {
   let paths = worktreePaths(options.root);
   assertLinkedWorktree(paths);
   assertPrivateDirectories(paths);
+  await reapDeletedWorktrees(paths.root);
   const app = requestedWorktreeApp(paths, options.app);
   if (app !== undefined) {
     if (app !== "platform")
@@ -488,6 +504,7 @@ export async function cleanup(options = {}) {
     await stopDevRecord(currentPaths, options.quiet);
     await stopOrphanBackends(currentPaths, options.quiet);
     stopWorktreeNodeExecutors(currentPaths.nodeExecutable);
+    await reapDeletedWorktrees(currentPaths.root, { quiet: options.quiet });
   };
   // `remove` já possui exclusão nesta mesma execução. Não libera nem readquire.
   if (ownsOperation(paths, ["remove"])) return sweep();
