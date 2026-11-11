@@ -429,20 +429,25 @@ resto de B, e listas com um id de cada (c2), e com os ids de A pelo operator
 `organizations:context`, os `actors` de `observability:names`) têm a tabela
 declarada no helper, e um argumento de texto fora desse mapa e da lista de
 texto comum reprova. Reprovam o CI: id ou marcador de B, ou da empresa de A no
-c3, na resposta; escrita ou agendamento que toque esses documentos; resposta
-aos ids de B diferente da resposta aos mesmos ids trocados por inexistentes;
-erro sem código; e query, ou action que respondeu sem escrever, que muda
-quando B ganha um segundo lote. Como na seção sem sessão, `ACCESS_DENIED` e
+c3, na resposta; escrita, arquivo ou agendamento que toque esses documentos;
+resposta aos ids de B diferente da resposta aos mesmos ids trocados por
+inexistentes; erro sem código; e query, ou action que respondeu sem escrever,
+que muda quando B ganha um segundo lote ou, para o operator no c3, quando a
+empresa de A ganha um. Como na seção sem sessão, `ACCESS_DENIED` e
 `NOT_FOUND` contam como a mesma recusa: um id de outra organização e um id
 inexistente podem receber códigos diferentes, o que só distingue quem já tem
-o id. O teste declara as funções em que nem os ids de A chegam ao que seria
-lido (recusa, erro sem código ou conteúdo corrompido) e os achados aceitos,
-cada um com o teste de domínio que prova o isolamento, e prova com funções
-vazadas de propósito que cada oráculo reprova. Limites: os documentos gerados
-são mínimos, e um caminho que só um estado específico alcança (conteúdo de
+o id. O c0 roda primeiro, no banco recém-semeado, e o teste declara as
+funções em que nem os ids de A chegam ao que seria lido: recusa, erro sem
+código, conteúdo corrompido ou a mesma recusa de domínio que os ids de B
+recebem, sinal de uma validação anterior ao acesso. Cada uma, como cada achado
+aceito, cita o teste de domínio que prova o isolamento. Funções vazadas de
+propósito provam que cada oráculo reprova. Limites: os documentos gerados são
+mínimos, e um caminho que só um estado específico alcança (conteúdo de
 documento, certificado com envelope) pode recusar antes do ponto que leria B;
-tabelas de componentes (auth, filas) ficam fora da conferência de escrita; as
-rotas REST com a chave de A e ids de B ainda não entram na varredura.
+seletores opcionais vão sempre preenchidos, e o caminho que os omite não é
+chamado; tabelas de componentes (auth, filas) ficam fora da conferência de
+escrita; as rotas REST com a chave de A e ids de B ainda não entram na
+varredura.
 
 `platform/convex/httpSurface.test.ts` faz o mesmo com as rotas HTTP: percorre
 `http.getRoutes()`, inclusive as do componente de auth, e exige de cada rota

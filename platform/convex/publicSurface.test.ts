@@ -134,13 +134,34 @@ it("refuses a direct call without session to every public function with forged I
 // com eles, resposta a B diferente da resposta a um id inexistente, erro sem código e leitura que
 // muda quando B ganha outro lote.
 
+const address = {
+  street: "Rua sintética",
+  number: "1",
+  complement: "",
+  district: "Centro",
+  city: "São Paulo",
+  state: "SP",
+  postalCode: "01000000",
+};
 // Argumentos fixos, iguais em todos os casos, que levam a chamada com ids de A além da
 // validação de formato. Os ids continuam vindo do caso.
 const isolationOverrides: Record<string, Record<string, unknown>> = {
   ...argumentOverrides,
-  "keys:create": { scopes: ["documents:read"] },
-  "keys:rotate": { scopes: ["documents:read"] },
   "projects:grantCompany": { scopes: ["documents:read"], environments: ["sandbox"] },
+  "keys:create": { scopes: ["documents:read"], expiresAt: Date.UTC(2027, 0, 1) },
+  "keys:rotate": { scopes: ["documents:read"], expiresAt: Date.UTC(2027, 0, 1) },
+  "companies:create": { cnpj: "11222333000181", name: "Empresa sintética", address },
+  "companies:update": { name: "Empresa sintética", address },
+  "webhooks:create": {
+    name: "Webhook",
+    url: "https://webhook.example.com/fnfe",
+    events: ["document.received"],
+  },
+  "webhooks:update": {
+    name: "Webhook",
+    url: "https://webhook.example.com/fnfe",
+    events: ["document.received"],
+  },
 };
 
 // Funções em que o owner de A, com os ids de A, não chega ao que leria: recusa, erro sem código
@@ -153,6 +174,8 @@ const unreachedFromA: Record<string, string> = {
   "access:overview": "papel da sessão na validação, sem argumento de escopo (access.test.ts)",
   "certificateWorker:rewrap":
     "exige envelope cifrado real; certificates.test.ts, 'rewrap recusa estranho, ... certificado de outra empresa'",
+  "companies:create":
+    "a confirmação pela consulta exige campos escolhidos; companies.test.ts, 'consulta antes do cadastro só para owner/admin da organização dona da consulta'",
   "companies:setGrant":
     "o membro citado pelos registros de A é o próprio owner; companies.test.ts, 'forged IDs never cross them'",
   "contentRead:documentDetailToken":
@@ -192,16 +215,24 @@ const line = (f: { fn: string; caller: string; case: string; problem: string }) 
 
 it("keeps every public function inside the caller's organization and company grants", async () => {
   sweepEnvironment();
-  const refusedA: string[] = [];
+  // O c0 do owner vem primeiro. Ele não chega ao que leria quando recusa, falha sem código ou
+  // acha o conteúdo corrompido, ou quando a validação que o barra também barra os ids de B: ela
+  // vem antes do acesso, e os casos de B não provam nada.
+  const c0 = new Map<string, string | null>();
+  const unreached = new Set<string>();
   const findings = await sweepIsolation(await publicFunctions(), {
     overrides: isolationOverrides,
     onCall: (fn, caller, which, outcome: Outcome) => {
-      if (caller !== "owner" || which !== "c0" || outcome.resolved) return;
-      const { code } = outcome;
-      if (refusals.includes(code) || code === "SEM_CODIGO" || code.endsWith("_CORRUPT"))
-        refusedA.push(fn);
+      if (caller !== "owner") return;
+      const code = outcome.resolved ? null : outcome.code;
+      if (which === "c0") {
+        c0.set(fn, code);
+        if (code && (refusals.includes(code) || code === "SEM_CODIGO" || code.endsWith("_CORRUPT")))
+          unreached.add(fn);
+      } else if (code && code === c0.get(fn)) unreached.add(fn);
     },
   });
+  const refusedA = [...unreached];
   // Em texto, para que a falha mostre todos os achados, sem a abreviação das listas longas.
   expect(
     findings
@@ -296,6 +327,15 @@ const leaky = {
       return Promise.all(args.companyIds.map((id) => ctx.db.get("companies", id)));
     },
   }),
+  // Conta os documentos da organização sem filtrar pela concessão de quem chama.
+  countDocuments: query({
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
+      await requireMembership(ctx, args.organizationId);
+      const all = await ctx.db.query("fiscalDocuments").take(100);
+      return all.filter((d) => d.organizationId === args.organizationId).length;
+    },
+  }),
   // A contagem atravessa uma action.
   countAction: action({
     args: { organizationId: v.id("organizations") },
@@ -336,4 +376,7 @@ it("reproves a deliberately leaky function in each oracle", async () => {
     expect.stringMatching(/^owner c2: resposta traz inquilino-b/),
   );
   expect(problems("leaky:countAction")).toContain("owner c0: muda com lote extra de B");
+  expect(problems("leaky:countDocuments")).toContain(
+    "operator c3: muda com lote extra da empresa de A",
+  );
 }, 60_000);

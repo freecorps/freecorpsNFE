@@ -186,6 +186,7 @@ const coherent: Record<string, (text: string) => Record<string, unknown>> = {
   webhookEndpoints: () => ({ active: true }),
   documentExports: () => ({ state: "succeeded", membershipVersion: 1 }),
   importFiles: () => ({ state: "accepted" }),
+  coldArchiveRuns: () => ({ reason: "free_inactive" }),
   issuances: (text) => ({
     snapshot: JSON.stringify({
       issueDate: text,
@@ -229,6 +230,7 @@ type Ctx = {
  */
 async function seedTables(ctx: Ctx, tenant: Tenant, tables: string[], into: Tables) {
   const storage = await ctx.storage.store(new Blob([tenant.marker]));
+  (into._storage ??= []).push(storage);
   const id = (table: string) =>
     table === "_storage"
       ? storage
@@ -321,6 +323,24 @@ async function seedMoreOfB(t: PlatformTest, b: Tenant) {
   });
 }
 
+/**
+ * Um segundo lote da empresa de A: o que o operator sem concessão lê da organização não muda
+ * com ele.
+ */
+async function seedMoreOfCompanyA(t: PlatformTest, a: Tenant) {
+  // Só as tabelas que exigem a empresa: as que a citam como opcional (`onboarding`) guardam um
+  // estado por organização, que um segundo documento tornaria impossível.
+  const required = (name: string): boolean =>
+    name === "companies" || requires.get(name)!.some(required);
+  const scoped = tableNames.filter(
+    (name) => required(name) && name !== "companies" && !terminal.includes(name),
+  );
+  await t.run(async (ctx) => {
+    const extra: Tables = {};
+    await seedTables(ctx as unknown as Ctx, { ...a, marker: `${a.marker}-lote` }, scoped, extra);
+  });
+}
+
 /** Todos os documentos das tabelas do schema e os agendamentos, com os argumentos, por id. */
 async function snapshot(t: PlatformTest) {
   const rows = await t.run(async (ctx) => {
@@ -333,6 +353,7 @@ async function snapshot(t: PlatformTest) {
     for (const table of tableNames)
       for (const doc of await ctx.db.query(table as TableNames).collect()) add(doc);
     for (const job of await ctx.db.system.query("_scheduled_functions").collect()) add(job);
+    for (const file of await ctx.db.system.query("_storage").collect()) add(file);
     return all;
   });
   return new Map(rows);
@@ -538,7 +559,8 @@ const ghost = (table: string) => `${"9".repeat(Math.max(1, 32 - table.length))}$
  * - a resposta aos ids de B difere da resposta aos mesmos ids trocados por inexistentes, com as
  *   `refusals` fundidas numa só;
  * - um erro sem código fora do c0;
- * - a query, ou a action que respondeu sem escrever, muda quando B ganha um lote extra.
+ * - a query, ou a action que respondeu sem escrever, muda quando B ganha um lote extra, ou,
+ *   para o operator no c3, quando a empresa de A ganha um.
  * `overrides` completa argumentos que precisam passar da validação de formato.
  */
 export async function sweepIsolation(
@@ -596,7 +618,9 @@ export async function sweepIsolation(
     // Um caso cujos argumentos repetem os de c0 (função sem ids, ou só com o da organização em
     // c2) não testa nada novo, salvo pelo operator: c3 o chama sempre com os ids de A.
     const differs = (which: Case) => serialize(argsOf(which).args) !== own;
+    // c0 vem primeiro, sobre o banco recém-semeado: é a medida de até onde os dados alcançam.
     const plan: [Caller, Case][] = [
+      ["owner", "c0"],
       ...(differs("c1")
         ? (["owner", "operator"] as const).map((c) => [c, "c1"] as [Caller, Case])
         : []),
@@ -604,7 +628,6 @@ export async function sweepIsolation(
         ? (["owner", "operator"] as const).map((c) => [c, "c2"] as [Caller, Case])
         : []),
       ["operator", "c3"],
-      ["owner", "c0"],
     ];
     const call = async (caller: Caller, args: Record<string, unknown>): Promise<Outcome> => {
       const client = caller === "owner" ? owner : operator;
@@ -686,6 +709,18 @@ export async function sweepIsolation(
         const { args, passed } = argsOf(which);
         if (shape(first, passed) !== shape(await call(caller, args), passed))
           findings.push({ fn: fn.name, caller, case: which, problem: "muda com lote extra de B" });
+      }
+      const first = repeat.get("operator c3");
+      if (first) {
+        await seedMoreOfCompanyA(t, a);
+        const { args, passed } = argsOf("c3");
+        if (shape(first, passed) !== shape(await call("operator", args), passed))
+          findings.push({
+            fn: fn.name,
+            caller: "operator",
+            case: "c3",
+            problem: "muda com lote extra da empresa de A",
+          });
       }
     }
   }
