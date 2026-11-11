@@ -180,16 +180,6 @@ export const commands = {
     "Jornadas de conta no navegador contra o Convex do worktree",
   ],
   "platform:worker": ["plataforma", "local", "Prova o Worker de auth no workerd, sem rede"],
-  "platform:privacy-worker": [
-    "plataforma",
-    "local",
-    "Prova entrega e redirecionamentos da caixa no workerd, sem rede",
-  ],
-  "deploy:mail": [
-    "plataforma",
-    "produção (publica)",
-    "Publica o Worker de e-mail freecorpsnfe-privacy-mail; --dry-run só empacota",
-  ],
   "bench:navigation": [
     "plataforma",
     "worktree",
@@ -301,7 +291,7 @@ export function helpText() {
     `Nomes antigos, que só indicam o novo: ${old.join(", ")}.`,
     "Testes por área: vp run test:<platform|packages|console|tooling|repository|benchmark>.",
     "Grafo do CI: vp run validate. Publicação de produção: só pelos workflows Deploy production",
-    "e Deploy NFS-e fiscal production; o Worker de e-mail, por deploy:mail.",
+    "e Deploy NFS-e fiscal production.",
   ].join("\n");
 }
 

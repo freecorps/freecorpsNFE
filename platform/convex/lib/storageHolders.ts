@@ -42,14 +42,6 @@ export function storageHolders(ctx: QueryCtx, storageId: Id<"_storage">) {
         .withIndex("by_storageId", (q) => q.eq("storageId", storageId)),
     },
     {
-      table: "privacyIntakes",
-      query: ctx.db.query("privacyIntakes").withIndex("by_raw", (q) => q.eq("raw", storageId)),
-    },
-    {
-      table: "privacyMessages",
-      query: ctx.db.query("privacyMessages").withIndex("by_raw", (q) => q.eq("raw", storageId)),
-    },
-    {
       table: "exportParts",
       query: ctx.db
         .query("exportParts")

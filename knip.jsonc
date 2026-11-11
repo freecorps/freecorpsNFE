@@ -47,7 +47,6 @@
     "apps/console": {
       "entry": [
         "src/main.tsx",
-        "privacy-mail-worker.ts",
         "e2e/**/*.{mjs,ts}",
         "src/**/*.test.{ts,tsx}",
         // Exemplos públicos servidos como arquivo estático em /developer/ e citados pela

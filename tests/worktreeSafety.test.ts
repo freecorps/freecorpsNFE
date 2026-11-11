@@ -61,10 +61,10 @@ it("o subprocesso Convex descarta chaves herdadas e usa o deployment deste workt
   vi.stubEnv("CONVEX_DEPLOY_KEY", "private");
   vi.stubEnv("CONVEX_SELF_HOSTED_URL", "https://remote.invalid");
   vi.stubEnv("CONVEX_DEPLOYMENT", "prod:remote");
-  for (const key of ["AUTH_PROXY_SECRET", "ACCOUNT_EMAIL_RECIPIENTS", "CLOUDFLARE_EMAIL_API_TOKEN"])
+  for (const key of ["AUTH_PROXY_SECRET", "ACCOUNT_EMAIL_RECIPIENTS", "MAIL_API_KEY"])
     vi.stubEnv(key, "private");
   const env = localNodeEnv(paths);
-  for (const key of ["AUTH_PROXY_SECRET", "ACCOUNT_EMAIL_RECIPIENTS", "CLOUDFLARE_EMAIL_API_TOKEN"])
+  for (const key of ["AUTH_PROXY_SECRET", "ACCOUNT_EMAIL_RECIPIENTS", "MAIL_API_KEY"])
     expect(env[key]).toBeUndefined();
   expect(env.CONVEX_DEPLOY_KEY).toBeUndefined();
   expect(env.CONVEX_SELF_HOSTED_URL).toBeUndefined();

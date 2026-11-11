@@ -26,7 +26,7 @@ export function localNodeEnv(paths) {
   const env = prependToPath({ ...process.env }, paths.nodeBinDir);
   for (const key of Object.keys(env)) {
     if (
-      /^(ACCOUNT_|AUTH_PROXY_|CONVEX_|VITE_|FNFE_|RESEND_|VALIDATION_|BETTER_AUTH_|CLOUDFLARE_|CLERK_|APP_ENV$|PRODUCT_ENV$|FISCAL_ENV$|SITE_URL$|EMAIL_|WEBHOOK_)/.test(
+      /^(ACCOUNT_|AUTH_PROXY_|CONVEX_|VITE_|FNFE_|RESEND_|VALIDATION_|BETTER_AUTH_|CLOUDFLARE_|MAIL_|CLERK_|APP_ENV$|PRODUCT_ENV$|FISCAL_ENV$|SITE_URL$|EMAIL_|WEBHOOK_)/.test(
         key,
       )
     )

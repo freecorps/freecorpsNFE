@@ -43,7 +43,7 @@ it("treats as documentation only the Markdown that no task but formatting reads"
     "LICENSING.md",
     "docs/worktrees.md",
     "docs/operacao/deploy-producao.md",
-    "docs/operacao/suporte-email.md",
+    "docs/operacao/email.md",
     "docs/v1.0/ACCEPTANCE.md",
     "docs/v1.0/API-REFERENCE.md",
     "docs/termos/arquivo/termos-de-uso-v1.md",

@@ -11,7 +11,7 @@ afterEach(() => {
  * transaction of its own. The published package decided that by asking whether any function held
  * the lock: an action storing while another function ran wrote into that function's transaction,
  * and failed with "Write outside of transaction" once that one committed before the file was
- * hashed. Two concurrent deliveries of `platform/convex/privacyMail.test.ts` met it in the CI. The patch
+ * hashed. Two concurrent deliveries in the tests of the former e-mail inbox met it in the CI. The patch
  * in `patches/convex-test@0.0.60.patch` asks the caller's own context instead (patches/README.md).
  */
 it("an action stores a file in a transaction of its own while another function holds the lock", async () => {

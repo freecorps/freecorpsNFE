@@ -63,10 +63,6 @@ export type ShellTools = {
   diagnostics: boolean;
   prototype: boolean;
   components: boolean;
-  privacy?: boolean;
-  security?: boolean;
-  support?: boolean;
-  operation?: boolean;
 };
 
 const initial = (text: string) => (text.trim()[0] ?? "?").toLocaleUpperCase("pt-BR");
@@ -431,59 +427,10 @@ function GeneralNavigation({
 }
 function PlatformTools({ tools, onNavigate }: { tools: ShellTools; onNavigate: () => void }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  if (
-    !tools.diagnostics &&
-    !tools.prototype &&
-    !tools.components &&
-    !tools.privacy &&
-    !tools.security &&
-    !tools.support &&
-    !tools.operation
-  )
-    return null;
+  if (!tools.diagnostics && !tools.prototype && !tools.components) return null;
   return (
     <div className="app-nav__group">
       <p className="app-nav__label">Plataforma</p>
-      {tools.privacy && (
-        <Link
-          to="/console/privacidade"
-          className="app-nav__item"
-          aria-current={pathname === "/console/privacidade" ? "page" : undefined}
-          onClick={onNavigate}
-        >
-          <Icon name="inbox" /> Privacidade
-        </Link>
-      )}
-      {tools.security && (
-        <Link
-          to="/console/seguranca"
-          className="app-nav__item"
-          aria-current={pathname === "/console/seguranca" ? "page" : undefined}
-          onClick={onNavigate}
-        >
-          <Icon name="shield" /> Segurança
-        </Link>
-      )}
-      {tools.support && (
-        <Link
-          to="/console/suporte"
-          className="app-nav__item"
-          aria-current={pathname === "/console/suporte" ? "page" : undefined}
-          onClick={onNavigate}
-        >
-          <Icon name="lifebuoy" /> Suporte
-        </Link>
-      )}
-      {tools.operation && (
-        <Link
-          to="/console/operacao"
-          className="app-nav__item"
-          aria-current={pathname === "/console/operacao" ? "page" : undefined}
-          onClick={onNavigate}
-        >
-          <Icon name="warning" /> Operação
-        </Link>
-      )}
       {tools.diagnostics && (
         <Link
           to="/console/diagnostico"
@@ -787,13 +734,7 @@ export function AppShell({
                     current={organization.current}
                     onNavigate={() => setDrawer(false)}
                   />
-                  {(tools.diagnostics ||
-                    tools.prototype ||
-                    tools.components ||
-                    tools.privacy ||
-                    tools.security ||
-                    tools.support ||
-                    tools.operation) && (
+                  {(tools.diagnostics || tools.prototype || tools.components) && (
                     <nav className="app-nav" aria-label="Ferramentas da plataforma">
                       <PlatformTools tools={tools} onNavigate={() => setDrawer(false)} />
                     </nav>

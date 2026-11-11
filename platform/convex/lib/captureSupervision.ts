@@ -1,4 +1,5 @@
 import type { Infer } from "convex/values";
+import { mailServiceOf } from "../../account-policy.mjs";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
@@ -56,28 +57,27 @@ export type CaptureFinding = {
 const EMAIL = /^[^\s@<>,]+@[^\s@<>,]+\.[^\s@<>,]+$/;
 /**
  * Where the alert e-mails go: `FNFE_CAPTURE_ALERT_EMAIL` (one to five addresses, separated by
- * commas), sent through the hosted site's Email Sending (`EMAIL_MODE=cloudflare`, with
- * `CLOUDFLARE_EMAIL_API_TOKEN` and `ACCOUNT_EMAIL_FROM`). Only the hosted installation sends;
+ * commas), sent through the provider of `EMAIL_MODE` (`mail` or `cloudflare`, with its credentials)
+ * from `ACCOUNT_EMAIL_FROM`, as the account e-mails. Only the hosted installation sends;
  * anything missing or malformed leaves the alerts `unconfigured`, still logged and listed.
  */
 export function captureAlertDestination() {
-  if (process.env.APP_ENV !== "installation" || process.env.EMAIL_MODE !== "cloudflare")
-    return null;
+  if (process.env.APP_ENV !== "installation") return null;
+  const service = mailServiceOf(process.env);
   const to = (process.env.FNFE_CAPTURE_ALERT_EMAIL ?? "")
     .split(",")
     .map((address) => address.trim().toLowerCase())
     .filter(Boolean);
   const from = process.env.ACCOUNT_EMAIL_FROM ?? "";
-  const apiKey = process.env.CLOUDFLARE_EMAIL_API_TOKEN ?? "";
   if (
+    !service ||
     to.length < 1 ||
     to.length > 5 ||
     to.some((address) => !EMAIL.test(address)) ||
-    !EMAIL.test(from) ||
-    apiKey.length < 20
+    !EMAIL.test(from)
   )
     return null;
-  return { to, from, apiKey };
+  return { to, from, service };
 }
 
 /**

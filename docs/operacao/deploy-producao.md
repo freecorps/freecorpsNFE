@@ -14,8 +14,8 @@ não encontrado da documentação e 404 sem cache), descritas em
 [PUBLIC.md](../plataforma/PUBLIC.md#endereços-ausentes-favicon-e-cache). O
 backoffice legado e seu Worker de dry-run saíram do repositório na #345. Dois
 outros alvos ficam fora deste pipeline: a [produção fiscal da NFS-e](#segundo-alvo-produção-fiscal-da-nfs-e),
-com workflow, script e Worker próprios, e o Worker das caixas de e-mail,
-publicado à mão com `bun run deploy:mail` ([ativação](privacidade-email.md#ativação)).
+com workflow, script e Worker próprios. As caixas de e-mail ficam no
+[Ember Mail](email.md), fora deste repositório.
 `bun run build` compila a plataforma e o console.
 
 O workflow `Deploy production` publica uma atualização a cada push na `main`.
@@ -205,9 +205,7 @@ de reexecutar. `SHA_MISMATCH` após as seis leituras continua sendo falha;
 falha da #51 está em evidence/51-publication.
 O smoke do workflow verifica publicação e sonda; login e consultas com a
 sessão humana precisam de evidência própria após publicar.
-Passos manuais pós-publicação de uma entrega ficam no roteiro do domínio. A
-primeira publicação da coleta de originais de e-mail sem dono (#341) exige
-liberar a retenção inicial, no [passo 8 da ativação](privacidade-email.md#ativação).
+Passos manuais pós-publicação de uma entrega ficam no roteiro do domínio.
 
 ### Domínio novo do Worker
 

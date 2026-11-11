@@ -87,7 +87,7 @@ it("reapplies local gates even if the operator changed the environment file", ()
       FISCAL_ENV: "homologation",
       FNFE_CRONS: "on",
       WEBHOOK_MODE: "https",
-      EMAIL_MODE: "cloudflare",
+      EMAIL_MODE: "mail",
       SITE_URL: "https://foreign.invalid",
       BETTER_AUTH_SECRET: "preserve",
     }),
@@ -102,8 +102,8 @@ it("reapplies local gates even if the operator changed the environment file", ()
     SITE_URL: "http://localhost:5520",
     BETTER_AUTH_SECRET: "preserve",
   });
-  values.set("CLOUDFLARE_EMAIL_API_TOKEN", "never-print-this");
+  values.set("MAIL_API_KEY", "never-print-this");
   expect(() => localEnvironment(values, "http://localhost:5520")).toThrow(
-    "Variável fora do perfil local: CLOUDFLARE_EMAIL_API_TOKEN",
+    "Variável fora do perfil local: MAIL_API_KEY",
   );
 });

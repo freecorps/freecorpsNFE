@@ -89,10 +89,8 @@ export const ARCHIVE_ID_REFERENCES = {
   "captureEnvelopes.streamId": "kept",
   "captureProofResponses.streamId": "kept",
   "documentArtifacts.captureStreamId": "kept",
-  // Temporary export files, global reference data and privacy mail never enter a package.
+  // Temporary export files and global reference data never enter a package.
   "exportParts.storageId": "kept",
-  "privacyIntakes.raw": "kept",
-  "privacyMessages.raw": "kept",
   "referenceVersions.storageId": "kept",
   // Archived rows and stored originals.
   "captureAudit.batchId": "rewritten",
@@ -285,10 +283,6 @@ export const ARCHIVE_TEXT_UNRELATED = [
   "platformPlanTerms.rescission.key",
   "platformPlanTerms.stripeSubscriptionId",
   "platformPlanTerms.undoneUpgrades.key",
-  "privacyIntakes.key",
-  "privacyMessages.actorId",
-  "privacyMessages.messageId",
-  "privacyMessages.requestId",
   "registryApplications.actorUserId",
   // A pre-creation lookup: the Better Auth user and the client's idempotency key.
   "registryLookups.actorUserId",

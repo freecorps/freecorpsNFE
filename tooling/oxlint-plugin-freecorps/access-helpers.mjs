@@ -20,7 +20,6 @@ export const checks = {
     "humanAccess",
   ],
   "lib/organizationAccess": ["requireUser", "requireMembership"],
-  "lib/privacyAccess": ["requireMailboxOperator", "mailboxActorAllowed"],
   "lib/projectAccess": ["integrationActor", "requireProject"],
   "lib/stripeAccess": ["connectionAccess"],
   "lib/webhookAccess": [
@@ -81,7 +80,6 @@ export const utilities = {
     "limitOrganizationAction",
     "boundedPagination",
   ],
-  "lib/privacyAccess": ["mailboxEmailAllowed"],
   "lib/projectAccess": [
     "consoleProject",
     "ensureConsoleProject",

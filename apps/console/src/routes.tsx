@@ -187,36 +187,6 @@ const consoleRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/console",
 });
-const mailboxSearch = (
-  search: Record<string, unknown>,
-): { thread?: string; status?: "open" | "waiting" | "closed" } => ({
-  thread: typeof search.thread === "string" ? search.thread : undefined,
-  status: search.status === "waiting" || search.status === "closed" ? search.status : "open",
-});
-const privacyRoute = createRoute({
-  getParentRoute: () => consoleRoute,
-  path: "privacidade",
-  component: lazyRouteComponent(() => import("./privacy-inbox"), "PrivacyInbox"),
-  validateSearch: mailboxSearch,
-});
-const securityRoute = createRoute({
-  getParentRoute: () => consoleRoute,
-  path: "seguranca",
-  component: lazyRouteComponent(() => import("./privacy-inbox"), "SecurityInbox"),
-  validateSearch: mailboxSearch,
-});
-const supportRoute = createRoute({
-  getParentRoute: () => consoleRoute,
-  path: "suporte",
-  component: lazyRouteComponent(() => import("./privacy-inbox"), "SupportInbox"),
-  validateSearch: mailboxSearch,
-});
-const operationRoute = createRoute({
-  getParentRoute: () => consoleRoute,
-  path: "operacao",
-  component: lazyRouteComponent(() => import("./privacy-inbox"), "OperationInbox"),
-  validateSearch: mailboxSearch,
-});
 const overviewRoute = createRoute({
   getParentRoute: () => consoleRoute,
   path: "/",
@@ -610,16 +580,7 @@ export const router = createRouter({
     currentPrivacyPolicyRoute,
     privacyPolicyRoute,
     authenticatedRoute.addChildren([
-      consoleRoute.addChildren([
-        overviewRoute,
-        diagnosticsRoute,
-        prototypeRoute,
-        componentsRoute,
-        privacyRoute,
-        securityRoute,
-        supportRoute,
-        operationRoute,
-      ]),
+      consoleRoute.addChildren([overviewRoute, diagnosticsRoute, prototypeRoute, componentsRoute]),
       invitationRoute,
       accountRoute,
       captureTermsRoute,

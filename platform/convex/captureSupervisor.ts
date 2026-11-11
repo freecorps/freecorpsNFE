@@ -2,7 +2,7 @@ import { v, type Infer } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation } from "./_generated/server";
-import { CLOUDFLARE_EMAIL_SEND_URL } from "./lib/accountMail";
+import { deliverMail } from "./lib/accountMail";
 import { certificateHead } from "./lib/certificateAccess";
 import {
   ALERT_MAIL_HOURLY_LIMIT,
@@ -503,7 +503,7 @@ export const deliver = internalAction({
       return null;
     }
     const { subject, text } = alertMail(alert);
-    const delivery = await sendAlertMail(destination, subject, text);
+    const delivery = await sendAlertMail(destination, subject, text, `capture-alert/${alertId}`);
     if (delivery !== "sent")
       console.warn(JSON.stringify({ type: "capture_alert_delivery", alertId, delivery }));
     await ctx.runMutation(internal.captureSupervisor.finishAlert, { alertId, delivery });
@@ -512,40 +512,34 @@ export const deliver = internalAction({
 });
 
 /**
- * Hands one e-mail to the provider: `sent` only on its success answer, `failed` on a 4xx refusal,
- * `uncertain` on a timeout or an unreadable answer, since the provider may have accepted it.
+ * Hands one e-mail to the provider: `sent` once it accepted the message, `failed` on a refusal (4xx),
+ * `uncertain` on a timeout, a 5xx or no answer, since it may have accepted it. No retry, as before:
+ * an uncertain alert is not sent again. The idempotency key still makes a repeated call of the same
+ * alert one e-mail in the service.
  */
 async function sendAlertMail(
   destination: NonNullable<ReturnType<typeof captureAlertDestination>>,
   subject: string,
   text: string,
+  idempotencyKey: string,
 ): Promise<"sent" | "failed" | "uncertain"> {
   try {
-    const response = await fetch(CLOUDFLARE_EMAIL_SEND_URL, {
-      method: "POST",
-      redirect: "error",
-      signal: AbortSignal.timeout(15_000),
-      headers: {
-        Authorization: `Bearer ${destination.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: { address: destination.from, name: "Freecorps Fiscal · Operação" },
+    return await deliverMail(
+      destination.service,
+      {
+        from: destination.from,
+        name: "Freecorps Fiscal · Operação",
         to: destination.to,
         subject,
         text,
-      }),
-    });
-    if (response.status >= 400 && response.status < 500) return "failed";
-    if (response.ok) {
-      const data: unknown = await response.json();
-      if (data && typeof data === "object" && "success" in data && data.success === true)
-        return "sent";
-    }
+        idempotencyKey,
+      },
+      { timeoutMs: 15_000, retries: 0 },
+    );
   } catch {
-    /* The provider may have accepted it; keep it uncertain. */
+    // Anything the client throws instead of answering: the service may have accepted it.
+    return "uncertain";
   }
-  return "uncertain";
 }
 
 /** The text of the test e-mail: the run that sent it, nothing of a company. */
@@ -602,7 +596,13 @@ export const sendTestAlert = internalAction({
     }
     const sentAt = Date.now();
     const { subject, text } = testAlertMail(run, sentAt);
-    const delivery = await sendAlertMail(destination, subject, text);
+    // One test e-mail per run attempt: the key keeps a retry of this call from sending a second.
+    const delivery = await sendAlertMail(
+      destination,
+      subject,
+      text,
+      `capture-alert-test/${run.runId}/${run.runAttempt}`,
+    );
     console.warn(JSON.stringify({ ...line, delivery, recipients: destination.to.length }));
     return {
       alertDestination: "email" as const,
