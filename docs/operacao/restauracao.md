@@ -141,7 +141,7 @@ de uma organização real. Depois que o recibo do comando trouxer
 
 1. Pare o Convex local do destino. Se ele é um worktree, use
    `bun run worktree:cleanup` nele e depois, de outro checkout,
-   `bun run worktree:remove <nome-do-worktree-destino>`, como na limpeza
+   `bun run worktree remove <nome-do-worktree-destino>`, como na limpeza
    abaixo e em [worktrees.md](../worktrees.md), sem afetar outros processos.
 2. Apague o diretório de dados desse Convex local, que guarda banco e
    storage: `platform/.convex/local/` do checkout destino, ou
@@ -197,4 +197,4 @@ até concluir a investigação e remover somente os caminhos criados pelo ensaio
 Arquivar em `docs/v1.0/evidence/81` apenas recibos sanitizados, hashes e provas
 de interface. Registrar SHA integrado/publicado separadamente do candidato.
 Parar os dois ambientes com `worktree:cleanup`; remover o destino usando
-`worktree:remove`, sem afetar outros processos.
+`worktree remove`, sem afetar outros processos.

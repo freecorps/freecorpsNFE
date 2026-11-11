@@ -226,7 +226,7 @@ export async function startBackendForSetup(paths, ports) {
     // O chamador só consegue parar o que ele recebeu de volta, e num throw ele
     // não recebe nada: sem isto, um backend que estoura o timeout fica vivo
     // segurando o par de portas reservado e um handle dentro de `.convex/` — o
-    // que no Windows depois impede o próprio `worktree:remove` de apagar a pasta.
+    // que no Windows depois impede o próprio `worktree remove` de apagar a pasta.
     await stopRecordedProcesses(processRecord);
     await stopWorktreeBackends(paths);
     throw error;

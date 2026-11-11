@@ -107,11 +107,11 @@ export async function waitForObservedSetup(root = currentRoot, options = {}) {
     console.log("Aguardando a preparação deste worktree…");
     const result = await waitForSetup(root, { ...options, runId: status.setup.runId });
     if (result.outcome !== "succeeded")
-      fail(`A preparação não concluiu com sucesso (${result.outcome}). Consulte worktree:status.`);
+      fail(`A preparação não concluiu com sucesso (${result.outcome}). Consulte worktree status.`);
     status = result.status;
   }
   if (!["succeeded", "unobserved"].includes(status.setup.state))
     fail(
-      `A preparação está em ${status.setup.state}. Consulte worktree:status e conclua o setup antes do dev.`,
+      `A preparação está em ${status.setup.state}. Consulte worktree status e conclua o setup antes do dev.`,
     );
 }

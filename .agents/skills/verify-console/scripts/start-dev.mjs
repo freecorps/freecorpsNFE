@@ -44,7 +44,7 @@ const recordFile = join(output, "dev.json");
 const operation = runningOperation(paths);
 if (operation !== null && operation !== "dev")
   throw new Error(
-    `O worktree está em ${operation}. Aguarde com bun run worktree:wait e rode de novo.`,
+    `O worktree está em ${operation}. Aguarde com bun run worktree wait e rode de novo.`,
   );
 
 let record;

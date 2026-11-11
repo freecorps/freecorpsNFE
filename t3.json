@@ -9,9 +9,9 @@
       "runOnWorktreeCreate": true
     },
     { "name": "Dev", "command": "bun run dev", "icon": "play" },
-    { "name": "Worktree doctor", "command": "bun run worktree:doctor", "icon": "debug" },
-    { "name": "Estado do worktree", "command": "bun run worktree:status", "icon": "debug" },
-    { "name": "Aguardar setup", "command": "bun run worktree:wait", "icon": "configure" },
+    { "name": "Worktree doctor", "command": "bun run worktree doctor", "icon": "debug" },
+    { "name": "Estado do worktree", "command": "bun run worktree status", "icon": "debug" },
+    { "name": "Aguardar setup", "command": "bun run worktree wait", "icon": "configure" },
     { "name": "Parar worktree", "command": "bun run worktree:cleanup", "icon": "configure" },
     { "name": "Concluir worktree", "command": "bun run worktree:finish", "icon": "configure" },
     { "name": "Testes", "command": "bun run -- vp test run", "icon": "test" },

@@ -52,10 +52,10 @@ it("remove recusa dev durante startup e só remove depois de liberar a operaçã
     const paths = worktreePaths(target);
     await withOperation(paths, "dev", async () => {
       // O lock existe antes de a sessão publicar seus primeiros filhos.
-      await expect(remove(target, { force: true })).rejects.toThrow(/worktree:dev/);
+      await expect(remove(target, { force: true })).rejects.toThrow(/worktree dev já está rodando/);
       // Também recusa quando o backend já foi registrado e o frontend ainda vai nascer.
       writeProcessRecord(paths, { cwd: target, pid: child.pid, pids: [child.pid] });
-      await expect(remove(target, { force: true })).rejects.toThrow(/worktree:dev/);
+      await expect(remove(target, { force: true })).rejects.toThrow(/worktree dev já está rodando/);
       expect(existsSync(join(target, ".git"))).toBe(true);
       expect(git(["worktree", "list", "--porcelain"], { cwd: root })).toContain(
         "refs/heads/fixture",

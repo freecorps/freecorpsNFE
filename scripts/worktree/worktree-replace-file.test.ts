@@ -28,7 +28,7 @@ function files() {
   return { destination, temporary };
 }
 
-/** Outro processo com o destino aberto, como um `worktree:status` lendo. */
+/** Outro processo com o destino aberto, como um `worktree status` lendo. */
 async function holdOpen(path: string, ms: number) {
   const child = spawn(
     process.execPath,

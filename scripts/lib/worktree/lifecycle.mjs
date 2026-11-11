@@ -146,7 +146,7 @@ export async function create(name, options = {}) {
   const code = await runSetupIn(target, { install: options.install, app });
   if (code !== 0) {
     fail(
-      `O setup falhou em ${displayPath(target)}. Corrija e rode \`bun run worktree:setup\` lá, ou remova com \`bun run worktree:remove ${slug} --force\`.`,
+      `O setup falhou em ${displayPath(target)}. Corrija e rode \`bun run worktree:setup\` lá, ou remova com \`bun run worktree remove ${slug} --force\`.`,
     );
   }
 
@@ -243,7 +243,7 @@ function resolveTarget(nameOrPath) {
   });
 
   if (matches.length === 0) {
-    fail(`Nenhum worktree casa com "${nameOrPath}". Rode \`bun run worktree:list\`.`);
+    fail(`Nenhum worktree casa com "${nameOrPath}". Rode \`bun run worktree list\`.`);
   }
   if (matches.length > 1) {
     const paths = matches.map((entry) => `  ${displayPath(entry.path)}`).join("\n");
@@ -319,7 +319,7 @@ function detachWorktree(entry, cwd) {
 
 export async function remove(nameOrPath, options = {}) {
   if (!nameOrPath) {
-    fail("Uso: bun run worktree:remove <nome|caminho> [--force] [--delete-branch]");
+    fail("Uso: bun run worktree remove <nome|caminho> [--force] [--delete-branch]");
   }
   const mainRoot = mainWorktreePath(currentRoot);
   const entry = resolveTarget(nameOrPath);
@@ -624,6 +624,6 @@ export async function finish(options = {}) {
   }
   console.log("");
   console.log(
-    `Este checkout (${displayPath(currentRoot)}) sai na limpeza da próxima tarefa concluída, ou com \`bun run worktree:prune\` de outro checkout.`,
+    `Este checkout (${displayPath(currentRoot)}) sai na limpeza da próxima tarefa concluída, ou com \`bun run worktree prune\` de outro checkout.`,
   );
 }

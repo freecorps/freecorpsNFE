@@ -134,7 +134,7 @@ imprime a URL do site. Abra `/signup` com um e-mail fictício e leia o código d
 verificação em outro terminal:
 
 ```bash
-bun run worktree:mail conta@development.invalid
+bun run worktree mail conta@development.invalid
 ```
 
 O passo a passo completo está em [docs/worktrees.md](docs/worktrees.md).

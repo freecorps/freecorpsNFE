@@ -323,7 +323,7 @@ async function runDev(options) {
   // recusava por deriva no `.env.local` que este mesmo comando reescreve logo
   // abaixo (`startFrontendWithRetry` → `writeRuntimeEnv`), e em modo quiet a
   // mensagem era um número de checks sem dizer qual. Quem quiser o relatório
-  // roda `bun run worktree:doctor`.
+  // roda `bun run worktree doctor`.
   const existingConfig = readLocalConfig(paths);
   if (!existingConfig) {
     fail(
@@ -494,7 +494,7 @@ export async function cleanup(options = {}) {
   if (operation.state !== "idle") {
     if (!options.quiet)
       console.log(
-        "Limpeza de órfãos adiada: outra operação possui o lock. Consulte worktree:status.",
+        "Limpeza de órfãos adiada: outra operação possui o lock. Consulte worktree status.",
       );
     return;
   }

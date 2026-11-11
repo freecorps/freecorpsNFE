@@ -381,7 +381,7 @@ preferencialmente o substituto, em uma máquina sem acesso ao Convex de origem:
    e confira documentos, downloads e certificados. O login é manual e fica
    registrado no recibo como pendente até essa conferência.
 4. O destino contém dados reais de produção. Remova-o com
-   `bun run worktree:remove test/d04-ensaio` assim que terminar.
+   `bun run worktree remove test/d04-ensaio` assim que terminar.
 5. Arquive somente o recibo sanitizado e o resultado do login, em
    `docs/v1.0/evidence/178/` quando for a prova do segundo custodiante (veja o
    roteiro e os modelos) ou em

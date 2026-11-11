@@ -68,7 +68,7 @@ export function removeProcessRecordFor(paths, pid, expectedRecordId) {
 }
 
 export const RETIRED_LEGACY_WORKTREE =
-  "Este worktree foi preparado para o backoffice legado, aposentado na #345. Crie outro para a plataforma com `bun run worktree:create <nome>`; o banco em .convex/local foi preservado e só sai com `bun run worktree:remove`.";
+  "Este worktree foi preparado para o backoffice legado, aposentado na #345. Crie outro para a plataforma com `bun run worktree:create <nome>`; o banco em .convex/local foi preservado e só sai com `bun run worktree remove`.";
 
 /** Setup, dev e sync só preparam a plataforma; o legado é recusado sem tocar no banco. */
 export function assertPlatformWorktree(paths) {

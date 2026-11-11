@@ -10,7 +10,7 @@ export async function readMailbox(paths, email) {
   if (paths.app !== "platform")
     throw new Error("O coletor pertence a uma worktree --app platform.");
   if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    throw new Error("Uso: bun run worktree:mail <email>");
+    throw new Error("Uso: bun run worktree mail <email>");
   const config = readLocalConfig(paths);
   if (!config) throw new Error("Rode worktree:setup --app platform e worktree:dev primeiro.");
   const response = await fetch(`${localUrls(config).cloud}/api/query`, {

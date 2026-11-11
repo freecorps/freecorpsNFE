@@ -228,7 +228,7 @@ O guia é `/docs/` e o cadastro é `/signup`. Usar conta fictícia e senha
 exclusiva de teste. O coletor local fornece a verificação sem enviar e-mail:
 
 ```powershell
-bun run worktree:mail piloto49@development.invalid
+bun run worktree mail piloto49@development.invalid
 ```
 
 O exemplo de endereço é apenas para esta sessão, não uma conta pré-criada.

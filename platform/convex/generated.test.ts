@@ -4,7 +4,7 @@ import { expect, it } from "vite-plus/test";
 
 /**
  * `platform/convex/_generated/` sai do `convex dev` do worktree (`bun run worktree:setup` ou
- * `bun run worktree:sync`) e não pode ser editado à mão. Uma variável declarada em
+ * `bun run worktree sync`) e não pode ser editado à mão. Uma variável declarada em
  * `convex.config.ts` sem regenerar não quebra o typecheck: o `convex dev` de cada worktree
  * regravava `server.d.ts` e sujava o checkout dos outros. O tipo `Env` gerado precisa listar
  * exatamente o que o app declara, com a mesma opcionalidade.
@@ -62,7 +62,7 @@ it("o Env de server.d.ts acompanha as variáveis declaradas em convex.config.ts"
       .map(([, name, type]) => [name!, type!.endsWith("| undefined")]),
   );
 
-  expect(generated, "Regenere com `bun run worktree:sync` num worktree da plataforma.").toEqual(
+  expect(generated, "Regenere com `bun run worktree sync` num worktree da plataforma.").toEqual(
     declaredEnv(),
   );
 });

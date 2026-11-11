@@ -132,14 +132,14 @@ Windows, passe temporários por `$TEMP` (o Python não vê o `/tmp` do Git Bash)
 Em worktree, crie a branch a partir de `origin/main`; `git switch main` falha.
 
 Leia [docs/worktrees.md](docs/worktrees.md) antes de criar, iniciar ou remover
-um worktree. Use os scripts `worktree:*`; nunca compartilhe `node_modules` por
-junction ou symlink. Leitura e revisão usam o checkout disponível. Código,
+um worktree. Use `bun run worktree` e seus atalhos `worktree:*`; nunca
+compartilhe `node_modules` por junction ou symlink. Leitura e revisão usam o checkout disponível. Código,
 testes e build não exigem o Convex local, que só `bun run dev`, sync e e2e
 pedem. Depois do merge, rode `bun run worktree:finish`. Credenciais fiscais e
 externas ficam fora dos ambientes descartáveis.
 
 Não há seed: contas e dados sintéticos nascem pelo cadastro em `/signup`
-(código em `bun run worktree:mail <e-mail>`) ou nos testes, com
+(código em `bun run worktree mail <e-mail>`) ou nos testes, com
 `tests/fixtures/`, `tests/helpers/` e `convex-test`. Fisco, webhooks e e-mail
 ficam simulados nos testes locais. Produção não alimenta banco de teste.
 

@@ -100,7 +100,7 @@ export async function stopProcessTree(pid) {
   }
   // O alvo é o GRUPO (`-pid`), não o processo. `bun x vite` e o CLI do Convex
   // são invólucros: matar só eles deixa o workerd e o backend local vivos,
-  // segurando as portas reservadas — e o `worktree:remove` apagaria o diretório
+  // segurando as portas reservadas — e o `worktree remove` apagaria o diretório
   // embaixo de um backend rodando. Os filhos nascem `detached` fora do Windows
   // (session/convex-local) exatamente para terem grupo próprio.
   const signalGroupThenSelf = (signal) => {
@@ -154,7 +154,7 @@ export function sleepSync(ms) {
 /**
  * Troca `destination` por `temporary` com rename, para que nenhum leitor veja o
  * arquivo pela metade. O Windows recusa a troca (EPERM, EACCES ou EBUSY)
- * enquanto outro processo lê o destino, o que `worktree:status`, `wait` e
+ * enquanto outro processo lê o destino, o que `worktree status`, `wait` e
  * `list` fazem por alguns ms; a troca se repete a cada `waitMs` até `timeoutMs`.
  * O prazo, e não um número de tentativas, porque um leitor frequente recusa a
  * maioria das trocas. Esgotado o prazo, ou num erro de outro tipo, o temporário
