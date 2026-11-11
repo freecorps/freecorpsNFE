@@ -1,7 +1,9 @@
 /**
- * Catálogo dos scripts da raiz: aplicação e ambiente que cada um atinge.
- * `bun run help` imprime esta tabela; scripts/repo/commands.test.ts confere que ela
- * cobre todos os scripts do package.json e que o README só cita nomes válidos.
+ * Catálogo dos scripts da raiz e dos roteiros chamados pelo caminho: aplicação e
+ * ambiente que cada um atinge. `bun run help` imprime as duas tabelas;
+ * scripts/repo/commands.test.ts confere que a primeira cobre todos os scripts do
+ * package.json, que a segunda cobre os pontos de entrada sem outro chamador e
+ * que o README só cita nomes válidos.
  *
  * Aplicações: plataforma (apps/console + platform/convex), pacotes
  * (packages/*) e repositório (ferramentas e CI).
@@ -234,16 +236,191 @@ export const commands = {
   ],
 };
 
+/**
+ * Roteiros que se rodam pelo caminho (`node` ou `bun scripts/...`), sem atalho
+ * no package.json: provas manuais, passos de runbook e geradores. A descrição
+ * aponta o documento ou arquivo que manda rodá-lo. scripts/repo/commands.test.ts
+ * confere que todo ponto de entrada de scripts/ é chamado por package.json,
+ * workflow, vite.config.ts, hook do Git, outro script alcançável ou por esta lista.
+ */
+export const routines = {
+  "scripts/backup/prove-closure-restore.mjs": [
+    "plataforma",
+    "dois worktrees locais",
+    "Ensaio D05: expurgo depois de restaurar num deployment vazio, com dados sintéticos (docs/operacao/restauracao.md)",
+  ],
+  "scripts/backup/prove-restore.mjs": [
+    "plataforma",
+    "dois worktrees locais",
+    "Ensaio de restauração: prepare na origem, restore no worktree de destino (docs/operacao/restauracao.md)",
+  ],
+  "scripts/billing/check-billing-stripe.mjs": [
+    "plataforma",
+    "conta Stripe (só leitura)",
+    "Confere a conta Stripe antes de ligar o catálogo ou o anual; exige --key-file (docs/plataforma/BILLING.md)",
+  ],
+  "scripts/cold-tier/cold-tier-locks.mjs": [
+    "plataforma",
+    "bucket R2 da camada fria (escreve)",
+    "Acrescenta ou estende as regras de lock por ano; nunca encurta (docs/operacao/camada-fria.md)",
+  ],
+  "scripts/console/measure-console-bundle.mjs": [
+    "plataforma",
+    "nenhum",
+    "Mede JS e CSS do console com gzip depois de console:build (docs/v1.0/PILOT.md)",
+  ],
+  "scripts/contracts/prove-contract-drift.mjs": [
+    "plataforma",
+    "local",
+    "Prova manual de que contracts:check recusa artefato REST desatualizado; grava .ci-results/74 (docs/desenvolvimento/ci.md)",
+  ],
+  "scripts/contracts/prove-webhook-contract.mjs": [
+    "plataforma",
+    "local",
+    "Roda os vetores de webhook contra o receptor de exemplo; grava .ci-results/73 (docs/plataforma/WEBHOOKS.md)",
+  ],
+  "scripts/deploy/prove-selfhost.mjs": [
+    "plataforma",
+    "Docker local e túnel cloudflared",
+    "Prova a instalação própria: servidor, receptor HTTPS e recuperação (docs/operacao/instalacao-propria.md)",
+  ],
+  "scripts/distribution/publish-packages.mjs": [
+    "pacotes",
+    "npm (publica)",
+    "Publica os tarballs aceitos por distribution:prove; exige npm login e 2FA (docs/operacao/release.md)",
+  ],
+  "scripts/fiscal/deploy-nfe-proof.mjs": [
+    "plataforma",
+    "deployment dev isolado (publica)",
+    "Publica o alvo dev/issue-69-xml-proof que xml:runtime hosted usa (docs/desenvolvimento/ci.md)",
+  ],
+  "scripts/fiscal/fetch-references.ts": [
+    "plataforma",
+    "fontes públicas de NCM e municípios (só leitura)",
+    "Coleta as tabelas de referência em .reference-data/ (docs/plataforma/REFERENCES.md)",
+  ],
+  "scripts/fiscal/fiscal-proof.mjs": [
+    "plataforma",
+    "deployment dev/issue-50-fiscal-proof (publica) e fisco",
+    "Execução fiscal manual, em Windows e fora do CI; recusa outros alvos (docs/plataforma/CAPTURE.md)",
+  ],
+  "scripts/fiscal/generate-nfe-corpus.mjs": [
+    "pacotes",
+    "local",
+    "Regrava o corpus sintético de tests/fixtures/nfe/4.00 (origem no manifest.json da pasta)",
+  ],
+  "scripts/fiscal/prove-capture.mjs": [
+    "plataforma",
+    "worktree",
+    "Prova recorrente da captura NF-e (entrega 78) com bun run dev ativo; grava .ci-results/78 (docs/desenvolvimento/ci.md)",
+  ],
+  "scripts/fiscal/prove-certificate-transport.ts": [
+    "plataforma",
+    "local",
+    "TLS real em loopback com o bundle Node; prove-capture o compila (docs/plataforma/CERTIFICATES.md)",
+  ],
+  "scripts/fiscal/prove-certificates-hosted.ts": [
+    "plataforma",
+    "deployment dev isolado (publica)",
+    "Prova de certificados no alvo dev/issue-77-certificates-proof (docs/plataforma/CERTIFICATES.md)",
+  ],
+  "scripts/fiscal/prove-excluded-events.mjs": [
+    "pacotes",
+    "local",
+    "Compara a situação de eventos anterior à correção com a atual; exige packages:build (packages/fiscal-nfe/README.md)",
+  ],
+  "scripts/fiscal/prove-registry-provider.mjs": [
+    "plataforma",
+    "provedor de cadastro público (só leitura)",
+    "Prova online do provedor com CNPJs públicos, sem semear banco (docs/plataforma/REGISTRY.md)",
+  ],
+  "scripts/fiscal/reference-local.mjs": [
+    "plataforma",
+    "worktree",
+    "stage, current e publish das tabelas de referência no Convex local (docs/plataforma/REFERENCES.md)",
+  ],
+  "scripts/fiscal/sync-nfe-schemas.py": [
+    "pacotes",
+    "portal da NF-e (com --download)",
+    "Única entrada de XSD da NF-e: fixa os pacotes e gera o catálogo offline (docs/plataforma/NFE-SCHEMAS.md)",
+  ],
+  "scripts/fiscal/sync-nfse-schemas.py": [
+    "pacotes",
+    "portal da NFS-e nacional (com --download)",
+    "Fixa os XSDs da NFS-e nacional e gera o catálogo (packages/fiscal-nfse/README.md)",
+  ],
+  "scripts/licenses/rights-relation.mjs": [
+    "pacotes",
+    "nenhum",
+    "Relação de direitos de cada arquivo dos tarballs aceitos, depois de distribution:prove (docs/operacao/release.md)",
+  ],
+  "scripts/proofs/prove-export-batches.mjs": [
+    "plataforma",
+    "worktree",
+    "Mede exportação em lotes no Convex local com dados sintéticos; grava .ci-results/125 (docs/plataforma/EXPORTS.md)",
+  ],
+  "scripts/proofs/prove-hosted-operations.mjs": [
+    "plataforma",
+    "validação persistente (escreve)",
+    "Prova hospedada de operações e carga com dados sintéticos; recusa outro alvo (docs/desenvolvimento/ci.md)",
+  ],
+  "scripts/proofs/prove-hosted-rate-limits.mjs": [
+    "plataforma",
+    "produção sandbox elated-possum-295 (escreve)",
+    "Contenção do rateLimiter com orçamentos sintéticos, removidos no fim; exige o SHA publicado (packages/convex-rate-limiter/README.md)",
+  ],
+  "scripts/proofs/prove-operations.mjs": [
+    "plataforma",
+    "worktree",
+    "Workpool real e fonte HTTP loopback com bun run dev ativo (docs/plataforma/OPERATIONS.md)",
+  ],
+  "scripts/proofs/prove-usage-load.mjs": [
+    "plataforma",
+    "worktree",
+    "Carga de consumo com 10 mil e 100 mil documentos sintéticos (docs/desenvolvimento/ci.md)",
+  ],
+  "scripts/proofs/prove-webhooks.mjs": [
+    "plataforma",
+    "worktree",
+    "Webhooks com HTTPS real no Convex local; --sdk inclui os exemplos (docs/plataforma/WEBHOOKS.md)",
+  ],
+  "scripts/public-copy/scan-public-text.mjs": [
+    "repositório",
+    "nenhum",
+    "Varre título e corpo de PR, issue, comentário e commit antes de publicar (AGENTS.md)",
+  ],
+  "scripts/selfhost.mjs": [
+    "plataforma",
+    "instalação própria",
+    "CLI da instalação própria do operador (docs/operacao/instalacao-propria.md)",
+  ],
+  "scripts/sync-claude-skills.mjs": [
+    "repositório",
+    "local",
+    "Regrava os atalhos de .claude/skills a partir de .agents/skills (.agents/README.md)",
+  ],
+  "scripts/validation/prove-smoke-diagnostics.mjs": [
+    "plataforma",
+    "local",
+    "Ensaia o smoke e o registro de publicação com transporte controlado (docs/operacao/deploy-validacao.md)",
+  ],
+};
+
 export function helpText() {
-  const width = Math.max(...Object.keys(commands).map((name) => name.length));
-  const lines = Object.entries(commands).map(
+  const entry =
+    (width) =>
     ([name, [app, environment, description]]) =>
-      `${name.padEnd(width)}  ${app} · ${environment}\n${" ".repeat(width + 2)}${description}`,
-  );
+      `${name.padEnd(width)}  ${app} · ${environment}\n${" ".repeat(width + 2)}${description}`;
+  const width = Math.max(...Object.keys(commands).map((name) => name.length));
+  const routineWidth = Math.max(...Object.keys(routines).map((path) => path.length));
   return [
     "Comandos da raiz (bun run <comando>): aplicação · ambiente",
     "",
-    ...lines,
+    ...Object.entries(commands).map(entry(width)),
+    "",
+    "Roteiros pelo caminho (node ou bun <caminho>; o documento indicado diz como):",
+    "",
+    ...Object.entries(routines).map(entry(routineWidth)),
     "",
     "Testes por área: vp run test:<platform|packages|console|tooling|repository|benchmark>.",
     "Grafo do CI: vp run validate. Publicação de produção: só pelos workflows Deploy production",

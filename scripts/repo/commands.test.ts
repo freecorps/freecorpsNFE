@@ -4,12 +4,19 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { commands, helpText, resolveDev } from "../lib/commands.mjs";
+import { commands, helpText, resolveDev, routines } from "../lib/commands.mjs";
 import { isLinkedWorktree } from "../lib/worktree/registry.mjs";
 import { repoRoot } from "../lib/repo-root.mjs";
 
 const root = repoRoot;
 const read = (file: string) => readFileSync(join(root, file), "utf8");
+const tracked = (...paths: string[]) =>
+  execFileSync("git", ["-c", "core.quotePath=false", "ls-files", "-z", "--", ...paths], {
+    cwd: root,
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter(Boolean);
 const scripts: Record<string, string> = JSON.parse(read("package.json")).scripts;
 describe("catálogo de comandos", () => {
   it("descreve cada script da raiz e só os que existem", () => {
@@ -19,18 +26,50 @@ describe("catálogo de comandos", () => {
     expect(helpText()).toContain("packages:build");
   });
 
+  it("todo ponto de entrada de scripts/ tem chamador ou entra nos roteiros", () => {
+    // Ponto de entrada: o que se executa; helpers de scripts/lib/ e testes ficam de fora.
+    const entries = tracked("scripts").filter(
+      (file) =>
+        !file.startsWith("scripts/lib/") && /(?<!\.test)\.(mjs|cjs|js|ts|py|sh|ps1)$/.test(file),
+    );
+    for (const path of Object.keys(routines)) expect(entries, path).toContain(path);
+    for (const [app, environment, description] of Object.values(routines))
+      expect([app, environment, description].every(Boolean)).toBe(true);
+    expect(helpText()).toContain("scripts/fiscal/prove-capture.mjs");
+
+    // Alcançável a partir de package.json, workflow, vite.config.ts, hook do Git ou
+    // do catálogo, passando por outros pontos de entrada que citam o caminho a partir
+    // da raiz. Qualquer citação conta, inclusive comentário ou lista de dados: o teste
+    // pega o script que ninguém cita, não a citação fraca.
+    const callers = tracked(
+      "package.json",
+      "**/package.json",
+      ".github/workflows",
+      "vite.config.ts",
+      "**/vite.config.ts",
+      ".vite-hooks",
+    );
+    const reached = new Set(Object.keys(routines));
+    let pending = [...callers, ...reached];
+    while (pending.length) {
+      const text = pending.map(read).join("\n");
+      pending = entries.filter((file) => !reached.has(file) && text.includes(file));
+      for (const file of pending) reached.add(file);
+    }
+    expect(
+      entries.filter((file) => !reached.has(file)),
+      "sem chamador: remova o script ou acrescente-o a `routines` em scripts/lib/commands.mjs",
+    ).toEqual([]);
+  });
+
   it("não deixa documentação, skills ou t3.json citar script inexistente", () => {
     // Skills de terceiros (skills-lock.json) citam scripts de outros projetos.
     const external = Object.keys(JSON.parse(read("skills-lock.json")).skills).map(
       (name) => `.agents/skills/${name}/`,
     );
-    const files = execFileSync(
-      "git",
-      ["-c", "core.quotePath=false", "ls-files", "-z", "--", "*.md", "t3.json"],
-      { cwd: root, encoding: "utf8" },
-    )
-      .split("\0")
-      .filter((file) => file && !external.some((prefix) => file.startsWith(prefix)));
+    const files = tracked("*.md", "t3.json").filter(
+      (file) => !external.some((prefix) => file.startsWith(prefix)),
+    );
     expect(files).toContain("docs/worktrees.md");
     expect(files).toContain(".agents/skills/verify-console/SKILL.md");
     for (const file of files) {
