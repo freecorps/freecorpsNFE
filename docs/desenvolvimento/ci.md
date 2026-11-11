@@ -482,11 +482,12 @@ sockets ou executáveis hostis.
   OpenAPI, SDK e referência de documentação. `scripts/contracts/contract-drift.test.ts`
   roda essa prova em toda execução do CI: altera as rotas que a geração lê
   (escopo de uma rota existente e rota nova), exige que a mesma comparação de
-  `contracts:check` aponte OpenAPI, referência REST e cópia pública como
-  desatualizados e aceite os artefatos regenerados numa pasta temporária.
-  Também recusa cópia pública editada à mão ou ausente. Nenhum arquivo do
-  checkout é alterado; `scripts/contracts/prove-contract-drift.mjs` continua como prova
-  manual do comando completo.
+  `contracts:check` aponte OpenAPI e referência REST como desatualizados e
+  aceite os artefatos regenerados numa pasta temporária. Também recusa artefato
+  editado à mão ou ausente. Nenhum arquivo do checkout é alterado;
+  `scripts/contracts/prove-contract-drift.mjs` continua como prova manual do
+  comando completo. Os arquivos de `/developer/` não são artefato versionado:
+  o build do console os copia das fontes (`apps/console/developer-plugin.ts`).
 - Corpus compartilhado com versão, hash, procedência e resultado esperado por
   etapa ([corpus versionado](../../tests/fixtures/fiscal-v1/README.md), com
   bytes sintéticos). Cobertura do corpus e licença para distribuição são
@@ -630,8 +631,7 @@ O knip lê os comandos do `package.json` e dos workflows e as configurações da
 ferramentas que reconhece. O que ele não enxerga entra em `knip.jsonc` com o
 motivo: os comandos das tarefas de `vite.config.ts`, os consumidores de
 `scripts/lib/*-consumer.mjs` que as provas de distribuição copiam e executam,
-as fixtures que os testes de CI leem pelo caminho, os exemplos de
-`apps/console/public/developer/`, servidos como arquivo estático, e as
+as fixtures que os testes de CI leem pelo caminho e as
 dependências carregadas sem import (`oxfmt`, `oxlint` e `oxlint-tsgolint`, na
 versão que o Vite+ exige, e `contracts` e `zod` do SDK, empacotados por caminho
 relativo).

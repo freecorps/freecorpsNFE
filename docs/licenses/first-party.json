@@ -18,11 +18,7 @@
       "examples/quickstart.ts",
       "examples/quickstart-curl.mjs",
       "examples/sdk-webhook-receiver.mjs",
-      "examples/nfse-issuance.ts",
-      "apps/console/public/developer/quickstart.ts",
-      "apps/console/public/developer/quickstart-curl.mjs",
-      "apps/console/public/developer/sdk-webhook-receiver.mjs",
-      "apps/console/public/developer/nfse-issuance.ts"
+      "examples/nfse-issuance.ts"
     ],
     "documentation": ["packages/sdk/README.md"]
   }

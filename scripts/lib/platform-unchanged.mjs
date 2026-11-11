@@ -4,8 +4,9 @@ import { posix } from "node:path";
 /**
  * Caminhos que nenhum build da publicação lê: testes, CI, agentes, a
  * documentação interna e os Markdown de colaboração da raiz. Fica de fora
- * `docs/v1.0/`, de onde a documentação pública lê o OpenAPI, e os arquivos de
- * licença, que ela cita. Na dúvida, o caminho não entra aqui e a publicação
+ * `docs/v1.0/`, de onde a documentação pública lê o OpenAPI e o build do
+ * console copia OpenAPI e SDK.md para `/developer/`, e os arquivos de licença,
+ * que ela cita. `examples/` também vai para `/developer/`. Na dúvida, o caminho não entra aqui e a publicação
  * acontece.
  */
 export const undeployedPaths = [

@@ -529,13 +529,9 @@ describe("primeira chamada", () => {
   });
   it("os escopos pedidos são exatamente os das rotas que o script chama", () => {
     const root = process.cwd();
+    // /developer/quickstart-curl.mjs is this file, copied by the console build
+    // (developer-plugin.ts; tests/publicSite.test.ts checks the bytes).
     const script = readFileSync(join(root, "examples/quickstart-curl.mjs"), "utf8");
-    // The public copy is generated from examples/ (contracts:check keeps them equal).
-    expect(
-      readFileSync(join(root, "apps/console/public/developer/quickstart-curl.mjs"), "utf8")
-        .replaceAll("\r\n", "\n")
-        .includes('"X-Environment: sandbox"'),
-    ).toBe(true);
     expect(script).toContain('"X-Environment: sandbox"');
     expect(new Set(script.match(/\/v1\/[a-z-]+/g))).toEqual(
       new Set(["/v1/imports", "/v1/operations", "/v1/documents"]),

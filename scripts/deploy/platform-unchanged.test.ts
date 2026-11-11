@@ -43,6 +43,9 @@ it("publishes everything a build reads and skips only tests, CI, agents and inte
   for (const file of [
     // A documentação pública lê o OpenAPI e cita as licenças.
     "docs/v1.0/openapi.json",
+    // O build do console copia estes para /developer/ (apps/console/developer-plugin.ts).
+    "docs/v1.0/SDK.md",
+    "examples/quickstart.ts",
     "docs/v1.0/evidence/49/README.md",
     "LICENSING.md",
     "LICENSES/MIT.txt",
