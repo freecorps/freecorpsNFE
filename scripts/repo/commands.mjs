@@ -1,12 +1,8 @@
-/** `bun run help` e os nomes antigos dos scripts; catálogo em lib/commands.mjs. */
-import { helpText, renamedMessage } from "../lib/commands.mjs";
+/** `bun run help`; catálogo em lib/commands.mjs. */
+import { helpText } from "../lib/commands.mjs";
 
-const [command, name] = process.argv.slice(2);
-if (command === "help") console.log(helpText());
-else if (command === "renamed") {
-  console.error(renamedMessage(name));
-  process.exitCode = 1;
-} else {
-  console.error("Uso: commands.mjs help | renamed <nome>");
+if (process.argv[2] === "help") console.log(helpText());
+else {
+  console.error("Uso: commands.mjs help");
   process.exitCode = 1;
 }

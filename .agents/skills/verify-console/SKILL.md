@@ -25,8 +25,8 @@ Regras que valem em todos os passos:
 
 ## 1. Preparar
 
-1. `bun run worktree:status --json`. Se `setup` não for `succeeded`, aguarde
-   com `bun run worktree:wait --timeout-ms 600000`; num checkout sem setup,
+1. `bun run worktree status --json`. Se `setup` não for `succeeded`, aguarde
+   com `bun run worktree wait --timeout-ms 600000`; num checkout sem setup,
    rode `bun run worktree:setup` antes.
 2. `node .agents/skills/verify-console/scripts/start-dev.mjs`. Ele reaproveita
    o dev que já roda ou inicia um, e termina quando o preflight do navegador
@@ -107,6 +107,6 @@ Se o dev já rodava antes da skill, nada é encerrado. Rode mesmo quando um pass
 anterior falhou.
 
 Pronto quando o script imprime `dev encerrado` ou explica por que não encerrou,
-e `bun run worktree:status --json` não mostra operação `dev` em andamento
+e `bun run worktree status --json` não mostra operação `dev` em andamento
 iniciada pela skill. As capturas e os relatórios continuam em
 `.ci-results/verify-console/` para a revisão.

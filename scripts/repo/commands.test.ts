@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { commands, helpText, renamed, renamedMessage, resolveDev } from "../lib/commands.mjs";
+import { commands, helpText, resolveDev } from "../lib/commands.mjs";
 import { isLinkedWorktree } from "../lib/worktree/registry.mjs";
 import { repoRoot } from "../lib/repo-root.mjs";
 
@@ -13,31 +13,31 @@ const read = (file: string) => readFileSync(join(root, file), "utf8");
 const scripts: Record<string, string> = JSON.parse(read("package.json")).scripts;
 describe("catálogo de comandos", () => {
   it("descreve cada script da raiz e só os que existem", () => {
-    const active = Object.keys(scripts).filter((name) => !(name in renamed));
-    expect(active.sort()).toEqual(Object.keys(commands).sort());
+    expect(Object.keys(scripts).sort()).toEqual(Object.keys(commands).sort());
     for (const [app, environment, description] of Object.values(commands))
       expect([app, environment, description].every(Boolean)).toBe(true);
-  });
-
-  it("mantém os nomes antigos só como aviso do novo nome", () => {
-    for (const [old, next] of Object.entries(renamed)) {
-      expect(scripts[old]).toBe(`node scripts/repo/commands.mjs renamed ${old}`);
-      expect(commands).toHaveProperty(next);
-      expect(renamedMessage(old)).toContain(`bun run ${next}`);
-    }
     expect(helpText()).toContain("packages:build");
   });
 
-  it("não deixa a documentação citar script inexistente ou renomeado", () => {
-    for (const file of [
-      "README.md",
-      "AGENTS.md",
-      "CONTRIBUTING.md",
-      "docs/worktrees.md",
-      "docs/operacao/deploy-producao.md",
-      "docs/operacao/email.md",
-    ]) {
-      const cited = [...read(file).matchAll(/(?:bun|vp) run ([a-z][\w:.-]*[\w])/g)].map(
+  it("não deixa documentação, skills ou t3.json citar script inexistente", () => {
+    // Skills de terceiros (skills-lock.json) citam scripts de outros projetos.
+    const external = Object.keys(JSON.parse(read("skills-lock.json")).skills).map(
+      (name) => `.agents/skills/${name}/`,
+    );
+    const files = execFileSync(
+      "git",
+      ["-c", "core.quotePath=false", "ls-files", "-z", "--", "*.md", "t3.json"],
+      { cwd: root, encoding: "utf8" },
+    )
+      .split("\0")
+      .filter((file) => file && !external.some((prefix) => file.startsWith(prefix)));
+    expect(files).toContain("docs/worktrees.md");
+    expect(files).toContain(".agents/skills/verify-console/SKILL.md");
+    for (const file of files) {
+      const text = read(file);
+      // Página aposentada guarda o registro do que foi feito, com os comandos da época.
+      if (/^> \*\*Aposentado\.\*\*/m.test(text)) continue;
+      const cited = [...text.matchAll(/(?:bun|vp) run ([a-z][\w:.-]*[\w])/g)].map(
         ([, name]) => name,
       );
       for (const name of cited)

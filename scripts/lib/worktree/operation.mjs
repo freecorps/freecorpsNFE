@@ -73,11 +73,11 @@ export function ownsOperation(paths, allowedCommands) {
 
 function writeSetupResult(paths, record) {
   if (readOperationRecord(lockPath(paths)).runId !== record.runId)
-    fail("O lock mudou durante o setup. Resultado não publicado; consulte worktree:status.");
+    fail("O lock mudou durante o setup. Resultado não publicado; consulte worktree status.");
   const destination = join(paths.convexDir, "worktree-setup.json");
   const temporary = `${destination}.${record.runId}.tmp`;
   writeFileSync(temporary, `${JSON.stringify(record)}\n`, { mode: 0o600 });
-  // `worktree:status` e `wait` leem este arquivo enquanto o setup roda.
+  // `worktree status` e `wait` leem este arquivo enquanto o setup roda.
   replaceFileSync(temporary, destination);
 }
 
@@ -159,7 +159,7 @@ export async function withOperation(paths, command, action) {
     if (error.code !== "EEXIST") throw error;
     const owner = readOperationRecord(path);
     fail(
-      `worktree:${owner.command ?? "desconhecido"} já está rodando ou deixou um lock sem conclusão. Consulte worktree:status; aguarde o dono ou confirme manualmente os processos antes de remover o lock. Use worktree:cleanup para parar um dev identificado ou liberar o lock de um dev que terminou sem soltá-lo.`,
+      `worktree ${owner.command ?? "desconhecido"} já está rodando ou deixou um lock sem conclusão. Consulte worktree status; aguarde o dono ou confirme manualmente os processos antes de remover o lock. Use worktree:cleanup para parar um dev identificado ou liberar o lock de um dev que terminou sem soltá-lo.`,
     );
   }
   owned.set(normalizePath(paths.root), record.runId);

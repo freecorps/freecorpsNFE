@@ -5,11 +5,11 @@
  * O ciclo de vida em si (criar worktree, subir backend local, reservar porta)
  * não é testado aqui de propósito — ele É efeito colateral, e um teste dele
  * seria um teste do git e do CLI do Convex. O que protege aquela parte é o
- * `bun run worktree:doctor`, que roda contra o worktree de verdade.
+ * `bun run worktree doctor`, que roda contra o worktree de verdade.
  */
 import { describe, it, expect } from "vite-plus/test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -19,7 +19,6 @@ import { classifyPruneCandidate, parseBranchTracking } from "../lib/worktree/mer
 import { pruneEntries } from "../lib/worktree/registry.mjs";
 import { expandHome } from "../lib/worktree/location.mjs";
 import { slugifyWorktreeName, worktreePaths } from "../lib/worktree/paths.mjs";
-import { repoRoot } from "../lib/repo-root.mjs";
 import {
   LEGACY_SEED_PROFILE,
   assertLegacySeedProfile,
@@ -99,14 +98,7 @@ describe("compatibilidade do seed vazio", () => {
     for (const value of [undefined, null, "", LEGACY_SEED_PROFILE])
       expect(() => assertLegacySeedProfile(value)).not.toThrow();
     for (const value of ["basico", "completo", "demo", "true"])
-      expect(() => assertLegacySeedProfile(value)).toThrow(/worktree:sync/);
-  });
-
-  it("mantém worktree:seed como alias de sync", () => {
-    const scripts = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"))
-      .scripts as Record<string, string>;
-    expect(scripts["worktree:sync"]).toBe("bun scripts/worktree.mjs sync");
-    expect(scripts["worktree:seed"]).toBe("bun scripts/worktree.mjs seed");
+      expect(() => assertLegacySeedProfile(value)).toThrow(/worktree sync/);
   });
 
   it("recusa sincronizar fora de um worktree linked", async () => {

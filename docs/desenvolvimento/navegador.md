@@ -3,8 +3,8 @@
 ## Preparação dos ensaios locais
 
 As jornadas em `apps/console/e2e/` usam o worktree da plataforma, com Convex
-anônimo local e `bun run dev` ativo. Confira `bun run worktree:status --json`;
-se o setup ainda estiver em curso, use `bun run worktree:wait --timeout-ms
+anônimo local e `bun run dev` ativo. Confira `bun run worktree status --json`;
+se o setup ainda estiver em curso, use `bun run worktree wait --timeout-ms
 600000`. O procedimento está em [worktrees](../worktrees.md). O setup não
 cria contas; os ensaios criam explicitamente suas contas e dados sintéticos.
 

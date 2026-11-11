@@ -54,7 +54,7 @@ bun run dev
 O perfil `platform` usa `platform/convex` e `apps/console`, sem copiar o
 `.env.local` do mantenedor. O banco fica em `platform/.convex`; runtime Node,
 segredo Better Auth, registro dos processos e locks ficam em `.convex`.
-`worktree:list` mostra o aplicativo de cada checkout. `platform` é o único
+`worktree list` mostra o aplicativo de cada checkout. `platform` é o único
 aplicativo; `--app platform` continua aceito e `--app legacy` é recusado.
 
 Em um clone com outro nome, o diretório irmão de worktrees também muda; use o
@@ -64,7 +64,7 @@ navegador.
 
 O cadastro local está em `/signup`, com e-mail fictício e senha de 16 a 128
 caracteres. Depois de cadastrar, leia o código com
-`bun run worktree:mail seu@development.invalid` em outro terminal do mesmo
+`bun run worktree mail seu@development.invalid` em outro terminal do mesmo
 worktree, mantendo `bun run dev` aberto, use o código mais recente em
 `/verify-email` e entre em `/login`. A recuperação começa em
 `/forgot-password` e termina em `/reset-password`. Verificação e recuperação
@@ -81,8 +81,8 @@ Um checkout criado pelo editor recebe `platform` no primeiro setup, sem
 
 O backoffice legado foi aposentado na #345. Um worktree preparado para ele
 (`.convex/worktree-app.json` com `legacy`, ou banco em `.convex/local/` sem
-esse arquivo) continua aparecendo em `worktree:list` e sai normalmente por
-`worktree:cleanup`, `worktree:remove`, `worktree:prune` e `worktree:finish`.
+esse arquivo) continua aparecendo em `worktree list` e sai normalmente por
+`worktree cleanup`, `worktree remove`, `worktree prune` e `worktree finish`.
 Setup, dev e sync o recusam com uma mensagem que pede outro worktree, e o
 `doctor` reprova o aplicativo; nenhum desses comandos apaga o banco antigo.
 
@@ -133,11 +133,11 @@ imprime o alvo; no checkout principal, ele recusa. Um comando Convex executado
 diretamente fora dos scripts precisa de conferência própria do alvo.
 
 O setup instala dependências próprias, cria o deployment local, configura o
-ambiente e publica schema e funções. `bun run worktree:sync` reaplica
+ambiente e publica schema e funções. `bun run worktree sync` reaplica
 ambiente, schema e funções no Convex local sem inserir nem apagar dados; recusa
 o checkout principal e um worktree com dev rodando. Não há seed: contas, API
 keys, empresas ou emitentes fictícios não são criados automaticamente.
-`bun run worktree:seed vazio` e `--seed vazio` em `create` e `setup`
+`bun run worktree seed vazio` e `--seed vazio` em `create` e `setup`
 continuam aceitos como nomes antigos do mesmo comportamento; outro perfil é
 recusado.
 
@@ -155,7 +155,7 @@ Se o push recusar com `DeploymentNotConfiguredForNodeActions` ("Node.js v22 or
 backend local rodam com o Node isolado do worktree, posto à frente no `PATH`
 do processo. Até a #609 esse Node era 20.20.2 e o push falhava em qualquer
 máquina. O setup reinstala o runtime quando a versão difere da fixada em
-`scripts/lib/worktree/paths.mjs`; `bun run worktree:doctor` mostra a versão
+`scripts/lib/worktree/paths.mjs`; `bun run worktree doctor` mostra a versão
 em uso.
 
 ## Ciclo de uma tarefa
@@ -248,8 +248,8 @@ aplique esse default ao tipo `prod` para resolver consumo de previews.
 ### Estado e espera da preparação
 
 ```powershell
-bun run worktree:status --json
-bun run worktree:wait --timeout-ms 600000 --json
+bun run worktree status --json
+bun run worktree wait --timeout-ms 600000 --json
 ```
 
 Os comandos funcionam sem subir serviços. `status` separa a operação atual, o
@@ -271,7 +271,7 @@ sucesso histórico. Execute setup para produzir o primeiro recibo, quando necess
 
 `bun run dev` aguarda um setup que já esteja em execução, relê o aplicativo e
 adquire a exclusão antes de iniciar os serviços. Se o editor ainda não iniciou
-o primeiro setup, use `worktree:wait`. O dev mantém o reparo de URLs locais;
+o primeiro setup, use `worktree wait`. O dev mantém o reparo de URLs locais;
 não exige o `doctor` inteiro como pré-condição.
 
 Os locks identificam a execução e o processo. Um arquivo incompleto ou uma
@@ -326,8 +326,8 @@ receptor sintético, e restaura o gate ao terminar. Veja
 [o contrato e runner](plataforma/WEBHOOKS.md).
 
 ```powershell
-bun run worktree:list
-bun run worktree:doctor
+bun run worktree list
+bun run worktree doctor
 bun run worktree:cleanup
 ```
 
@@ -357,7 +357,7 @@ O limite não se aplica à instalação de dependências, ao build ou ao watcher
 Espere o comando terminar antes de repetir `dev`; timeout não comprova que
 uma escrita anterior deixou de ser aplicada.
 
-De outro checkout, remova com `bun run worktree:remove <nome>`.
+De outro checkout, remova com `bun run worktree remove <nome>`.
 Setup, sync ou dev ativos impedem a remoção, inclusive com `--force`.
 Execute `worktree:cleanup` e aguarde o terminal de dev terminar antes de remover.
 Registros antigos sem identidade exigem verificar o processo manualmente;
@@ -372,7 +372,7 @@ confiáveis. A cópia de includes rejeita links que escapam do worktree, mas nã
 é uma sandbox contra outro processo que troca diretórios durante a cópia.
 Os scripts e a instalação de dependências também executam código desse checkout.
 
-Para limpeza em lote, comece com `bun run worktree:prune --dry-run`.
+Para limpeza em lote, comece com `bun run worktree prune --dry-run`.
 O prune atualiza `origin` com `fetch --prune` e aborta se o fetch falhar;
 `--no-fetch` aceita o estado local de propósito. Preserva worktrees sujos,
 com operação ativa, destacados, da branch base ou do próprio comando.
@@ -459,7 +459,7 @@ de atualizar o catálogo. `Validar alterações` chama `ci:local`; `Provar commi
 chama `ci:prove`. `Estado do worktree` consulta a preparação e `Aguardar setup`
 espera seu resultado com prazo. Os atalhos de testes e tipos continuam disponíveis.
 `Setup worktree` tem `runOnWorktreeCreate`, mas pode continuar rodando enquanto
-o primeiro turno do agente já começou. Use `worktree:wait` para aguardar o
+o primeiro turno do agente já começou. Use `worktree wait` para aguardar o
 resultado sem repetir setup. O lock por worktree recusa operações concorrentes.
 O comando versionado é `bun run worktree:setup`, sem `--app`, e prepara a
 plataforma.

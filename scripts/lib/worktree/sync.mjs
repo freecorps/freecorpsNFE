@@ -16,7 +16,7 @@ import { assertLinkedWorktree, assertPlatformWorktree, devIsRunning } from "./st
 
 /**
  * Único valor do antigo `--seed` e de `seed [perfil]`. Continua aceito para
- * quem ainda chama `worktree:seed vazio`; nenhum outro perfil existe.
+ * quem ainda chama `worktree seed vazio`; nenhum outro perfil existe.
  */
 export const LEGACY_SEED_PROFILE = "vazio";
 
@@ -24,7 +24,7 @@ export function assertLegacySeedProfile(value) {
   if (value === undefined || value === null || value === "" || value === LEGACY_SEED_PROFILE)
     return;
   fail(
-    `Perfil de seed desconhecido: "${value}". O worktree não semeia dados; use bun run worktree:sync.`,
+    `Perfil de seed desconhecido: "${value}". O worktree não semeia dados; use bun run worktree sync.`,
   );
 }
 

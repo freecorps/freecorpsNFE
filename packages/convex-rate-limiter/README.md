@@ -58,7 +58,7 @@ opcionais para aceitar as partições token bucket já criadas.
 A implementação fica em `src/component/lib.ts` e `src/component/partitioned.ts`.
 O Convex empacota o componente direto do TypeScript, sem `dist`. Os arquivos
 de `src/component/_generated/` saem do push local da plataforma
-(`bun run worktree:sync`); não os edite à mão.
+(`bun run worktree sync`); não os edite à mão.
 
 ## Diferenças de comportamento do original
 

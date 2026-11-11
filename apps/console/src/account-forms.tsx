@@ -368,7 +368,7 @@ export function AccountForm({ mode }: { mode: Mode }) {
         ) : import.meta.env.VITE_APP_ENV === "development" ? (
           <p className="auth-note">
             Neste ambiente local, consulte a mensagem com{" "}
-            <code>bun run worktree:mail seu@email</code> no terminal desta worktree. Nenhum e-mail é
+            <code>bun run worktree mail seu@email</code> no terminal desta worktree. Nenhum e-mail é
             enviado à internet.
           </p>
         ) : !finished ? (

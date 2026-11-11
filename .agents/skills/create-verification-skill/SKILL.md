@@ -20,7 +20,7 @@ transporte e credenciais antes de executá-lo.
 
 Para navegador, siga [navegador.md](../../../docs/desenvolvimento/navegador.md)
 e o procedimento de [worktrees](../../../docs/worktrees.md). Os comandos
-`worktree:status --json`, `worktree:wait` e `worktree:doctor` ajudam a avaliar
+`worktree status --json`, `worktree wait` e `worktree doctor` ajudam a avaliar
 o ambiente, mas não substituem a execução da jornada. Reutilize a automação
 de navegador disponível na sessão ou o runner documentado para essa jornada.
 

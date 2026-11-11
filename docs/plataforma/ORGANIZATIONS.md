@@ -109,7 +109,7 @@ O serviço Cloudflare mantém remetente e destinatários explicitamente
 configurados. A gestão de organizações não amplia a allowlist nem habilita envio externo em dev.
 No ambiente local, `developmentMail` conserva temporariamente o código para
 teste, acessível apenas pela função interna e credencial do operador;
-`bun run worktree:mail` mostra também o link do convite. A
+`bun run worktree mail` mostra também o link do convite. A
 retenção do coletor é de dez minutos; o convite no domínio expira em 72 horas.
 O adapter não registra payload, código, credenciais ou resposta do provedor.
 

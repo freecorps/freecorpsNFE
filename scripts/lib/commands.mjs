@@ -214,7 +214,11 @@ export const commands = {
   ],
   "validation:probe:create": ["plataforma", "validação (escreve)", "Sonda de escrita na validação"],
   "validation:probe:read": ["plataforma", "validação", "Sonda de leitura na validação"],
-  worktree: ["repositório", "worktree", "Ciclo de vida dos worktrees; ver docs/worktrees.md"],
+  worktree: [
+    "repositório",
+    "worktree",
+    "bun run worktree <list|remove|prune|sync|status|wait|doctor|mail|config>; ver docs/worktrees.md",
+  ],
   "worktree:create": ["repositório", "worktree", "Cria e prepara um worktree da plataforma"],
   "worktree:setup": [
     "repositório",
@@ -222,36 +226,7 @@ export const commands = {
     "Prepara o worktree atual; recusa o checkout principal",
   ],
   "worktree:dev": ["plataforma", "worktree", "Sessão local do worktree, chamada por dev"],
-  "worktree:sync": [
-    "plataforma",
-    "worktree",
-    "Reaplica ambiente, schema e funções no Convex local, sem inserir dados",
-  ],
-  "worktree:seed": ["plataforma", "worktree", "Nome antigo de worktree:sync; não insere dados"],
-  "worktree:mail": ["plataforma", "worktree", "Lê o e-mail capturado pelo coletor local"],
-  "worktree:list": ["repositório", "worktree", "Lista aplicativo, portas e ambientes registrados"],
-  "worktree:status": [
-    "do worktree",
-    "local",
-    "Consulta operação e resultado do setup; --json fornece saída sanitizada",
-  ],
-  "worktree:wait": [
-    "do worktree",
-    "local",
-    "Aguarda o setup observado com prazo; timeout não interrompe a preparação",
-  ],
-  "worktree:doctor": [
-    "repositório",
-    "worktree",
-    "Confere a configuração e o isolamento do ambiente",
-  ],
   "worktree:cleanup": ["repositório", "worktree", "Encerra os processos registrados do worktree"],
-  "worktree:remove": [
-    "repositório",
-    "worktree",
-    "Remove um worktree conforme as proteções do script",
-  ],
-  "worktree:prune": ["repositório", "worktree", "Remove worktrees já integrados"],
   "worktree:finish": [
     "repositório",
     "worktree",
@@ -259,36 +234,17 @@ export const commands = {
   ],
 };
 
-/**
- * Nomes antigos e o que os substitui. O script antigo só aponta o novo e
- * falha, para que nenhum consumidor execute outra aplicação por engano.
- */
-export const renamed = {
-  "xml:build": "packages:build",
-  "xml:boundaries": "ci:boundaries",
-  "console:deploy": "validation:console:deploy",
-};
-
-export function renamedMessage(name) {
-  const next = renamed[name];
-  if (!next) throw new Error(`Comando sem renomeação: ${name}`);
-  const [app, environment] = commands[next];
-  return `\`${name}\` foi renomeado. Use \`bun run ${next}\` (${app}, ambiente: ${environment}).`;
-}
-
 export function helpText() {
   const width = Math.max(...Object.keys(commands).map((name) => name.length));
   const lines = Object.entries(commands).map(
     ([name, [app, environment, description]]) =>
       `${name.padEnd(width)}  ${app} · ${environment}\n${" ".repeat(width + 2)}${description}`,
   );
-  const old = Object.entries(renamed).map(([name, next]) => `${name} → ${next}`);
   return [
     "Comandos da raiz (bun run <comando>): aplicação · ambiente",
     "",
     ...lines,
     "",
-    `Nomes antigos, que só indicam o novo: ${old.join(", ")}.`,
     "Testes por área: vp run test:<platform|packages|console|tooling|repository|benchmark>.",
     "Grafo do CI: vp run validate. Publicação de produção: só pelos workflows Deploy production",
     "e Deploy NFS-e fiscal production.",
