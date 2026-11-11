@@ -355,6 +355,55 @@ it("revoking a ready export immediately invalidates tickets", async () => {
   expect((await f.request(`/v1/exports/${job.id}/revoke`, "POST")).status).toBe(200);
   expect((await f.download(token)).status).toBe(404);
 });
+it("ticket de exportação desconhecido, de navegador fora do console ou de outra parte responde 404 sem auditar nem cobrar (#134)", async () => {
+  const f = await fixture(),
+    job = await f.create(),
+    sibling = await f.create("export-test-2");
+  await f.finish(job.id);
+  await f.finish(sibling.id);
+  const part = await f.part(job.id),
+    other = await f.part(sibling.id);
+  expect(other.id).not.toBe(part.id);
+  const download = (token: string, headers: Record<string, string> = {}, search = "") =>
+    f.t.fetch(`/v1/export-download${search}`, {
+      headers: { ...headers, "X-Download-Token": token },
+    });
+  const refused = async (response: Response) => {
+    expect(response.status).toBe(404);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe("NOT_FOUND");
+  };
+  const effects = () =>
+    f.t.run(async (ctx) => ({
+      audits: (await ctx.db.query("operationalAudit").collect()).filter(
+        (row) => row.action === "export.downloaded",
+      ).length,
+      charges: (await ctx.db.query("capacityEvents").collect()).filter(
+        (row) => row.metric === "downloadsBytes",
+      ).length,
+    }));
+  // Control: an intact ticket downloads, and that download is audited and charged.
+  const token = await f.ticket(part.id);
+  expect((await f.download(token)).status).toBe(200);
+  const before = await effects();
+  expect(before.audits).toBeGreaterThan(0);
+  expect(before.charges).toBeGreaterThan(0);
+
+  await refused(await download("x".repeat(72)));
+  await refused(await download(token, { Origin: "https://exemplo.invalid" }));
+  await refused(await download(token, {}, "?part=1"));
+  // A ticket whose row names a part of another export.
+  const swapped = await f.ticket(part.id),
+    swappedHash = await hashApiKey(swapped);
+  await f.t.run(async (ctx) => {
+    const row = (await ctx.db
+      .query("exportTickets")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", swappedHash))
+      .unique())!;
+    await ctx.db.patch("exportTickets", row._id, { partId: other.id });
+  });
+  await refused(await download(swapped));
+  expect(await effects()).toEqual(before);
+});
 it("lost access before commit discards the generated blob and never publishes success", async () => {
   const f = await fixture(),
     job = await f.create();

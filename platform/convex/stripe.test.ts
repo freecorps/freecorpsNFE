@@ -585,6 +585,42 @@ describe("conexão Stripe", () => {
     expect(unknown.status).toBe(404);
   });
 
+  it("recusa assinatura de outra conexão, vencida ou ausente sem gravar evento nem emitir (#134)", async () => {
+    const f = await fixture();
+    const id = await connect(f);
+    const other = await f.owner.mutation(api.stripe.createConnection, {
+      ...f.where,
+      name: "Outra loja",
+      config: config(),
+    });
+    const OTHER = `whsec_${"b2".repeat(16)}`;
+    await f.owner.mutation(api.stripe.setSigningSecret, { connectionId: other.id, secret: OTHER });
+    const body = JSON.stringify(invoicePaid());
+    // Each connection proves events with its own secret only, in both directions.
+    expect(await deliver(f, id, invoicePaid(), sign(body, OTHER))).toEqual({
+      status: 400,
+      body: { code: "SIGNATURE_INVALID" },
+    });
+    expect(await deliver(f, other.id, invoicePaid(), sign(body))).toEqual({
+      status: 400,
+      body: { code: "SIGNATURE_INVALID" },
+    });
+    expect(
+      await deliver(f, id, invoicePaid(), sign(body, SECRET, Math.floor(Date.now() / 1000) - 3600)),
+    ).toEqual({ status: 400, body: { code: "SIGNATURE_EXPIRED" } });
+    expect(await deliver(f, id, invoicePaid(), "")).toEqual({
+      status: 400,
+      body: { code: "SIGNATURE_MISSING" },
+    });
+    expect(await events(f)).toHaveLength(0);
+    expect(await issuances(f)).toHaveLength(0);
+    // Control: the same body signed with the connection's own secret is recorded.
+    expect(await deliver(f, id, invoicePaid())).toEqual({
+      status: 200,
+      body: { code: "RECEIVED" },
+    });
+  });
+
   it("emite a NFS-e de exportação da fatura paga pelo projeto, uma vez só", async () => {
     const f = await fixture();
     const id = await connect(f);

@@ -1056,6 +1056,63 @@ it("download tickets expire and membership removal invalidates issued tickets", 
     ).status,
   ).toBe(404);
 });
+it("ticket de download desconhecido, fora do console, de outro original ou com acesso trocado responde 404 sem auditar nem cobrar (#134)", async () => {
+  const f = await documentsFixture(),
+    other = await documentsFixture(f.t);
+  const imported = await f.importXml(),
+    foreign = await other.importXml();
+  const owner = await actor(f.t, f.scope.organizationId);
+  const issue = () =>
+    owner.client.mutation(api.documentDownloads.ticket, {
+      ...f.queryScope,
+      artifactId: imported.version.artifactId,
+    });
+  const download = (token: string, origin = "http://localhost:5190", search = "") =>
+    f.t.fetch(`/v1/document-download${search}`, {
+      headers: { Origin: origin, "X-Download-Token": token },
+    });
+  const refused = async (response: Response) => {
+    expect(response.status).toBe(404);
+    expect(errorResponse.parse(await response.json()).error.code).toBe("NOT_FOUND");
+  };
+  const effects = () =>
+    f.t.run(async (ctx) => ({
+      audits: (await ctx.db.query("operationalAudit").collect()).filter(
+        (row) => row.action === "http.documentDownload",
+      ).length,
+      charges: (await ctx.db.query("capacityEvents").collect()).filter(
+        (row) => row.metric === "downloadsBytes",
+      ).length,
+    }));
+  // Control: an intact ticket downloads, and that download is audited and charged.
+  const ticket = await issue();
+  expect((await download(ticket.token)).status).toBe(200);
+  const before = await effects();
+  expect(before.audits).toBeGreaterThan(0);
+  expect(before.charges).toBeGreaterThan(0);
+
+  await refused(await download("x".repeat(72)));
+  await refused(await download(ticket.token, "https://exemplo.invalid"));
+  await refused(await download(ticket.token, "http://localhost:5190", "?download=1"));
+  // A ticket whose row names another organization's original.
+  const swapped = await issue(),
+    swappedHash = await hashApiKey(swapped.token);
+  await f.t.run(async (ctx) => {
+    const row = (await ctx.db
+      .query("documentDownloads")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", swappedHash))
+      .unique())!;
+    await ctx.db.patch("documentDownloads", row._id, { artifactId: foreign.version.artifactId });
+  });
+  await refused(await download(swapped.token));
+  // The member's access changed after the ticket was issued: still a manager, another version.
+  const changed = await issue();
+  await f.t.run((ctx) =>
+    ctx.db.patch("memberships", owner.membershipId, { role: "admin", version: 2 }),
+  );
+  await refused(await download(changed.token));
+  expect(await effects()).toEqual(before);
+});
 it("refuses to serve a hot original whose stored file no longer matches the recorded hash (#110)", async () => {
   const f = await documentsFixture(),
     imported = await f.importXml();
