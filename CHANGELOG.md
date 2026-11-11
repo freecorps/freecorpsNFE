@@ -2,6 +2,12 @@
 
 ## Não publicado
 
+- `@freecorps/fiscal-nfe` perde o extrator antigo `parseNfe(string)`, com
+  `MAX_XML_BYTES` e `FiscalXmlError`, e a dependência `fast-xml-parser`
+  (#119). A 0.1.0 publicada não muda; a próxima versão do pacote será minor.
+  Quem usava o extrator passa os bytes originais a `parseNfeModel` ou
+  `processNfe`, como descreve o README do pacote. A action interna
+  `xml:extract` também sai; a prova local da fundação chama `xml:validate`.
 - O e-mail da plataforma pode passar pelo Ember Mail (freecorps/mail), com
   `@freecorps/mail-sdk` (`EMAIL_MODE=mail`, `MAIL_API_URL`, `MAIL_API_KEY`),
   que cuida da fila, dos eventos de entrega e das supressões; quem opera

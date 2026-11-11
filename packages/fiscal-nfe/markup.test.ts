@@ -47,7 +47,7 @@ describe("scanMarkup", () => {
 
 // Com o regex que recomeçava em cada `<` depois de uma falha, esses arquivos no
 // limite de bytes ocupavam a importação por minutos; o custo linear foi medido
-// na PR, não aqui. Aqui fica o desfecho nas três entradas: a recusa na
+// na PR, não aqui. Aqui fica o desfecho nas duas entradas: a recusa na
 // primeira abertura sem fechamento.
 describe.each([
   ["comments", "<!--"],

@@ -26,7 +26,7 @@
     "packages/fiscal-nfe": {
       "kind": "node",
       "workspaces": ["@freecorps/fiscal-core"],
-      "external": ["@xmldom/xmldom", "fast-xml-parser", "libxml2-wasm", "pdf-lib", "xml-crypto"]
+      "external": ["@xmldom/xmldom", "libxml2-wasm", "pdf-lib", "xml-crypto"]
     },
     "packages/fiscal-nfse": {
       "kind": "node",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "9f39b7f55abab73a584774989c9937b99d78b1df1ce4c0ee994ad5a453bb4363",
+  "lockSha256": "7460f2d43eec2fae2cca1ad4318e83717cc11c9fd63a414a7f5216d6b41a06ac",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -4298,11 +4298,6 @@
         {
           "workspace": ".",
           "kind": "devDependencies",
-          "dependency": "fast-xml-parser"
-        },
-        {
-          "workspace": "packages/fiscal-nfe",
-          "kind": "dependencies",
           "dependency": "fast-xml-parser"
         }
       ]
