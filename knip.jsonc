@@ -8,6 +8,11 @@
   // nsTypes. Um export usado só no próprio arquivo não é código morto.
   "ignoreIssues": { "!platform/convex/lib/**": ["exports", "types", "nsExports", "nsTypes"] },
   "ignoreExportsUsedInFile": true,
+  // Desligado em todos os workspaces: o plugin Vite trata cada arquivo de um import.meta.glob
+  // como entrada sem conferência de exports, e o glob do convex-test
+  // (tests/helpers/convex-modules.ts) alcança todo platform/convex/**. As entradas que o
+  // plugin achava ficam declaradas nos workspaces.
+  "vite": false,
   "workspaces": {
     ".": {
       "entry": [
@@ -41,11 +46,6 @@
       // Fixadas na versão exata que o Vite+ exige (docs/desenvolvimento/ci.md,
       // Instalação reproduzível); o Vite+ as carrega, nenhum arquivo as importa.
       "ignoreDependencies": ["oxfmt", "oxlint", "oxlint-tsgolint"],
-      // Desligado em todos os workspaces: o plugin Vite trata cada arquivo de um
-      // import.meta.glob como entrada sem conferência de exports, e o glob do convex-test
-      // (tests/helpers/convex-modules.ts) alcança todo platform/convex/**. As entradas que
-      // o plugin achava ficam declaradas abaixo.
-      "vite": false,
     },
     "platform": {
       // O que o Convex publica como função, em vez do convex/** do plugin Convex, que faria

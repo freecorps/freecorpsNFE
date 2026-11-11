@@ -651,9 +651,9 @@ namespace, por isso a checagem inclui `nsExports` e `nsTypes`: um helper órfão
 de `lib/` aparece como export sem uso mesmo depois do `convex codegen`. Um
 export usado só no próprio arquivo não reprova.
 
-Quando a tarefa reprova, remova o arquivo, a dependência ou o export órfão. Se o uso for
-real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o motivo,
-em vez de ignorar o achado.
+Quando a tarefa reprova, remova o arquivo, a dependência ou o export órfão. Se
+o uso for real e o knip não o enxergar, declare a entrada em `knip.jsonc` com o
+motivo, em vez de ignorar o achado.
 
 Todo script de `scripts/` e de `scripts/<domínio>/` é entrada do knip, porque
 cada um é chamado pelo caminho. Um roteiro que nenhum comando, workflow ou
