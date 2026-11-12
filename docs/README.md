@@ -123,6 +123,7 @@ custo estão em [ci.md](desenvolvimento/ci.md). Jornadas no navegador seguem
 | Emissão NFS-e: restrita e fiscal         | [emissao-nfse.md](operacao/emissao-nfse.md)                                                        |
 | Captura fiscal no site: ligar e desligar | [captura-fiscal.md](operacao/captura-fiscal.md)                                                    |
 | Backup e restauração                     | [backup.md](operacao/backup.md) e [restauracao.md](operacao/restauracao.md)                        |
+| Provas periódicas: dono, prazo e recibo  | [recibos.md](operacao/recibos.md)                                                                  |
 | Arquivo econômico e reativação           | [arquivo-economico.md](operacao/arquivo-economico.md)                                              |
 | Compactação dos documentos (ADR 0010)    | [compactacao-documentos.md](operacao/compactacao-documentos.md)                                    |
 | Camada fria dos documentos (ADR 0010)    | [camada-fria.md](operacao/camada-fria.md)                                                          |

@@ -692,6 +692,11 @@ export const findingAllowlist = [
       "Teste do corte da captura com a lista real de autorizados",
     ],
     ["deploy/offsite-backup.json", 2, "Custodiantes do backup externo D04, duas pessoas distintas"],
+    [
+      "deploy/receipts.json",
+      4,
+      "Dono de cada prova operacional periódica, lido e avisado pelo teste da tabela (#127)",
+    ],
     // Só a asserção sobre os custodiantes de deploy/offsite-backup.json; o
     // plano sintético usa nomes fictícios.
     [

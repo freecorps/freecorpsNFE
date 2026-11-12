@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "receipts": [
+    {
+      "id": "restore-second-custodian",
+      "title": "Recuperação do backup externo pelo segundo custodiante, sem os materiais do outro",
+      "issue": "freecorps/freecorpsNFE-arquivo#178",
+      "owner": "hhs0001",
+      "everyDays": 180,
+      "riskPaths": [
+        "deploy/offsite-backup.json",
+        "scripts/backup/backup-offsite.mjs",
+        "scripts/lib/offsite-backup.mjs",
+        "scripts/lib/offsite-backup-zip.mjs",
+        "scripts/lib/incremental-backup.mjs",
+        "scripts/lib/backup-table-stream.mjs",
+        "scripts/lib/backup-collection.mjs",
+        "platform/convex/retentionRecovery.ts",
+        "scripts/lib/recovery-custody.mjs",
+        ".github/workflows/offsite-backup.yml"
+      ],
+      "applicableWhen": "always",
+      "last": null
+    },
+    {
+      "id": "d03-provider-logs",
+      "title": "Inventário dos destinos de log dos provedores (D03)",
+      "issue": "freecorps/freecorpsNFE#129",
+      "owner": "wolf-stievano",
+      "everyDays": 180,
+      "riskPaths": [
+        "deploy/platform-release.json",
+        "scripts/lib/platform-release.mjs",
+        "apps/console/wrangler.json"
+      ],
+      "applicableWhen": "always",
+      "last": null
+    },
+    {
+      "id": "nfse-producao-restrita",
+      "title": "Prova da emissão NFS-e na produção restrita do Emissor Nacional",
+      "issue": "freecorps/freecorpsNFE#6",
+      "owner": "wolf-stievano",
+      "everyDays": 90,
+      "riskPaths": [
+        "deploy/issuance-production.json",
+        "packages/fiscal-nfse/src",
+        "platform/convex/issuanceWorker.ts",
+        "platform/convex/issuanceProbe.ts",
+        "platform/convex/lib/issuanceCore.ts",
+        "platform/convex/lib/issuanceDps.ts",
+        "platform/convex/lib/issuanceProduction.ts",
+        "platform/convex/lib/certificateTransport.ts",
+        "platform/convex/lib/certificateRuntime.ts",
+        "platform/convex/lib/issuanceGate.ts",
+        "platform/convex/lib/nfseProfile.ts"
+      ],
+      "applicableWhen": "issuanceProduction",
+      "last": null
+    },
+    {
+      "id": "capture-alert",
+      "title": "Recebimento do e-mail de teste do alerta da captura",
+      "issue": "freecorps/freecorpsNFE#126",
+      "owner": "wolf-stievano",
+      "everyDays": 90,
+      "riskPaths": [
+        ".github/workflows/capture-fiscal.yml",
+        "scripts/deploy/capture-release.mjs",
+        "scripts/lib/capture-release.mjs",
+        "platform/convex/captureSupervisor.ts",
+        "platform/convex/lib/accountMail.ts",
+        "platform/account-policy.mjs"
+      ],
+      "applicableWhen": "always",
+      "last": {
+        "path": "docs/v1.0/evidence/126/2026-11-09/alert-test.json",
+        "sha256": "dc2724283004ea3d6dc5565bf9b6e875e0e6ceaf3125a824082b4979802e48d3"
+      }
+    }
+  ]
+}
