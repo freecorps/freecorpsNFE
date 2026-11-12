@@ -999,6 +999,37 @@ mesclada repetido no push da `main`. Adotar o Turborepo poria um segundo
 executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
 `inputs` manuais.
 
+### Hook pre-commit
+
+`.vite-hooks/pre-commit` roda `vp staged`, que lê o bloco `staged` de
+`vite.config.ts` e confere só os arquivos do commit, as duas primeiras etapas
+de `check:changed`:
+
+| Arquivos staged | O que roda                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| Todos           | `vp fmt`: formata e põe o resultado no commit                                              |
+| JS e TS         | `vp run ci:packages`, do cache, e `vp lint --deny-warnings`: erro ou aviso recusa o commit |
+
+As alterações fora do índice de um arquivo parcialmente staged ficam
+escondidas enquanto o hook roda, e as ferramentas veem só a versão do commit.
+Os padrões ignorados em `fmt` e `lint` continuam valendo para os arquivos
+passados um a um. Um commit só de remoções passa direto. Medido no Windows com
+Git Bash: cerca de 6 segundos, a maior parte no lint com tipos.
+
+O hook passa `--no-stash` e por isso avisa "Skipping backup" a cada commit. O
+backup padrão do `vp staged` grava uma entrada na pilha de stash, que é
+compartilhada por todos os worktrees, e a apaga pela posição na lista: um
+stash criado por outra sessão no meio do commit desloca a posição, e a entrada
+apagada seria a dela. Sem o backup, quando o lint recusa o commit, a
+formatação já aplicada fica no índice e na árvore; as alterações escondidas
+voltam por um patch em `lint-staged/`, dentro da pasta Git do checkout
+(`git rev-parse --git-dir`), que fica ali se não puder ser aplicado.
+
+Typecheck dos projetos e testes ficam para `check:changed` e o CI. O hook
+depende do mesmo dispatcher do [pre-push](#hook-pre-push): sem `.vite-hooks/_`,
+o commit não passa pelo hook. `git commit --no-verify` e `VP_GIT_HOOKS=0`
+também o pulam; agentes corrigem o achado em vez disso.
+
 ## Custo dos locks no Windows
 
 Os locks consultam criação, executável e linha de início do processo para não
