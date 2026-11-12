@@ -24,6 +24,10 @@ export function backupPlan(raw, release) {
     raw.incremental?.version === 2 || raw.maxSnapshotBytes <= 1024 ** 3,
     "Formato 1 limitado a 1 GiB; use o formato 2 para volumes maiores",
   );
+  assert.ok(
+    typeof raw.warnAboveRatio === "number" && raw.warnAboveRatio > 0 && raw.warnAboveRatio < 1,
+    "Plano de backup: warnAboveRatio inválido",
+  );
   // ADR 0010, phase C: the cold tier's bucket, which the backup references and checks.
   if (raw.coldTier !== undefined)
     assert.match(
@@ -372,6 +376,25 @@ export function webhookSecrets(entries) {
   return result;
 }
 
+/** JSON encoding/schema/ZIP overhead plus headroom for writes between measurement and export. */
+export const snapshotReserve = ({ databaseBytes, tables, files }) =>
+  Math.max(1024 ** 2, Math.ceil(databaseBytes * 0.1)) + tables * 4096 + files * 2048;
+
+const GiB = 1024 ** 3;
+/**
+ * The preflight estimate, rebuilt from the newest manifest, that the next snapshot must keep
+ * within `maxSnapshotBytes`. Format 1 keeps the files inside `plaintext`; format 2 stores them
+ * as separate objects. Null when the manifest does not carry the sizes.
+ */
+function estimatedSnapshotBytes(manifest) {
+  const plaintext = manifest.plaintext?.bytes,
+    { bytes: storage, files } = manifest.storage ?? {},
+    tables = Object.keys(manifest.tables ?? {}).length;
+  if (![plaintext, storage, files].every(Number.isSafeInteger)) return null;
+  const databaseBytes = manifest.format === 2 ? plaintext : Math.max(0, plaintext - storage);
+  return databaseBytes + storage + snapshotReserve({ databaseBytes, tables, files });
+}
+
 /** Health of the off-host copies as seen by the monitor. */
 export function evaluateBackups(plan, ids, latest, now) {
   const problems = [];
@@ -393,7 +416,24 @@ export function evaluateBackups(plan, ids, latest, now) {
     problems.push(
       `Cópia de ${oldest} excede a retenção de ${plan.retentionDays} dias; conferir lifecycle do bucket`,
     );
-  return { problems, count: ids.length, newest, oldest, latestAgeHours, oldestAgeDays };
+  // The snapshot job refuses the export past the limit; warn while there is still room to act.
+  const latestEstimatedBytes = latest ? estimatedSnapshotBytes(latest) : null;
+  if (
+    latestEstimatedBytes !== null &&
+    latestEstimatedBytes > plan.maxSnapshotBytes * plan.warnAboveRatio
+  )
+    problems.push(
+      `Estimativa do último backup íntegro: ${(latestEstimatedBytes / GiB).toFixed(2)} GiB de ${(plan.maxSnapshotBytes / GiB).toFixed(2)} GiB com a reserva do preflight (aviso acima de ${Math.round(plan.warnAboveRatio * 100)}%); revise maxSnapshotBytes antes que o snapshot seja recusado`,
+    );
+  return {
+    problems,
+    count: ids.length,
+    newest,
+    oldest,
+    latestAgeHours,
+    oldestAgeDays,
+    latestEstimatedBytes,
+  };
 }
 
 // SigV4 for the S3-compatible R2 endpoint (region "auto", path-style).
@@ -527,6 +567,7 @@ export function backupFailure(error) {
     "Objeto R2 corrompido",
     "Configure incremental.version=2 antes de ativar",
     "Plano de backup: bucket frio inválido",
+    "Plano de backup: warnAboveRatio inválido",
     "Documento frio sem referência íntegra",
     "Tabela sem objeto frio",
     "Backup com documentos frios exige coldTier.bucket no plano",
