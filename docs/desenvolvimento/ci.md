@@ -1002,8 +1002,8 @@ executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
 ### Hook pre-commit
 
 `.vite-hooks/pre-commit` roda `vp staged`, que lê o bloco `staged` de
-`vite.config.ts` e confere só os arquivos do commit, as duas primeiras etapas
-de `check:changed`:
+`vite.config.ts` e repete a formatação e o lint de `check:changed` só nos
+arquivos do commit:
 
 | Arquivos staged | O que roda                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------------ |
