@@ -999,6 +999,45 @@ mesclada repetido no push da `main`. Adotar o Turborepo poria um segundo
 executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
 `inputs` manuais.
 
+### Hook pre-commit
+
+`.vite-hooks/pre-commit` roda `vp staged`, que lê o bloco `staged` de
+`vite.config.ts` e repete a formatação e o lint de `check:changed` só nos
+arquivos do commit:
+
+| Arquivos staged | O que roda                                                  |
+| --------------- | ----------------------------------------------------------- |
+| Todos           | `vp fmt --check`                                            |
+| JS e TS         | `vp run ci:packages`, do cache, e `vp lint --deny-warnings` |
+
+As duas conferências rodam juntas e até o fim. Arquivo mal formatado, erro ou
+aviso de lint recusa o commit e aparece na saída: formate com
+`vp fmt <arquivo>`, corrija o lint, ponha de novo no índice e repita o commit.
+Os padrões ignorados em `fmt` e `lint` continuam valendo para
+os arquivos passados um a um, e um commit só de remoções passa direto. Medido
+no Windows com Git Bash: cerca de 5 segundos, a maior parte no lint com tipos.
+
+Num arquivo parcialmente staged, as alterações fora do índice ficam
+escondidas enquanto o hook roda, e a conferência lê a versão do commit. Os
+outros arquivos são lidos da árvore de trabalho, inclusive pelo lint com
+tipos. As alterações escondidas voltam por um patch em `lint-staged/`, dentro
+da pasta Git do checkout (`git rev-parse --git-dir`); se o processo for
+interrompido no meio, elas estão nesse patch (`git apply <patch>`).
+
+O hook não corrige sozinho porque roda com `--no-stash`, que imprime "Skipping
+backup" a cada commit. O backup padrão do `vp staged` fica na pilha de stash,
+compartilhada por todos os worktrees, durante o hook inteiro: um
+`git stash pop` de outra sessão nesse intervalo levaria o backup, e o
+`stash drop` final apaga pela posição na lista. Sem o backup, uma correção
+gravada sobre linhas que também têm alteração fora do índice deixaria o
+arquivo em conflito, sem volta automática. Conferir sem gravar evita os dois
+casos.
+
+Typecheck dos projetos e testes ficam para `check:changed` e o CI. O hook
+depende do mesmo dispatcher do [pre-push](#hook-pre-push): sem `.vite-hooks/_`,
+o commit não passa pelo hook. `git commit --no-verify` e `VP_GIT_HOOKS=0`
+também o pulam; agentes corrigem o achado em vez disso.
+
 ## Custo dos locks no Windows
 
 Os locks consultam criação, executável e linha de início do processo para não

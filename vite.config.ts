@@ -338,6 +338,20 @@ export default defineConfig({
       },
     },
   },
+  // Hook pre-commit (`.vite-hooks/pre-commit`, `vp staged`): recusa o commit com
+  // formatação ou lint errados nos arquivos staged, como `check:changed` faz
+  // antes do push (docs/desenvolvimento/ci.md, Hook pre-commit). Nada aqui grava
+  // arquivo: o hook roda sem o backup em stash, e uma correção sobre um arquivo
+  // parcialmente staged não voltaria limpa. O lint com tipos lê o dist dos
+  // pacotes fiscais: `ci:packages` o compila antes, do cache quando nada deles
+  // mudou; o comando que a função devolve roda sem a lista de arquivos.
+  staged: {
+    "*": "vp fmt --check --no-error-on-unmatched-pattern",
+    "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
+      () => "vp run ci:packages",
+      "vp lint --deny-warnings --no-error-on-unmatched-pattern",
+    ],
+  },
   fmt: {
     // Código gerado e skills importadas preservam a formatação de origem; os atalhos de
     // .claude/skills copiam o frontmatter delas byte a byte (scripts/sync-claude-skills.mjs).
