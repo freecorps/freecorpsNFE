@@ -3,16 +3,19 @@ import type { QueryCtx } from "../_generated/server";
 import { buildSha } from "../buildInfo";
 import { captureTask } from "./captureValues";
 import { CONVEX_CLOUD_DEPLOYMENT_URL } from "./convexDeployment";
+import type { DeploymentVariables } from "./issuanceProduction";
 
 export type ProofFiscalEnvironment = "homologation" | "production";
 
 /**
  * Fiscal environment of the dedicated #50 target, fixed when the code is published.
  * Production exists only there, to read the distribution of NF-e already received;
- * it never issues, cancels or manifests. Any other deployment stays in homologation.
+ * it never issues, cancels or manifests. Any other deployment stays in homologation. Read by
+ * `requirePlatformEnvironment` (`fiscalTarget` of the profile); the capture still calls it with
+ * `process.env` until it moves to the profile (#130).
  */
-export function proofFiscalTarget(): ProofFiscalEnvironment {
-  return process.env.APP_ENV === "validation" && process.env.FNFE_PROOF_FISCAL_ENV === "production"
+export function proofFiscalTarget(env: DeploymentVariables): ProofFiscalEnvironment {
+  return env.APP_ENV === "validation" && env.FNFE_PROOF_FISCAL_ENV === "production"
     ? "production"
     : "homologation";
 }
@@ -20,10 +23,6 @@ export function proofFiscalTarget(): ProofFiscalEnvironment {
 /** Platform environment whose streams reach the given fiscal environment. */
 export const productEnvironmentOf = (fiscal: ProofFiscalEnvironment) =>
   fiscal === "production" ? ("production" as const) : ("sandbox" as const);
-
-/** Real transport mode: every step is an explicit operator action under the proof policy. */
-export const realFiscalMode = () =>
-  process.env.FISCAL_ENV === "homologation" || process.env.FISCAL_ENV === "production";
 
 /** Deployment-secret policy for the manually operated #50 proof only. */
 export type FiscalProofPolicy = {
@@ -92,7 +91,7 @@ export async function fiscalProofAllowed(
   const p = fiscalProofPolicy();
   const now = Date.now();
   // The policy names the fiscal environment it authorizes; the target must match it.
-  const fiscal = proofFiscalTarget();
+  const fiscal = proofFiscalTarget(process.env);
   if (
     !p ||
     process.env.APP_ENV !== "validation" ||

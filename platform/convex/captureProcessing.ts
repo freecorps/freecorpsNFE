@@ -61,7 +61,8 @@ import {
   scheduleResume,
   streamOfOperation,
 } from "./lib/captureAttention";
-import { fiscalProofAllowed, fiscalProofPolicy, realFiscalMode } from "./lib/fiscalProof";
+import { requirePlatformEnvironment } from "./environment";
+import { fiscalProofAllowed, fiscalProofPolicy } from "./lib/fiscalProof";
 import { isSiteCapture, siteCaptureDecision, siteCapturePin } from "./lib/siteCapture";
 import { captureRelease } from "./lib/fiscalCaptureRelease";
 import {
@@ -214,7 +215,7 @@ export const prepare = internalMutation({
           : nsuAfter(stream.checkpoint)
         : stream.checkpoint);
     if (!batch && stream.nextAllowedAt <= Date.now()) {
-      if (realFiscalMode()) {
+      if (requirePlatformEnvironment().fiscalEnv !== "disabled") {
         const certificate = op.certificate
           ? await ctx.db.get("certificates", op.certificate.id)
           : null;
@@ -847,7 +848,7 @@ export const published = internalMutation({
     }
     // A fiscal proof advances only by explicit operator action, preserving the
     // source window and committed checkpoint even if the caller disconnects.
-    if (realFiscalMode()) {
+    if (requirePlatformEnvironment().fiscalEnv !== "disabled") {
       await ctx.db.patch("captureStreams", stream._id, {
         state: "paused",
         version: stream.version + 1,

@@ -106,6 +106,34 @@ describe("perfil de produção fiscal da emissão", () => {
     });
   });
 
+  it("entrega as listas de empresas só onde cada transporte pode existir", () => {
+    vi.stubEnv("FNFE_NFSE_PRODUCTION_COMPANIES", "emp1, emp2");
+    expect(requirePlatformEnvironment()).toMatchObject({
+      deploymentUrl: NAMED_URL,
+      fiscalTarget: "homologation",
+      productionCompanies: new Set(["emp1", "emp2"]),
+      restrictedCompanies: new Set(),
+    });
+    // Malformed fails closed for every company.
+    vi.stubEnv("FNFE_NFSE_PRODUCTION_COMPANIES", "emp1,../x");
+    expect(requirePlatformEnvironment().productionCompanies).toEqual(new Set());
+    // The #50 target carries production data: the restricted production of the sandbox never
+    // opens there, even with both of its variables.
+    stub({
+      ...target50,
+      FNFE_ISSUANCE_ENV: undefined,
+      FNFE_NFSE_PRODUCTION_COMPANIES: undefined,
+      FNFE_NFSE_SANDBOX_TRANSPORT: "producao-restrita",
+      FNFE_NFSE_RESTRICTED_COMPANIES: "emp1",
+    });
+    expect(requirePlatformEnvironment()).toMatchObject({
+      deploymentUrl: target50.CONVEX_CLOUD_URL,
+      fiscalTarget: "production",
+      productionCompanies: new Set(),
+      restrictedCompanies: new Set(),
+    });
+  });
+
   it.each([undefined, "", " ", " production", "production ", "producao", "PRODUCTION"])(
     "recusa o deployment nomeado com o marcador %j, sem virar sandbox",
     (mark) => {

@@ -31,11 +31,8 @@ import {
   parameterCompetence,
   parameterServiceCode,
 } from "./issuanceProbe";
-import {
-  restrictedCompanies,
-  restrictedTransportAllowed,
-  transportModeFor,
-} from "./lib/issuanceCore";
+import { restrictedTransportAllowed, transportModeFor } from "./lib/issuanceCore";
+import { requirePlatformEnvironment } from "./environment";
 import { VER_APLIC } from "./lib/issuanceValues";
 // Same source module the platform resolves under test (vite.config.ts aliases the
 // workspace packages to src), so the XSD catalog is registered once.
@@ -1719,7 +1716,7 @@ describe("produção restrita (fase 3)", () => {
     vi.stubEnv("FNFE_NFSE_SANDBOX_TRANSPORT", "producao-restrita");
     expect(transportModeFor(sandbox)).toBe("simulated");
     vi.stubEnv("FNFE_NFSE_RESTRICTED_COMPANIES", "outra1, jd7abc");
-    expect([...restrictedCompanies()]).toEqual(["outra1", "jd7abc"]);
+    expect([...requirePlatformEnvironment().restrictedCompanies]).toEqual(["outra1", "jd7abc"]);
     expect(transportModeFor(sandbox)).toBe("producao-restrita");
     expect(transportModeFor({ ...sandbox, companyId: "outra2" as Id<"companies"> })).toBe(
       "simulated",
@@ -1731,8 +1728,12 @@ describe("produção restrita (fase 3)", () => {
     vi.stubEnv("FNFE_NFSE_SANDBOX_TRANSPORT", "producao");
     expect(transportModeFor(sandbox)).toBe("simulated");
     vi.stubEnv("FNFE_NFSE_SANDBOX_TRANSPORT", "producao-restrita");
+    // PRODUCT_ENV=production does not match the local profile: it is refused before the list is
+    // read, instead of a loose `false`. The production transport is chosen without the profile.
     vi.stubEnv("PRODUCT_ENV", "production");
-    expect(restrictedTransportAllowed(company)).toBe(false);
+    expect(() => restrictedTransportAllowed(company)).toThrow(
+      "Invalid platform configuration: PRODUCT_ENV",
+    );
     expect(transportModeFor({ environment: "production", companyId: company })).toBe("producao");
   });
 

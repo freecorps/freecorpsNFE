@@ -7,7 +7,7 @@ import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/s
 import { requestCancellation, requestIssuance } from "./issuance";
 import { baseEnvironment } from "./lib/environmentAccess";
 import { findCompany } from "./lib/companyAccess";
-import { isIssuanceProductionDeployment, productionCompanies } from "./lib/issuanceProduction";
+import { requirePlatformEnvironment } from "./environment";
 import {
   issuanceAccess,
   issuanceView,
@@ -88,7 +88,9 @@ export const context = query({
     // The same reading as `deployment.current`. A production deployment that is not the fiscal
     // production one (the #50 target) never issues: the request ends in NOT_FOUND there.
     const environment = baseEnvironment();
-    const issues = environment === "sandbox" || isIssuanceProductionDeployment();
+    const platform = requirePlatformEnvironment();
+    const fiscalProduction = platform.issuanceEnv === "production";
+    const issues = environment === "sandbox" || fiscalProduction;
     const empty = {
       companyId: null,
       company: null,
@@ -107,10 +109,10 @@ export const context = query({
     const canIssue =
       issues && companyCapabilities(membership.role).operateDocuments && !demonstration;
     let productionGate: { open: boolean; since: number | null } | null = null;
-    if (isIssuanceProductionDeployment() && companyCapabilities(membership.role).manage) {
+    if (fiscalProduction && companyCapabilities(membership.role).manage) {
       const gate = await productionGateOf(ctx, companyId);
       const open =
-        productionCompanies().has(companyId) &&
+        platform.productionCompanies.has(companyId) &&
         !!gate?.production &&
         gate.organizationId === args.organizationId;
       productionGate = { open, since: open ? gate!.updatedAt : null };
