@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "receipt": "capture-alert",
+  "provedAt": "2026-11-09T21:02:54Z",
+  "codeSha": "1511b14dc01a73171f3f12b0ccb41962b0a4b120",
+  "result": "passed",
+  "recordedBy": "wolf-stievano",
+  "record": "https://github.com/freecorps/freecorpsNFE/issues/126#issuecomment-6751456282",
+  "run": "https://github.com/freecorps/freecorpsNFE/actions/runs/42698697429",
+  "workflowReceipt": {
+    "action": "alert_test",
+    "result": "passed",
+    "deployment": "elated-possum-295",
+    "operator": "wolf-stievano",
+    "runId": "42698697429",
+    "runAttempt": 1,
+    "health": "verified",
+    "sha": "1511b14dc01a73171f3f12b0ccb41962b0a4b120",
+    "summary": {
+      "alertDestination": "email",
+      "recipients": 2,
+      "delivery": "sent",
+      "sentAt": "2026-11-09T21:02:54.245Z"
+    },
+    "started": "2026-11-09T21:02:52.955Z",
+    "sealed": {
+      "sha256": "7b09cf6c0b77294e28d652183dc8651ac5138ac9e391e24737245f36479def46",
+      "state": "sealed",
+      "file": "receipt.full.json.age",
+      "ciphertextSha256": "d0e681813265f68e2445723865646fa7e4d833ba3fed6058cdaf29f4e4a8f3fd"
+    }
+  },
+  "arrival": {
+    "mailboxes": 2,
+    "minute": "2026-11-09T21:02Z",
+    "verifiedBy": "wolf-stievano"
+  },
+  "limits": [
+    "Enviado pelo Email Sending da Cloudflare, antes da troca para o Ember Mail (#220). Não cobre o provedor novo.",
+    "A chegada foi conferida na caixa de operação do console e na caixa de plantão, que só mostram o minuto. Os endereços não são registrados."
+  ]
+}

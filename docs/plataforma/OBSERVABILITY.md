@@ -289,7 +289,9 @@ O backup externo de D04 e a exportação de clientes têm retenção própria em
 4. Guardar o recibo sanitizado em `docs/v1.0/evidence/d03-provider-logs/`,
    com data, alvo e quem conferiu, e citar a conclusão em
    [Retenção](RETENTION.md). Os registros de acesso do Marco Civil ficam em
-   `accessRecords` por 184 dias e não dependem desses logs.
+   `accessRecords` por 184 dias e não dependem desses logs. Atualize a
+   entrada `d03-provider-logs` de `deploy/receipts.json`
+   ([Recibos](../operacao/recibos.md#registrar-um-recibo)).
 5. Repetir a conferência quando mudar plano, Worker, deployment ou destino de
    log, e antes de publicar a política de D06.
 

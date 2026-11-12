@@ -386,7 +386,9 @@ preferencialmente o substituto, em uma máquina sem acesso ao Convex de origem:
    `docs/v1.0/evidence/178/` quando for a prova do segundo custodiante (veja o
    roteiro e os modelos) ou em
    `docs/v1.0/evidence/51-offsite/` nos demais ensaios. Registre o aceite do
-   mantenedor na #178.
+   mantenedor na #178. A prova do segundo custodiante atualiza também a
+   entrada `restore-second-custodian` de `deploy/receipts.json`
+   ([Recibos](recibos.md#registrar-um-recibo)).
 
 O RTO do ensaio não inclui criar um deployment de nuvem, publicar o código e
 apontar os domínios. Registre esses tempos à parte se o ensaio usar um

@@ -329,6 +329,8 @@ real. Não expire certificado nem provoque consulta à Receita para gerar um.
 4. Registre na issue da mudança (a #463 na ativação, a #126 no endereço de
    plantão) o run, o `sentAt`, o horário de chegada em cada caixa e o
    resultado, sem os endereços.
+5. Grave o recibo e atualize a entrada `capture-alert` de
+   `deploy/receipts.json`, como em [Recibos](recibos.md#registrar-um-recibo).
 
 O run só fica verde com `delivery: "sent"`, que é o aceite do provedor. Se
 vier vermelho, o recibo diz por quê:

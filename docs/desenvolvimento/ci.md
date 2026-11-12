@@ -289,7 +289,7 @@ local. `bun run ci:test` ainda roda a suíte inteira num processo só.
 | `packages`          | `packages/`                                               | 20 s    |
 | `console`           | `apps/*/src/` (jsdom por arquivo)                         | 20 s    |
 | `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus  | 60 s    |
-| `repository`        | Os quatro testes que leem a árvore inteira                | 60 s    |
+| `repository`        | Os testes que leem a árvore inteira ou a história do Git  | 60 s    |
 | `benchmark`         | `*.benchmark.test.ts` de `platform/` e `tests/`           | 120 s   |
 
 Cada teste fica ao lado do código que exercita: os da plataforma em
@@ -311,7 +311,9 @@ projeto reprova `tests/ci.testProjects.test.ts`.
 do cabeçalho dela), `scripts/repo/doc-links.test.ts` (todo Markdown, atrás de
 link relativo para arquivo ou âncora que não existe) e
 `tests/ci.changes.test.ts` (todo código-fonte, atrás de caminhos de
-documentação). Juntos levam poucos segundos e executam em toda mudança. Dentro
+documentação), além de `scripts/repo/receipts.test.ts`, que confere
+`deploy/receipts.json` contra a história do Git até o HEAD
+([Recibos](../operacao/recibos.md)). Juntos levam poucos segundos e executam em toda mudança. Dentro
 de `tooling`, cerca de 95 s localmente, eles faziam a área inteira executar a
 cada arquivo alterado do console ou da plataforma; separados, `tooling` repete
 o resultado enquanto não muda o que ela lê.
