@@ -181,7 +181,9 @@ export function checkReceipts(root: string, now: Date): ReceiptStatus {
       if (typeof result === "string") problem(result);
       else {
         const ancestry = git(root, ["merge-base", "--is-ancestor", result.codeSha, "HEAD"]);
-        if (ancestry.status === 0) proof = result;
+        if (result.provedAt.getTime() > now.getTime() + DAY)
+          problem(`provedAt ${result.provedAt.toISOString()} depois da data do commit testado`);
+        else if (ancestry.status === 0) proof = result;
         else if (ancestry.status === 1)
           problem(`codeSha ${result.codeSha} fora da história do HEAD`);
         else problem(`codeSha ${result.codeSha} não é um commit deste repositório`);
@@ -196,7 +198,8 @@ export function checkReceipts(root: string, now: Date): ReceiptStatus {
     }
     if (!applicable || problems.some((text) => text.startsWith(`${name}: `))) continue;
 
-    const owner = `dono ${entry.owner}, ${entry.issue}`;
+    // Sem problemas registrados, owner e issue já passaram pelas regex acima.
+    const owner = `dono ${entry.owner as string}, ${entry.issue as string}`;
     if (entry.last === null) {
       warnings.push(`${name}: sem recibo registrado (${owner})`);
       continue;
@@ -352,6 +355,19 @@ describe("checkReceipts", () => {
       ]);
     }));
 
+  it("rejects a proof dated after the tested commit", () =>
+    withFixture(({ root, entry, table, codeSha }) => {
+      const future = "2062-11-01T12:00:00Z";
+      table(
+        entry({
+          last: { run: "https://github.com/o/r/actions/runs/1", provedAt: future, codeSha },
+        }),
+      );
+      expect(checkReceipts(root, clean).problems).toEqual([
+        "proof: provedAt 2062-11-01T12:00:00.000Z depois da data do commit testado",
+      ]);
+    }));
+
   it("accepts a workflow run as the receipt", () =>
     withFixture(({ root, entry, table, codeSha }) => {
       table(entry({ last: { run: "https://github.com/o/r/actions/runs/42", provedAt, codeSha } }));
@@ -436,14 +452,15 @@ it("keeps deploy/receipts.json valid and reports what is due", () => {
     }).trim(),
   );
   const { problems, warnings } = checkReceipts(repoRoot, now);
-  // O GitHub Actions mostra `::warning::` como anotação no run. A quebra
-  // inicial tira a primeira linha de depois do cabeçalho do Vitest, que o
-  // GitHub não leria como comando.
+  // O GitHub Actions mostra `::warning::` como anotação no run. `CI`, e não
+  // `GITHUB_ACTIONS`, porque o ambiente dos testes (`testEnvironment`) só
+  // repassa o primeiro. A quebra inicial tira a primeira linha de depois do
+  // cabeçalho do Vitest, que o GitHub não leria como comando.
   if (warnings.length > 0)
     console.warn(
       warnings
         .map((warning) =>
-          process.env.GITHUB_ACTIONS === "true"
+          process.env.CI === "true"
             ? `
 ::warning title=Recibo operacional::${warning}`
             : `

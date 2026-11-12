@@ -23,21 +23,22 @@ prova é trabalho do dono, não da PR.
 | `applicableWhen` | `always`, ou `issuanceProduction`: só enquanto `deploy/issuance-production.json` nomeia um deployment.                         |
 | `last`           | `null` enquanto não há recibo neste repositório; `{ path, sha256 }` para um arquivo; `{ run, provedAt, codeSha }` para um run. |
 
-As entradas de 12/11/2026:
+Dono, cadência e caminhos de cada prova estão no próprio JSON. Na abertura da
+tabela (#127), o estado do último recibo era este:
 
-| `id`                       | Dono            | A cada   | Último recibo                                                                                                |
-| -------------------------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
-| `restore-second-custodian` | `hhs0001`       | 180 dias | Nenhum aqui. O ensaio de 02/11/2026 está no repositório arquivado, com commit de fora desta história.        |
-| `d03-provider-logs`        | `wolf-stievano` | 180 dias | Nenhum aqui. O inventário de 21/10/2026 está no repositório arquivado; #129 fecha o que falta.               |
-| `nfse-producao-restrita`   | `wolf-stievano` | 90 dias  | Não se aplica: `deploy/issuance-production.json` tem `deployment: null`.                                     |
-| `capture-alert`            | `wolf-stievano` | 90 dias  | O teste de 09/11/2026 ([recibo](../v1.0/evidence/126/2026-11-09/alert-test.json)), ainda pelo Email Sending. |
-
-O recibo do alerta é anterior à troca para o Ember Mail (#220), por isso o
-teste avisa que `platform/convex/lib/accountMail.ts` e
-`platform/account-policy.mjs` mudaram desde ele. O `alert_test` de 11/11/2026
-(run 42931956665) já saiu pelo Ember Mail com `delivery: "sent"`, mas a
-chegada na caixa `nfe-operacao` não foi registrada. Sem ela, não conta como
-recibo.
+- `restore-second-custodian` e `d03-provider-logs`: sem recibo aqui. O ensaio
+  de 02/11/2026 e o inventário de 21/10/2026 estão no repositório arquivado,
+  e o commit deles não existe nesta história.
+- `nfse-producao-restrita`: não se aplica, porque
+  `deploy/issuance-production.json` tem `deployment: null`.
+- `capture-alert`: o teste de 09/11/2026
+  ([recibo](../v1.0/evidence/126/2026-11-09/alert-test.json)), ainda pelo
+  Email Sending. O teste avisa que `platform/convex/lib/accountMail.ts`,
+  `platform/account-policy.mjs` e `platform/convex/captureSupervisor.ts`
+  mudaram desde ele; os dois primeiros, na troca para o Ember Mail (#220). O
+  `alert_test` de 11/11/2026 às 00:31 UTC (run 42931956665) já saiu pelo Ember
+  Mail com `delivery: "sent"`, mas a chegada na caixa `nfe-operacao` não foi
+  registrada. Sem ela, não conta como recibo.
 
 ## O que reprova e o que avisa
 
@@ -47,7 +48,9 @@ Reprova:
   inexistente;
 - recibo em arquivo que não existe, ou cujo SHA-256 não é o da tabela;
 - recibo em formato desconhecido (abaixo);
-- `codeSha` que não é commit deste repositório ou não é ancestral do HEAD.
+- `codeSha` que não é commit deste repositório ou não é ancestral do HEAD;
+- `provedAt` mais de um dia depois da data do commit testado, que faria o
+  recibo nunca vencer.
 
 Avisa, quando a prova se aplica:
 
@@ -60,7 +63,8 @@ Na PR, é o commit de merge que o GitHub cria para o run, e os avisos aparecem
 como anotações do job `Validate`. Localmente, rode
 `vp test run scripts/repo/receipts.test.ts`; um agente que roda os testes vê
 os avisos só com `--silent=false`. Como os outros testes, o resultado
-aprovado pode vir do cache do Vite Task, e aí o aviso não se repete.
+aprovado pode vir do cache do Vite Task, que repete os avisos da execução
+guardada: eles podem ter sido calculados contra outro HEAD e outra data.
 
 O teste precisa da história completa do Git: o checkout do CI usa
 `fetch-depth: 0`. Num clone raso, todo `codeSha` reprova como desconhecido.
@@ -70,8 +74,11 @@ O teste precisa da história completa do Git: o checkout do CI usa
 1. Faça a prova pelo roteiro dela ([backup](backup.md#ensaio-de-perda-do-host),
    [D03](../plataforma/OBSERVABILITY.md#logs-dos-provedores-d03),
    [teste do alerta](captura-fiscal.md#testar-o-e-mail-dos-alertas),
-   [emissão NFS-e](emissao-nfse.md)) e anote o commit que estava publicado.
-2. Grave o recibo em `docs/v1.0/evidence/<issue>/<AAAA-MM-DD>/`, em JSON:
+   [emissão NFS-e](emissao-nfse.md)) e anote o commit da `main` que estava
+   publicado. Um commit só do branch some no squash merge, e o push na `main`
+   reprovaria.
+2. Grave o recibo em JSON na pasta que o roteiro da prova indica, ou em
+   `docs/v1.0/evidence/<issue>/<AAAA-MM-DD>/` quando ele não indica:
 
    ```json
    {
@@ -89,14 +96,15 @@ O teste precisa da história completa do Git: o checkout do CI usa
    acesso, nome de cliente ou segredo (veja `AGENTS.md`, Credenciais e dados
    reais).
 
-3. Formate o arquivo com `vp fmt <arquivo>`, calcule o SHA-256 dos bytes
-   gravados (`sha256sum <arquivo>`) e atualize `last` da entrada:
+3. Calcule o SHA-256 dos bytes gravados (`sha256sum <arquivo>`) e atualize
+   `last` da entrada. O formatador não toca `docs/v1.0/evidence/**/*.json`, e o
+   `.gitattributes` mantém os bytes, para o hash não mudar depois:
    `{ "path": "<arquivo>", "sha256": "<hash>" }`.
 4. Quando o próprio run do GitHub é a evidência, `last` pode ser
    `{ "run": "<URL do run>", "provedAt": "...", "codeSha": "..." }`, sem
    arquivo. O teste confere o commit, não o run: ele roda sem rede.
-5. Cite o recibo na issue da entrada e abra a PR. `deploy/` tem dono em
-   `.github/CODEOWNERS`.
+5. Cite o recibo na issue da entrada, se ela estiver aberta e acessível, e
+   abra a PR. `deploy/` tem dono em `.github/CODEOWNERS`.
 
 Uma prova nova entra como outra entrada da tabela, com `last: null` até o
 primeiro recibo. Esta tabela não agenda nem abre issue sozinha; se os prazos

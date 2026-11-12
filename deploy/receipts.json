@@ -15,7 +15,9 @@
         "scripts/lib/incremental-backup.mjs",
         "scripts/lib/backup-table-stream.mjs",
         "scripts/lib/backup-collection.mjs",
-        "platform/convex/retentionRecovery.ts"
+        "platform/convex/retentionRecovery.ts",
+        "scripts/lib/recovery-custody.mjs",
+        ".github/workflows/offsite-backup.yml"
       ],
       "applicableWhen": "always",
       "last": null
@@ -47,7 +49,11 @@
         "platform/convex/issuanceProbe.ts",
         "platform/convex/lib/issuanceCore.ts",
         "platform/convex/lib/issuanceDps.ts",
-        "platform/convex/lib/issuanceProduction.ts"
+        "platform/convex/lib/issuanceProduction.ts",
+        "platform/convex/lib/certificateTransport.ts",
+        "platform/convex/lib/certificateRuntime.ts",
+        "platform/convex/lib/issuanceGate.ts",
+        "platform/convex/lib/nfseProfile.ts"
       ],
       "applicableWhen": "issuanceProduction",
       "last": null

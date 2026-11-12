@@ -353,6 +353,9 @@ export default defineConfig({
       "docs/termos/arquivo/**",
       // Declarações do SDK publicado, copiadas do tarball aceito e conferidas por SHA-256.
       "packages/sdk/published/**",
+      // Recibos de provas, conferidos por SHA-256 (deploy/receipts.json e
+      // deploy/platform-release.json): o formatador não pode regravá-los.
+      "docs/v1.0/evidence/**/*.json",
     ],
   },
   lint: {
