@@ -705,11 +705,23 @@ it("reads PRODUCT_ENV only in the deployment gates, never in an access check", (
     )
     .map(([path]) => path.replace("../../platform/convex/", ""))
     .sort();
-  // The #50 proof policy, the NFS-e restricted transport and a local proof; `environment.ts`
-  // checks the profile by name. Access goes through `lib/environmentAccess.ts`.
-  expect(readers).toEqual([
-    "lib/fiscalProof.ts",
-    "lib/issuanceCore.ts",
-    "testing/certificateProof.ts",
-  ]);
+  // The #50 proof policy and a local proof; `environment.ts` checks the profile by name. Access
+  // goes through `lib/environmentAccess.ts`.
+  expect(readers).toEqual(["lib/fiscalProof.ts", "testing/certificateProof.ts"]);
+});
+
+it("leaves the issuance gates to the validated profile, with no variable read of their own", () => {
+  // #130: these modules take the fiscal and issuance profile from `requirePlatformEnvironment`,
+  // so a partial or invalid combination is refused there instead of passing a loose read.
+  // Every issuance module, the NFS-e profiles and the vault, found by name so a new one is covered.
+  const issuance = Object.keys(sources)
+    .map((path) => path.replace("../../platform/convex/", ""))
+    .filter((path) => /^(lib\/)?(issuance|nfseProfile)\w*\.ts$|^certificateUse\.ts$/.test(path));
+  expect(issuance).toEqual(
+    expect.arrayContaining(["certificateUse.ts", "issuance.ts", "lib/issuanceProduction.ts"]),
+  );
+  const readers = issuance.filter((path) =>
+    /process\.env\b(?!`)/.test(sources[`../../platform/convex/${path}`]!),
+  );
+  expect(readers).toEqual([]);
 });

@@ -13,7 +13,6 @@ import { buildSha } from "./buildInfo";
 import { requirePlatformEnvironment } from "./environment";
 import { certificateHead, certificateUsable } from "./lib/certificateAccess";
 import { FREECORPS_OPERATOR, gateRequest } from "./lib/issuanceGate";
-import { productionCompanies } from "./lib/issuanceProduction";
 import { closureOf } from "./lib/organizationClosure";
 import { checkCapacity, reserveCapacity } from "./lib/capacityCore";
 import {
@@ -85,8 +84,9 @@ async function requireProductionGate(
   purpose: ProductionPurpose,
 ) {
   if (scope.environment !== "production") return;
-  if (requirePlatformEnvironment().issuanceEnv !== "production") deny("NOT_FOUND");
-  if (!productionCompanies().has(scope.companyId)) deny("ISSUANCE_PRODUCTION_DISABLED");
+  const platform = requirePlatformEnvironment();
+  if (platform.issuanceEnv !== "production") deny("NOT_FOUND");
+  if (!platform.productionCompanies.has(scope.companyId)) deny("ISSUANCE_PRODUCTION_DISABLED");
   if (purpose === "cancel") return;
   const gate = await productionGate(ctx, scope.companyId);
   if (!gate?.production || gate.organizationId !== scope.organizationId)
@@ -501,8 +501,8 @@ export const setProductionGate = internalMutation({
   },
   returns: v.object({ production: v.boolean(), version: v.number() }),
   handler: async (ctx, { organizationId, companyId, ...change }) => {
-    if (requirePlatformEnvironment().issuanceEnv !== "production")
-      return deny("ISSUANCE_GATE_DEPLOYMENT_DENIED");
+    const platform = requirePlatformEnvironment();
+    if (platform.issuanceEnv !== "production") return deny("ISSUANCE_GATE_DEPLOYMENT_DENIED");
     const company = await ctx.db.get("companies", companyId);
     if (!company || company.organizationId !== organizationId) return deny("NOT_FOUND");
     if (company.kind === "demonstration") return deny("ISSUANCE_DEMONSTRATION_DENIED");
@@ -510,7 +510,7 @@ export const setProductionGate = internalMutation({
     // Closing never opens anything: it stays possible for a closing organization or a company the
     // list no longer has. Opening needs all of them.
     if (request.production) {
-      if (!productionCompanies().has(companyId)) return deny("ISSUANCE_GATE_COMPANY_DENIED");
+      if (!platform.productionCompanies.has(companyId)) return deny("ISSUANCE_GATE_COMPANY_DENIED");
       if (await closureOf(ctx, organizationId)) return deny("ORGANIZATION_CLOSED");
     }
     const gate: Doc<"issuanceGates"> | null = await productionGate(ctx, companyId);
@@ -528,7 +528,7 @@ export const setProductionGate = internalMutation({
       version,
       ...request,
       buildSha,
-      deployment: process.env.CONVEX_CLOUD_URL ?? "",
+      deployment: platform.deploymentUrl,
       createdAt: now,
     });
     const fields = {

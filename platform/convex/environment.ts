@@ -4,9 +4,11 @@ import { productEnvironmentOf, proofFiscalTarget } from "./lib/fiscalProof";
 import {
   ISSUANCE_PRODUCTION_COMPANIES,
   ISSUANCE_PRODUCTION_MARK,
+  companyList,
   isIssuanceProductionDeployment,
   issuanceProductionForbiddenVariables,
   issuanceProductionMisconfigured,
+  productionCompanies,
 } from "./lib/issuanceProduction";
 
 /**
@@ -17,7 +19,11 @@ import {
 export const platformProfiles = ["development", "validation", "installation"] as const;
 export type PlatformProfile = (typeof platformProfiles)[number];
 
-/** Checks the deployment against its profile. Accounts are separate from fiscal integrations. */
+/**
+ * Checks the deployment against its profile. Accounts are separate from fiscal integrations. The
+ * profile is the only reader of the fiscal and issuance variables (#130): a module that needs one
+ * reads the validated field here, so a partial or invalid combination is refused everywhere.
+ */
 export function requirePlatformEnvironment() {
   const profile: PlatformProfile =
     process.env.APP_ENV === "development" || process.env.APP_ENV === "installation"
@@ -48,15 +54,15 @@ export function requirePlatformEnvironment() {
   // reads the production only on the dedicated #50 target, marked at publish; the NFS-e issuance
   // only on the deployment versioned in `deploy/issuance-production.json` (below). On both, the
   // platform environment is production too.
-  if (process.env.FNFE_PROOF_FISCAL_ENV && proofFiscalTarget() !== "production")
+  const fiscalTarget = proofFiscalTarget(process.env);
+  if (process.env.FNFE_PROOF_FISCAL_ENV && fiscalTarget !== "production")
     throw new Error("Invalid platform configuration: FNFE_PROOF_FISCAL_ENV");
-  const fiscalTarget = proofFiscalTarget();
   // Fiscal production of the NFS-e issuance: only the versioned deployment, marked, in the
   // installation profile. The mark elsewhere (even empty), or the named deployment without it,
   // is refused instead of being ignored.
-  if (issuanceProductionMisconfigured())
+  if (issuanceProductionMisconfigured(process.env))
     throw new Error(`Invalid platform configuration: ${ISSUANCE_PRODUCTION_MARK}`);
-  const issuanceProduction = isIssuanceProductionDeployment();
+  const issuanceProduction = isIssuanceProductionDeployment(process.env);
   if (issuanceProduction) {
     for (const name of issuanceProductionForbiddenVariables)
       // Present at all, even empty, is refused: the deployment never carries them.
@@ -109,9 +115,28 @@ export function requirePlatformEnvironment() {
     siteUrl: process.env.SITE_URL!,
     apiUrl: installation ? process.env.API_URL! : process.env.CONVEX_SITE_URL!,
     accounts,
+    /** `CONVEX_CLOUD_URL`, recorded with gate, probe and certificate events. */
+    deploymentUrl: process.env.CONVEX_CLOUD_URL ?? "",
+    /** Fiscal environment the #50 target may reach; `homologation` on every other deployment. */
+    fiscalTarget,
+    /** `disabled`, or the fiscal target when the real capture transport is on (#50 proof). */
     fiscalEnv,
     /** `production` only on the fiscal production deployment of the NFS-e issuance. */
     issuanceEnv: issuanceProduction ? ("production" as const) : ("disabled" as const),
+    /**
+     * Companies whose NFS-e leaves the simulator for the restricted production (ADR 0004 §8,
+     * phase 3): the sandbox, `FNFE_NFSE_SANDBOX_TRANSPORT=producao-restrita` **and** the company
+     * in `FNFE_NFSE_RESTRICTED_COMPANIES`. Empty anywhere else.
+     */
+    restrictedCompanies:
+      expected.PRODUCT_ENV === "sandbox" &&
+      process.env.FNFE_NFSE_SANDBOX_TRANSPORT === "producao-restrita"
+        ? companyList(process.env.FNFE_NFSE_RESTRICTED_COMPANIES)
+        : companyList(undefined),
+    /** Companies that may have the production gate; empty off the fiscal production deployment. */
+    productionCompanies: issuanceProduction
+      ? productionCompanies(process.env)
+      : companyList(undefined),
     /**
      * `enabled` when the hosted site may query the source for released companies: both site
      * switches on (`lib/siteCapture.ts`). It says nothing about whether any company is released.

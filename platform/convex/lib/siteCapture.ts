@@ -44,7 +44,7 @@ export function siteCaptureProfile() {
     process.env.FISCAL_ENV === "disabled" &&
     process.env.FNFE_CAPTURE_TRANSPORT === "sefaz" &&
     fiscalCaptureEnabled() &&
-    !isIssuanceProductionDeployment()
+    !isIssuanceProductionDeployment(process.env)
   );
 }
 

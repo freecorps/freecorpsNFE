@@ -50,8 +50,8 @@ export const execute = internalAction({
       // Node can replace process.env between invocations; read the current object.
       const proofTransport =
         process.env.FNFE_CAPTURE_TRANSPORT === "sefaz" &&
-        process.env.FISCAL_ENV === proofFiscalTarget() &&
-        input.stream.environment === productEnvironmentOf(proofFiscalTarget());
+        process.env.FISCAL_ENV === proofFiscalTarget(process.env) &&
+        input.stream.environment === productEnvironmentOf(proofFiscalTarget(process.env));
       // The hosted site: only production streams, whose operation `prepare` and the vault
       // authorize against the company's release (`lib/siteCapture.ts`).
       const siteTransport = siteCaptureProfile() && input.stream.environment === "production";

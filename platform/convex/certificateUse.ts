@@ -6,14 +6,14 @@ import schema from "./schema";
 import { claimFields } from "./lib/operationValues";
 import { activeClaim, executionAllowed, markEffectSent, type Claim } from "./lib/operationCore";
 import { certificateAudit, certificateHead, certificateUsable } from "./lib/certificateAccess";
-import { fiscalProofAllowed, realFiscalMode } from "./lib/fiscalProof";
+import { requirePlatformEnvironment } from "./environment";
+import { fiscalProofAllowed } from "./lib/fiscalProof";
 import { attemptUsageKey, captureTask, deferralAudit } from "./lib/captureValues";
 import { requireActivePlan, requireCapturePlan, usageError } from "./lib/usageCore";
 import { cancelTask, issueTask } from "./lib/issuanceValues";
 import { issuanceCertificateAllowed, restrictedTransportAllowed } from "./lib/issuanceCore";
 import { FREECORPS_OPERATOR, operatorAndReason } from "./lib/issuanceGate";
 import { cutByVariable } from "./lib/captureAttention";
-import { isIssuanceProductionDeployment, productionCompanies } from "./lib/issuanceProduction";
 import {
   SITE_CAPTURE_ACTION,
   isSiteCapture,
@@ -95,15 +95,14 @@ async function authorizeUse(
     );
     return allowed ? { certificate: cert } : { refused: "ACCESS_REVOKED" };
   }
-  const localSynthetic =
-    process.env.APP_ENV === "development" &&
-    process.env.FISCAL_ENV === "disabled" &&
-    /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.CONVEX_SITE_URL ?? "");
+  // The local profile already demands the loopback backend (`requirePlatformEnvironment`).
+  const platform = requirePlatformEnvironment();
+  const localSynthetic = platform.local && platform.fiscalEnv === "disabled";
   // Recheck capture even after real transport is disabled: an in-flight action
   // must not acquire the certificate using its earlier environment snapshot.
   // Fiscal production is reachable only through the #50 proof policy.
   // The hosted site's production capture has its own policy (ADR 0007, phase 4).
-  const needsProof = realFiscalMode() || op.task.name === captureTask.name;
+  const needsProof = platform.fiscalEnv !== "disabled" || op.task.name === captureTask.name;
   let refused: Refusal | null = null;
   if (!(await executionAllowed(ctx, op))) {
     // Told apart as the claim does: the access fell, or the pinned A1 is no longer usable. On
@@ -224,20 +223,16 @@ const probeRead = v.object({
 const probeAction = (environment: "producao-restrita" | "producao") =>
   environment === "producao" ? NFSE_PROBE_PRODUCTION : NFSE_PROBE;
 
-/** The probe history row of Freecorps: the GitHub login stays here, never in the audit. */
+/**
+ * The probe history row of Freecorps: the GitHub login stays here, never in the audit. The start
+ * records the deployment from the profile; the completion repeats the start's, so a profile that
+ * changed during the requests never loses the record of what was already sent.
+ */
 async function probeEvent(
   ctx: MutationCtx,
-  fields: Omit<
-    Doc<"issuanceProbeEvents">,
-    "_id" | "_creationTime" | "buildSha" | "deployment" | "createdAt"
-  >,
+  fields: Omit<Doc<"issuanceProbeEvents">, "_id" | "_creationTime" | "buildSha" | "createdAt">,
 ) {
-  return ctx.db.insert("issuanceProbeEvents", {
-    ...fields,
-    buildSha,
-    deployment: process.env.CONVEX_CLOUD_URL ?? "",
-    createdAt: Date.now(),
-  });
+  return ctx.db.insert("issuanceProbeEvents", { ...fields, buildSha, createdAt: Date.now() });
 }
 
 type ProbeRequest = {
@@ -255,10 +250,12 @@ type ProbeRequest = {
  * `sefin-nacional`, with its access key. The certificate must be active, usable and sealed.
  */
 async function probePolicy(ctx: MutationCtx, args: ProbeRequest) {
-  const environment = isIssuanceProductionDeployment()
-    ? ("producao" as const)
-    : ("producao-restrita" as const);
+  const platform = requirePlatformEnvironment();
+  const environment =
+    platform.issuanceEnv === "production" ? ("producao" as const) : ("producao-restrita" as const);
+  const { deploymentUrl } = platform;
   const denied = (code: string, cert: Doc<"certificates"> | null = null) => ({
+    deploymentUrl,
     environment,
     code,
     cert,
@@ -295,10 +292,10 @@ async function probePolicy(ctx: MutationCtx, args: ProbeRequest) {
     return denied("CERTIFICATE_UNAVAILABLE");
   const allowed =
     environment === "producao"
-      ? productionCompanies().has(args.companyId)
+      ? platform.productionCompanies.has(args.companyId)
       : args.kind === "probe" && restrictedTransportAllowed(args.companyId);
   if (!allowed) return denied("ISSUANCE_PROBE_DISABLED", cert);
-  return { environment, code: null, cert, issuance };
+  return { deploymentUrl, environment, code: null, cert, issuance };
 }
 
 /**
@@ -336,6 +333,7 @@ export const authorizeProbe = internalMutation({
         FREECORPS_OPERATOR,
       );
     const eventId = await probeEvent(ctx, {
+      deployment: policy.deploymentUrl,
       organizationId: args.organizationId,
       companyId: args.companyId,
       kind: args.kind,
@@ -403,6 +401,7 @@ export const completeProbe = internalMutation({
     const result = current ? args.result : "stale";
     await certificateAudit(ctx, cert, probeAction(started.environment), result, FREECORPS_OPERATOR);
     await probeEvent(ctx, {
+      deployment: started.deployment,
       organizationId: started.organizationId,
       companyId: started.companyId,
       kind: started.kind,

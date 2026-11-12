@@ -152,7 +152,14 @@ Cada deployment roda sob um perfil da plataforma (`APP_ENV`): `development`
 ou `installation` (instalação hospedada). `requirePlatformEnvironment`, em
 `platform/convex/environment.ts`, confere as variáveis do perfil e recusa
 qualquer outra combinação. O perfil não escolhe o ambiente do produto nem o
-transporte fiscal.
+transporte fiscal. As variáveis do perfil fiscal e da emissão NFS-e
+(`FNFE_PROOF_FISCAL_ENV`, `FNFE_ISSUANCE_ENV`, `FNFE_NFSE_*` e
+`CONVEX_CLOUD_URL` nos gates) são lidas só ali: a emissão, o cofre e o console
+usam os campos do perfil validado (`fiscalTarget`, `issuanceEnv`,
+`restrictedCompanies`, `productionCompanies`, `deploymentUrl`), e uma
+combinação parcial é recusada em vez de passar por uma leitura solta. A captura
+e as rotinas ainda leem parte das variáveis direto
+([#130](https://github.com/freecorps/freecorpsNFE/issues/130)).
 
 Há dois eixos de ambiente, e toda operação conhece ambos:
 

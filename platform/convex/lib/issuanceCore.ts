@@ -11,7 +11,7 @@ import {
 import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { isIssuanceProductionDeployment, productionCompanies } from "./issuanceProduction";
+import { requirePlatformEnvironment } from "../environment";
 import { isAmount, isCompetence, isIssRate } from "./issuanceRules";
 import {
   campinasSeries,
@@ -132,28 +132,13 @@ export async function issuanceAccess(
 }
 
 /**
- * Companies of this deployment allowed to leave the simulator for the restricted production
- * (`FNFE_NFSE_RESTRICTED_COMPANIES`, company ids separated by commas). Anything malformed means
- * none: the policy fails closed.
- */
-export function restrictedCompanies(): ReadonlySet<string> {
-  const raw = (process.env.FNFE_NFSE_RESTRICTED_COMPANIES ?? "").trim();
-  if (!raw) return new Set();
-  const ids = raw.split(",").map((id) => id.trim());
-  return ids.every((id) => /^[a-zA-Z0-9]{1,100}$/.test(id)) ? new Set(ids) : new Set();
-}
-
-/**
  * Real transport in the sandbox (ADR 0004 §8, phase 3): the deployment variable **and** the
- * company in the allowlist. The hosted profile serves several organizations; one variable alone
- * would send every company with an A1 in the vault to the tax authority.
+ * company in the allowlist (`FNFE_NFSE_RESTRICTED_COMPANIES`), both read by the profile. The
+ * hosted profile serves several organizations; one variable alone would send every company with
+ * an A1 in the vault to the tax authority.
  */
 export function restrictedTransportAllowed(companyId: string) {
-  return (
-    process.env.PRODUCT_ENV === "sandbox" &&
-    process.env.FNFE_NFSE_SANDBOX_TRANSPORT === "producao-restrita" &&
-    restrictedCompanies().has(companyId)
-  );
+  return requirePlatformEnvironment().restrictedCompanies.has(companyId);
 }
 
 /** Deployment choice for the environment. Production always talks to the real production. */
@@ -245,9 +230,13 @@ export async function productionTransportAllowed(
   if (
     issuance.environment !== "production" ||
     issuance.transport !== "producao" ||
-    issuance.target !== PRODUCTION_TARGET ||
-    !isIssuanceProductionDeployment() ||
-    !productionCompanies().has(issuance.companyId)
+    issuance.target !== PRODUCTION_TARGET
+  )
+    return false;
+  const platform = requirePlatformEnvironment();
+  if (
+    platform.issuanceEnv !== "production" ||
+    !platform.productionCompanies.has(issuance.companyId)
   )
     return false;
   if (purpose === "cancel" || issuance.submissions > 0) return true;
