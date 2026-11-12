@@ -182,8 +182,8 @@ mascarar com `sed` não protege.
   cache e montagem da integração estão em
   [ci.md#testes](docs/desenvolvimento/ci.md#testes).
   `freecorps/no-wall-clock-in-tests` reprova relógio real e polling.
-- O hook `pre-commit` formata os arquivos staged e recusa o commit com erro
-  ou aviso de lint ([detalhes](docs/desenvolvimento/ci.md#hook-pre-commit));
+- O hook `pre-commit` recusa o commit com arquivo staged mal formatado ou com
+  erro ou aviso de lint ([detalhes](docs/desenvolvimento/ci.md#hook-pre-commit));
   corrija o achado, sem `--no-verify` nem `VP_GIT_HOOKS=0`.
 - Antes de todo push, `bun run check:changed`
   ([detalhes](docs/desenvolvimento/ci.md#conferir-só-o-que-mudou)).

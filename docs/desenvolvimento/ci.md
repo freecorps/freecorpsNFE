@@ -1005,25 +1005,33 @@ executor de tarefas ao lado do Vite Task, com a dependência `turbo` e os
 `vite.config.ts` e repete a formatação e o lint de `check:changed` só nos
 arquivos do commit:
 
-| Arquivos staged | O que roda                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| Todos           | `vp fmt`: formata e põe o resultado no commit                                              |
-| JS e TS         | `vp run ci:packages`, do cache, e `vp lint --deny-warnings`: erro ou aviso recusa o commit |
+| Arquivos staged | O que roda                                                  |
+| --------------- | ----------------------------------------------------------- |
+| Todos           | `vp fmt --check`                                            |
+| JS e TS         | `vp run ci:packages`, do cache, e `vp lint --deny-warnings` |
 
-As alterações fora do índice de um arquivo parcialmente staged ficam
-escondidas enquanto o hook roda, e as ferramentas veem só a versão do commit.
-Os padrões ignorados em `fmt` e `lint` continuam valendo para os arquivos
-passados um a um. Um commit só de remoções passa direto. Medido no Windows com
-Git Bash: cerca de 6 segundos, a maior parte no lint com tipos.
+As duas conferências rodam juntas e até o fim. Arquivo mal formatado, erro ou
+aviso de lint recusa o commit e aparece na saída: formate com
+`vp fmt <arquivo>`, corrija o lint, ponha de novo no índice e repita o commit.
+Os padrões ignorados em `fmt` e `lint` continuam valendo para
+os arquivos passados um a um, e um commit só de remoções passa direto. Medido
+no Windows com Git Bash: cerca de 5 segundos, a maior parte no lint com tipos.
 
-O hook passa `--no-stash` e por isso avisa "Skipping backup" a cada commit. O
-backup padrão do `vp staged` grava uma entrada na pilha de stash, que é
-compartilhada por todos os worktrees, e a apaga pela posição na lista: um
-stash criado por outra sessão no meio do commit desloca a posição, e a entrada
-apagada seria a dela. Sem o backup, quando o lint recusa o commit, a
-formatação já aplicada fica no índice e na árvore; as alterações escondidas
-voltam por um patch em `lint-staged/`, dentro da pasta Git do checkout
-(`git rev-parse --git-dir`), que fica ali se não puder ser aplicado.
+Num arquivo parcialmente staged, as alterações fora do índice ficam
+escondidas enquanto o hook roda, e a conferência lê a versão do commit. Os
+outros arquivos são lidos da árvore de trabalho, inclusive pelo lint com
+tipos. As alterações escondidas voltam por um patch em `lint-staged/`, dentro
+da pasta Git do checkout (`git rev-parse --git-dir`); se o processo for
+interrompido no meio, elas estão nesse patch (`git apply <patch>`).
+
+O hook não corrige sozinho porque roda com `--no-stash`, que imprime "Skipping
+backup" a cada commit. O backup padrão do `vp staged` fica na pilha de stash,
+compartilhada por todos os worktrees, durante o hook inteiro: um
+`git stash pop` de outra sessão nesse intervalo levaria o backup, e o
+`stash drop` final apaga pela posição na lista. Sem o backup, uma correção
+gravada sobre linhas que também têm alteração fora do índice deixaria o
+arquivo em conflito, sem volta automática. Conferir sem gravar evita os dois
+casos.
 
 Typecheck dos projetos e testes ficam para `check:changed` e o CI. O hook
 depende do mesmo dispatcher do [pre-push](#hook-pre-push): sem `.vite-hooks/_`,

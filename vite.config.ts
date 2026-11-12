@@ -338,15 +338,15 @@ export default defineConfig({
       },
     },
   },
-  // Hook pre-commit (`.vite-hooks/pre-commit`, `vp staged`): formata os arquivos
-  // staged e recusa o commit com lint, como `check:changed` faz antes do push
-  // (docs/desenvolvimento/ci.md, Hook pre-commit). Recebe só os arquivos staged,
-  // com as alterações fora do índice escondidas; o que o formatador muda entra no
-  // commit. O lint com tipos lê o dist dos pacotes fiscais: `ci:packages` o
-  // compila antes, do cache quando nada deles mudou, e a função não recebe a
-  // lista de arquivos.
+  // Hook pre-commit (`.vite-hooks/pre-commit`, `vp staged`): recusa o commit com
+  // formatação ou lint errados nos arquivos staged, como `check:changed` faz
+  // antes do push (docs/desenvolvimento/ci.md, Hook pre-commit). Nada aqui grava
+  // arquivo: o hook roda sem o backup em stash, e uma correção sobre um arquivo
+  // parcialmente staged não voltaria limpa. O lint com tipos lê o dist dos
+  // pacotes fiscais: `ci:packages` o compila antes, do cache quando nada deles
+  // mudou; o comando que a função devolve roda sem a lista de arquivos.
   staged: {
-    "*": "vp fmt --no-error-on-unmatched-pattern",
+    "*": "vp fmt --check --no-error-on-unmatched-pattern",
     "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
       () => "vp run ci:packages",
       "vp lint --deny-warnings --no-error-on-unmatched-pattern",

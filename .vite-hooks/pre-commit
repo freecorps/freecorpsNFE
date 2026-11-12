@@ -1,1 +1,1 @@
-vp staged --no-stash --no-concurrent
+vp staged --no-stash --continue-on-error
