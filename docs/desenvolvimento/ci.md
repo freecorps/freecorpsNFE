@@ -92,7 +92,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | Tarefa            | Comando                                                                | Depende de                         | Cache               |
 | ----------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
 | `ci:packages`     | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
-| `ci:sdk`          | `bun run sdk:prove`                                                    | `ci:packages`                      | não: registro e Git |
+| `ci:sdk`          | `bun run sdk:compat && bun run sdk:prove`                              | `ci:packages`                      | não: registro e Git |
 | `ci:contracts`    | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
 | `ci:xml-prove`    | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
 | `ci:distribution` | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
@@ -530,6 +530,10 @@ sockets ou executáveis hostis.
 - Instalação limpa do artefato e execução do consumidor sem conta,
   configuração ou dependências SaaS, incluindo o verificador de webhook do SDK
   (`ci:sdk`) e os pacotes fiscais (`ci:xml-prove`).
+- Compatibilidade do SDK com a versão publicada (`sdk:compat`, em `ci:sdk`):
+  a API TypeScript é comparada rota a rota e símbolo a símbolo com as
+  declarações de `packages/sdk/published/`, e a versão precisa do incremento
+  coerente ([Versão do SDK](../v1.0/SDK.md#versão-do-sdk)).
 - Origem canônica dos contratos com geração/verificação determinística de
   OpenAPI, SDK e referência de documentação. `scripts/contracts/contract-drift.test.ts`
   roda essa prova em toda execução do CI: altera as rotas que a geração lê

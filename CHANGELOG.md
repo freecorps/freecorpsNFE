@@ -2,6 +2,11 @@
 
 ## Não publicado
 
+- O SDK ganha gate de compatibilidade (#135): `bun run sdk:compat`, em
+  `ci:sdk`, compara a API TypeScript com as declarações da 0.1.0 publicada
+  (`packages/sdk/published.json`) e exige versão acima da publicada para
+  mudança aditiva e minor acima (0.2.0) para quebra ou contrato num major
+  novo. Quem publica é o mantenedor, por entrega aceita.
 - `@freecorps/fiscal-nfe` perde o extrator antigo `parseNfe(string)`, com
   `MAX_XML_BYTES` e `FiscalXmlError`, e a dependência `fast-xml-parser`
   (#119). A 0.1.0 publicada não muda; a próxima versão do pacote será minor.

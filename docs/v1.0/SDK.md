@@ -144,6 +144,84 @@ significado de nenhum; o envelope de webhook não muda de versão. Consumidores 
 o SDK/schema antes de ativar captura ou assinar o novo evento. O 8.0.0
 foi publicado com `@freecorps/sdk` 0.1.0, nome anterior do SDK, no npm em 01/11/2026 (#83); desde então o gate recusa mudança incompatível nesse major.
 
+### Versão do SDK
+
+O SDK tem versão própria, separada da do contrato. Desde a #135, `bun run
+sdk:compat`, na tarefa `ci:sdk`, compara a API TypeScript de `packages/sdk` com
+a da última versão publicada e exige o incremento coerente em
+`packages/sdk/package.json`. Como no contrato, uma versão ainda não publicada
+aceita mais mudanças, e o CI não consulta o npm.
+
+A fonte de verdade é
+[`packages/sdk/published.json`](../../packages/sdk/published.json): versão
+publicada, versão do contrato que ela embute, data, SHA-256 do tarball e o
+`accepted.json` que o aceitou, e o SHA-256 da cópia das declarações em
+`packages/sdk/published/<versão>/`. O SHA-256 cobre uma linha
+`<sha256>  <caminho>` por arquivo, em ordem de caminho. O gate recusa uma cópia
+editada e um registro cuja versão ou hash difira do `accepted.json`. Hoje o
+registro guarda a 0.1.0 de 03/11/2026, com o contrato 8.0.0
+(`docs/v1.0/evidence/73/2026-11-03`).
+
+A comparação gera um `compat.ts` em memória (a cópia fica em
+`.ci-results/135/compat.ts`, e o relatório em `.ci-results/135/sdk-compat.json`)
+e pede ao compilador TypeScript, em cada caso, se os dois tipos são idênticos
+e, se não forem, se um cabe no outro:
+
+- **Rotas.** Em cada rota publicada, a entrada publicada precisa caber na
+  atual, e a resposta atual, na publicada. Cada lado reúne o tipo exportado
+  (`RequestOf`, `ResponseOf`) e o que `client.call<rota>` recebe e devolve.
+  Rota removida é quebra; rota nova é aditiva.
+- **Símbolos.** Cada export das entradas `.` e `./webhooks`. Símbolo removido é
+  quebra; novo é aditivo. Funções comparam parâmetros como entrada e retorno
+  como saída; constantes, como saída. Classes comparam o construtor e cada
+  membro público, de instância e estático.
+- **Tipos exportados.** `typeDirections`, em `scripts/lib/sdk-compat.mjs`, diz
+  se o integrador monta o tipo (entrada, como `ClientOptions`) ou o recebe
+  (saída, como `WebhookEnvelope`). Um tipo fora dessa lista, um tipo genérico
+  e uma função genérica ou sobrecarregada precisam ficar idênticos.
+- **Campos.** Um campo removido, inclusive opcional, dentro de arrays e de
+  `Record`, é quebra, mesmo que os tipos ainda caibam um no outro; um campo
+  opcional novo é aditivo. Um campo que vira `any` é quebra. A busca desce até
+  32 níveis e reprova o que passa disso. Ela junta os campos das variantes de
+  uma união: se ainda sobra um objeto, tirar a variante que tinha um campo
+  conta como quebra, embora estreite a saída; se não sobra objeto
+  (`{ a } | null` → `null`), a saída mais estreita é aditiva, como estreitar um
+  enum. Na entrada, trocar um objeto com campos por `unknown`, `{}` ou
+  `Record<string, unknown>` conta como quebra, embora aceite mais: a regra
+  erra para o lado da quebra.
+
+As declarações dos dois lados precisam compilar: um import quebrado ou um nome
+desconhecido na cópia publicada reprova o gate em vez de virar `any`. O
+resultado é `igual`, `aditiva` ou `quebra`, com cada diferença nomeando a rota,
+o símbolo, o membro ou o campo.
+
+| Mudança desde a versão publicada                           | Antes de 1.0                | A partir de 1.0           |
+| ---------------------------------------------------------- | --------------------------- | ------------------------- |
+| Igual, no mesmo major do contrato                          | nenhum incremento           | nenhum incremento         |
+| Aditiva                                                    | versão acima da publicada   | versão acima da publicada |
+| Quebra, ou contrato num major acima do publicado com o SDK | minor acima (0.1.x → 0.2.0) | major acima               |
+| Versão do SDK ou major do contrato abaixo do publicado     | recusa                      | recusa                    |
+
+O gate compara tipos. Uma mudança de comportamento com os mesmos tipos
+(validação em tempo de execução, retentativas, prazo) não aparece nele e segue
+a revisão. A compatibilidade de um SDK antigo com respostas novas do servidor
+continua com o gate do contrato.
+
+**Quem publica.** O mantenedor, por entrega, com
+`scripts/distribution/publish-packages.mjs` e 2FA, como descreve
+[release.md](../operacao/release.md#publicar-um-lote-aceito) (decisão de
+12/11/2026 na #135). Não há publicação automática nem cadência fixa: a PR que
+muda a API sobe a versão, e a publicação vem quando uma entrega que muda o SDK
+é aceita. A PR do recibo grava o registro novo a partir dos bytes aceitos:
+
+```sh
+bun run sdk:compat --record <tarball> --accepted docs/v1.0/evidence/<n>/<data>/accepted.json --published-at <data ISO>
+```
+
+O comando confere o SHA-256 do tarball no `accepted.json`, copia `types/` para
+`packages/sdk/published/<versão>/`, lê a versão do contrato das declarações e
+regrava `published.json`. A cópia da versão anterior pode sair na mesma PR.
+
 ## Instalação independente
 
 Num projeto consumidor, instale pelo npm:

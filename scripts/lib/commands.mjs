@@ -127,6 +127,11 @@ export const commands = {
   ],
   "sdk:build": ["pacotes", "nenhum", "Compila e empacota o SDK"],
   "sdk:prove": ["pacotes", "local", "Instala o tarball do SDK num consumidor limpo"],
+  "sdk:compat": [
+    "pacotes",
+    "nenhum",
+    "Compara a API TypeScript do SDK com a versão publicada e exige o bump; --record grava uma publicação",
+  ],
   "contracts:generate": [
     "plataforma",
     "nenhum",
