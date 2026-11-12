@@ -40,6 +40,7 @@
     "worktree:setup": "bun scripts/worktree.mjs setup",
     "worktree:dev": "bun scripts/worktree.mjs dev",
     "worktree:cleanup": "bun scripts/worktree.mjs cleanup",
+    "worktree:reap": "bun scripts/worktree.mjs reap",
     "worktree:finish": "bun scripts/worktree.mjs finish",
     "packages:build": "node scripts/build/build-fiscal-packages.mjs",
     "xml:check": "tsc -p packages/fiscal-nfe/tsconfig.json --noEmit",

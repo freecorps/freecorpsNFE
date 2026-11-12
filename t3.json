@@ -13,6 +13,7 @@
     { "name": "Estado do worktree", "command": "bun run worktree status", "icon": "debug" },
     { "name": "Aguardar setup", "command": "bun run worktree wait", "icon": "configure" },
     { "name": "Parar worktree", "command": "bun run worktree:cleanup", "icon": "configure" },
+    { "name": "Matar órfãos", "command": "bun run worktree:reap", "icon": "debug" },
     { "name": "Concluir worktree", "command": "bun run worktree:finish", "icon": "configure" },
     { "name": "Testes", "command": "bun run -- vp test run", "icon": "test" },
     { "name": "Typecheck", "command": "bun run platform:check", "icon": "build" },

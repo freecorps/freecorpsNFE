@@ -20,6 +20,7 @@ import {
   syncBackendEnvironment,
 } from "./convex-local.mjs";
 import { readLocalConfig } from "./deployment.mjs";
+import { reapDeletedWorktrees } from "./orphans.mjs";
 import {
   ensureBackendEnvFile,
   readEnvFile,
@@ -200,6 +201,9 @@ export async function setup(options = {}) {
   let paths = worktreePaths(options.root);
   assertLinkedWorktree(paths);
   assertPrivateDirectories(paths);
+  // O T3 Code roda o setup a cada worktree novo: cada um limpa o que os
+  // anteriores deixaram quando foram apagados sem `worktree:cleanup`.
+  reapDeletedWorktrees(paths.root);
   const app = requestedWorktreeApp(paths, options.app);
   if (app !== undefined) {
     if (app !== "platform")
@@ -488,6 +492,7 @@ export async function cleanup(options = {}) {
     await stopDevRecord(currentPaths, options.quiet);
     await stopOrphanBackends(currentPaths, options.quiet);
     stopWorktreeNodeExecutors(currentPaths.nodeExecutable);
+    reapDeletedWorktrees(currentPaths.root, { quiet: options.quiet });
   };
   // `remove` já possui exclusão nesta mesma execução. Não libera nem readquire.
   if (ownsOperation(paths, ["remove"])) return sweep();
