@@ -242,6 +242,38 @@ describe("SDK compatibility gate against the published version (#135)", () => {
     });
   });
 
+  it("refuses an input object widened to unknown, but lets an output narrow to null", () => {
+    const shape = (before: string, after: string) =>
+      fixture(
+        (files) => edit(files, index, "    apiKey: string;\n", `    apiKey: string;\n${after}`),
+        (files) => edit(files, index, "    apiKey: string;\n", `    apiKey: string;\n${before}`),
+      );
+    const input = shape("    proxy?: { host: string };\n", "    proxy?: unknown;\n");
+    expect(breaks(input.changes)).toContainEqual({
+      subject: ". ClientOptions",
+      change: "breaking",
+      detail: "campo proxy.host removido",
+    });
+    const output = fixture(
+      (files) =>
+        edit(
+          files,
+          contractWebhooks,
+          "    eventId: string;\n",
+          "    eventId: string;\n    meta: null;\n",
+        ),
+      (files) =>
+        edit(
+          files,
+          contractWebhooks,
+          "    eventId: string;\n",
+          "    eventId: string;\n    meta: { a: string } | null;\n",
+        ),
+    );
+    expect(breaks(output.changes)).toEqual([]);
+    expect(subjects(output.changes, ["additive"])).toContain(". WebhookEnvelope");
+  });
+
   it("refuses a field widened to any at any depth", () => {
     const result = fixture((files) =>
       edit(files, contractWebhooks, "    eventId: string;\n", "    eventId: any;\n"),
@@ -473,6 +505,13 @@ describe("published SDK record", () => {
   it("refuses a tarball hash or version that the acceptance record does not hold", () => {
     expect(stage((r) => (r.published.tarballSha256 = "0".repeat(64)))).toThrow("aceite");
     expect(stage((r) => (r.published.version = "0.1.1"))).toThrow("aceite");
+  });
+
+  it("reads back entry names the recorder accepts", () => {
+    expect(
+      stage((r) => (r.published.entries["./extra"] = "types/sdk/src/My_Helper.d.ts"))().published
+        .entries["./extra"],
+    ).toBe("types/sdk/src/My_Helper.d.ts");
   });
 
   it("refuses paths outside the declarations copy", () => {

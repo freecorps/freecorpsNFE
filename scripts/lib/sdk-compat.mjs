@@ -459,7 +459,7 @@ export function compareSdk({ previous, next, compatPath, overlay = new Map() }) 
   const union = (list) => (list.length === 1 ? list[0] : types.getUnionType(list));
   // Past this depth the walk gives up and fails closed; the contract today nests about 8 levels.
   const maxDepth = 32;
-  const lost = (before, after, path, depth, seen, found, labels) => {
+  const lost = (before, after, path, depth, seen, found, labels, input) => {
     if (depth > maxDepth) {
       found.push(`campo ${path} passa de ${maxDepth} níveis, sem comparação`);
       return;
@@ -474,7 +474,7 @@ export function compareSdk({ previous, next, compatPath, overlay = new Map() }) 
     const a = shapeOf(before);
     const b = shapeOf(after);
     if (a.elements.length && b.elements.length)
-      lost(union(a.elements), union(b.elements), `${path}[]`, depth + 1, seen, found);
+      lost(union(a.elements), union(b.elements), `${path}[]`, depth + 1, seen, found, null, input);
     for (const [name, list] of a.fields) {
       // The slots of a route check's own tuple are named after what they hold.
       const slot =
@@ -484,11 +484,13 @@ export function compareSdk({ previous, next, compatPath, overlay = new Map() }) 
       const counterpart = b.fields.get(name);
       if (!counterpart) {
         // Any object left on the new side means the field was dropped from it, even when that
-        // object has no field at all now ({ cursor?, limit? } → {}).
-        if (b.objects) found.push(`campo ${field} removido`);
+        // object has no field at all now ({ cursor?, limit? } → {}). On the input side an object
+        // that became `unknown` or a primitive also counts, by the conservative rule; on the
+        // output side, `{ a } | null` → `null` only narrows what the integrator receives.
+        if (b.objects || (input && a.objects)) found.push(`campo ${field} removido`);
         continue;
       }
-      lost(union(list), union(counterpart), field, depth + 1, seen, found);
+      lost(union(list), union(counterpart), field, depth + 1, seen, found, null, input);
     }
   };
 
@@ -507,7 +509,16 @@ export function compareSdk({ previous, next, compatPath, overlay = new Map() }) 
     }
     if (identical) continue;
     const found = [];
-    lost(aliases.get(`P${i}`), aliases.get(`Q${i}`), "", 0, new Set(), found, check.labels);
+    lost(
+      aliases.get(`P${i}`),
+      aliases.get(`Q${i}`),
+      "",
+      0,
+      new Set(),
+      found,
+      check.labels,
+      check.rule === "input",
+    );
     if (found.length) {
       for (const detail of found)
         changes.push({ subject: check.subject, change: "breaking", detail });
@@ -561,7 +572,7 @@ export function readPublished(root) {
   )
     throw new Error("SDK publicado: a cópia das declarações difere do registro");
   for (const path of Object.values(published.entries))
-    if (!/^types\/[a-z0-9/.-]+\.d\.ts$/.test(path) || path.includes(".."))
+    if (!/^types\/[A-Za-z0-9_/.-]+\.d\.ts$/.test(path) || path.includes(".."))
       throw new Error("SDK publicado: entrada inválida");
   return record;
 }
