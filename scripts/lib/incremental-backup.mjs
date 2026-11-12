@@ -5,7 +5,7 @@ import { Readable } from "node:stream";
 import { join } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { byCodeUnit, objectKeys, sha256 } from "./offsite-backup.mjs";
+import { byCodeUnit, objectKeys, sha256, snapshotReserve } from "./offsite-backup.mjs";
 import { fileDigest, writeZip } from "./offsite-backup-zip.mjs";
 import { tableRows, sortedTableDigest } from "./backup-table-stream.mjs";
 
@@ -111,9 +111,8 @@ export function preflight({ databaseBytes, storage, maxBytes, tables = 0 }) {
     validateMetadata(metadata);
     storageBytes += metadata.size;
   }
-  // JSON encoding/schema/ZIP overhead plus headroom for writes between measurement and export.
-  const reserveBytes =
-    Math.max(1024 ** 2, Math.ceil(databaseBytes * 0.1)) + tables * 4096 + storage.length * 2048;
+  // The monitor warns against the same estimate (evaluateBackups).
+  const reserveBytes = snapshotReserve({ databaseBytes, tables, files: storage.length });
   const estimatedBytes = databaseBytes + storageBytes + reserveBytes;
   assert.ok(
     estimatedBytes <= maxBytes,

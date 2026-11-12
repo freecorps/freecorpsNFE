@@ -105,7 +105,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check.json"); console.log(r.error ?? "falha sem recibo") } catch { console.log("falha sem recibo") }')
+          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check.json"); console.log([r.error ?? "falha sem recibo", ...(r.problems ?? []).map((p) => `- ${p}`)].join("\n")) } catch { console.log("falha sem recibo") }')
           body=$(printf 'Backup externo D04 fora do esperado.\n\n%s\n\nRun: %s\n\nRoteiro: docs/operacao/backup.md#alerta' "$problem" "$RUN_URL")
           number=$(gh issue list --label offsite-backup-alert --state open --json number --jq '.[0].number')
           if [ -n "$number" ]; then
@@ -238,7 +238,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check-issuance.json"); console.log(r.error ?? "falha sem recibo") } catch { console.log("falha sem recibo") }')
+          problem=$(node -e 'try { const r = require("./.ci-results/offsite-backup/check-issuance.json"); console.log([r.error ?? "falha sem recibo", ...(r.problems ?? []).map((p) => `- ${p}`)].join("\n")) } catch { console.log("falha sem recibo") }')
           body=$(printf 'Backup externo da produção fiscal NFS-e fora do esperado.\n\n%s\n\nRun: %s\n\nRoteiro: docs/operacao/backup.md#alerta' "$problem" "$RUN_URL")
           number=$(gh issue list --label offsite-backup-issuance-alert --state open --json number --jq '.[0].number')
           if [ -n "$number" ]; then

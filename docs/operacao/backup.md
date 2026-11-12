@@ -169,14 +169,24 @@ Com um token R2 somente leitura, ele:
 - alerta se o último backup íntegro tem mais de 13 horas, isto é, se um ciclo
   falhou, o que deixa 11 horas até violar o RPO;
 - alerta se o snapshot mais novo não tem manifesto;
-- alerta se existe cópia com mais de 15 dias, o que indica falha no lifecycle.
+- alerta se existe cópia com mais de 15 dias, o que indica falha no lifecycle;
+- alerta se o último backup íntegro passa de `warnAboveRatio` (80%) de
+  `maxSnapshotBytes`, 3,2 GiB no plano ativo. A conta refaz, com os tamanhos
+  do manifesto, a estimativa do preflight que recusa o próximo `snapshot`:
+  banco, arquivos e a reserva de 10% do banco, 4 KiB por tabela e 2 KiB por
+  arquivo. O banco é `plaintext.bytes` no formato 2; no formato 1, cujo ZIP
+  já contém os arquivos, é `plaintext.bytes` menos `storage.bytes`, e a
+  compressão do export do Convex pode subestimá-lo. O aviso chega enquanto o
+  último backup ainda está dentro do RPO.
 
 ## Alerta
 
 Uma falha do `check` abre a issue `Alerta: backup externo D04`, com o rótulo
 `offsite-backup-alert` atribuído ao mantenedor, ou comenta na issue que já
-estiver aberta. O próximo `check` bem-sucedido fecha a issue. O GitHub também
-avisa por e-mail quem editou o workflow por último quando um run agendado falha.
+estiver aberta. O texto lista os `problems` do recibo, para que um alerta novo
+não se confunda com um aviso de capacidade ainda aberto. O próximo `check`
+bem-sucedido fecha a issue. O GitHub também avisa por e-mail quem editou o
+workflow por último quando um run agendado falha.
 
 Ao receber o alerta:
 
@@ -188,6 +198,12 @@ Ao receber o alerta:
 3. Hash divergente ou snapshot sem manifesto: não apague nada. Preserve o
    objeto para investigação e gere outro snapshot.
 4. Cópia acima de 15 dias: confira a regra de lifecycle do bucket.
+5. Estimativa acima de 80% do limite: o backup continua válido, e o alerta
+   se repete a cada `check` até haver decisão. Confira em
+   `latestEstimatedBytes` do recibo o tamanho estimado e decida, por PR em
+   `deploy/offsite-backup.json`, subir `maxSnapshotBytes` (até 8 GiB no
+   formato 2) ou reduzir o volume retido. Registre a capacidade aceita na
+   #688.
 
 Se o alerta não se resolver antes de 24 horas desde o último backup íntegro,
 registre a violação do RPO na issue da entrega operacional afetada.

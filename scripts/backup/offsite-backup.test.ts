@@ -18,6 +18,7 @@ import {
   readZip,
   signRequest,
   snapshotId,
+  snapshotReserve,
   snapshotSummary,
   snapshotTime,
   verifyCustody,
@@ -46,6 +47,7 @@ const raw = {
   rpoHours: 24,
   rtoHours: 24,
   maxSnapshotBytes: 1024,
+  warnAboveRatio: 0.8,
   recipients: [
     { custodian: "dona-do-projeto", recipient: recipient("q") },
     { custodian: "outra-pessoa", recipient: recipient("p") },
@@ -346,6 +348,13 @@ describe("plan", () => {
         release,
       ),
     ).toThrow(/chave age/);
+    const { warnAboveRatio: _ratio, ...withoutRatio } = raw;
+    for (const invalid of [
+      withoutRatio,
+      { ...raw, warnAboveRatio: 1 },
+      { ...raw, warnAboveRatio: 0 },
+    ])
+      expect(() => backupPlan(invalid, release)).toThrow(/warnAboveRatio inválido/);
   });
   it("opens the versioned plan only with registered custodians", () => {
     const versioned = JSON.parse(readFileSync("deploy/offsite-backup.json", "utf8"));
@@ -711,6 +720,57 @@ describe("monitor", () => {
     expect(evaluateBackups(plan, ["2026-10-08T03-00-00Z"], null, now).problems).toEqual([
       "Nenhum backup externo íntegro encontrado",
     ]);
+  });
+  describe("capacity", () => {
+    const limit = 4 * 1024 ** 3,
+      capped = backupPlan(
+        { ...raw, maxSnapshotBytes: limit, incremental: { version: 2 } },
+        release,
+      ),
+      id = "2026-10-08T03-00-00Z",
+      at = (ratio: number) => Math.round(limit * ratio),
+      tables = { certificates: 1, documents: 2 };
+    const check = (latest: object) =>
+      evaluateBackups(capped, [id], { ...manifest(id), tables, ...latest }, now);
+    // The same content in both formats: format 1 holds the files inside the zip.
+    const content = (ratio: number, format: 1 | 2) => {
+      const database = at(0.2),
+        files = 1000,
+        reserve = snapshotReserve({ databaseBytes: database, tables: 2, files }),
+        storage = { files, bytes: at(ratio) - database - reserve };
+      return {
+        format,
+        plaintext: { bytes: format === 2 ? database : database + storage.bytes },
+        storage,
+      };
+    };
+    it.each([1, 2] as const)(
+      "warns in format %i above 80% of the preflight estimate, counting the files once",
+      (format) => {
+        const over = check(content(0.81, format));
+        expect(over.latestEstimatedBytes).toBe(at(0.81));
+        expect(over.problems).toEqual([
+          "Estimativa do último backup íntegro: 3.24 GiB de 4.00 GiB com a reserva do preflight (aviso acima de 80%); revise maxSnapshotBytes antes que o snapshot seja recusado",
+        ]);
+        expect(check(content(0.79, format))).toMatchObject({
+          problems: [],
+          latestEstimatedBytes: at(0.79),
+        });
+      },
+    );
+    it("counts the per-file reserve, which many small XMLs make large", () => {
+      // 0.5 + 2.69 GiB is 79.7% of the limit; the preflight adds 2 KiB per file and refuses.
+      expect(
+        check({
+          format: 2,
+          plaintext: { bytes: at(0.125) },
+          storage: { files: 420_000, bytes: Math.round(2.69 * 1024 ** 3) },
+        }).problems,
+      ).toEqual([expect.stringMatching(/íntegro: 4\.04 GiB de 4\.00 GiB/)]);
+    });
+    it("stays silent when the manifest carries no sizes", () => {
+      expect(check({ format: 2 })).toMatchObject({ problems: [], latestEstimatedBytes: null });
+    });
   });
 });
 

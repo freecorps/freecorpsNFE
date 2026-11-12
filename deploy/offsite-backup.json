@@ -8,6 +8,7 @@
   "rpoHours": 24,
   "rtoHours": 24,
   "maxSnapshotBytes": 4294967296,
+  "warnAboveRatio": 0.8,
   "coldTier": { "bucket": "freecorpsnfe-cold-documents" },
   "incremental": {
     "version": 2,

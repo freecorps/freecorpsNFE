@@ -171,6 +171,7 @@ describe("cold documents in the format 2 backup (ADR 0010, phase C)", () => {
       rpoHours: 24,
       rtoHours: 24,
       maxSnapshotBytes: 1024,
+      warnAboveRatio: 0.8,
       recipients: [
         { custodian: "a", recipient: `age1${"q".repeat(58)}` },
         { custodian: "b", recipient: `age1${"p".repeat(58)}` },
