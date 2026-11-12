@@ -10,5 +10,6 @@ docs/termos/arquivo/** text eol=lf -whitespace
 packages/*/THIRD_PARTY_NOTICES.txt -whitespace
 # Declarations of the published SDK, compared by SHA-256 (packages/sdk/published.json).
 packages/sdk/published/** text eol=lf -whitespace
-# Receipts of operational proofs: deploy/receipts.json and deploy/platform-release.json pin their SHA-256.
+# The JSON receipts under docs/v1.0/evidence/ are checked against the SHA-256 that deploy/receipts.json
+# and deploy/platform-release.json pin: LF everywhere, never rewritten.
 docs/v1.0/evidence/**/*.json text eol=lf -whitespace
