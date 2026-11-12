@@ -29,7 +29,10 @@ repetem por ritual; confira se mudanças invalidam seu escopo ou evidência.
 Cada pacote independente usa SemVer. Antes de 1.0, mudança incompatível exige
 incremento minor e nota de migração; após 1.0, exige major. Correções compatíveis
 usam patch. O contrato REST/OpenAPI tem versão própria e gate de compatibilidade;
-não deduza sua versão de `0.1.0` do SDK. O contrato está na versão 8.0.0,
+não deduza sua versão de `0.1.0` do SDK. O SDK também tem gate: `sdk:compat`
+exige o incremento quando a API TypeScript muda ou o contrato sobe de major
+([Versão do SDK](../v1.0/SDK.md#versão-do-sdk)). Quem publica é o mantenedor,
+por entrega aceita, sem cadência fixa (#135). O contrato está na versão 8.0.0,
 publicada com o SDK em 01/11/2026; cada major desde a 2.0.0 ampliou enums, variantes ou
 campos obrigatórios. Consumidores com enums fechados precisam seguir a
 migração documentada em [SDK.md](../v1.0/SDK.md#versionamento) e nas
@@ -105,6 +108,10 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
       dos bytes publicados e o SHA-256 de `docs/v1.0/openapi.json` nesse commit,
       e a data real da publicação. A partir daí o gate de contrato recusa mudança
       nesse major ([política de 26/10/2026](../v1.0/SDK.md#versionamento)).
+- [ ] Se o lote tem o SDK, gravar na mesma mudança o registro da versão
+      publicada com `bun run sdk:compat --record <tarball> --accepted
+      <evidência>/accepted.json --published-at <data>`. A partir daí o gate do
+      SDK compara a API com essa versão ([Versão do SDK](../v1.0/SDK.md#versão-do-sdk)).
 
 ## Publicar um lote aceito
 
@@ -127,7 +134,8 @@ publica pacotes nem constitui anúncio de disponibilidade geral.
 5. Ainda no mesmo SHA, `bun scripts/distribution/prove-distribution.mjs --registry` confere
    que o registry tem os bytes refeitos nesta revisão e repete os consumidores
    instalando do registry; o resultado fica em `.ci-results/83/registry.json`.
-6. Registre o recibo da publicação e `packages/contracts/published.json` numa PR.
+6. Registre o recibo da publicação, `packages/contracts/published.json` e, se o
+   lote tem o SDK, `packages/sdk/published.json` numa PR.
 
 Os tarballs não fixam a resolução futura das dependências transitivas.
 `distribution:prove` recusa versões/integridades fora do inventário; um

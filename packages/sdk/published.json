@@ -1,0 +1,16 @@
+{
+  "decision": "Gate de compatibilidade do SDK (#135): a API TypeScript de packages/sdk é comparada com estas declarações publicadas. Política em docs/v1.0/SDK.md, seção Versão do SDK.",
+  "published": {
+    "version": "0.1.0",
+    "contractVersion": "8.0.0",
+    "publishedAt": "2026-11-03T22:50:31.677Z",
+    "tarballSha256": "36c29407c77216f798aeb73601020554c51fb8bcf5c8a41f2cb80b6c72ba5159",
+    "accepted": "docs/v1.0/evidence/73/2026-11-03/accepted.json",
+    "declarations": "packages/sdk/published/0.1.0",
+    "declarationsSha256": "f31151669b390fd82f243b2b82a2da00fc1a67f105f64c70a57249e23699b4c1",
+    "entries": {
+      ".": "types/sdk/src/index.d.ts",
+      "./webhooks": "types/sdk/src/webhooks.d.ts"
+    }
+  }
+}

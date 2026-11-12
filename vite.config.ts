@@ -18,6 +18,7 @@ const forceRerunTriggers = [
   "platform/{package.json,tsconfig.json}",
   "{tests/fixtures,tests/setup,patches,.github,deploy}/**",
   "packages/*/{fixtures,schemas}/**",
+  "packages/sdk/{published.json,published/**}",
   "scripts/**/*.{mjs,js,json}",
 ].map((pattern) => `${root}${pattern}`);
 // Escritos pelas próprias ferramentas durante o grafo, nunca entradas: os
@@ -184,12 +185,13 @@ export default defineConfig({
           ],
         },
       },
-      // Compila o SDK (packages/sdk/dist, incluído pelo tsconfig da raiz) e
-      // prova o tarball num consumidor limpo. O que lê a árvore espera por ele,
+      // Compara a API TypeScript do SDK com a versão publicada e exige o bump
+      // coerente (sdk:compat, #135), compila o SDK (packages/sdk/dist, incluído
+      // pelo tsconfig da raiz) e prova o tarball num consumidor limpo. O que lê a árvore espera por ele,
       // como no job sequencial. Sem cache: o consumidor instala do registro npm e
       // o recibo carimba o commit e o estado do checkout, lidos do Git.
       "ci:sdk": {
-        command: "bun run sdk:prove",
+        command: "bun run sdk:compat && bun run sdk:prove",
         dependsOn: ["ci:packages"],
         cache: false,
       },
@@ -349,12 +351,15 @@ export default defineConfig({
       ".claude/skills/**",
       "skills-lock.json",
       "docs/termos/arquivo/**",
+      // Declarações do SDK publicado, copiadas do tarball aceito e conferidas por SHA-256.
+      "packages/sdk/published/**",
     ],
   },
   lint: {
     ignorePatterns: [
       "platform/convex/_generated/**",
       "packages/convex-rate-limiter/src/component/_generated/**",
+      "packages/sdk/published/**",
     ],
     // Os quatro plugins padrão do Oxlint mais `import`, que só monta o grafo de
     // módulos quando ligado aqui: num override, `import/no-cycle` não dispara.

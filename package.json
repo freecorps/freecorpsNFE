@@ -68,6 +68,7 @@
     "contracts:build": "node scripts/contracts/build-contracts.mjs",
     "sdk:build": "bun scripts/contracts/build-sdk.mjs",
     "sdk:prove": "bun scripts/contracts/prove-sdk-package.mjs",
+    "sdk:compat": "bun scripts/contracts/check-sdk-compat.mjs",
     "licenses:inventory": "node scripts/licenses/inventory-licenses.mjs",
     "licenses:check": "node scripts/licenses/inventory-licenses.mjs --check && node scripts/licenses/check-first-party-licenses.mjs && node scripts/licenses/prepare-package-notices.mjs --check",
     "distribution:prove": "bun scripts/distribution/prove-distribution.mjs",

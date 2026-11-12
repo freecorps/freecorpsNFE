@@ -8,3 +8,5 @@ tests/fixtures/nfe/**/*.xml -text
 docs/termos/arquivo/** text eol=lf -whitespace
 # Preserve whitespace in verbatim third-party copyright/license notices.
 packages/*/THIRD_PARTY_NOTICES.txt -whitespace
+# Declarations of the published SDK, compared by SHA-256 (packages/sdk/published.json).
+packages/sdk/published/** text eol=lf -whitespace

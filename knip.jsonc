@@ -82,7 +82,9 @@
       "project": ["**/*.{ts,mjs}"],
     },
     "packages/sdk": {
-      "project": ["**/*.{ts,mjs}"],
+      // published/ guarda as declarações da versão publicada, que só o gate de
+      // compatibilidade (scripts/lib/sdk-compat.mjs) carrega, pelo caminho do registro.
+      "project": ["**/*.{ts,mjs}", "!published/**"],
       // O SDK importa ../../contracts/src por caminho relativo e empacota o zod junto
       // (THIRD_PARTY_NOTICES.txt); as entradas declaram o que o pacote leva.
       "ignoreDependencies": ["@freecorps/contracts", "zod"],
