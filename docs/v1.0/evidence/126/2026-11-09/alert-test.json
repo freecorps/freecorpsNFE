@@ -4,14 +4,14 @@
   "provedAt": "2026-11-09T21:02:54Z",
   "codeSha": "1511b14dc01a73171f3f12b0ccb41962b0a4b120",
   "result": "passed",
-  "recordedBy": "wolf-stievano",
+  "recordedBy": "mantenedor",
   "record": "https://github.com/freecorps/freecorpsNFE/issues/126#issuecomment-6751456282",
   "run": "https://github.com/freecorps/freecorpsNFE/actions/runs/42698697429",
   "workflowReceipt": {
     "action": "alert_test",
     "result": "passed",
     "deployment": "elated-possum-295",
-    "operator": "wolf-stievano",
+    "operator": "mantenedor",
     "runId": "42698697429",
     "runAttempt": 1,
     "health": "verified",
@@ -33,10 +33,11 @@
   "arrival": {
     "mailboxes": 2,
     "minute": "2026-11-09T21:02Z",
-    "verifiedBy": "wolf-stievano"
+    "verifiedBy": "mantenedor"
   },
   "limits": [
     "Enviado pelo Email Sending da Cloudflare, antes da troca para o Ember Mail (#220). Não cobre o provedor novo.",
+    "Cópia do receipt.json do artefato capture-fiscal-alert_test-42698697429-1, com o operador citado pelo papel em vez do login.",
     "A chegada foi conferida na caixa de operação do console e na caixa de plantão, que só mostram o minuto. Os endereços não são registrados."
   ]
 }

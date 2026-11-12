@@ -87,7 +87,7 @@ O teste precisa da história completa do Git: o checkout do CI usa
      "provedAt": "2026-11-09T21:02:54Z",
      "codeSha": "<commit de 40 dígitos que a prova exercitou>",
      "result": "passed",
-     "recordedBy": "<login>"
+     "recordedBy": "<papel, como mantenedor>"
    }
    ```
 
