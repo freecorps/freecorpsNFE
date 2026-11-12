@@ -4,7 +4,8 @@
  * passa por aqui, então o comportamento no Windows fica num lugar só.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, renameSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, readlinkSync, renameSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { isWindows } from "./paths.mjs";
 
@@ -122,11 +123,24 @@ export async function stopProcessTree(pid) {
 }
 
 /**
- * O Convex sobe executores Node destacados que sobrevivem ao `convex dev` no
- * Windows e seguram um handle no diretório do worktree, o que impede a remoção.
+ * O Convex sobe executores Node destacados que sobrevivem ao `convex dev` e ao
+ * backend. No Windows seguram um handle no diretório do worktree, o que impede
+ * a remoção; no macOS e no Linux são adotados pelo launchd/init e rodam para
+ * sempre, segurando o runtime Node do worktree aberto.
  */
 export function stopWorktreeNodeExecutors(nodeExecutable) {
-  if (!isWindows || !existsSync(nodeExecutable)) return;
+  if (!isWindows) {
+    // Executores encontrados pelo executável: o runtime Node privado do
+    // worktree (`.convex/runtime`), que só o Convex usa.
+    const pids = pidsRunningExecutable(resolve(nodeExecutable));
+    for (const pid of pids) signalQuietly(pid, "SIGTERM");
+    if (pids.length > 0) {
+      sleepSync(1000);
+      for (const pid of pids) signalQuietly(pid, "SIGKILL");
+    }
+    return;
+  }
+  if (!existsSync(nodeExecutable)) return;
   const escaped = nodeExecutable.replaceAll("'", "''");
   const script = [
     `$target = [IO.Path]::GetFullPath('${escaped}')`,
@@ -174,5 +188,42 @@ export function replaceFileSync(temporary, destination, { timeoutMs = 2000, wait
       }
       sleepSync(waitMs);
     }
+  }
+}
+
+/** PIDs do usuário atual cujo executável é `target` (caminho absoluto). */
+function pidsRunningExecutable(target) {
+  const pids = [];
+  if (process.platform === "linux") {
+    for (const entry of readdirSync("/proc")) {
+      const pid = Number(entry);
+      if (!Number.isSafeInteger(pid) || pid === process.pid) continue;
+      try {
+        // Executável apagado volta como "/caminho (deleted)".
+        if (readlinkSync(`/proc/${pid}/exe`).replace(/ \(deleted\)$/, "") === target)
+          pids.push(pid);
+      } catch {
+        // Processo de outro usuário, ou já saiu.
+      }
+    }
+    return pids;
+  }
+  // No macOS, `comm` é o caminho absoluto completo do executável, mesmo apagado.
+  const output =
+    spawnSync("ps", ["-U", String(process.getuid()), "-o", "pid=,comm="], { encoding: "utf8" })
+      .stdout ?? "";
+  for (const line of output.split("\n")) {
+    const match = line.match(/^\s*(\d+)\s+(.+)$/);
+    if (match && match[2].trim() === target && Number(match[1]) !== process.pid)
+      pids.push(Number(match[1]));
+  }
+  return pids;
+}
+
+function signalQuietly(pid, signal) {
+  try {
+    process.kill(pid, signal);
+  } catch {
+    // Já saiu.
   }
 }

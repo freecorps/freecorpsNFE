@@ -115,6 +115,7 @@ export function usage() {
     "  mail <email>    Mostra os códigos do coletor local da plataforma",
     "  cleanup         Para os processos de dev registrados e libera o lock",
     "                  de um dev que terminou sem soltá-lo",
+    "  reap            Para processos deixados rodando por worktrees apagados",
     "  finish          Depois do merge: confere a integração, para os processos,",
     "                  libera as portas e remove os outros worktrees integrados",
     "                  --no-sweep  --no-fetch",
