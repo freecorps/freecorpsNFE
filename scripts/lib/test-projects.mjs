@@ -18,17 +18,19 @@ const tooling = [
 const benchmarks = ["platform/**/*.benchmark.test.ts", "tests/**/*.benchmark.test.ts"];
 // Testes que leem a árvore inteira: os identificadores de todo Markdown, a
 // classificação de todo arquivo versionado para a cópia pública, o status das
-// ADRs e os links relativos em todo Markdown e o guarda da lista de
-// documentação, que lê todo código-fonte; e a tabela de recibos operacionais,
+// ADRs e os links relativos em todo Markdown, as provas citadas pelos
+// documentos de entrada, que leem testes de qualquer pasta, e o guarda da lista
+// de documentação, que lê todo código-fonte; e a tabela de recibos operacionais,
 // que lê a história do Git até o HEAD (#127). Numa área própria, a `tooling` só
 // repete a execução quando muda o que ela lê, não a cada arquivo do
-// repositório. Os quatro primeiros são também
+// repositório. Os cinco primeiros são também
 // os testes do modo de documentação do CI (`documentationTests` em
 // scripts/lib/ci-changes.mjs).
 const repository = [
   "scripts/public-copy/{public-identifiers,public-tree}.test.ts",
   "scripts/repo/adr-status.test.ts",
   "scripts/repo/doc-links.test.ts",
+  "scripts/repo/docs-claims.test.ts",
   "tests/ci.changes.test.ts",
   "scripts/repo/receipts.test.ts",
 ];
