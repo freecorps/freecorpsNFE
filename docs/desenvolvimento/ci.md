@@ -311,7 +311,29 @@ arquivo publicado só reprova no push. `tests/ci.changes.test.ts`
 confere os casos, a falha aberta e que nenhuma tarefa fora de um grupo depende
 de uma tarefa dele.
 
-MEDIÇÃO
+Medido em 13/11/2026, Windows local, num clone só que alterna entre a `main`
+(`03193a5`) e o commit da #167, na ordem antes, depois, depois, antes: cada
+cenário parte de um checkout limpo com o cache que o grafo inteiro da própria
+revisão gravou, e muda uma linha de `apps/console/src/routes.tsx` ou de
+`platform/convex/http.ts`.
+
+| Cenário                 | Antes (grafo inteiro) | Depois      |
+| ----------------------- | --------------------- | ----------- |
+| Só documentação         | 7 s                   | 7 s         |
+| Só console              | 132 e 122 s           | 98 e 91 s   |
+| Só platform             | 118 e 134 s           | 136 e 126 s |
+| Grafo inteiro sem cache | 190 e 141 s           | 166 e 142 s |
+
+Na PR só de console, sair das provas e da área `packages` encurta o job em
+cerca de um quarto. Na PR só de platform, as áreas `platform` e `console`
+executam de novo e são o caminho crítico com ou sem as tarefas puladas: o
+ganho fica no CPU, não no tempo. O grafo inteiro não mudou. No Actions, antes
+da #167, `Validate` levou 84 a 139 s em PRs só de documentação (#189, #190,
+#219) e 251 a 404 s, mediana 332 s, em PRs só de platform (#210 a #214, #232,
+#237); o efeito do grafo reduzido no runner ainda não foi visto. A medição
+mostrou outra perda que a #167 não resolve: as áreas de testes registram a
+listagem de `apps/docs/build`, que `ci:docs` recria no mesmo run, e num
+checkout novo costumam executar mesmo sem mudança que as alcance.
 
 ### Tipos
 
