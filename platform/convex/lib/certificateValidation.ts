@@ -126,14 +126,16 @@ function readCertificate(pfx: Buffer, password: Buffer) {
     const parsed = boundedDerivations(() =>
       forge.pkcs12.pkcs12FromAsn1(asn, true, password.toString("utf8")),
     );
-    const keys = [forge.pki.oids.pkcs8ShroudedKeyBag, forge.pki.oids.keyBag].flatMap(
+    const { pkcs8ShroudedKeyBag, keyBag, certBag } = forge.pki.oids;
+    if (!pkcs8ShroudedKeyBag || !keyBag || !certBag) return fail("CERTIFICATE_INVALID");
+    const keys = [pkcs8ShroudedKeyBag, keyBag].flatMap(
       (bagType) => parsed.getBags({ bagType })[bagType] ?? [],
     );
     if (keys.length !== 1 || !keys[0]?.key) return fail("CERTIFICATE_INVALID");
     const privateKey = createPrivateKey(forge.pki.privateKeyToPem(keys[0].key));
-    const certs = (
-      parsed.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? []
-    ).flatMap((bag) => (bag.cert ? [bag.cert] : []));
+    const certs = (parsed.getBags({ bagType: certBag })[certBag] ?? []).flatMap((bag) =>
+      bag.cert ? [bag.cert] : [],
+    );
     const matches = certs.filter((cert) =>
       new X509Certificate(forge.pki.certificateToPem(cert)).checkPrivateKey(privateKey),
     );

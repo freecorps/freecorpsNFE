@@ -126,7 +126,10 @@ it("does not reject a valid PFX when persisting validation fails", async () => {
     ),
   ).rejects.toThrow("commit unavailable");
   expect(runMutation).toHaveBeenCalledTimes(1);
-  expect(runMutation.mock.calls[0][1]).toMatchObject({ id, metadata: { cnpj: "00000000000191" } });
+  expect(runMutation.mock.calls[0]?.[1]).toMatchObject({
+    id,
+    metadata: { cnpj: "00000000000191" },
+  });
   expect((await f.t.run((ctx) => ctx.db.get("certificates", id)))?.state).toBe("validating");
 });
 it("reports missing server key without persisting upload secrets", async () => {
@@ -136,7 +139,7 @@ it("reports missing server key without persisting upload secrets", async () => {
   const certs = await f.t.run((ctx) => ctx.db.query("certificates").collect());
   expect(certs).toHaveLength(1);
   expect(certs[0]).toMatchObject({ state: "rejected", code: "CERTIFICATE_KEY_UNAVAILABLE" });
-  expect(certs[0].envelope).toBeUndefined();
+  expect(certs[0]?.envelope).toBeUndefined();
 });
 it("uploads encrypted material, validates asynchronously and exposes metadata only", async () => {
   const f = await fixture(),

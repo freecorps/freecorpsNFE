@@ -484,10 +484,10 @@ it.each([
       }
       expect(results[0]).toEqual(results[1]);
       expect(results[1]).toEqual(results[2]);
-      expect(results[0].status).toBe(attempt <= 3 ? 202 : 429);
+      expect(results[0]?.status).toBe(attempt <= 3 ? 202 : 429);
       expect(JSON.stringify(results)).not.toContain("private provider");
       if (attempt <= 3)
-        expect(results[0].body).toEqual({ requestAccepted: true, delivery: "unconfirmed" });
+        expect(results[0]?.body).toEqual({ requestAccepted: true, delivery: "unconfirmed" });
     }
     if (providerFailure) expect(warn).toHaveBeenCalledWith("ACCOUNT_EMAIL_UNAVAILABLE");
   },
@@ -533,7 +533,7 @@ it("makes invalid code outcomes generic and disables unused email-link/change fl
   }
   expect(results[0]).toEqual(results[1]);
   expect(results[1]).toEqual(results[2]);
-  expect(results[0].status).toBe(400);
+  expect(results[0]?.status).toBe(400);
   expect((await request(t, "/send-verification-email", { email })).status).toBe(404);
 });
 it("records date, time and IP of authenticated access and purges them after six months", async () => {

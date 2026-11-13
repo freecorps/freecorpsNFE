@@ -8,7 +8,11 @@ const target = {
   cloud: "https://elated-possum-295.convex.cloud",
   site: "https://elated-possum-295.convex.site",
 };
-const policy = (headers: string) => headers.split("Content-Security-Policy: ")[1].trim();
+const policy = (headers: string) => {
+  const value = headers.split("Content-Security-Policy: ")[1];
+  if (value === undefined) throw new Error("No Content-Security-Policy header");
+  return value.trim();
+};
 
 it("rejects the validation CSP for an installation and keeps other protections when rebuilding", () => {
   expect(() => verifyInstallationPolicy(policy(source), target)).toThrow();

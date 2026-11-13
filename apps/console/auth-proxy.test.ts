@@ -78,10 +78,11 @@ it("rejects changed signed fields and stale or wrong-key signatures", async () =
   expect(await verifyAuthRequest(request, new TextEncoder().encode("tampered"), secret)).toBeNull();
   expect(await verifyAuthRequest(request, bytes, "b".repeat(64))).toBeNull();
   expect(await verifyAuthRequest(request, bytes, secret, Date.now() + 31_000)).toBeNull();
-  for (const [header, value] of [
+  const tampered: [header: string, value: string][] = [
     ["x-fnfe-auth-ip", "192.0.2.3"],
     ["origin", "https://foreign.invalid"],
-  ]) {
+  ];
+  for (const [header, value] of tampered) {
     const changed = new Request(request.url, {
       method: request.method,
       headers: new Headers(request.headers),

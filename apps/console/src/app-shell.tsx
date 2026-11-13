@@ -142,6 +142,7 @@ export function EnvironmentBadge({
           if (!step) return;
           event.preventDefault();
           const next = offered[(index + step + offered.length) % offered.length];
+          if (!next) return;
           select(next);
           const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button");
           buttons[offered.indexOf(next)]?.focus();

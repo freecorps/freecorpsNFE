@@ -34,7 +34,8 @@ function withoutBlocks(text: string) {
     const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
     if (fence) {
       if (
-        marker?.[0] === fence[0] &&
+        marker &&
+        marker[0] === fence[0] &&
         marker.length >= fence.length &&
         !/\S/.test(line.slice(line.indexOf(marker) + marker.length))
       )

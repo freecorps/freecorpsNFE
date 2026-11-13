@@ -127,10 +127,10 @@ it("uses synthetic credentials, compares both services, performs an authenticate
   });
   expect(pending).toHaveLength(0);
   const calls = request.mock.calls as unknown as [string, RequestInit][];
-  expect(calls[5][1].headers).toMatchObject({
+  expect(calls[5]?.[1].headers).toMatchObject({
     "Better-Auth-Cookie": "__Secure-better-auth.session_token=synthetic-session",
   });
-  expect(calls[6][1].headers).toMatchObject({ Authorization: "Bearer synthetic-jwt" });
+  expect(calls[6]?.[1].headers).toMatchObject({ Authorization: "Bearer synthetic-jwt" });
   expect(calls.every(([, options]) => options.redirect === "error")).toBe(true);
 });
 it("cleans up its session if the authenticated operation fails and never prints auth payloads", async () => {
@@ -139,7 +139,7 @@ it("cleans up its session if the authenticated operation fails and never prints 
   const request = vi.fn(async () => pending.shift()!);
   await expect(smokeValidation(sha, credentials, request)).rejects.toThrow("AUTH_FAILED");
   expect(request).toHaveBeenCalledTimes(8);
-  expect((request.mock.calls as unknown as [string][])[7][0]).toMatch(/sign-out$/);
+  expect((request.mock.calls as unknown as [string][])[7]?.[0]).toMatch(/sign-out$/);
 });
 it("refuses stale backend revisions before login and requires a reserved synthetic identity", async () => {
   const pending = responses();

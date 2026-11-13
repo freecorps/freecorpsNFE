@@ -151,7 +151,9 @@ describe("usage migration status", () => {
         return { status: 0, stdout: JSON.stringify(page([eventGroup])) };
       }) as never);
       expect(await ok("eventStatus", { numItems: 5, cursor: null })).toEqual(page([eventGroup]));
-      const [{ args, options }] = calls;
+      const [call] = calls;
+      if (!call) throw new Error("Convex was not called");
+      const { args, options } = call;
       expect(args.slice(1)).toEqual([
         "run",
         "usageMigration:eventStatus",

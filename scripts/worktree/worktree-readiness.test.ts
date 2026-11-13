@@ -211,7 +211,7 @@ it("interrupção de dono real não vira sucesso nem recupera lock automaticamen
 it("PID reutilizado, identidade desconhecida e lock ilegível continuam bloqueados", async () => {
   const paths = fixture();
   const lock = join(paths.convexDir, "worktree-operation.lock");
-  for (const [content, state] of [
+  const locks: [content: string, state: string][] = [
     ["{", "indeterminate"],
     [JSON.stringify({ pid: process.pid, command: "setup" }), "indeterminate"],
     [
@@ -223,7 +223,8 @@ it("PID reutilizado, identidade desconhecida e lock ilegível continuam bloquead
       }),
       "interrupted",
     ],
-  ]) {
+  ];
+  for (const [content, state] of locks) {
     writeFileSync(lock, content);
     expect(readOperation(paths).state).toBe(state);
     await expect(withOperation(paths, "sync", async () => {})).rejects.toThrow(

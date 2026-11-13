@@ -60,7 +60,7 @@ describe("preflight das jornadas locais", () => {
       "/api/query",
       "/__freecorps_worktree",
     ]);
-    expect(JSON.parse(calls[1].body).path).toBe("_system/frontend/listCronJobs");
+    expect(JSON.parse(calls[1]?.body ?? "{}").path).toBe("_system/frontend/listCronJobs");
   });
 
   it("recusa alvo remoto antes de qualquer requisição", async () => {

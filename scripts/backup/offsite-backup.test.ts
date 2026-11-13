@@ -422,7 +422,8 @@ describe("snapshot integrity", () => {
   it("rejects corrupt archives, files and missing storage", () => {
     const good = zip(exportFiles(), 0);
     const flipped = Buffer.from(good);
-    flipped[good.indexOf("<nfeProc/>")] ^= 1;
+    const at = good.indexOf("<nfeProc/>");
+    flipped[at] = (flipped[at] ?? 0) ^ 1;
     expect(() => readZip(flipped, zipLimit)).toThrow(/CRC/);
     expect(() => readZip(good.subarray(0, good.length - 30), zipLimit)).toThrow(/zip/);
     // A trailing comment moves the EOCD; one beyond the 64 KiB limit is not a zip.

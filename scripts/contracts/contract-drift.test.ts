@@ -15,7 +15,7 @@ const root = repoRoot;
 const temporary: string[] = [];
 const derivedFromRoutes = ["docs/v1.0/openapi.json", "docs/v1.0/API-REFERENCE.md"];
 type Route = (typeof routes)[keyof typeof routes];
-const mutable = routes as unknown as Record<string, Route>;
+const mutable = routes as unknown as typeof routes & Record<string, Route | undefined>;
 
 const regenerate = (artifacts: Record<string, string>) => {
   const folder = mkdtempSync(join(tmpdir(), "fnfe-contract-drift-"));
@@ -69,18 +69,19 @@ it.each([
 
 it("rejects a hand-edited or missing derived file while the contract is unchanged", async () => {
   const current = await renderContractArtifacts(openApi());
+  const openapi = current["docs/v1.0/openapi.json"];
+  const reference = current["docs/v1.0/API-REFERENCE.md"];
+  if (openapi === undefined || reference === undefined)
+    throw new Error("The contract renders both derived files");
   const folder = regenerate(current);
-  writeFileSync(join(folder, "docs/v1.0/openapi.json"), current["docs/v1.0/openapi.json"] + "\n");
+  writeFileSync(join(folder, "docs/v1.0/openapi.json"), openapi + "\n");
   unlinkSync(join(folder, "docs/v1.0/API-REFERENCE.md"));
   expect(staleContractArtifacts(current, folder)).toEqual([
     "docs/v1.0/openapi.json",
     "docs/v1.0/API-REFERENCE.md",
   ]);
   // Uma cópia com fim de linha do Windows continua concordante.
-  writeFileSync(
-    join(folder, "docs/v1.0/openapi.json"),
-    current["docs/v1.0/openapi.json"].replaceAll("\n", "\r\n"),
-  );
-  writeFileSync(join(folder, "docs/v1.0/API-REFERENCE.md"), current["docs/v1.0/API-REFERENCE.md"]);
+  writeFileSync(join(folder, "docs/v1.0/openapi.json"), openapi.replaceAll("\n", "\r\n"));
+  writeFileSync(join(folder, "docs/v1.0/API-REFERENCE.md"), reference);
   expect(staleContractArtifacts(current, folder)).toEqual([]);
 });

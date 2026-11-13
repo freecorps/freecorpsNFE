@@ -122,7 +122,7 @@ describe.each(PROJECT_REPOSITORIES)("guardas de origem em %s", (repository) => {
     await expect(
       requireRehearsalWindow("synthetic-token", request, { GITHUB_REPOSITORY: repository }),
     ).rejects.toThrow();
-    expect(request.mock.calls[0][0]).toBe(
+    expect(request.mock.calls[0]?.[0]).toBe(
       `https://api.github.com/repos/${repository}/git/ref/heads/main`,
     );
   });

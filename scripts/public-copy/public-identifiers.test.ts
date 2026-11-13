@@ -67,7 +67,7 @@ export function unknownIdentifiers(text: string) {
   const found: string[] = [];
   for (const [key] of text.matchAll(/(?<!\d)\d{44}(?!\d)/g))
     if (keyValid(key) && !allowedCnpj.has(key.slice(6, 20))) found.push(`chave ${mask(key)}`);
-  for (const [, raw] of text.matchAll(
+  for (const [, raw = ""] of text.matchAll(
     /(?<![\d./-])(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/g,
   )) {
     const cnpj = raw.replace(/\D/g, "");

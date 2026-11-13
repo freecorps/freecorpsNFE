@@ -93,7 +93,7 @@ export class ErrorBoundary extends Component<
   },
   { failed: boolean; error: unknown; resetKey?: string }
 > {
-  state = { failed: false, error: null as unknown, resetKey: this.props.resetKey };
+  override state = { failed: false, error: null as unknown, resetKey: this.props.resetKey };
   static getDerivedStateFromProps(
     props: { resetKey?: string },
     state: { failed: boolean; resetKey?: string },
@@ -105,7 +105,7 @@ export class ErrorBoundary extends Component<
     return { failed: true, error };
   }
   reset = () => this.setState({ failed: false, error: null });
-  render() {
+  override render() {
     if (!this.state.failed) return this.props.children;
     const { fallback } = this.props;
     if (typeof fallback === "function") return fallback(this.state.error, this.reset);

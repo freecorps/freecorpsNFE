@@ -26,9 +26,13 @@ it("accepts the complete matrix and rejects empty, partial, duplicate and malfor
     await writeFile(path, JSON.stringify(matrix()));
     expect(await loadReadFixtures(path)).toHaveLength(5);
     const duplicate = matrix();
-    duplicate[4] = duplicate[3];
+    const [, , , fourth] = duplicate;
+    if (!fourth) throw new Error("The matrix has fewer than four fixtures");
+    duplicate[4] = fourth;
     const noEvidence = matrix();
-    delete noEvidence[0].content.snapshot;
+    const [first] = noEvidence;
+    if (!first) throw new Error("Empty matrix");
+    delete first.content.snapshot;
     for (const input of [[], matrix().slice(1), duplicate, noEvidence, {}, "private.invalid"]) {
       await writeFile(path, JSON.stringify(input));
       let calls = 0;

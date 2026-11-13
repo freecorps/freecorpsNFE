@@ -111,7 +111,9 @@ it("publica uma só geração concorrente, fixa páginas e comprova rollback", a
   const page = referencePage.parse(await f.read({ limit: 2, q: "arvore" }));
   expect(page.page.map((r) => r.code)).toEqual(["99000000", "99000001"]);
   const changed = await referenceCorpus("ncm", "v2");
-  changed.entries[2].description = "Descrição alterada na nova versão";
+  const altered = changed.entries[2];
+  if (!altered) throw new Error("Corpus without a third entry");
+  altered.description = "Descrição alterada na nova versão";
   changed.manifest.contentSha256 = await sha256(canonicalEntries(changed.entries));
   const second = await f.load(changed);
   changed.manifest.version = "v3";
@@ -126,8 +128,8 @@ it("publica uma só geração concorrente, fixa páginas e comprova rollback", a
     await f.read({ q: "ÁRVORE", limit: 2, cursor: page.nextCursor }),
   );
   expect(next.manifest.version).toBe("v1");
-  expect(next.page[0].code).toBe("99000002");
-  expect(next.page[0].description).toBe("Árvore de teste 02");
+  expect(next.page[0]?.code).toBe("99000002");
+  expect(next.page[0]?.description).toBe("Árvore de teste 02");
   await f.publish(first, 2);
   expect((await f.read()).manifest.version).toBe("v1");
   const audit = await f.t.run((ctx) =>
@@ -137,7 +139,7 @@ it("publica uma só geração concorrente, fixa páginas e comprova rollback", a
       .take(10),
   );
   expect(audit).toHaveLength(3);
-  expect(audit[2].previousVersionId).not.toBe(first);
+  expect(audit[2]?.previousVersionId).not.toBe(first);
 });
 it("distingue inexistente, vigente, expirado, futuro e vigência desconhecida", async () => {
   const f = await fixture();
@@ -170,13 +172,17 @@ it("rejeita hash, contagem, códigos duplicados, ordem, data inválida e versão
       c.entries.pop();
     },
     (c: Awaited<ReturnType<typeof referenceCorpus>>) => {
-      c.entries[1] = c.entries[0];
+      const [entry] = c.entries;
+      if (!entry) throw new Error("Empty corpus");
+      c.entries[1] = entry;
     },
     (c: Awaited<ReturnType<typeof referenceCorpus>>) => {
       c.entries.reverse();
     },
     (c: Awaited<ReturnType<typeof referenceCorpus>>) => {
-      c.entries[0].validFrom = "2026-02-30";
+      const [entry] = c.entries;
+      if (!entry) throw new Error("Empty corpus");
+      entry.validFrom = "2026-02-30";
     },
   ]) {
     const c = await referenceCorpus();

@@ -754,8 +754,8 @@ it("assigning a plan without an end validates the numbers, audits null and the o
     expect.any(Number),
     null,
   ]);
-  expect(JSON.parse(audit[1].before!).endsAt).toBeNull();
-  expect(JSON.parse(audit[2].before!).endsAt).toEqual(expect.any(Number));
+  expect(JSON.parse(audit[1]?.before ?? "{}").endsAt).toBeNull();
+  expect(JSON.parse(audit[2]?.before ?? "{}").endsAt).toEqual(expect.any(Number));
   const person = await owner(f);
   const view = await person.query(api.usage.overview, {
     organizationId: f.scope.organizationId,

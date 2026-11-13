@@ -1148,7 +1148,8 @@ it("refuses to serve a hot original whose stored file no longer matches the reco
   // A file swapped under the row, same size and other bytes, by a write outside ingestion.
   const swapped = await f.t.run(async (ctx) => {
     const bytes = new Uint8Array(await (await ctx.storage.get(artifact.storageId!))!.arrayBuffer());
-    bytes[bytes.length - 1] ^= 1;
+    const last = bytes.length - 1;
+    bytes[last] = (bytes[last] ?? 0) ^ 1;
     const storageId = await ctx.storage.store(new Blob([bytes]));
     await ctx.db.patch("documentArtifacts", artifactId, { storageId });
     return storageId;
@@ -2301,7 +2302,7 @@ it("reprocesses technical refusals of an older parser into the NF-e history, onc
   expect(swept.state).toBe("succeeded");
   expect(JSON.parse(swept.response!)).toEqual({ requested: 3 });
   const children = await refusalChildren(f, run.operationId);
-  expect(children.map((r) => r.key.split(":")[1]).sort()).toEqual(
+  expect(children.flatMap((r) => r.key.split(":").slice(1, 2)).sort()).toEqual(
     [imported.artifactId, captured.artifactId, still.artifactId].sort(),
   );
   // The children start one at a time, never all at once.
@@ -2449,7 +2450,7 @@ it("resumes the sweep from the persisted cursor after a lost lease, page by page
   const done = await drive(f, run.operationId);
   expect(done.state).toBe("succeeded");
   const children = await refusalChildren(f, run.operationId);
-  const artifacts = children.map((r) => r.key.split(":")[1]);
+  const artifacts = children.flatMap((r) => r.key.split(":").slice(1, 2));
   expect(artifacts.sort()).toEqual(
     [...refusals.map((r) => r.artifactId), leftover.artifactId].sort(),
   );
@@ -2558,7 +2559,7 @@ it("opens a new run once the requester lost access mid-run (#499)", async () => 
   const reprocessed = [
     ...(await refusalChildren(f, runA.operationId)),
     ...(await refusalChildren(f, runB.operationId)),
-  ].map((r) => r.key.split(":")[1]);
+  ].flatMap((r) => r.key.split(":").slice(1, 2));
   // Each original once, across both runs.
   expect(reprocessed.sort()).toEqual([first.artifactId, second.artifactId].sort());
   for (const refusal of [first, second])
@@ -2717,7 +2718,7 @@ it("lets a later run pick only the leftovers, and a resumed old run duplicate no
     live: true,
   });
   const childrenA = await refusalChildren(f, runA.operationId);
-  expect(childrenA.map((r) => r.key.split(":")[1]).sort()).toEqual(
+  expect(childrenA.flatMap((r) => r.key.split(":").slice(1, 2)).sort()).toEqual(
     [done.artifactId, stuck.artifactId].sort(),
   );
   // One child stops for good; the operation that held the other two fails.
@@ -2743,7 +2744,7 @@ it("lets a later run pick only the leftovers, and a resumed old run duplicate no
   expect(runB.reused).toBe(false);
   expect((await drive(f, runB.operationId)).state).toBe("succeeded");
   const childrenB = await refusalChildren(f, runB.operationId);
-  expect(childrenB.map((r) => r.key.split(":")[1]).sort()).toEqual(
+  expect(childrenB.flatMap((r) => r.key.split(":").slice(1, 2)).sort()).toEqual(
     [stuck.artifactId, byArtifact.artifactId, byFile.artifactId].sort(),
   );
   // Run A comes back (a resumption by hand) while B's children are live: it adds none.
