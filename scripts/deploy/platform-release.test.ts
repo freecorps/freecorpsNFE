@@ -201,11 +201,13 @@ it("mantém o registro histórico do corte verificável pelos hashes", () => {
     expect(() => record({ strategy: "other" })).toThrow("clean-start");
     expect(() => record({ decisions: {} })).toThrow("clean-start");
     const receipts = installed.installation.receipts;
+    const [first] = receipts;
+    if (!first) throw new Error("The installation records no receipt");
     for (const patched of [
-      [...receipts, receipts[0]],
-      [...receipts, { ...receipts[0], gate: "release" }],
-      [{ ...receipts[0], path: "../outside.json" }, ...receipts.slice(1)],
-      [{ ...receipts[0], sha256: "pending" }, ...receipts.slice(1)],
+      [...receipts, first],
+      [...receipts, { ...first, gate: "release" }],
+      [{ ...first, path: "../outside.json" }, ...receipts.slice(1)],
+      [{ ...first, sha256: "pending" }, ...receipts.slice(1)],
     ])
       expect(() => record({ receipts: patched })).toThrow();
     writeFileSync(join(root, "docs/v1.0/evidence/receipt.json"), "changed");

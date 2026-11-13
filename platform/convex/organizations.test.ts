@@ -450,6 +450,11 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
   }))
     vi.stubEnv(key, value);
   const payloads: { text: string }[] = [];
+  const codeIn = (payload: { text: string } | undefined) => {
+    const code = /[a-f0-9]{64}/.exec(payload?.text ?? "")?.[0];
+    if (!code) throw new Error("No invitation code in the mail");
+    return code;
+  };
   const fetch = vi.fn(async (_url: string, init: RequestInit) => {
     if (typeof init.body !== "string") throw new Error("Expected JSON request");
     payloads.push(JSON.parse(init.body));
@@ -464,7 +469,7 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
   const first = await org.owner.client.action(api.invitations.send, args);
   expect(first.delivered).toBe(false);
   expect(fetch).toHaveBeenCalledTimes(1);
-  const firstCode = payloads[0].text.match(/[a-f0-9]{64}/)![0];
+  const firstCode = codeIn(payloads[0]);
   await expect(
     recipient.client.action(api.invitations.accept, { token: firstCode }),
   ).rejects.toThrow("INVITATION_UNAVAILABLE");
@@ -476,7 +481,7 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
   const second = await org.owner.client.action(api.invitations.send, args);
   expect(second.delivered).toBe(true);
   expect(fetch).toHaveBeenCalledTimes(2);
-  const secondCode = payloads[1].text.match(/[a-f0-9]{64}/)![0];
+  const secondCode = codeIn(payloads[1]);
   expect(secondCode).not.toBe(firstCode);
   await recipient.client.action(api.invitations.accept, { token: secondCode });
   expect(

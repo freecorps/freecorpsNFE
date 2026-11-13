@@ -232,17 +232,18 @@ export const exchange = internalMutation({
     }
     const nfse = /^\/nfse\/(\d{50})(\/eventos)?$/.exec(path);
     // Before the platform records the key (recovery), the issuance only knows its own DPS.
-    const state = nfse ? await stateOf(ctx, op, issuance.dpsId) : null;
-    if (nfse && !nfse[2] && method === "GET")
-      return state?.accessKey === nfse[1]
+    const key = nfse?.[1];
+    const state = key ? await stateOf(ctx, op, issuance.dpsId) : null;
+    if (key && !nfse?.[2] && method === "GET")
+      return state?.accessKey === key
         ? json(
             200,
             { chaveAcesso: state.accessKey },
             { field: "nfseXmlGZipB64", xml: state.nfseXml! },
           )
         : absent();
-    if (nfse && nfse[2] && method === "POST" && cancellation) {
-      if (state?.accessKey !== nfse[1] || !xml)
+    if (key && nfse?.[2] && method === "POST" && cancellation) {
+      if (state?.accessKey !== key || !xml)
         return json(400, rejection("E0002", "NFS-e não encontrada para o evento."));
       if (state.cancelled)
         return json(
@@ -263,7 +264,7 @@ export const exchange = internalMutation({
       await ctx.db.patch("issuanceSimulations", state._id, { eventPosts, cancelled: true });
       if (eventPosts === 1 && marker(cancellation.reason, "timeout"))
         return { kind: "lost" as const };
-      return json(201, {}, { field: "eventoXmlGZipB64", xml: syntheticEvent(nfse[1]!, xml) });
+      return json(201, {}, { field: "eventoXmlGZipB64", xml: syntheticEvent(key, xml) });
     }
     return json(404, {});
   },

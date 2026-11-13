@@ -567,6 +567,14 @@ it("após um restore, recupera os prazos sem job e reaplica a decisão guardada 
   // A second run finds every job alive and schedules nothing new.
   expect((await closureOf(f))!.generation).toBe(recovered.generation);
   expect(await exportJobId()).toBe(recoveredExport);
+  // A phase outside the list is refused before any page is read or fixed.
+  for (const phase of [-1, 5])
+    await expect(
+      f.t.mutation(internal.retentionRecovery.recover, { phase, cursor: null }),
+    ).rejects.toThrow(`Unknown retention recovery phase ${phase}`);
+  await expect(
+    f.t.query(internal.retentionRecovery.inspect, { phase: 5, cursor: null }),
+  ).rejects.toThrow("Unknown retention recovery phase 5");
 
   // Reapplying the same decision is a no-op; an earlier decision wins and purges at once.
   expect(
@@ -1161,8 +1169,9 @@ async function snapshot(f: Fixture) {
 }
 /** Tables where rows of `before` still exist in `after`. */
 function survivors(before: Record<string, string[]>, after: Record<string, string[]>) {
-  return Object.keys(before)
-    .filter((table) => before[table].some((id) => after[table].includes(id)))
+  return Object.entries(before)
+    .filter(([table, ids]) => ids.some((id) => after[table]?.includes(id)))
+    .map(([table]) => table)
     .sort();
 }
 
@@ -2748,7 +2757,7 @@ it("um encerramento expurgado antes da decisão de 27/10/2026 perde os dados na 
   const added = Object.fromEntries(
     Object.entries(seeded).map(([table, ids]) => [
       table,
-      ids.filter((id) => !kept[table].includes(id)),
+      ids.filter((id) => !kept[table]?.includes(id)),
     ]),
   );
   expect(survivors(added, await snapshot(f))).toEqual(own(added));

@@ -116,11 +116,11 @@ describe("hook pre-push", () => {
     expect(result.stderr).toContain("docs/teste-vazamento.md:1 cnpj-nao-sintetico");
     expect(result.stderr).toContain("push recusado");
     expect(`${result.stdout}${result.stderr}${result.report}`).not.toContain(cnpj);
-    if (result.report)
-      rmSync(join(result.stderr.match(/relatório em (.+)saida/)![1]), {
-        recursive: true,
-        force: true,
-      });
+    if (result.report) {
+      const reportFolder = /relatório em (.+)saida/.exec(result.stderr)?.[1];
+      if (!reportFolder) throw new Error("The refused push names no report folder");
+      rmSync(join(reportFolder), { recursive: true, force: true });
+    }
   }, 120_000);
 
   it("deixa passar um commit sem achados e avisa da falta do Gitleaks", () => {

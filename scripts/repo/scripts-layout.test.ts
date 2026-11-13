@@ -55,12 +55,12 @@ const tracked = execFileSync("git", ["ls-files", "-z", "scripts"], {
 function rootEscapes(file: string, text: string) {
   const found: string[] = [];
   const dir = posix.dirname(file);
-  for (const match of text.matchAll(
+  for (const [call, , target = ""] of text.matchAll(
     /new URL\(\s*(["'`])(\.\.[^"'`]*?)(?:\$\{[^]*?)?\1\s*,\s*import\.meta\.url/g,
   )) {
     // `..` sozinho ou com sufixo dinâmico, a partir de scripts/<domínio>/, é scripts/.
-    const resolved = posix.normalize(posix.join(dir, match[2])).replace(/\/$/, "");
-    if (!/^scripts\/[^/]+/.test(resolved)) found.push(match[0]);
+    const resolved = posix.normalize(posix.join(dir, target)).replace(/\/$/, "");
+    if (!/^scripts\/[^/]+/.test(resolved)) found.push(call);
   }
   for (const pattern of [
     /dirname\(\s*dirname\(\s*fileURLToPath\(\s*import\.meta\.url/g,
@@ -117,7 +117,7 @@ describe("organização de scripts/", () => {
     ];
     const missing: string[] = [];
     for (const source of sources)
-      for (const [, path] of readFileSync(join(repoRoot, source), "utf8").matchAll(
+      for (const [, path = ""] of readFileSync(join(repoRoot, source), "utf8").matchAll(
         /(?:^|[^\w./-])\/?(scripts\/[\w./-]+\.(?:mjs|ts|py|json))/gm,
       ))
         if (!existsSync(join(repoRoot, path))) missing.push(`${source}: ${path}`);

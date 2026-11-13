@@ -19,6 +19,12 @@ import { armGuard } from "./fiscalGuard";
 const phases = ["closures", "telemetry", "access", "registry", "exports"] as const;
 const PAGE = 50;
 
+function phaseAt(index: number) {
+  const phase = phases[index];
+  if (!phase) throw new Error(`Unknown retention recovery phase ${index}`);
+  return phase;
+}
+
 async function alive(ctx: QueryCtx, id: Id<"_scheduled_functions"> | undefined) {
   if (!id) return false;
   const job = await ctx.db.system.get("_scheduled_functions", id);
@@ -153,10 +159,11 @@ export const recover = internalMutation({
   args: progress,
   returns: report,
   handler: async (ctx, args) => {
-    const result = await scan(ctx, phases[args.phase], args.cursor, ctx);
+    const phase = phaseAt(args.phase);
+    const result = await scan(ctx, phase, args.cursor, ctx);
     const next = nextOf(args.phase, result);
     if (next) await ctx.scheduler.runAfter(0, internal.retentionRecovery.recover, next);
-    return { phase: phases[args.phase], checked: result.checked, missing: result.missing, next };
+    return { phase, checked: result.checked, missing: result.missing, next };
   },
 });
 /** Read-only check, page by page: `missing` is the number of deadlines without a live job. */
@@ -164,9 +171,10 @@ export const inspect = internalQuery({
   args: progress,
   returns: report,
   handler: async (ctx, args) => {
-    const result = await scan(ctx, phases[args.phase], args.cursor, null);
+    const phase = phaseAt(args.phase);
+    const result = await scan(ctx, phase, args.cursor, null);
     return {
-      phase: phases[args.phase],
+      phase,
       checked: result.checked,
       missing: result.missing,
       next: nextOf(args.phase, result),

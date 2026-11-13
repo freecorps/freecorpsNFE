@@ -27,6 +27,12 @@ const props = {
   },
   documentId: "document",
 } as ComponentProps<typeof Reprocess>;
+/** The idempotency key of the `call`-th request, failing the test when it was not made. */
+const keyOf = (call: number) => {
+  const key = mock.run.mock.calls[call]?.[0].key;
+  if (!key) throw new Error(`No request ${call}`);
+  return key;
+};
 const button = () =>
   screen.getByRole<HTMLButtonElement>("button", { name: "Reprocessar XML atual" });
 beforeEach(() => {
@@ -42,19 +48,19 @@ it.each(["succeeded", "failed"] as const)(
     const view = render(createElement(Reprocess, props));
     await user.click(button());
     await waitFor(() => expect(button().disabled).toBe(true));
-    const firstKey = mock.run.mock.calls[0][0].key;
+    const firstKey = keyOf(0);
     mock.operation = { state };
     view.rerender(createElement(Reprocess, props));
     expect(button().disabled).toBe(false);
     mock.run.mockRejectedValueOnce(new Error("response lost"));
     await user.click(button());
     await screen.findByRole("alert");
-    const secondKey = mock.run.mock.calls[1][0].key;
+    const secondKey = keyOf(1);
     expect(secondKey).not.toBe(firstKey);
     expect(button().disabled).toBe(false);
     await user.click(button());
     expect(mock.run).toHaveBeenCalledTimes(3);
-    expect(mock.run.mock.calls[2][0].key).toBe(secondKey);
+    expect(keyOf(2)).toBe(secondKey);
   },
 );
 

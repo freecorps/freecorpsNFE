@@ -29,9 +29,9 @@ describe.each(["token bucket", "fixed window"] as const)("rateLimit %s", (kind) 
       expect(status.ok).toBe(true);
       expect(status.retryAfter).toBe(undefined);
       expect(updates).toHaveLength(1);
-      expect(updates[0].existing).toBeNull();
-      expect(updates[0].shard).toBe(0);
-      expect(updates[0].value).toBe(0);
+      expect(updates[0]?.existing).toBeNull();
+      expect(updates[0]?.shard).toBe(0);
+      expect(updates[0]?.value).toBe(0);
     });
   });
 
@@ -283,7 +283,7 @@ describe.each([1, 2, 3, 4] as const)("sharding: %s", (shards) => {
       expect(status.ok).toBe(true);
       expect(status.retryAfter).toBeGreaterThanOrEqual(Second);
       expect(updates).toHaveLength(1);
-      expect(updates[0].value).toBe(-1);
+      expect(updates[0]?.value).toBe(-1);
     });
   });
 

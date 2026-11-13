@@ -13,8 +13,11 @@ const S = Math.sin(Math.PI / 6);
 const n = (v: number) => Number(v.toFixed(2));
 
 export function kernel(ox: number, oy: number) {
-  const P = (x: number, y: number, z: number) => [n((x - y) * C + ox), n((x + y) * S - z + oy)];
-  const D = (x: number, y: number, z: number) => [(x - y) * C, (x + y) * S - z];
+  const P = (x: number, y: number, z: number): [number, number] => [
+    n((x - y) * C + ox),
+    n((x + y) * S - z + oy),
+  ];
+  const D = (x: number, y: number, z: number): [number, number] => [(x - y) * C, (x + y) * S - z];
   const plane = (o: Point, u: Point, v: Point) => {
     const [ax, ay] = P(...o);
     const [ux, uy] = D(...u);
@@ -112,9 +115,9 @@ export function kernel(ox: number, oy: number) {
 
 // Fit a scene: pass its extreme 3D corners (including the tallest point).
 export function frame(points: Point[], margin = 0.05) {
-  const d = points.map(([x, y, z]) => [(x - y) * C, (x + y) * S - z]);
-  const xs = d.map((p) => p[0]);
-  const ys = d.map((p) => p[1]);
+  const d = points.map(([x, y, z]): [number, number] => [(x - y) * C, (x + y) * S - z]);
+  const xs = d.map(([x]) => x);
+  const ys = d.map(([, y]) => y);
   const x0 = Math.min(...xs);
   const y0 = Math.min(...ys);
   const m = margin * Math.max(Math.max(...xs) - x0, Math.max(...ys) - y0);

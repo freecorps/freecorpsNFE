@@ -195,7 +195,7 @@ it("concurrent creation returns one identity without replacing confirmed fields"
       }),
     ),
   );
-  expect(first[0].companyId).toBe(first[1].companyId);
+  expect(new Set(first.map((r) => r.companyId)).size).toBe(1);
   expect(first.filter((r) => !r.reused)).toHaveLength(1);
 });
 it("the same CNPJ belongs independently to two organizations and forged IDs never cross them", async () => {

@@ -13,10 +13,12 @@ it.each(manifest.files)("reproduz a origem, os hashes e a vigência de $file", a
   const data = await parseReferencePayload(payload);
   expect(data.manifest.redistribution).toBe("synthetic");
   expect(data.entries).toHaveLength(file.expected.count);
-  expect(referenceValidity(data.entries[0], data.manifest, "2026-09-22")).toBe(
+  const [first, second] = data.entries;
+  if (!first || !second) throw new Error("The corpus has fewer than two entries");
+  expect(referenceValidity(first, data.manifest, "2026-09-22")).toBe(
     file.expected.firstCodeOn20260922,
   );
-  expect(referenceValidity(data.entries[1], data.manifest, "2026-09-22")).toBe(
+  expect(referenceValidity(second, data.manifest, "2026-09-22")).toBe(
     file.expected.secondCodeOn20260922,
   );
 });

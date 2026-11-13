@@ -83,7 +83,8 @@ async function legacyUsage(f: Fixture, perEnvironment = 110, gone = 15) {
         createdAt: Date.now(),
       });
     const batches = { sandbox: await batch("sandbox"), production: await batch("production") };
-    const states: State[] = ["committed", "reserved", "released"];
+    const stateOf = (n: number): State =>
+      n % 3 === 0 ? "committed" : n % 3 === 1 ? "reserved" : "released";
     const specs: { metric: Metric; key: string; state: State; quantity: number; period: string }[] =
       [];
     for (const environment of ["sandbox", "production"] as const)
@@ -100,8 +101,8 @@ async function legacyUsage(f: Fixture, perEnvironment = 110, gone = 15) {
           }),
         );
         const period = i % 4 ? "2026-09" : "2026-08";
-        specs.push({ metric: "imports", key, state: states[i % 3], quantity: 1, period });
-        specs.push({ metric: "bytes", key, state: states[(i + 1) % 3], quantity: 10 + i, period });
+        specs.push({ metric: "imports", key, state: stateOf(i), quantity: 1, period });
+        specs.push({ metric: "bytes", key, state: stateOf(i + 1), quantity: 10 + i, period });
       }
     for (let i = 0; i < gone; i++)
       specs.push({

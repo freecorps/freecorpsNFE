@@ -312,8 +312,10 @@ it("alerta abre, deduplica, recupera e limita reabertura; geração antiga não 
   });
   expect(overview.alerts).toHaveLength(1);
   expect(overview.notifications).toHaveLength(1);
-  expect(overview.alerts[0].kind).toBe("queue");
-  const generation = overview.monitors[0].generation;
+  expect(overview.alerts[0]?.kind).toBe("queue");
+  const [watched] = overview.monitors;
+  if (!watched) throw new Error("No monitor in the overview");
+  const generation = watched.generation;
   await f.t.mutation(internal.observability.evaluate, { monitorId: id, generation: 1 });
   expect((await f.t.run((ctx) => ctx.db.get("operationalMonitors", id)))!.generation).toBe(
     generation,
@@ -589,7 +591,7 @@ it("mede seis sinais, falhas por fonte e recuperação sem alterar cursor ou jan
     "source",
     "webhook",
   ]);
-  expect(overview.monitors[0].metrics.find((m) => m.kind === "source")?.sources).toContainEqual({
+  expect(overview.monitors[0]?.metrics.find((m) => m.kind === "source")?.sources).toContainEqual({
     source: "opencnpj",
     count: 3,
     capped: false,
@@ -725,11 +727,12 @@ it("suporte não retorna resposta da operação e recusa escopos forjados e pref
 
 it("captura e erros de transportes binários preservam a referência estruturada", async () => {
   const f = await fixture();
-  for (const [path, method] of [
+  const transports: [path: string, method: string][] = [
     [`/v1/connections/nfe?companyId=${f.scope.companyId}`, "GET"],
     ["/v1/import-upload", "POST"],
     ["/v1/document-download", "GET"],
-  ]) {
+  ];
+  for (const [path, method] of transports) {
     const response = await f.t.fetch(path, {
       method,
       headers: {

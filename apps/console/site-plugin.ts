@@ -69,8 +69,9 @@ export function docsFiles(dir = docsOutput) {
   return files;
 }
 
+const htmlType = "text/html; charset=utf-8";
 const contentTypes: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
+  ".html": htmlType,
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
@@ -169,7 +170,7 @@ export function publicSitePlugin(origin = process.env.PUBLIC_SITE_ORIGIN, docs =
           acceptsHtml(req.headers.accept)
         ) {
           res.statusCode = 404;
-          res.setHeader("Content-Type", contentTypes[".html"]);
+          res.setHeader("Content-Type", htmlType);
           res.setHeader("Cache-Control", "no-store");
           res.end(readFileSync(join(docs, "docs/404.html")));
           return;

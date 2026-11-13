@@ -32,7 +32,8 @@ type Task = {
 
 const operationId: FieldType = { type: "id", tableName: "operations" };
 /** O que o protocolo chama em cada papel: o tipo da função e os argumentos que passa. */
-const roles: Record<string, { kind: string; args: Record<string, FieldType> }> = {
+type Role = "effect" | "checkpoint" | "onSucceeded";
+const roles: Record<Role, { kind: string; args: Record<string, FieldType> }> = {
   effect: {
     kind: "action",
     args: {
@@ -45,7 +46,6 @@ const roles: Record<string, { kind: string; args: Record<string, FieldType> }> =
   checkpoint: { kind: "mutation", args: { operationId, response: { type: "string" } } },
   onSucceeded: { kind: "mutation", args: { operationId } },
 };
-type Role = "effect" | "checkpoint" | "onSucceeded";
 const fieldRoles = {
   executor: "effect",
   reconciler: "effect",
@@ -136,6 +136,7 @@ async function resolve(reference: string): Promise<Registered | string> {
   const match = /^([\w/]+):(\w+)$/.exec(reference);
   if (!match) return "não tem a forma módulo:função";
   const [, module, name] = match;
+  if (!module || !name) return "não tem a forma módulo:função";
   const load = modules[`../../platform/convex/${module}.ts`];
   if (!load) return `o módulo ${module} não existe`;
   const value = ((await load()) as Record<string, Registered | undefined>)[name];

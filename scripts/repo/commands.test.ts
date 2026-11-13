@@ -76,8 +76,8 @@ describe("catálogo de comandos", () => {
       const text = read(file);
       // Página aposentada guarda o registro do que foi feito, com os comandos da época.
       if (/^> \*\*Aposentado\.\*\*/m.test(text)) continue;
-      const cited = [...text.matchAll(/(?:bun|vp) run ([a-z][\w:.-]*[\w])/g)].map(
-        ([, name]) => name,
+      const cited = [...text.matchAll(/(?:bun|vp) run ([a-z][\w:.-]*[\w])/g)].flatMap(([, name]) =>
+        name ? [name] : [],
       );
       for (const name of cited)
         expect(

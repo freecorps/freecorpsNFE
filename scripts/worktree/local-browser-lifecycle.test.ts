@@ -139,7 +139,9 @@ function execute(mode: string) {
   const receipts = readdirSync(runs);
   expect(receipts).toHaveLength(1);
   expect(existsSync(join(root, ".convex/browser.lock")), child.stderr).toBe(false);
-  return { child, receipt: join(runs, receipts[0], "preflight.json") };
+  const [run] = receipts;
+  if (!run) throw new Error("No browser run was recorded");
+  return { child, receipt: join(runs, run, "preflight.json") };
 }
 
 it.each([

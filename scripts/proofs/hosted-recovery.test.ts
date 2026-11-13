@@ -23,7 +23,7 @@ function memoryStore(failAfter?: string) {
       }
     },
     async remove(table: string, ids: string[]) {
-      tables[table] = tables[table].filter((r) => !ids.includes(r._id));
+      tables[table] = (tables[table] ?? []).filter((r) => !ids.includes(r._id));
     },
   };
 }
@@ -56,7 +56,7 @@ it("removes all 1,000 partial documents before their versions when the original 
   const remove = h.remove.bind(h);
   h.remove = async (table, ids) => {
     if (table === "documentVersions")
-      expect(h.tables.fiscalDocuments.map((d) => d._id)).toEqual(["original", "committed"]);
+      expect(h.tables.fiscalDocuments?.map((d) => d._id)).toEqual(["original", "committed"]);
     await remove(table, ids);
   };
   expect(

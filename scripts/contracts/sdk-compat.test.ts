@@ -488,7 +488,9 @@ describe("published SDK record", () => {
     mutate(record);
     writeFileSync(join(target, "packages/sdk/published.json"), JSON.stringify(record));
     if (tamper) {
-      const file = join(target, published.declarations, entries["."]);
+      const entry = entries["."];
+      if (!entry) throw new Error("The published SDK has no root entry");
+      const file = join(target, published.declarations, entry);
       writeFileSync(file, readFileSync(file, "utf8") + "export declare const extra: 1;\n");
     }
     return () => readPublished(target);

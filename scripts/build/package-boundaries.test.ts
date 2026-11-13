@@ -15,15 +15,18 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), "fnfe-boundaries-"));
   roots.push(root);
   put(root, "package.json", { workspaces: ["packages/*", "platform"] });
-  const rules: Record<
-    string,
-    {
-      kind: string;
-      workspaces?: string[];
-      external?: string[];
-      entryPoints?: Record<string, { kind: string; workspaces: string[]; external: string[] }>;
-    }
-  > = {
+  type Rule = {
+    kind: string;
+    workspaces?: string[];
+    external?: string[];
+    entryPoints?: Record<string, { kind: string; workspaces: string[]; external: string[] }>;
+  };
+  const rules: {
+    "packages/fiscal": Rule;
+    "packages/helper": Rule;
+    platform: Rule;
+    [workspace: string]: Rule;
+  } = {
     "packages/fiscal": { kind: "pure", workspaces: ["@test/helper"], external: ["parser"] },
     "packages/helper": { kind: "pure", workspaces: [], external: [] },
     platform: { kind: "platform" },
@@ -70,7 +73,7 @@ it.each([
   'const resolveModule = require.resolve; resolveModule("convex");',
 ])("keeps Node packages independent from ambient configuration: %s", (source) => {
   const { root, rules } = fixture();
-  rules["packages/fiscal"]!.kind = "node";
+  rules["packages/fiscal"].kind = "node";
   put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });
   put(root, "packages/fiscal/src/index.ts", source);
   expect(() => checkPackageBoundaries(root)).toThrow(/ambient runtime|alternate runtime/);
@@ -477,7 +480,7 @@ it("rejects an entry point absent from exports, without implementation or wider 
     exports: { "./pure": "./dist/missing.js" },
   });
   expect(() => checkPackageBoundaries(root)).toThrow(/sem implementação verificável/);
-  rules["packages/fiscal"]!.entryPoints = {
+  rules["packages/fiscal"].entryPoints = {
     "./pure": { kind: "pure", workspaces: [], external: ["zod"] },
   };
   put(root, "scripts/build/package-boundaries.json", { schemaVersion: 1, workspaces: rules });

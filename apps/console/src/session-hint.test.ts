@@ -64,7 +64,9 @@ it("asks for the organization once and hands its key to the first entry only", (
     prewarmOrganization(client, "equipe");
     prewarmOrganization(client, "equipe");
     expect(client.prewarmQuery).toHaveBeenCalledTimes(1);
-    const { args } = client.prewarmQuery.mock.calls[0][0] as {
+    const [call] = client.prewarmQuery.mock.calls;
+    if (!call) throw new Error("The organization was not asked");
+    const { args } = call[0] as {
       args: { slug: string; contextKey: string };
     };
     expect(args.slug).toBe("equipe");

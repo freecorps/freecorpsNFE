@@ -659,7 +659,7 @@ describe("montagem", () => {
         "docs/plataforma/a.md": "Aprovada por `fulana-de-tal` (a.b). Por `fulana-de-tal` (axb).\n",
       });
       const { files, report } = build({ sha: "abc", entries, read, editList, allow: [] });
-      expect(files[0].bytes.toString()).toBe(
+      expect(files[0]?.bytes.toString()).toBe(
         "Aprovada pela mantenedora $&. Por `fulana-de-tal` (axb).\n",
       );
       expect(report.transforms.edits).toBe(1);
@@ -699,7 +699,7 @@ describe("montagem", () => {
     };
     const { files, report } = build({ sha: "abc", entries, read, editList: [edit], allow: [] });
     expect(report.editProblems).toEqual([]);
-    expect(files[0].bytes.toString()).toBe("nome novo, nome novo\n");
+    expect(files[0]?.bytes.toString()).toBe("nome novo, nome novo\n");
   });
 
   it("bloqueia exceção de segredo sem a ocorrência que descreve", () => {
@@ -771,7 +771,7 @@ describe("montagem", () => {
       reason: "teste",
     };
     const ok = build({ sha: "abc", entries, read, editList: [{ ...edit, count: 2 }] });
-    expect(ok.files[0].bytes.toString()).toBe("nome novo, nome novo\n");
+    expect(ok.files[0]?.bytes.toString()).toBe("nome novo, nome novo\n");
     const stale = build({ sha: "abc", entries, read, editList: [{ ...edit, count: 1 }] });
     expect(stale.report.status).toBe("bloqueada");
     expect(stale.report.editProblems).toEqual([
