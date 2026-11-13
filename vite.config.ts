@@ -67,17 +67,6 @@ const generated = [
 // do SDK o substitui por vi.mock (apps/console/e2e/runner-lifecycle.test.ts).
 // Sem isso, a entrada de uma área dependeria de qual tarefa terminou antes.
 const concurrentBuilds = ["!packages/sdk/dist", "!packages/sdk/dist/**"];
-// Tarefas que a PR pula no modo `affected` do job Validate, que passa a lista
-// em CI_VALIDATE_SKIP (scripts/lib/ci-changes.mjs, optionalTasks). Sem a
-// variável, como no ci:local e no ci:prove, o grafo é o inteiro.
-const skipped = validateSkip(process.env.CI_VALIDATE_SKIP);
-const skippedAreas = testProjects
-  .map(({ name }) => name)
-  .filter((name) => skipped.includes(`ci:test:${name}`));
-const unlessSkipped = (tasks: string[]) => tasks.filter((task) => !skipped.includes(task));
-// Quem lê packages/sdk/dist espera ci:sdk, que o compila antes de provar. Sem
-// ci:sdk, no grafo reduzido, espera ci:sdk:build, que só compila, com cache.
-const sdkBuild = skipped.includes("ci:sdk") ? "ci:sdk:build" : "ci:sdk";
 // `exclude` de um projeto substitui o padrão do Vitest; preserva o node_modules.
 const exclude = (...patterns: string[]) => ["**/node_modules/**", "**/.git/**", ...patterns];
 // Limites de recurso vêm do ambiente para que vários agentes na mesma máquina
@@ -89,6 +78,264 @@ const maxWorkers = process.env.VITEST_MAX_WORKERS;
 const timeout = (fallback: number) =>
   Number(process.env.VITEST_TEST_TIMEOUT) ||
   (process.platform === "win32" ? Math.max(fallback, 30_000) : fallback);
+
+// Comando de cada área para o ciclo local, calculado uma vez: cada um percorre
+// os arquivos de teste (vitestProjects).
+const areaCommands = Object.fromEntries(testProjects.map(({ name }) => [name, areaCommand(name)]));
+
+/**
+ * As tarefas do Vite Task. `skipped` são as tarefas que a PR pula no modo
+ * `affected` do job Validate, que passa a lista em CI_VALIDATE_SKIP
+ * (scripts/lib/ci-changes.mjs, optionalTasks); vazia, como no ci:local e no
+ * ci:prove, o grafo é o inteiro. Exportada para tests/ci.changes.test.ts montar
+ * o grafo de cada lista sem recarregar a configuração.
+ */
+export function runTasks(skipped: string[]) {
+  const skippedAreas = testProjects
+    .map(({ name }) => name)
+    .filter((name) => skipped.includes(`ci:test:${name}`));
+  const unlessSkipped = (tasks: string[]) => tasks.filter((task) => !skipped.includes(task));
+  // Quem lê packages/sdk/dist espera ci:sdk, que o compila antes de provar. Sem
+  // ci:sdk, no grafo reduzido, espera ci:sdk:build, que só compila, com cache.
+  const sdkBuild = skipped.includes("ci:sdk") ? "ci:sdk:build" : "ci:sdk";
+  return {
+    // Testes por área para o ciclo local (`vp run test:<área>`). O Vite Task
+    // registra cada arquivo que a execução leu (código importado, fixtures e
+    // o que os testes leem do disco) e repete o resultado aprovado enquanto
+    // nenhum deles muda. O grafo do CI usa as tarefas ci:test:<área>, com o
+    // mesmo comando mais o recibo.
+    ...Object.fromEntries(
+      testProjects.map(({ name }) => [
+        `test:${name}`,
+        {
+          command: areaCommands[name],
+          // O Vitest grava a ordem dos testes em node_modules/.vite/vitest.
+          cache: {
+            input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
+            output: [],
+            untrackedEnv: ["VITEST_MAX_WORKERS", "VITEST_TEST_TIMEOUT"],
+          },
+        },
+      ]),
+    ),
+    // dist dos pacotes fiscais, importado por SDK, Convex, console e tipos.
+    // A própria saída não é entrada.
+    "ci:packages": {
+      command: "node scripts/build/build-fiscal-packages.mjs",
+      cache: {
+        input: [
+          { auto: true },
+          ...generated,
+          // O build de um pacote lê o dist do anterior pelo link do workspace.
+          "!**/node_modules/@freecorps/*/dist/**",
+          "!packages/fiscal-core/dist/**",
+          "!packages/fiscal-nfe/dist/**",
+          "!packages/fiscal-nfse/dist/**",
+        ],
+        output: [
+          "packages/fiscal-core/dist/**",
+          "packages/fiscal-nfe/dist/**",
+          "packages/fiscal-nfse/dist/**",
+        ],
+      },
+    },
+    // No grafo reduzido, que pula ci:sdk, compila o SDK em packages/sdk/dist
+    // para quem lê a árvore (`sdkBuild`). A própria saída, inclusive o tarball
+    // e o metafile em .ci-results/74, não é entrada.
+    "ci:sdk:build": {
+      command: "bun run sdk:build",
+      dependsOn: ["ci:packages"],
+      cache: {
+        input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
+        output: [
+          "packages/sdk/dist/**",
+          ".ci-results/74/sdk-metafile.json",
+          ".ci-results/74/*.tgz",
+        ],
+      },
+    },
+    // Compara a API TypeScript do SDK com a versão publicada e exige o bump
+    // coerente (sdk:compat, #135), compila o SDK (packages/sdk/dist, incluído
+    // pelo tsconfig da raiz) e prova o tarball num consumidor limpo. O que lê a
+    // árvore espera por ele (`sdkBuild`). Sem cache: o consumidor instala do
+    // registro npm e o recibo carimba o commit e o estado do checkout, lidos do
+    // Git. Uma PR que não alcança os pacotes publicados pula esta tarefa,
+    // ci:xml-prove e ci:distribution (`optionalTasks`).
+    "ci:sdk": {
+      command: "bun run sdk:compat && bun run sdk:prove",
+      dependsOn: ["ci:packages"],
+      cache: false,
+    },
+    // CONTRACT_BASE é o commit da comparação de compatibilidade; o workflow
+    // o define e ci:local/ci:prove passam o SHA resolvido de origin/main
+    // (ou --base). A task isolada conserva o fallback HEAD^ do script.
+    "ci:contracts": {
+      command: "bun scripts/contracts/check-contracts-ci.mjs",
+      dependsOn: ["ci:packages"],
+      cache: { input: [{ auto: true }, ...generated], env: ["CONTRACT_BASE"] },
+    },
+    // Sem cache: o consumidor limpo instala as dependências do registro npm.
+    "ci:xml-prove": {
+      command: "node scripts/distribution/prove-xml-package.mjs",
+      dependsOn: ["ci:packages"],
+      cache: false,
+    },
+    // Sem cache: instala do registro npm e carimba o commit no recibo.
+    "ci:distribution": {
+      command: "bun run contracts:build && bun run licenses:check && bun run distribution:prove",
+      dependsOn: ["ci:sdk", "ci:xml-prove"],
+      cache: false,
+    },
+    // Formatação (inclusive dos Markdown), lint e tipos de toda a árvore.
+    "ci:check": {
+      command: "vp check",
+      dependsOn: ["ci:packages", sdkBuild],
+      cache: { input: [{ auto: true }, ...generated], output: [] },
+    },
+    // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
+    // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
+    // entre as entradas registradas.
+    "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
+    // Licença própria, escopo MIT e manifests de todo workspace, inclusive
+    // platform e apps (parte de licenses:check, em ci:distribution). Fica fora
+    // dela porque o grafo reduzido pula ci:distribution. Sem cache: lê a lista
+    // do índice do Git, como ci:secrets.
+    "ci:first-party-licenses": {
+      command: "node scripts/licenses/check-first-party-licenses.mjs",
+      cache: false,
+    },
+    // Arquivos, dependências e exports de platform/convex/lib/ sem uso (knip.jsonc). Lê
+    // manifests e node_modules, que o Vite Task não rastreia como entrada.
+    "ci:knip": { command: "bun run knip:check", cache: false },
+    "ci:typecheck": {
+      command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
+      dependsOn: ["ci:packages", sdkBuild],
+      cache: { input: [{ auto: true }, ...generated] },
+    },
+    // Uma tarefa por área de testes, com recibo em .ci-results/tests/<área>.json
+    // (`ci.mjs test-area`). Uma área só repete o recibo aprovado enquanto nada
+    // do que a execução leu mudou, e o Vite Task nunca guarda uma execução que
+    // falhou. O recibo não lê revision.json, que muda a cada commit. Os testes
+    // resolvem os pacotes pelo código-fonte e não leem o SDK compilado;
+    // esperam ci:packages só porque o teste de fronteiras inspeciona o dist
+    // fiscal quando ele existe, e ci:packages o apaga e recria.
+    ...Object.fromEntries(
+      testProjects.map(({ name }) => [
+        `ci:test:${name}`,
+        {
+          command: `node scripts/ci/ci.mjs test-area ${name}`,
+          dependsOn: ["ci:packages"],
+          cache: {
+            input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
+            output: [`.ci-results/tests/${name}.json`],
+            untrackedEnv: ["VITEST_MAX_WORKERS", "FNFE_VALIDATION_LOCK_TOKEN"],
+          },
+        },
+      ]),
+    ),
+    // Junta os recibos das áreas em .ci-results/tests.json, sob a revisão de
+    // `node scripts/ci/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
+    // revisão do checkout: nunca usa cache. Uma área pulada no modo
+    // `affected` fica no relatório como pulada, e o recibo não aprova o checkout.
+    "ci:tests": {
+      command: [
+        "node scripts/ci/ci.mjs collect-tests",
+        ...(skippedAreas.length ? [`--skip ${skippedAreas.join(",")}`] : []),
+      ].join(" "),
+      dependsOn: unlessSkipped(testProjects.map(({ name }) => `ci:test:${name}`)),
+      cache: false,
+    },
+    // O Miniflare regrava o cache de request.cf em node_modules/.mf (em
+    // `generated`).
+    "ci:tooling": {
+      command: "node .github/scripts/check-tooling.mjs",
+      cache: { input: [{ auto: true }, ...generated], output: [] },
+    },
+    // Documentação pública (apps/docs) compilada para apps/docs/dist, o
+    // artefato que o build do console copia para /docs. Entradas automáticas:
+    // conteúdo MDX, o OpenAPI de docs/v1.0 e a CSP de
+    // apps/console/public/_headers, lida para conferir o hash do estilo
+    // inline. O que o próprio build apaga e recria não é entrada. O build do
+    // React Router informa ao Vite Task toda variável de ambiente como
+    // entrada, e `untrackedEnv` não a tira: no CI, onde GITHUB_RUN_ID muda a
+    // cada run, a tarefa sempre executa (cerca de 20 s, ao lado dos testes).
+    // A saída é a mesma, e ci:console continua repetindo.
+    "ci:docs": {
+      command: "node apps/docs/scripts/build.mjs",
+      cache: {
+        input: [
+          { auto: true },
+          ...generated,
+          "!apps/docs/build/**",
+          "!apps/docs/dist/**",
+          "!apps/docs/.react-router/**",
+        ],
+        output: ["apps/docs/dist/**"],
+      },
+    },
+    // Compõe landing, painel e documentação. A origem pública muda canonical,
+    // sitemap e headers da saída.
+    "ci:console": {
+      command: "node scripts/console/console.mjs package",
+      dependsOn: ["ci:packages", sdkBuild, "ci:docs"],
+      // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
+      // só carimba o SHA em dist/build.json e no bundle; o build e as provas não
+      // dependem dele, e o CI nunca publica este pacote, então `.git` fica fora
+      // das entradas: uma repetição traz o dist carimbado com o SHA do run que
+      // o compilou.
+      cache: {
+        input: [
+          { auto: true },
+          ...generated,
+          "!.git/**",
+          "!apps/console/dist/**",
+          "!apps/console/.wrangler/**",
+        ],
+        output: [{ auto: true }, "!apps/console/.wrangler/**"],
+        env: ["PUBLIC_SITE_ORIGIN"],
+        untrackedEnv: ["WRANGLER_SEND_METRICS"],
+      },
+    },
+    // O gzip dos chunks principais do console é o de budget.json
+    // (scripts/ci/budget.mjs). Compila de novo com o SHA fixo em zeros, para
+    // que o carimbo do commit não mude os bytes, em node_modules/.vite, fora
+    // das entradas. Espera ci:console para não compilar o mesmo projeto ao
+    // mesmo tempo e porque o build copia a documentação de ci:docs.
+    "ci:budget": {
+      command: "node scripts/ci/budget.mjs check",
+      dependsOn: ["ci:console"],
+      cache: {
+        input: [{ auto: true }, ...generated, "!apps/console/dist/**"],
+        output: [],
+      },
+    },
+    // Sem cache: o relatório carimba o commit e o estado do checkout, lidos do Git.
+    "ci:auth-worker": {
+      command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
+      cache: false,
+    },
+    validate: {
+      command: "echo validate: ok",
+      cache: false,
+      dependsOn: unlessSkipped([
+        "ci:sdk",
+        "ci:contracts",
+        "ci:xml-prove",
+        "ci:distribution",
+        "ci:check",
+        "ci:secrets",
+        "ci:first-party-licenses",
+        "ci:knip",
+        "ci:typecheck",
+        "ci:tests",
+        "ci:tooling",
+        "ci:console",
+        "ci:budget",
+        "ci:auth-worker",
+      ]),
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -155,245 +402,7 @@ export default defineConfig({
   // Tarefas que leem o Git para a própria prova, instalam do registro npm num
   // consumidor temporário ou carimbam o commit no recibo nunca usam cache.
   // Ordem em docs/desenvolvimento/ci.md (O grafo `validate`) e tempos em Runners e custo.
-  run: {
-    tasks: {
-      // Testes por área para o ciclo local (`vp run test:<área>`). O Vite Task
-      // registra cada arquivo que a execução leu (código importado, fixtures e
-      // o que os testes leem do disco) e repete o resultado aprovado enquanto
-      // nenhum deles muda. O grafo do CI usa as tarefas ci:test:<área>, com o
-      // mesmo comando mais o recibo.
-      ...Object.fromEntries(
-        testProjects.map(({ name }) => [
-          `test:${name}`,
-          {
-            command: areaCommand(name),
-            // O Vitest grava a ordem dos testes em node_modules/.vite/vitest.
-            cache: {
-              input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
-              output: [],
-              untrackedEnv: ["VITEST_MAX_WORKERS", "VITEST_TEST_TIMEOUT"],
-            },
-          },
-        ]),
-      ),
-      // dist dos pacotes fiscais, importado por SDK, Convex, console e tipos.
-      // A própria saída não é entrada.
-      "ci:packages": {
-        command: "node scripts/build/build-fiscal-packages.mjs",
-        cache: {
-          input: [
-            { auto: true },
-            ...generated,
-            // O build de um pacote lê o dist do anterior pelo link do workspace.
-            "!**/node_modules/@freecorps/*/dist/**",
-            "!packages/fiscal-core/dist/**",
-            "!packages/fiscal-nfe/dist/**",
-            "!packages/fiscal-nfse/dist/**",
-          ],
-          output: [
-            "packages/fiscal-core/dist/**",
-            "packages/fiscal-nfe/dist/**",
-            "packages/fiscal-nfse/dist/**",
-          ],
-        },
-      },
-      // No grafo reduzido, que pula ci:sdk, compila o SDK em packages/sdk/dist
-      // para quem lê a árvore (`sdkBuild`). A própria saída, inclusive o tarball
-      // e o metafile em .ci-results/74, não é entrada.
-      "ci:sdk:build": {
-        command: "bun run sdk:build",
-        dependsOn: ["ci:packages"],
-        cache: {
-          input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
-          output: [
-            "packages/sdk/dist/**",
-            ".ci-results/74/sdk-metafile.json",
-            ".ci-results/74/*.tgz",
-          ],
-        },
-      },
-      // Compara a API TypeScript do SDK com a versão publicada e exige o bump
-      // coerente (sdk:compat, #135), compila o SDK (packages/sdk/dist, incluído
-      // pelo tsconfig da raiz) e prova o tarball num consumidor limpo. O que lê a
-      // árvore espera por ele (`sdkBuild`). Sem cache: o consumidor instala do
-      // registro npm e o recibo carimba o commit e o estado do checkout, lidos do
-      // Git. Uma PR que não alcança os pacotes publicados pula esta tarefa,
-      // ci:xml-prove e ci:distribution (`optionalTasks`).
-      "ci:sdk": {
-        command: "bun run sdk:compat && bun run sdk:prove",
-        dependsOn: ["ci:packages"],
-        cache: false,
-      },
-      // CONTRACT_BASE é o commit da comparação de compatibilidade; o workflow
-      // o define e ci:local/ci:prove passam o SHA resolvido de origin/main
-      // (ou --base). A task isolada conserva o fallback HEAD^ do script.
-      "ci:contracts": {
-        command: "bun scripts/contracts/check-contracts-ci.mjs",
-        dependsOn: ["ci:packages"],
-        cache: { input: [{ auto: true }, ...generated], env: ["CONTRACT_BASE"] },
-      },
-      // Sem cache: o consumidor limpo instala as dependências do registro npm.
-      "ci:xml-prove": {
-        command: "node scripts/distribution/prove-xml-package.mjs",
-        dependsOn: ["ci:packages"],
-        cache: false,
-      },
-      // Sem cache: instala do registro npm e carimba o commit no recibo.
-      "ci:distribution": {
-        command: "bun run contracts:build && bun run licenses:check && bun run distribution:prove",
-        dependsOn: ["ci:sdk", "ci:xml-prove"],
-        cache: false,
-      },
-      // Formatação (inclusive dos Markdown), lint e tipos de toda a árvore.
-      "ci:check": {
-        command: "vp check",
-        dependsOn: ["ci:packages", sdkBuild],
-        cache: { input: [{ auto: true }, ...generated], output: [] },
-      },
-      // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
-      // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
-      // entre as entradas registradas.
-      "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
-      // Licença própria, escopo MIT e manifests de todo workspace, inclusive
-      // platform e apps (parte de licenses:check, em ci:distribution). Fica fora
-      // dela porque o grafo reduzido pula ci:distribution. Sem cache: lê a lista
-      // do índice do Git, como ci:secrets.
-      "ci:first-party-licenses": {
-        command: "node scripts/licenses/check-first-party-licenses.mjs",
-        cache: false,
-      },
-      // Arquivos, dependências e exports de platform/convex/lib/ sem uso (knip.jsonc). Lê
-      // manifests e node_modules, que o Vite Task não rastreia como entrada.
-      "ci:knip": { command: "bun run knip:check", cache: false },
-      "ci:typecheck": {
-        command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
-        dependsOn: ["ci:packages", sdkBuild],
-        cache: { input: [{ auto: true }, ...generated] },
-      },
-      // Uma tarefa por área de testes, com recibo em .ci-results/tests/<área>.json
-      // (`ci.mjs test-area`). Uma área só repete o recibo aprovado enquanto nada
-      // do que a execução leu mudou, e o Vite Task nunca guarda uma execução que
-      // falhou. O recibo não lê revision.json, que muda a cada commit. Os testes
-      // resolvem os pacotes pelo código-fonte e não leem o SDK compilado;
-      // esperam ci:packages só porque o teste de fronteiras inspeciona o dist
-      // fiscal quando ele existe, e ci:packages o apaga e recria.
-      ...Object.fromEntries(
-        testProjects.map(({ name }) => [
-          `ci:test:${name}`,
-          {
-            command: `node scripts/ci/ci.mjs test-area ${name}`,
-            dependsOn: ["ci:packages"],
-            cache: {
-              input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
-              output: [`.ci-results/tests/${name}.json`],
-              untrackedEnv: ["VITEST_MAX_WORKERS", "FNFE_VALIDATION_LOCK_TOKEN"],
-            },
-          },
-        ]),
-      ),
-      // Junta os recibos das áreas em .ci-results/tests.json, sob a revisão de
-      // `node scripts/ci/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
-      // revisão do checkout: nunca usa cache. Uma área pulada no modo
-      // `affected` fica no relatório como pulada, e o recibo não aprova o checkout.
-      "ci:tests": {
-        command: [
-          "node scripts/ci/ci.mjs collect-tests",
-          ...(skippedAreas.length ? [`--skip ${skippedAreas.join(",")}`] : []),
-        ].join(" "),
-        dependsOn: unlessSkipped(testProjects.map(({ name }) => `ci:test:${name}`)),
-        cache: false,
-      },
-      // O Miniflare regrava o cache de request.cf em node_modules/.mf (em
-      // `generated`).
-      "ci:tooling": {
-        command: "node .github/scripts/check-tooling.mjs",
-        cache: { input: [{ auto: true }, ...generated], output: [] },
-      },
-      // Documentação pública (apps/docs) compilada para apps/docs/dist, o
-      // artefato que o build do console copia para /docs. Entradas automáticas:
-      // conteúdo MDX, o OpenAPI de docs/v1.0 e a CSP de
-      // apps/console/public/_headers, lida para conferir o hash do estilo
-      // inline. O que o próprio build apaga e recria não é entrada. O build do
-      // React Router informa ao Vite Task toda variável de ambiente como
-      // entrada, e `untrackedEnv` não a tira: no CI, onde GITHUB_RUN_ID muda a
-      // cada run, a tarefa sempre executa (cerca de 20 s, ao lado dos testes).
-      // A saída é a mesma, e ci:console continua repetindo.
-      "ci:docs": {
-        command: "node apps/docs/scripts/build.mjs",
-        cache: {
-          input: [
-            { auto: true },
-            ...generated,
-            "!apps/docs/build/**",
-            "!apps/docs/dist/**",
-            "!apps/docs/.react-router/**",
-          ],
-          output: ["apps/docs/dist/**"],
-        },
-      },
-      // Compõe landing, painel e documentação. A origem pública muda canonical,
-      // sitemap e headers da saída.
-      "ci:console": {
-        command: "node scripts/console/console.mjs package",
-        dependsOn: ["ci:packages", sdkBuild, "ci:docs"],
-        // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
-        // só carimba o SHA em dist/build.json e no bundle; o build e as provas não
-        // dependem dele, e o CI nunca publica este pacote, então `.git` fica fora
-        // das entradas: uma repetição traz o dist carimbado com o SHA do run que
-        // o compilou.
-        cache: {
-          input: [
-            { auto: true },
-            ...generated,
-            "!.git/**",
-            "!apps/console/dist/**",
-            "!apps/console/.wrangler/**",
-          ],
-          output: [{ auto: true }, "!apps/console/.wrangler/**"],
-          env: ["PUBLIC_SITE_ORIGIN"],
-          untrackedEnv: ["WRANGLER_SEND_METRICS"],
-        },
-      },
-      // O gzip dos chunks principais do console é o de budget.json
-      // (scripts/ci/budget.mjs). Compila de novo com o SHA fixo em zeros, para
-      // que o carimbo do commit não mude os bytes, em node_modules/.vite, fora
-      // das entradas. Espera ci:console para não compilar o mesmo projeto ao
-      // mesmo tempo e porque o build copia a documentação de ci:docs.
-      "ci:budget": {
-        command: "node scripts/ci/budget.mjs check",
-        dependsOn: ["ci:console"],
-        cache: {
-          input: [{ auto: true }, ...generated, "!apps/console/dist/**"],
-          output: [],
-        },
-      },
-      // Sem cache: o relatório carimba o commit e o estado do checkout, lidos do Git.
-      "ci:auth-worker": {
-        command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
-        cache: false,
-      },
-      validate: {
-        command: "echo validate: ok",
-        cache: false,
-        dependsOn: unlessSkipped([
-          "ci:sdk",
-          "ci:contracts",
-          "ci:xml-prove",
-          "ci:distribution",
-          "ci:check",
-          "ci:secrets",
-          "ci:first-party-licenses",
-          "ci:knip",
-          "ci:typecheck",
-          "ci:tests",
-          "ci:tooling",
-          "ci:console",
-          "ci:budget",
-          "ci:auth-worker",
-        ]),
-      },
-    },
-  },
+  run: { tasks: runTasks(validateSkip(process.env.CI_VALIDATE_SKIP)) },
   // Hook pre-commit (`.vite-hooks/pre-commit`, `vp staged`): recusa o commit com
   // formatação ou lint errados nos arquivos staged, como `check:changed` faz
   // antes do push (docs/desenvolvimento/ci.md, Hook pre-commit). Nada aqui grava

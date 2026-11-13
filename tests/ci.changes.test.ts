@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { expect, it, vi } from "vite-plus/test";
+import { expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 import {
   cacheAllowed,
@@ -13,6 +13,7 @@ import {
 } from "../scripts/lib/ci-changes.mjs";
 import { findPullRequestTaskCache, TASK_CACHE_ARTIFACT } from "../scripts/lib/ci-task-cache.mjs";
 import { areaFiles } from "../scripts/lib/test-projects.mjs";
+import config, { runTasks } from "../vite.config";
 
 /**
  * O job Validate escolhe no primeiro passo o que roda: só formatação e
@@ -197,20 +198,9 @@ it("reads the skip list strictly and never skips a task outside the optional gro
 });
 
 type Task = { command?: string; dependsOn?: string[] };
-/** `run.tasks` of vite.config.ts evaluated with CI_VALIDATE_SKIP set to `skip`. */
-async function tasksWith(skip: string[]) {
-  const previous = process.env.CI_VALIDATE_SKIP;
-  process.env.CI_VALIDATE_SKIP = skip.join(",");
-  try {
-    vi.resetModules();
-    const { default: config } = await import("../vite.config");
-    return config.run!.tasks! as Record<string, Task>;
-  } finally {
-    if (previous === undefined) delete process.env.CI_VALIDATE_SKIP;
-    else process.env.CI_VALIDATE_SKIP = previous;
-    vi.resetModules();
-  }
-}
+/** The tasks vite.config.ts builds for a CI_VALIDATE_SKIP list. */
+const tasksWith = async (skip: string[]) =>
+  runTasks(validateSkip(skip.join(","))) as Record<string, Task>;
 /** Every task `validate` runs, its dependencies included. */
 const reached = (tasks: Record<string, Task>) => {
   const seen = new Set<string>();
@@ -225,6 +215,8 @@ const reached = (tasks: Record<string, Task>) => {
 
 it("drops every skipped task from the validate graph, and builds the SDK without its proof", async () => {
   const wholeTasks = await tasksWith([]);
+  // Without CI_VALIDATE_SKIP (tasks never receive it) the config is the whole graph.
+  expect(config.run!.tasks).toEqual(wholeTasks);
   const whole = reached(wholeTasks);
   for (const task of everyOptional) expect(whole, task).toContain(task);
   // The whole graph is the one before #167: ci:sdk builds the SDK for its readers.
