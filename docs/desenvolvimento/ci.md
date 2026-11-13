@@ -15,9 +15,10 @@ por `workflow_dispatch` e como workflow reutilizável. `deploy-validation.yml` e
 `deploy-issuance-production.yml` o chamam, quando disparados manualmente na
 `main`; `deploy.yml` não o chama nem espera por ele ([Produção sem nova validação](#produção-sem-nova-validação)). Não usa `pull_request_target` (só o check dos [termos de contribuição](#termos-de-contribuição) usa), environments com credenciais ou secrets
 herdados. O token do job tem `contents: read`, `actions: read` e
-`pull-requests: read`; os dois últimos servem só ao push na `main`, que procura
-o run da PR mesclada e baixa o cache dela ([Cache do grafo](#cache-do-grafo)), e
-o token só chega a esses passos. O repositório é público: as duas permissões
+`pull-requests: read`; os dois últimos servem ao push na `main`, que procura
+o run da PR mesclada e baixa o cache dela ([Cache do grafo](#cache-do-grafo)),
+e à PR, que lê as próprias labels no gate do
+[orçamento](#orçamento-de-bundle-e-benchmarks); o token só chega a esses passos. O repositório é público: as duas permissões
 leem o que qualquer pessoa vê. Um workflow chamado não recebe mais que o
 chamador concede, então `deploy-validation.yml` e
 `deploy-issuance-production.yml` concedem as mesmas três ao job que chama o
@@ -105,6 +106,7 @@ diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 | `ci:tooling`      | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
 | `ci:docs`         | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
 | `ci:console`      | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
+| `ci:budget`       | `node scripts/ci/budget.mjs check`                                     | `ci:console`                       | sim                 |
 | `ci:auth-worker`  | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
 
 As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
@@ -292,6 +294,75 @@ fiscais, cujos tipos são lidos de `dist/`, e não chamam `platform:check`.
 `xml:check` e o `check` de `fiscal-nfe` e `fiscal-nfse` ficam no TypeScript
 6.0: conferem o `tsconfig.json` de cada pacote, o mesmo que a build emite
 com o 6.0.
+
+### Orçamento de bundle e benchmarks
+
+`budget.json`, na raiz, guarda dois tipos de teto: o gzip (nível 9, arquivo a
+arquivo) dos chunks principais do console e os limites que os benchmarks da
+plataforma (`platform/convex/*.benchmark.test.ts`) afirmam. Cada número é um
+teto: maior afrouxa.
+
+Os chunks principais são o que a primeira visita ao console carrega: os dois
+scripts do `index.html` (`theme.js`, clássico e bloqueante, e o módulo
+`assets/index.js`), o `main.js` e o `main.css` que este importa,
+`app-shell.js`, `console-shared.js`, `rolldown-runtime.js` e `landing.css`
+(`PRINCIPAL_CHUNKS` em `scripts/lib/budget.mjs`). Os nomes saem sem o hash de
+conteúdo. `total` soma todo JS e CSS de `assets/`, inclusive os chunks
+preguiçosos das rotas, mais `theme.js` e `landing.css`, de modo que crescer
+qualquer um deles aparece ao menos ali.
+
+Antes do gzip, cada nome de asset com hash citado no texto vira o nome
+estável. `main.js` importa as rotas pelo nome, e o hash novo de uma rota que só
+encolheu mudaria o gzip dele em alguns bytes, às vezes para mais, pedindo a
+label sem que ele mudasse. O número medido é, por isso, alguns bytes diferente
+do que o navegador baixa.
+
+Duas conferências usam o arquivo:
+
+- **`ci:budget`** (`node scripts/ci/budget.mjs check`) compila o console e
+  exige que o gzip registrado seja igual ao medido, byte a byte. O build real
+  carimba o commit no bundle, por inteiro e abreviado, e o hash do chunk mudaria
+  o gzip a cada commit; por isso a tarefa compila de novo com o SHA fixo em
+  zeros, em `node_modules/.vite/console-budget`. Dois builds do mesmo código
+  dão os mesmos bytes. Toda mudança que altera o bundle, para mais ou para
+  menos, atualiza o arquivo: `bun run budget:update` e commit. `check:changed`
+  não roda essa tarefa; para conferir antes do push, `vp run ci:budget`.
+- **O passo `Require the label for a budget increase`** do `Validate`, em
+  toda PR, compara o `budget.json` do merge sintético com o da base em que ele
+  entra (`HEAD^1`). Reprova quando um teto aumentou ou saiu do arquivo e a PR
+  não tem a label `budget-increase`. Um teto novo só aperta e passa, assim como
+  uma redução. As labels são lidas pela API na hora, só quando há aumento.
+
+Os benchmarks leem os tetos por `benchmarkLimits` de `scripts/lib/budget.mjs`,
+que reprova uma chave ausente em vez de comparar com `undefined`. Cada teste
+mantém o próprio comparador (`toBeLessThan` ou `toBeLessThanOrEqual`);
+`budget.json` muda só o número.
+
+Para aceitar um aumento de propósito:
+
+1. Rode `bun run budget:update` (para o console) ou edite o teto do benchmark,
+   e faça commit.
+2. Explique na descrição da PR por que o aumento vale, com o número antes e
+   depois que o passo imprime.
+3. Adicione a label `budget-increase` à PR e reexecute o `Validate` que
+   reprovou (`gh run rerun <run> --failed`). A reexecução repete do cache o
+   que já passou.
+
+O passo não roda no push na `main` nem nas publicações manuais: o aumento é
+julgado uma vez, na PR. Tirar a label depois de o check passar não o reprova;
+quem revisa vê a label e o diff do arquivo. Na PR que criou o arquivo (#245),
+o runner Linux mediu o mesmo total que o Windows. Se um dia os
+dois divergirem, `ci:budget` reprova com os dois valores, e o número do runner
+é o que vale. Uma base que não resolve num commit reprova o passo; só uma base
+sem `budget.json` passa sem comparar, e mesmo então o arquivo da PR precisa
+ter só tetos numéricos.
+
+Quase toda mudança no console muda `total`, então duas PRs do console abertas
+ao mesmo tempo conflitam em `budget.json`. O conflito é o que impede as duas de
+entrarem com números medidos cada uma sobre a sua base: o ruleset não exige PR
+atualizada. Para resolver, atualize a branch com a `main`, rode
+`bun run budget:update` e faça commit; contra a base nova, o aumento pode
+passar a pedir a label.
 
 ## Testes
 

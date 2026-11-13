@@ -9,6 +9,13 @@ import { api } from "./_generated/api";
 import { readBatch, start } from "./exportSource";
 import { stepArgs } from "./exports";
 import { fixture, actor } from "../../tests/helpers/export-fixture";
+import { benchmarkLimits } from "../../scripts/lib/budget.mjs";
+
+// Tetos em budget.json: aumentar um pede a label budget-increase na PR.
+const LIMITS = benchmarkLimits("exports", [
+  "maxReadRows",
+  "batchedCallsPercentOfBaseline",
+] as const);
 
 beforeEach(() => {
   vi.useFakeTimers({
@@ -204,11 +211,11 @@ it("measures the complete export worker with published versions, items and origi
   };
   const baseline = await measure();
   const batched = await measure("keyset-v1");
-  expect(batched.calls).toBeLessThan(baseline.calls / 2);
+  expect(batched.calls).toBeLessThan((baseline.calls * LIMITS.batchedCallsPercentOfBaseline) / 100);
   expect(batched.partHashes).toEqual(baseline.partHashes);
   expect(batched.counts).toEqual(baseline.counts);
   expect(batched.uncompressedBytes).toBe(baseline.uncompressedBytes);
-  expect(batched.maxReadRows).toBeLessThanOrEqual(91);
+  expect(batched.maxReadRows).toBeLessThanOrEqual(LIMITS.maxReadRows);
   const report = {
     runtime: "convex-test; real worker, gzip and storage; no network latency",
     baseline,

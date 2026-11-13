@@ -9,6 +9,7 @@ import * as home from "./consoleHome";
 import { buildSnapshot, normalizeIssuanceInput } from "./lib/issuanceCore";
 import { fixture, actor } from "../../tests/helpers/export-fixture";
 import { CAPTURE_TERMS_VERSION } from "./lib/fiscalCaptureRelease";
+import { benchmarkLimits } from "../../scripts/lib/budget.mjs";
 
 /**
  * Reads of `consoleHome.summary` (#285) at the limits it allows: 10 reachable companies (plus
@@ -23,6 +24,12 @@ const COMPANIES = 11;
 const ROWS = 101;
 const IMPORTS = 6;
 const FILES = 20;
+// Tetos em budget.json: aumentar um pede a label budget-increase na PR.
+const LIMITS = benchmarkLimits("consoleHome", [
+  "bytesRead",
+  "documentsRead",
+  "databaseQueries",
+] as const);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -383,7 +390,7 @@ it("measures the Início summary at the limits it allows", async () => {
   }
   const all = results["tudo no limite"]!;
   // The query stays well inside a Convex transaction (16 MiB, 32 000 documents, 4 096 ranges).
-  expect(all.bytesRead).toBeLessThan(16 * 2 ** 20);
-  expect(all.documentsRead).toBeLessThan(32_000);
-  expect(all.databaseQueries).toBeLessThan(4_096);
+  expect(all.bytesRead).toBeLessThan(LIMITS.bytesRead);
+  expect(all.documentsRead).toBeLessThan(LIMITS.documentsRead);
+  expect(all.databaseQueries).toBeLessThan(LIMITS.databaseQueries);
 });

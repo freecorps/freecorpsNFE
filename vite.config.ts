@@ -313,6 +313,19 @@ export default defineConfig({
           untrackedEnv: ["WRANGLER_SEND_METRICS"],
         },
       },
+      // O gzip dos chunks principais do console é o de budget.json
+      // (scripts/ci/budget.mjs). Compila de novo com o SHA fixo em zeros, para
+      // que o carimbo do commit não mude os bytes, em node_modules/.vite, fora
+      // das entradas. Espera ci:console para não compilar o mesmo projeto ao
+      // mesmo tempo e porque o build copia a documentação de ci:docs.
+      "ci:budget": {
+        command: "node scripts/ci/budget.mjs check",
+        dependsOn: ["ci:console"],
+        cache: {
+          input: [{ auto: true }, ...generated, "!apps/console/dist/**"],
+          output: [],
+        },
+      },
       // Sem cache: o relatório carimba o commit e o estado do checkout, lidos do Git.
       "ci:auth-worker": {
         command: "node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs",
@@ -333,6 +346,7 @@ export default defineConfig({
           "ci:tests",
           "ci:tooling",
           "ci:console",
+          "ci:budget",
           "ci:auth-worker",
         ],
       },

@@ -43,12 +43,12 @@ jobs:
     name: Validate
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    # actions and pull-requests: read, only so a push on main can find the
-    # merged pull request's run and download its task cache. The repository is
-    # public, so both read what anyone can see; the token goes only to those
-    # push-only steps. The callers (deploy-validation.yml and
-    # deploy-issuance-production.yml) grant the same, since a called workflow
-    # cannot ask for more than its caller.
+    # actions and pull-requests: read, so a push on main can find the merged
+    # pull request's run and download its task cache, and a pull request can
+    # read its own labels for the budget gate. The repository is public, so
+    # both read what anyone can see; the token goes only to those steps. The
+    # callers (deploy-validation.yml and deploy-issuance-production.yml) grant
+    # the same, since a called workflow cannot ask for more than its caller.
     permissions:
       contents: read
       actions: read
@@ -199,6 +199,16 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+      # budget.json against the base this pull request merges into (HEAD^1 of
+      # the synthetic merge): a ceiling raised or removed needs the
+      # budget-increase label. Labels are read live, only when something rose,
+      # so a rerun after adding the label sees it (scripts/ci/budget.mjs).
+      - name: Require the label for a budget increase
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/ci/budget.mjs compare --base HEAD^1
       # Requires a passing receipt for every test area under this checkout's
       # revision (scripts/lib/ci.mjs, approvedTests).
       - name: Approve the checked revision

@@ -111,6 +111,11 @@ export const commands = {
     "local",
     "Antes do push: formatação, lint, typecheck afetado e testes alcançados desde origin/main (--base, --dry-run)",
   ],
+  "budget:update": [
+    "plataforma",
+    "nenhum",
+    "Grava em budget.json o gzip medido dos chunks principais do console; um aumento pede a label budget-increase na PR",
+  ],
   "xml:check": ["pacotes", "nenhum", "Tipos de fiscal-nfe"],
   "xml:test": ["pacotes", "local", "Testes de fiscal-nfe"],
   "nfse:test": ["pacotes", "local", "Testes de fiscal-nfse"],
