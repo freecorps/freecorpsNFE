@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
-import {
-  affectedProjects,
-  affectedWorkspaces,
-  classify,
-  parseArgs,
-  steps,
-} from "../lib/check-changed.mjs";
+import { affectedProjects, classify, parseArgs, steps } from "../lib/check-changed.mjs";
+import { affectedWorkspaces } from "../lib/ci-changes.mjs";
 
 describe("argumentos", () => {
   it("usa origin/main e aceita --base nas duas formas", () => {

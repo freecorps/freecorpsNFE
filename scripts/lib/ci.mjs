@@ -137,12 +137,19 @@ const ranOn = (value) =>
  * de outro esquema, com outra contagem ou acima do teto reprova o conjunto. Um
  * recibo repetido do cache vale porque o Vite Task só o restaura para as
  * mesmas entradas e nunca guarda uma execução que falhou.
+ *
+ * Uma área de `skipped` (o modo `affected` do job Validate) fica como
+ * `skipped`, sem recibo e sem reprovar o conjunto, e o relatório lista as
+ * puladas: `approvedTests` nunca aprova um checkout com área pulada.
  * @param {Record<string, unknown>} metadata revision.json
  * @param {Record<string, any>} receipts recibo por área, ou ausente
  * @param {Record<string, number>} expectedFiles arquivos de teste por área
  * @param {Record<string, string | undefined>} [env] ambiente; `CI` liga o teto de pendentes
+ * @param {string[]} [skipped] áreas que o grafo não executou
  */
-export function collectTests(metadata, receipts, expectedFiles, env = {}) {
+export function collectTests(metadata, receipts, expectedFiles, env = {}, skipped = []) {
+  const unknown = skipped.filter((name) => !testProjects.some((project) => project.name === name));
+  if (unknown.length) throw new Error(`Unknown skipped test area: ${unknown.join(", ")}`);
   const suites = Object.fromEntries(reportSuites.map((name) => [name, counts()]));
   /**
    * @type {Record<string, { result: string, files?: number, passed?: number,
@@ -152,6 +159,10 @@ export function collectTests(metadata, receipts, expectedFiles, env = {}) {
   let passed = true;
   for (const { name, report } of testProjects) {
     const receipt = receipts[name];
+    if (skipped.includes(name)) {
+      areas[name] = { result: "skipped" };
+      continue;
+    }
     if (!receipt) {
       passed = false;
       areas[name] = { result: "missing" };
@@ -184,10 +195,14 @@ export function collectTests(metadata, receipts, expectedFiles, env = {}) {
     result: passed ? "passed" : "failed",
     suites,
     areas,
+    ...(skipped.length ? { skipped: [...skipped] } : {}),
   };
 }
 
-/** O recibo de testes aprova este checkout: todas as áreas passaram sob a mesma revisão. */
+/**
+ * O recibo de testes aprova este checkout: todas as áreas passaram sob a mesma
+ * revisão. Uma área pulada não é aprovada.
+ */
 export function approvedTests(revisionData, report) {
   return (
     report?.schemaVersion === 2 &&

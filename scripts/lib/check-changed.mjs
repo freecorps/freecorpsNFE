@@ -108,44 +108,6 @@ export function affectedProjects(files, programs, everyProject) {
 }
 
 /**
- * Pacotes do workspace que contêm um arquivo alterado e, por transitividade,
- * os que dependem deles (`@freecorps/*` nos manifests). `workspaces` são as
- * pastas de scripts/build/package-boundaries.json; `manifests`, o package.json
- * de cada uma.
- * @param {string[]} files
- * @param {string[]} workspaces
- * @param {Record<string, { name: string, dependencies?: object, devDependencies?: object, peerDependencies?: object }>} manifests
- */
-export function affectedWorkspaces(files, workspaces, manifests) {
-  const byName = Object.fromEntries(workspaces.map((dir) => [manifests[dir].name, dir]));
-  const dependents = Object.fromEntries(workspaces.map((dir) => [dir, []]));
-  for (const dir of workspaces) {
-    const { dependencies = {}, devDependencies = {}, peerDependencies = {} } = manifests[dir];
-    for (const name of Object.keys({ ...dependencies, ...devDependencies, ...peerDependencies }))
-      if (byName[name] && byName[name] !== dir) dependents[byName[name]].push(dir);
-  }
-  const longestFirst = [...workspaces].sort((a, b) => b.length - a.length);
-  const direct = new Set(
-    files
-      .map((file) => longestFirst.find((dir) => file.startsWith(`${dir}/`)))
-      .filter((dir) => dir !== undefined),
-  );
-  const reached = new Set(direct);
-  const queue = [...direct];
-  while (queue.length)
-    for (const next of dependents[queue.shift()]) {
-      if (!reached.has(next)) {
-        reached.add(next);
-        queue.push(next);
-      }
-    }
-  return {
-    changed: [...direct].sort(),
-    dependents: [...reached].filter((dir) => !direct.has(dir)).sort(),
-  };
-}
-
-/**
  * As etapas, na ordem em que rodam. Cada uma roda mesmo que a anterior falhe,
  * para mostrar todos os problemas de uma vez.
  * @param {ReturnType<typeof classify>} change

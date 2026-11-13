@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
+import { validateSkip } from "./scripts/lib/ci-changes.mjs";
 import { areaCommand, testProjects, vitestProjects } from "./scripts/lib/test-projects.mjs";
 import { DurationSequencer } from "./tests/setup/sequencer";
 
@@ -61,11 +62,19 @@ const generated = [
   "!packages/contracts/dist",
   "!packages/contracts/dist/**",
 ];
-// ci:sdk compila packages/sdk/dist ao lado dos testes, que não dependem dele:
+// ci:sdk:build e ci:sdk compilam packages/sdk/dist ao lado dos testes, que não dependem dele:
 // os testes resolvem os pacotes pelo código-fonte, e o único que cita o dist
 // do SDK o substitui por vi.mock (apps/console/e2e/runner-lifecycle.test.ts).
 // Sem isso, a entrada de uma área dependeria de qual tarefa terminou antes.
 const concurrentBuilds = ["!packages/sdk/dist", "!packages/sdk/dist/**"];
+// Tarefas que a PR pula no modo `affected` do job Validate, que passa a lista
+// em CI_VALIDATE_SKIP (scripts/lib/ci-changes.mjs, optionalTasks). Sem a
+// variável, como no ci:local e no ci:prove, o grafo é o inteiro.
+const skipped = validateSkip(process.env.CI_VALIDATE_SKIP);
+const skippedAreas = testProjects
+  .map(({ name }) => name)
+  .filter((name) => skipped.includes(`ci:test:${name}`));
+const unlessSkipped = (tasks: string[]) => tasks.filter((task) => !skipped.includes(task));
 // `exclude` de um projeto substitui o padrão do Vitest; preserva o node_modules.
 const exclude = (...patterns: string[]) => ["**/node_modules/**", "**/.git/**", ...patterns];
 // Limites de recurso vêm do ambiente para que vários agentes na mesma máquina
@@ -185,14 +194,31 @@ export default defineConfig({
           ],
         },
       },
+      // Compila o SDK em packages/sdk/dist, que o tsconfig da raiz inclui: o que
+      // lê a árvore espera por ele. A própria saída, inclusive o tarball e o
+      // metafile em .ci-results/74, não é entrada.
+      "ci:sdk:build": {
+        command: "bun run sdk:build",
+        dependsOn: ["ci:packages"],
+        cache: {
+          input: [{ auto: true }, ...generated, "!packages/sdk/dist/**", "!.ci-results/**"],
+          output: [
+            "packages/sdk/dist/**",
+            ".ci-results/74/sdk-metafile.json",
+            ".ci-results/74/*.tgz",
+          ],
+        },
+      },
       // Compara a API TypeScript do SDK com a versão publicada e exige o bump
-      // coerente (sdk:compat, #135), compila o SDK (packages/sdk/dist, incluído
-      // pelo tsconfig da raiz) e prova o tarball num consumidor limpo. O que lê a árvore espera por ele,
-      // como no job sequencial. Sem cache: o consumidor instala do registro npm e
-      // o recibo carimba o commit e o estado do checkout, lidos do Git.
+      // coerente (sdk:compat, #135), recompila o SDK e prova o tarball num
+      // consumidor limpo. Sem cache: o consumidor instala do registro npm e o
+      // recibo carimba o commit e o estado do checkout, lidos do Git. A prova
+      // apaga e recria packages/sdk/dist, então espera quem o lê. Uma PR que não
+      // alcança os pacotes publicados pula esta tarefa, ci:xml-prove e
+      // ci:distribution (`optionalTasks`); quem depende delas é do mesmo grupo.
       "ci:sdk": {
         command: "bun run sdk:compat && bun run sdk:prove",
-        dependsOn: ["ci:packages"],
+        dependsOn: ["ci:check", "ci:typecheck", "ci:console"],
         cache: false,
       },
       // CONTRACT_BASE é o commit da comparação de compatibilidade; o workflow
@@ -218,7 +244,7 @@ export default defineConfig({
       // Formatação (inclusive dos Markdown), lint e tipos de toda a árvore.
       "ci:check": {
         command: "vp check",
-        dependsOn: ["ci:packages", "ci:sdk"],
+        dependsOn: ["ci:packages", "ci:sdk:build"],
         cache: { input: [{ auto: true }, ...generated], output: [] },
       },
       // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
@@ -230,7 +256,7 @@ export default defineConfig({
       "ci:knip": { command: "bun run knip:check", cache: false },
       "ci:typecheck": {
         command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
-        dependsOn: ["ci:packages", "ci:sdk"],
+        dependsOn: ["ci:packages", "ci:sdk:build"],
         cache: { input: [{ auto: true }, ...generated] },
       },
       // Uma tarefa por área de testes, com recibo em .ci-results/tests/<área>.json
@@ -256,10 +282,14 @@ export default defineConfig({
       ),
       // Junta os recibos das áreas em .ci-results/tests.json, sob a revisão de
       // `node scripts/ci/ci.mjs identity`, e reprova se falta área ou arquivo. Lê a
-      // revisão do checkout: nunca usa cache.
+      // revisão do checkout: nunca usa cache. Uma área pulada no modo
+      // `affected` fica no relatório como pulada, e o recibo não aprova o checkout.
       "ci:tests": {
-        command: "node scripts/ci/ci.mjs collect-tests",
-        dependsOn: testProjects.map(({ name }) => `ci:test:${name}`),
+        command: [
+          "node scripts/ci/ci.mjs collect-tests",
+          ...(skippedAreas.length ? [`--skip ${skippedAreas.join(",")}`] : []),
+        ].join(" "),
+        dependsOn: unlessSkipped(testProjects.map(({ name }) => `ci:test:${name}`)),
         cache: false,
       },
       // O Miniflare regrava o cache de request.cf em node_modules/.mf (em
@@ -294,7 +324,7 @@ export default defineConfig({
       // sitemap e headers da saída.
       "ci:console": {
         command: "node scripts/console/console.mjs package",
-        dependsOn: ["ci:packages", "ci:sdk", "ci:docs"],
+        dependsOn: ["ci:packages", "ci:sdk:build", "ci:docs"],
         // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
         // só carimba o SHA em dist/build.json e no bundle; o build e as provas não
         // dependem dele, e o CI nunca publica este pacote, então `.git` fica fora
@@ -334,7 +364,7 @@ export default defineConfig({
       validate: {
         command: "echo validate: ok",
         cache: false,
-        dependsOn: [
+        dependsOn: unlessSkipped([
           "ci:sdk",
           "ci:contracts",
           "ci:xml-prove",
@@ -348,7 +378,7 @@ export default defineConfig({
           "ci:console",
           "ci:budget",
           "ci:auth-worker",
-        ],
+        ]),
       },
     },
   },

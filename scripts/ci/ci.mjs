@@ -33,7 +33,7 @@ const output = join(root, ".ci-results");
 const areaOutput = join(output, "tests");
 const requestedCommand = process.argv[2];
 const usage =
-  "Usage: ci.mjs identity|test|identity-test|test-area <área>|collect-tests|summary|approve|gate";
+  "Usage: ci.mjs identity|test|identity-test|test-area <área>|collect-tests [--skip <área,...>]|summary|approve|gate";
 let release;
 let retainLock = false;
 
@@ -164,6 +164,12 @@ try {
       writeFileSync(receipt, `${JSON.stringify(report, null, 2)}\n`);
       if (report.result !== "passed") process.exitCode = 1;
     } else if (command === "collect-tests") {
+      // `--skip a,b`: áreas que o grafo reduzido não executou (vite.config.ts,
+      // CI_VALIDATE_SKIP).
+      const args = process.argv.slice(3);
+      if (args.length && (args.length !== 2 || args[0] !== "--skip" || !args[1]))
+        throw new Error(usage);
+      const skipped = args.length ? args[1].split(",") : [];
       const metadata = JSON.parse(readFileSync(join(output, "revision.json"), "utf8"));
       const receipts = {};
       const expected = {};
@@ -172,15 +178,15 @@ try {
         if (existsSync(file)) receipts[name] = JSON.parse(readFileSync(file, "utf8"));
         expected[name] = areaFiles(name).length;
       }
-      const report = collectTests(metadata, receipts, expected, process.env);
+      const report = collectTests(metadata, receipts, expected, process.env, skipped);
       writeFileSync(join(output, "tests.json"), `${JSON.stringify(report, null, 2)}\n`);
       for (const [name, area] of Object.entries(report.areas))
         console.log(
           `${name}: ${area.result}` +
-            (area.result === "missing"
+            (area.result === "missing" || area.result === "skipped"
               ? ""
               : `, ${area.files} arquivos, ${area.passed} testes, ${area.pending} pendentes`) +
-            (area.result !== "missing" && !withinPendingBudget(name, area.pending, process.env)
+            (area.files !== undefined && !withinPendingBudget(name, area.pending, process.env)
               ? ` (acima do teto de ${pendingBudget[name]?.max ?? 0} pendentes no CI)`
               : "") +
             (area.ranOn?.sha && area.ranOn.sha !== metadata.checkedSha
@@ -214,18 +220,28 @@ try {
         summary += `\n| Área | Resultado | Arquivos | Testes | Pendentes (teto no CI) | Origem |\n| --- | --- | --- | --- | --- | --- |\n`;
         for (const [name, area] of Object.entries(report.areas)) {
           const origin =
-            area.result === "missing"
-              ? "sem recibo"
-              : !area.ranOn
-                ? "fora do Actions"
-                : area.ranOn.sha === data?.checkedSha
-                  ? "executada neste checkout"
-                  : `repetida do cache: run ${area.ranOn.runId}, \`${area.ranOn.sha.slice(0, 12)}\``;
+            area.result === "skipped"
+              ? "pulada: a mudança não alcança a área"
+              : area.result === "missing"
+                ? "sem recibo"
+                : !area.ranOn
+                  ? "fora do Actions"
+                  : area.ranOn.sha === data?.checkedSha
+                    ? "executada neste checkout"
+                    : `repetida do cache: run ${area.ranOn.runId}, \`${area.ranOn.sha.slice(0, 12)}\``;
           summary += `| ${name} | ${area.result} | ${area.files ?? 0} | ${area.passed ?? 0} | ${area.pending ?? 0} (${pendingBudget[name]?.max ?? 0}) | ${origin} |\n`;
         }
       }
       if (process.env.CI_CHANGES_MODE === "docs")
         summary += `\nSó documentação mudou: o job conferiu formatação e credenciais e não executou o grafo \`validate\`; nenhum \`tested_sha\` foi emitido.\n`;
+      if (process.env.CI_CHANGES_MODE === "affected")
+        summary += `\nA mudança não alcança os workspaces que ${(process.env.CI_VALIDATE_SKIP ?? "")
+          .split(",")
+          .filter(Boolean)
+          .map((task) => `\`${task}\``)
+          .join(
+            ", ",
+          )} provam: o grafo \`validate\` rodou sem essas tarefas, e nenhum \`tested_sha\` foi emitido.\n`;
       summary += `\n## Cobertura progressiva da 1.0\n\n${matrix.modules.map((m) => `- ${m.id}: ${m.status}`).join("\n")}\n\nTestes remotos e fiscais reais não fazem parte deste CI.\n`;
       writeFileSync(join(output, "summary.md"), summary);
       if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

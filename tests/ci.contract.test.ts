@@ -200,6 +200,20 @@ it("approves the checkout only with a passing receipt for every area under its r
   // The whole-suite report of `ci:test` (schema 1) never approves the graph.
   expect(approvedTests(metadata, { ...report, schemaVersion: 1 })).toBe(false);
 });
+it("reports an area the reduced graph skipped, and never approves the checkout with it", () => {
+  const metadata = revision({}, {}, checked);
+  const receipts = everyArea();
+  delete receipts.packages;
+  const report = collectTests(metadata, receipts, expected(), {}, ["packages"]);
+  // The areas that ran still decide the result, and the report names the skipped one.
+  expect(report.result).toBe("passed");
+  expect(report.areas.packages).toEqual({ result: "skipped" });
+  expect(report.skipped).toEqual(["packages"]);
+  expect(approvedTests(metadata, report)).toBe(false);
+  const failed = { ...receipts, platform: { ...passing("platform"), result: "failed", failed: 1 } };
+  expect(collectTests(metadata, failed, expected(), {}, ["packages"]).result).toBe("failed");
+  expect(() => collectTests(metadata, receipts, expected(), {}, ["nope"])).toThrow("nope");
+});
 it("fails an area that skips more tests than its budget under CI, and only there", () => {
   const ci = { CI: "true" };
   // Every budget names an area of the graph, with a ceiling and the reason for it.

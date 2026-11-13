@@ -9,13 +9,13 @@ import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   affectedProjects,
-  affectedWorkspaces,
   classify,
   parseArgs,
   steps,
   typecheckProjects,
   usage,
 } from "../lib/check-changed.mjs";
+import { affectedWorkspaces } from "../lib/ci-changes.mjs";
 import { repoRoot } from "../lib/repo-root.mjs";
 
 let options;
