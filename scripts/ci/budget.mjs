@@ -7,16 +7,16 @@
 //                                        recusa teto maior ou removido sem a label
 //
 // check e write compilam o console com o SHA fixo em zeros: o build real carimba
-// o commit no bundle (por inteiro e abreviado), e o hash do chunk mudaria o gzip
-// a cada commit. Com o SHA fixo, dois builds do mesmo código dão os mesmos bytes.
+// o commit no bundle (por inteiro e abreviado), e o gzip mudaria a cada commit.
+// Com o SHA fixo, dois builds do mesmo código dão os mesmos bytes.
 // A saída fica em node_modules/.vite, fora das entradas do Vite Task.
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   BUDGET_FILE,
   BUDGET_LABEL,
-  budgetVerdict,
+  compareBudget,
   consoleDrift,
   measureConsole,
   parseLabels,
@@ -99,47 +99,10 @@ async function compare(args) {
   const labelsAt = args.indexOf("--labels");
   const labelsArg = labelsAt === -1 ? null : args[labelsAt + 1];
   if (labelsAt !== -1 && (!labelsArg || labelsArg.startsWith("--"))) throw new Error(usage);
-  const git = (...gitArgs) =>
-    execFileSync("git", gitArgs, {
-      cwd: repoRoot,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  // Uma ref que não resolve é erro, nunca "base sem arquivo", que aprovaria tudo.
-  try {
-    git("rev-parse", "--verify", `${base}^{commit}`);
-  } catch {
-    throw new Error(`A base ${base} não é um commit deste checkout`);
-  }
-  let baseBudget = null;
-  try {
-    baseBudget = JSON.parse(git("show", `${base}:${BUDGET_FILE}`));
-  } catch (error) {
-    if (error instanceof SyntaxError) throw error;
-    // A base anterior ao orçamento não tem o arquivo: não há teto a afrouxar.
-    console.log(`${base} não tem ${BUDGET_FILE}; nada a comparar`);
-  }
-  // A PR que apaga o arquivo remove todos os tetos: cada um aparece como removido.
-  let head = {};
-  try {
-    head = readBudget();
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-  }
-  const preliminary = budgetVerdict(baseBudget, head, []);
-  if (preliminary.ok) {
-    console.log(`${BUDGET_FILE}: nenhum teto aumentou nem saiu em relação a ${base}`);
-    return;
-  }
-  const labels = labelsArg === null ? await pullRequestLabels() : parseLabels(labelsArg);
-  const verdict = budgetVerdict(baseBudget, head, labels);
-  for (const { path, base: before, head: after } of verdict.increases)
-    console.log(`${path}: ${before} -> ${after ?? "removido"}`);
-  if (!verdict.ok)
-    throw new Error(
-      `A PR aumenta ou remove tetos de ${BUDGET_FILE}. Se o aumento é de propósito, adicione a label ${BUDGET_LABEL} e reexecute o Validate.`,
-    );
-  console.log(`Aumento aceito pela label ${BUDGET_LABEL}`);
+  await compareBudget({
+    base,
+    readLabels: () => (labelsArg === null ? pullRequestLabels() : parseLabels(labelsArg)),
+  });
 }
 
 try {

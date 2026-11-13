@@ -282,12 +282,20 @@ arquivo) dos chunks principais do console e os limites que os benchmarks da
 plataforma (`platform/convex/*.benchmark.test.ts`) afirmam. Cada número é um
 teto: maior afrouxa.
 
-Os chunks principais são o que a primeira visita ao console carrega:
-`assets/index.js`, único script do `index.html`, o `main.js` e o `main.css`
-que ele importa, `app-shell.js`, `console-shared.js`, `rolldown-runtime.js` e
-`landing.css` (`PRINCIPAL_CHUNKS` em `scripts/lib/budget.mjs`). Os nomes saem
-sem o hash de conteúdo. `total` soma todo JS e CSS do build, inclusive os chunks
-preguiçosos das rotas, de modo que crescer qualquer chunk aparece ao menos ali.
+Os chunks principais são o que a primeira visita ao console carrega: os dois
+scripts do `index.html` (`theme.js`, clássico e bloqueante, e o módulo
+`assets/index.js`), o `main.js` e o `main.css` que este importa,
+`app-shell.js`, `console-shared.js`, `rolldown-runtime.js` e `landing.css`
+(`PRINCIPAL_CHUNKS` em `scripts/lib/budget.mjs`). Os nomes saem sem o hash de
+conteúdo. `total` soma todo JS e CSS de `assets/`, inclusive os chunks
+preguiçosos das rotas, mais `theme.js` e `landing.css`, de modo que crescer
+qualquer um deles aparece ao menos ali.
+
+Antes do gzip, cada nome de asset com hash citado no texto vira o nome
+estável. `main.js` importa as rotas pelo nome, e o hash novo de uma rota que só
+encolheu mudaria o gzip dele em alguns bytes, às vezes para mais, pedindo a
+label sem que ele mudasse. O número medido é, por isso, alguns bytes diferente
+do que o navegador baixa.
 
 Duas conferências usam o arquivo:
 
@@ -297,7 +305,8 @@ Duas conferências usam o arquivo:
   o gzip a cada commit; por isso a tarefa compila de novo com o SHA fixo em
   zeros, em `node_modules/.vite/console-budget`. Dois builds do mesmo código
   dão os mesmos bytes. Toda mudança que altera o bundle, para mais ou para
-  menos, atualiza o arquivo: `bun run budget:update` e commit.
+  menos, atualiza o arquivo: `bun run budget:update` e commit. `check:changed`
+  não roda essa tarefa; para conferir antes do push, `vp run ci:budget`.
 - **O passo `Require the label for a budget increase`** do `Validate`, em
   toda PR, compara o `budget.json` do merge sintético com o da base em que ele
   entra (`HEAD^1`). Reprova quando um teto aumentou ou saiu do arquivo e a PR
@@ -322,11 +331,18 @@ Para aceitar um aumento de propósito:
 O passo não roda no push na `main` nem nas publicações manuais: o aumento é
 julgado uma vez, na PR. Tirar a label depois de o check passar não o reprova;
 quem revisa vê a label e o diff do arquivo. Na PR que criou o arquivo (#245),
-o runner Linux mediu o mesmo total que o Windows (756066 bytes). Se um dia os
+o runner Linux mediu o mesmo total que o Windows. Se um dia os
 dois divergirem, `ci:budget` reprova com os dois valores, e o número do runner
 é o que vale. Uma base que não resolve num commit reprova o passo; só uma base
 sem `budget.json` passa sem comparar, e mesmo então o arquivo da PR precisa
 ter só tetos numéricos.
+
+Quase toda mudança no console muda `total`, então duas PRs do console abertas
+ao mesmo tempo conflitam em `budget.json`. O conflito é o que impede as duas de
+entrarem com números medidos cada uma sobre a sua base: o ruleset não exige PR
+atualizada. Para resolver, atualize a branch com a `main`, rode
+`bun run budget:update` e faça commit; contra a base nova, o aumento pode
+passar a pedir a label.
 
 ## Testes
 
