@@ -70,15 +70,20 @@ export const documentationTests = [
  * `covers` recebe a pasta do workspace e o `kind` dele em
  * scripts/build/package-boundaries.json. As provas de distribuição não usam
  * cache e instalam do registro npm a cada run; a área `packages` testa só
- * `packages/**` (scripts/lib/test-projects.mjs). Um grupo pula inteiro: quem
- * depende de uma tarefa dele está no mesmo grupo ou é `validate` e `ci:tests`
- * (`tests/ci.changes.test.ts`). As demais tarefas rodam sempre, e o cache do
- * Vite Task repete as que a mudança não alcança.
+ * `packages/**` (scripts/lib/test-projects.mjs). Um grupo pula inteiro; sem
+ * `ci:sdk`, quem lê o SDK compilado espera `ci:sdk:build` (vite.config.ts), e
+ * `tests/ci.changes.test.ts` confere que o grafo reduzido perde exatamente as
+ * tarefas puladas. As demais tarefas rodam sempre, e o cache do Vite Task repete
+ * as que a mudança não alcança. As provas leem também o que não empacotam (o
+ * corpus interno de fixtures e certificados de todo o repositório); uma
+ * colisão com ele aparece no push na `main`, que roda o grafo inteiro.
  */
 export const optionalTasks = [
   {
     // Os pacotes independentes (`pure` e `node`): os cinco que
-    // scripts/distribution/prove-distribution.mjs empacota.
+    // scripts/distribution/prove-distribution.mjs empacota. A parte de
+    // licenses:check que lê todo workspace roda sempre, em
+    // ci:first-party-licenses.
     tasks: ["ci:sdk", "ci:xml-prove", "ci:distribution"],
     covers: (/** @type {{ dir: string, kind: string }} */ { kind }) => kind !== "platform",
   },
@@ -92,8 +97,10 @@ const optionalNames = optionalTasks.flatMap(({ tasks }) => tasks);
 
 /**
  * Lê `CI_VALIDATE_SKIP` (nomes separados por vírgula), que o job passa ao grafo
- * no modo `affected`. Vazio, o grafo é o inteiro; um nome fora de
- * `optionalTasks` reprova, para que um erro de digitação nunca pule outra tarefa.
+ * no modo `affected`. Vazio, o grafo é o inteiro. Reprova um nome fora de
+ * `optionalTasks`, para que um erro de digitação nunca pule outra tarefa, e um
+ * grupo pela metade: sem `ci:sdk` mas com `ci:distribution`, a prova do SDK
+ * rodaria como dependência ao lado de quem lê o SDK compilado.
  * @param {string | undefined} value
  */
 export function validateSkip(value) {
@@ -104,6 +111,14 @@ export function validateSkip(value) {
   const unknown = names.filter((name) => !optionalNames.includes(name));
   if (unknown.length)
     throw new Error(`CI_VALIDATE_SKIP: tarefa não opcional: ${unknown.join(", ")}`);
+  const partial = optionalTasks.filter(
+    ({ tasks }) =>
+      tasks.some((task) => names.includes(task)) && !tasks.every((task) => names.includes(task)),
+  );
+  if (partial.length)
+    throw new Error(
+      `CI_VALIDATE_SKIP: grupo incompleto: ${partial.map(({ tasks }) => tasks.join(", ")).join("; ")}`,
+    );
   return [...new Set(names)];
 }
 

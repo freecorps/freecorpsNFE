@@ -187,9 +187,13 @@ it("covers with each optional group exactly the workspaces its tasks prove", () 
 it("reads the skip list strictly and never skips a task outside the optional groups", () => {
   expect(validateSkip(undefined)).toEqual([]);
   expect(validateSkip("")).toEqual([]);
-  expect(validateSkip(" ci:sdk,ci:test:packages ,ci:sdk")).toEqual(["ci:sdk", "ci:test:packages"]);
+  expect(validateSkip(` ${proofs.join(",")},ci:test:packages ,ci:sdk`)).toEqual(everyOptional);
   expect(() => validateSkip("ci:check")).toThrow("ci:check");
-  expect(() => validateSkip("ci:sdk,ci:sdk:build")).toThrow("ci:sdk:build");
+  expect(() => validateSkip(`${proofs.join(",")},ci:sdk:build`)).toThrow("ci:sdk:build");
+  // Half a group would leave ci:sdk running as a dependency of ci:distribution,
+  // next to the tasks that then read the SDK built by ci:sdk:build.
+  for (const partial of ["ci:sdk", "ci:sdk,ci:xml-prove", "ci:distribution"])
+    expect(() => validateSkip(partial), partial).toThrow("grupo incompleto");
 });
 
 type Task = { command?: string; dependsOn?: string[] };
@@ -219,15 +223,29 @@ const reached = (tasks: Record<string, Task>) => {
   return seen;
 };
 
-it("drops every skipped task from the validate graph, and nothing else", async () => {
+it("drops every skipped task from the validate graph, and builds the SDK without its proof", async () => {
   const wholeTasks = await tasksWith([]);
   const whole = reached(wholeTasks);
   for (const task of everyOptional) expect(whole, task).toContain(task);
+  // The whole graph is the one before #167: ci:sdk builds the SDK for its readers.
+  expect(whole.has("ci:sdk:build")).toBe(false);
+  const readers = ["ci:check", "ci:typecheck", "ci:console"];
+  for (const reader of readers) expect(wholeTasks[reader]!.dependsOn, reader).toContain("ci:sdk");
   for (const skip of [proofs, everyOptional, ["ci:test:packages"]]) {
     const tasks = await tasksWith(skip);
-    expect([...whole].filter((task) => !reached(tasks).has(task)).sort(), skip.join()).toEqual(
+    const reduced = reached(tasks);
+    // A task still reached never waits on a skipped one, or the skipped one
+    // would be reached too.
+    expect([...whole].filter((task) => !reduced.has(task)).sort(), skip.join()).toEqual(
       [...skip].sort(),
     );
+    expect(
+      [...reduced].filter((task) => !whole.has(task)),
+      skip.join(),
+    ).toEqual(skip.includes("ci:sdk") ? ["ci:sdk:build"] : []);
+    if (skip.includes("ci:sdk"))
+      for (const reader of readers)
+        expect(tasks[reader]!.dependsOn, reader).toEqual(expect.arrayContaining(["ci:sdk:build"]));
   }
   expect((await tasksWith(everyOptional))["ci:tests"]!.command).toBe(
     "node scripts/ci/ci.mjs collect-tests --skip packages",
@@ -235,13 +253,12 @@ it("drops every skipped task from the validate graph, and nothing else", async (
   expect((await tasksWith(proofs))["ci:tests"]!.command).toBe(
     "node scripts/ci/ci.mjs collect-tests",
   );
-  // Whoever depends on an optional task is in its group, or is validate or
-  // ci:tests: skipping a group never leaves a task waiting on it.
-  const groupOf = (task: string) => optionalTasks.find(({ tasks }) => tasks.includes(task));
-  for (const [name, { dependsOn = [] }] of Object.entries(wholeTasks))
-    for (const dependency of dependsOn.filter((task) => groupOf(task)))
-      if (!["validate", "ci:tests"].includes(name))
-        expect(groupOf(name), `${name} -> ${dependency}`).toBe(groupOf(dependency));
+  // What licenses:check reads beyond the published packages runs in every graph.
+  for (const skip of [[], everyOptional])
+    expect(reached(await tasksWith(skip)), skip.join()).toContain("ci:first-party-licenses");
+  expect(wholeTasks["ci:first-party-licenses"]!.command).toBe(
+    "node scripts/licenses/check-first-party-licenses.mjs",
+  );
 });
 
 it("uses the task cache only in this workflow's own pull request and push runs", () => {

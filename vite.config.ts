@@ -75,6 +75,9 @@ const skippedAreas = testProjects
   .map(({ name }) => name)
   .filter((name) => skipped.includes(`ci:test:${name}`));
 const unlessSkipped = (tasks: string[]) => tasks.filter((task) => !skipped.includes(task));
+// Quem lê packages/sdk/dist espera ci:sdk, que o compila antes de provar. Sem
+// ci:sdk, no grafo reduzido, espera ci:sdk:build, que só compila, com cache.
+const sdkBuild = skipped.includes("ci:sdk") ? "ci:sdk:build" : "ci:sdk";
 // `exclude` de um projeto substitui o padrão do Vitest; preserva o node_modules.
 const exclude = (...patterns: string[]) => ["**/node_modules/**", "**/.git/**", ...patterns];
 // Limites de recurso vêm do ambiente para que vários agentes na mesma máquina
@@ -197,11 +200,12 @@ export default defineConfig({
       // Compila o SDK em packages/sdk/dist, que o tsconfig da raiz inclui: o que
       // lê a árvore espera por ele. A própria saída, inclusive o tarball e o
       // metafile em .ci-results/74, não é entrada.
+      // Só no grafo reduzido, que pula ci:sdk (`sdkBuild`).
       "ci:sdk:build": {
         command: "bun run sdk:build",
         dependsOn: ["ci:packages"],
         cache: {
-          input: [{ auto: true }, ...generated, "!packages/sdk/dist/**", "!.ci-results/**"],
+          input: [{ auto: true }, ...generated, ...concurrentBuilds, "!.ci-results/**"],
           output: [
             "packages/sdk/dist/**",
             ".ci-results/74/sdk-metafile.json",
@@ -210,15 +214,15 @@ export default defineConfig({
         },
       },
       // Compara a API TypeScript do SDK com a versão publicada e exige o bump
-      // coerente (sdk:compat, #135), recompila o SDK e prova o tarball num
-      // consumidor limpo. Sem cache: o consumidor instala do registro npm e o
-      // recibo carimba o commit e o estado do checkout, lidos do Git. A prova
-      // apaga e recria packages/sdk/dist, então espera quem o lê. Uma PR que não
-      // alcança os pacotes publicados pula esta tarefa, ci:xml-prove e
-      // ci:distribution (`optionalTasks`); quem depende delas é do mesmo grupo.
+      // coerente (sdk:compat, #135), compila o SDK (packages/sdk/dist, incluído
+      // pelo tsconfig da raiz) e prova o tarball num consumidor limpo. O que lê a
+      // árvore espera por ele (`sdkBuild`). Sem cache: o consumidor instala do
+      // registro npm e o recibo carimba o commit e o estado do checkout, lidos do
+      // Git. Uma PR que não alcança os pacotes publicados pula esta tarefa,
+      // ci:xml-prove e ci:distribution (`optionalTasks`).
       "ci:sdk": {
         command: "bun run sdk:compat && bun run sdk:prove",
-        dependsOn: ["ci:check", "ci:typecheck", "ci:console"],
+        dependsOn: ["ci:packages"],
         cache: false,
       },
       // CONTRACT_BASE é o commit da comparação de compatibilidade; o workflow
@@ -244,19 +248,27 @@ export default defineConfig({
       // Formatação (inclusive dos Markdown), lint e tipos de toda a árvore.
       "ci:check": {
         command: "vp check",
-        dependsOn: ["ci:packages", "ci:sdk:build"],
+        dependsOn: ["ci:packages", sdkBuild],
         cache: { input: [{ auto: true }, ...generated], output: [] },
       },
       // Credenciais nos arquivos de texto versionados (scripts/public-copy/check-secrets.mjs).
       // Sem cache: lê a lista do índice do Git, e um arquivo novo não estaria
       // entre as entradas registradas.
       "ci:secrets": { command: "node scripts/public-copy/check-secrets.mjs", cache: false },
+      // Licença própria, escopo MIT e manifests de todo workspace, inclusive
+      // platform e apps (parte de licenses:check, em ci:distribution). Fica fora
+      // dela porque o grafo reduzido pula ci:distribution. Sem cache: lê a lista
+      // do índice do Git, como ci:secrets.
+      "ci:first-party-licenses": {
+        command: "node scripts/licenses/check-first-party-licenses.mjs",
+        cache: false,
+      },
       // Arquivos, dependências e exports de platform/convex/lib/ sem uso (knip.jsonc). Lê
       // manifests e node_modules, que o Vite Task não rastreia como entrada.
       "ci:knip": { command: "bun run knip:check", cache: false },
       "ci:typecheck": {
         command: "node scripts/build/typecheck.mjs -p tsconfig.platform.json",
-        dependsOn: ["ci:packages", "ci:sdk:build"],
+        dependsOn: ["ci:packages", sdkBuild],
         cache: { input: [{ auto: true }, ...generated] },
       },
       // Uma tarefa por área de testes, com recibo em .ci-results/tests/<área>.json
@@ -324,7 +336,7 @@ export default defineConfig({
       // sitemap e headers da saída.
       "ci:console": {
         command: "node scripts/console/console.mjs package",
-        dependsOn: ["ci:packages", "ci:sdk:build", "ci:docs"],
+        dependsOn: ["ci:packages", sdkBuild, "ci:docs"],
         // A saída (dist, inclusive a cópia da documentação) não é entrada. O Git
         // só carimba o SHA em dist/build.json e no bundle; o build e as provas não
         // dependem dele, e o CI nunca publica este pacote, então `.git` fica fora
@@ -371,6 +383,7 @@ export default defineConfig({
           "ci:distribution",
           "ci:check",
           "ci:secrets",
+          "ci:first-party-licenses",
           "ci:knip",
           "ci:typecheck",
           "ci:tests",
