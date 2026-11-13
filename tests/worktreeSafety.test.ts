@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import {
   ensureBackendEnvFile,
   parseEnv,
@@ -185,4 +185,23 @@ it("prepares distinct platform roots and secrets", () => {
   );
   writeFileSync(a.appFile, JSON.stringify({ app: "../foreign" }));
   expect(() => worktreePaths(a.root)).toThrow("Invalid worktree application");
+});
+
+it("a tabela de docs/worktrees.md lista as variáveis que o setup grava", () => {
+  const paths = fixture();
+  writeRuntimeEnv(
+    paths,
+    { deploymentName: "local-fixture", ports: { cloud: 3214, site: 3215 } },
+    "http://localhost:5176",
+  );
+  ensureBackendEnvFile(paths, "http://localhost:5176");
+  const generated = [paths.runtimeEnv, paths.backendEnv].flatMap((file) => {
+    const shown = relative(paths.root, file).replaceAll(sep, "/");
+    return [...parseEnv(readFileSync(file, "utf8")).keys()].map((name) => `${name} ${shown}`);
+  });
+  const docs = readFileSync(join(import.meta.dirname, "../docs/worktrees.md"), "utf8");
+  const documented = [...docs.matchAll(/^\| `([A-Z_]+)` +\| `([^`]+)` +\|/gm)].map(
+    ([, name, file]) => `${name} ${file}`,
+  );
+  expect(documented.toSorted()).toEqual(generated.toSorted());
 });

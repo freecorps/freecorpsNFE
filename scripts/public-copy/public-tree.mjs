@@ -132,6 +132,8 @@ export const rules = [
     ".agents/",
     ".claude/",
     ".vite-hooks/",
+    ".devcontainer/",
+    ".vscode/",
     "docs/adr/",
     "docs/plataforma/",
     "docs/desenvolvimento/",
