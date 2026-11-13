@@ -10,7 +10,7 @@
 
 ## Prova
 
-<!-- Os comandos e testes que mostram o comportamento (veja "Verificando" no AGENTS.md), com o antes e o depois de uma correção quando houver, e o que ficou sem prova. Mudança visual leva captura. -->
+<!-- Os comandos e testes que mostram o comportamento (veja docs/desenvolvimento/testes.md e "Verificando" no AGENTS.md), com o antes e o depois de uma correção quando houver, e o que ficou sem prova. Mudança visual leva captura. -->
 
 ## Risco e reversão
 

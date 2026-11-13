@@ -177,7 +177,9 @@ mascarar com `sed` não protege.
 ## Verificando
 
 - Rode a menor prova do comportamento alterado; mudança de acesso cobre também
-  o caso negado e o isolamento entre organizações, projetos e empresas.
+  o caso negado e o isolamento entre organizações, projetos e empresas. O que
+  testar, em que camada, como provar uma correção e como esperar trabalho
+  assíncrono estão em [testes.md](docs/desenvolvimento/testes.md).
 - Cada teste fica ao lado do módulo, num projeto do Vitest por área; comandos,
   cache e montagem da integração estão em
   [ci.md#testes](docs/desenvolvimento/ci.md#testes).

@@ -111,8 +111,9 @@ comportamento.
 
 A escolha dos checks está em [AGENTS.md](../AGENTS.md#verificando) e em
 [CONTRIBUTING.md](../CONTRIBUTING.md). O que cada job confere, os runners e o
-custo estão em [ci.md](desenvolvimento/ci.md). Jornadas no navegador seguem
-[navegador.md](desenvolvimento/navegador.md).
+custo estão em [ci.md](desenvolvimento/ci.md). O que testar, em que camada e
+como provar uma correção está em [testes.md](desenvolvimento/testes.md).
+Jornadas no navegador seguem [navegador.md](desenvolvimento/navegador.md).
 
 ### 6. Publicar e operar
 
