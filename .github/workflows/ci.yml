@@ -46,9 +46,9 @@ jobs:
     # actions and pull-requests: read, so a push on main can find the merged
     # pull request's run and download its task cache, and a pull request can
     # read its own labels for the budget gate. The repository is public, so
-    # both read what anyone can see; the token goes only to those steps. The callers (deploy-validation.yml and
-    # deploy-issuance-production.yml) grant the same, since a called workflow
-    # cannot ask for more than its caller.
+    # both read what anyone can see; the token goes only to those steps. The
+    # callers (deploy-validation.yml and deploy-issuance-production.yml) grant
+    # the same, since a called workflow cannot ask for more than its caller.
     permissions:
       contents: read
       actions: read
