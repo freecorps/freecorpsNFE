@@ -214,5 +214,8 @@ cota em `lib/planCore.ts` chegava de volta aos helpers de acesso (#112).
    `overrides` quando o escopo não for o repositório inteiro.
 4. Rode `vp lint` no repositório inteiro antes de corrigir o código: se a regra
    gera falsos positivos, ajuste a regra.
-5. Documente a regra aqui e troque a prosa correspondente do AGENTS.md pelo
-   nome dela.
+5. Documente a regra aqui, com linha na tabela e seção própria, e troque a
+   prosa correspondente do AGENTS.md pela marca de prova com o nome dela
+   ([Regra com prova citada](../README.md#regra-com-prova-citada)).
+   `scripts/repo/docs-claims.test.ts` reprova regra do plugin sem linha ou
+   seção aqui, e linha da tabela sem regra no plugin.

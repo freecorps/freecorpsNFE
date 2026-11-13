@@ -328,6 +328,12 @@ const mentions: Record<string, string> = {
   "scripts/public-copy/public-tree.test.ts -> docs/operacao/backup.md": "synthetic",
   "scripts/repo/adr-status.test.ts -> docs/README.md": "synthetic",
   "scripts/repo/doc-links.test.ts -> docs/ARQUITETURA.md": "synthetic",
+  // Read by scripts/repo/docs-claims.test.ts, which documentationTests runs in
+  // documentation mode too.
+  "scripts/repo/docs-claims.test.ts -> docs/README.md": "documentation test",
+  "scripts/repo/docs-claims.test.ts -> docs/plataforma/arquitetura-backend.md":
+    "documentation test",
+  "scripts/repo/docs-claims.test.ts -> docs/desenvolvimento/lint.md": "documentation test",
   // tests/fixtureCorpus.test.ts checks that evidence exists; deleting a document
   // runs the graph.
   "tests/coverage-matrix.json -> docs/plataforma/IMPORTS.md": "existence",

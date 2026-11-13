@@ -35,7 +35,13 @@ it("requires real evidence files for delivered modules and exposes future covera
   for (const module of matrix.modules) {
     expect(module.id).toMatch(/^[a-zA-Z0-9-]+$/);
     expect(["delivered", "pending"]).toContain(module.status);
-    if (module.status === "delivered") expect(module.evidence.length).toBeGreaterThan(0);
+    // Entregue cita ao menos um teste deste repositório, que roda a cada
+    // mudança; recibos arquivados sozinhos não mostram a cobertura de hoje.
+    if (module.status === "delivered")
+      expect(
+        module.evidence.some((file) => /\.test\.tsx?$/.test(file)),
+        module.id,
+      ).toBe(true);
     if (module.status === "pending") expect(module.evidence).toEqual([]);
     // Repositório público: os recibos (docs/v1.0/evidence/) ficam no repositório arquivado.
     for (const file of module.evidence.filter((f) => !f.startsWith("docs/v1.0/evidence/")))
