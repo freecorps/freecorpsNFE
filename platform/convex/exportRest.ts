@@ -49,18 +49,19 @@ export const dispatch = internalMutation({
         ),
       );
     }
-    const partMatch = /^\/v1\/export-parts\/([^/]+)\/ticket$/.exec(url.pathname);
-    if (partMatch) {
-      const partId = ctx.db.normalizeId("exportParts", partMatch[1]);
+    const partRef = /^\/v1\/export-parts\/([^/]+)\/ticket$/.exec(url.pathname)?.[1];
+    if (partRef) {
+      const partId = ctx.db.normalizeId("exportParts", partRef);
       if (!partId) return deny("NOT_FOUND");
       return JSON.stringify(await issueTicket(ctx, partId, args.keyHash));
     }
     const match = /^\/v1\/exports\/([^/]+)(?:\/(parts|revoke))?$/.exec(url.pathname);
-    const id = match ? ctx.db.normalizeId("documentExports", match[1]) : null;
+    const exportRef = match?.[1];
+    const id = exportRef ? ctx.db.normalizeId("documentExports", exportRef) : null;
     const job = id ? await ctx.db.get("documentExports", id) : null;
     if (!job) return deny("NOT_FOUND");
     await exportActor(ctx, job, args.keyHash);
-    if (match![2] === "revoke") {
+    if (match?.[2] === "revoke") {
       await ctx.db.patch("documentExports", job._id, { state: "revoked" });
       await recordAudit(ctx, {
         organizationId: job.organizationId,

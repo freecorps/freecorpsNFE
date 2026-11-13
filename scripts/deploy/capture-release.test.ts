@@ -488,7 +488,7 @@ describe("workflow", () => {
     const paths = read(".github/CODEOWNERS")
       .split("\n")
       .filter((line) => line.trim() && !line.startsWith("#"))
-      .map((line) => line.trim().split(/\s+/)[0]);
+      .flatMap((line) => line.trim().split(/\s+/).slice(0, 1));
     for (const path of [
       "/scripts/deploy/capture-release.mjs",
       "/scripts/lib/capture-release.mjs",

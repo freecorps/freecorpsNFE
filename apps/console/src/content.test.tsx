@@ -18,11 +18,11 @@ const token = makeFunctionReference<"query", { id: string }, string>("contentRea
 const read = makeFunctionReference<"action", { id: string }, string>("node:testRead");
 
 class Boundary extends Component<{ children: ReactNode }, { error: unknown }> {
-  state = { error: null as unknown };
+  override state = { error: null as unknown };
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
-  render() {
+  override render() {
     return this.state.error ? <p>erro</p> : this.props.children;
   }
 }

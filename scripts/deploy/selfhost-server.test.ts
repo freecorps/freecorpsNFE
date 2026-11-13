@@ -37,6 +37,7 @@ async function start(withNotFoundPage = true) {
   // The suite forbids HTTP clients (tests/setup/offline.ts): the request
   // handler is called directly, with the parts of req and res it uses.
   const [handler] = server.listeners("request") as ((req: unknown, res: unknown) => unknown)[];
+  if (!handler) throw new Error("The server has no request handler");
   return (path: string, accept = "text/html") =>
     new Promise<{ status: number; type: string; body: string }>((resolve) => {
       const headers: Record<string, string> = {};

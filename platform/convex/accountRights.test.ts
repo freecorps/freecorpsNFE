@@ -172,11 +172,13 @@ it("corrects the name in the account and in every membership of the holder only"
     name: "Nome Corrigido",
   });
   const own = await memberships(t, person.userId);
-  expect(own.map((m) => [m.state, m.name]).sort(([a], [b]) => a.localeCompare(b))).toEqual([
+  expect(
+    own.map((m): [string, string] => [m.state, m.name]).sort(([a], [b]) => a.localeCompare(b)),
+  ).toEqual([
     ["active", "Nome Corrigido"],
     ["removed", "Nome Corrigido"],
   ]);
-  expect((await memberships(t, other.userId))[0].name).toBe("Pessoa de teste");
+  expect((await memberships(t, other.userId))[0]?.name).toBe("Pessoa de teste");
   // The version guards role changes and issued invitations: a correction leaves it.
   expect(own.find((m) => m.state === "active")!.version).toBe(1);
 
@@ -393,7 +395,7 @@ it("deletes the account, anonymizes its memberships and revokes open invitations
   expect(
     invitations
       .filter((i) => i.organizationId === first.organizationId)
-      .map((i) => [i.status, i.email])
+      .map((i): [string, string] => [i.status, i.email])
       .sort(([a], [b]) => a.localeCompare(b)),
   ).toEqual([
     ["accepted", ""],

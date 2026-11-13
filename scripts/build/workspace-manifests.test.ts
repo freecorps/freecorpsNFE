@@ -28,7 +28,7 @@ const builtins = new Set(builtinModules);
 /** `@escopo/nome/sub` → `@escopo/nome`; `nome/sub` → `nome`. */
 function packageName(specifier: string): string {
   const parts = specifier.split("/");
-  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : (parts[0] ?? specifier);
 }
 
 /** Pacotes externos que um arquivo importa, inclusive `import()` e reexportações. */

@@ -54,7 +54,7 @@ function fakeGit(status: string[] = [""]) {
   const calls: string[][] = [];
   const git = (...args: string[]) => {
     calls.push(args);
-    if (args[0] === "status") return status.length > 1 ? status.shift()! : status[0];
+    if (args[0] === "status") return (status.length > 1 ? status.shift() : status[0]) ?? "";
     if (args[0] === "rev-parse" && args[1] === "--verify") return BASE;
     if (args[0] === "rev-parse") return HEAD;
     if (args[0] === "diff" || args[0] === "ls-files") return "";
@@ -134,7 +134,7 @@ describe("runProof", () => {
     expect(readFileSync(join(root, "out/first.txt"), "utf8")).toBe("ok\n");
     expect(JSON.parse(readFileSync(join(root, "out/receipt.json"), "utf8"))).toEqual(receipt);
     // Runtime, ambiente da etapa e a posse desta execução chegam ao subprocesso.
-    expect(calls[1].env).toEqual({
+    expect(calls[1]?.env).toEqual({
       PATH: "/bin",
       CONTRACT_BASE: BASE,
       [VALIDATION_LOCK_TOKEN]: expect.any(String),
@@ -301,7 +301,7 @@ describe("local and candidate attempts", () => {
       let index = 0;
       const receipt = local({
         steps: graph,
-        spawn: () => ({ status: graph[index++].name === failedStep ? 1 : 0 }),
+        spawn: () => ({ status: graph[index++]?.name === failedStep ? 1 : 0 }),
       });
       expect(receipt).toMatchObject({ result: "failed", failedStep });
       expect(receipt.commands).toHaveLength(
@@ -316,8 +316,8 @@ describe("local and candidate attempts", () => {
   it("allows cache only in the local graph, without removing any step", () => {
     const cached = acceptanceSteps(BASE, { cache: true });
     expect(cached.map((step) => step.name)).toEqual(acceptanceSteps(BASE).map((step) => step.name));
-    expect(cached[1].command).toEqual(["bun", "x", "vp", "run", "validate"]);
-    expect(acceptanceSteps(BASE)[1].command).toContain("--no-cache");
+    expect(cached[1]?.command).toEqual(["bun", "x", "vp", "run", "validate"]);
+    expect(acceptanceSteps(BASE)[1]?.command).toContain("--no-cache");
     expect(() => proofArguments(["--allow-dirty", "yes"], { output: "out" })).toThrow(
       /desconhecido/,
     );
@@ -379,7 +379,7 @@ describe("local and candidate attempts", () => {
       "candidate",
     );
     const originalBase = git("rev-parse", "base");
-    const bases: string[] = [];
+    const bases: (string | undefined)[] = [];
     const receipt = prove({
       git: undefined,
       base: "base",
@@ -440,7 +440,7 @@ describe("local and candidate attempts", () => {
     expect(first.output).not.toBe(next.output);
     expect(existsSync(join(root, first.output, "tests.json"))).toBe(true);
     expect(existsSync(join(root, next.output, "tests.json"))).toBe(false);
-    expect(next.commands[0].reports).toEqual([]);
+    expect(next.commands[0]?.reports).toEqual([]);
     expect(JSON.parse(readFileSync(join(root, first.output, "receipt.json"), "utf8")).result).toBe(
       "passed",
     );
@@ -511,7 +511,7 @@ describe("local and candidate attempts", () => {
       ],
     });
     expect(receipt).toMatchObject({ result: "failed", failedStep: "check" });
-    expect(receipt.commands[0].exitCode).toBe(2);
+    expect(receipt.commands[0]?.exitCode).toBe(2);
     const summary = readFileSync(join(root, receipt.output, "summary.md"), "utf8");
     expect(summary).toContain("[log](check.txt)");
     expect(summary).not.toContain("PRIVATE_XML_SECRET");

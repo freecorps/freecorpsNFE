@@ -305,8 +305,8 @@ describe("alvo", () => {
       }),
     ).toEqual({ deploymentName: preview.deploymentName, url: preview.url, adminKey });
     expect(calls).toHaveLength(1);
-    expect(calls[0].url).toBe("https://api.convex.dev/api/deployment/authorize_preview");
-    expect(JSON.parse(calls[0].init.body as string)).toEqual({
+    expect(calls[0]?.url).toBe("https://api.convex.dev/api/deployment/authorize_preview");
+    expect(JSON.parse(calls[0]?.init.body as string)).toEqual({
       previewName: "fnfe-642-a",
       projectSelection: {
         kind: "teamAndProjectSlugs",

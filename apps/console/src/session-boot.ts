@@ -35,7 +35,12 @@ const earlySession: Promise<void> | null = hint
       // Subscribing mounts the store, which asks `get-session` once; `useSession` reuses it.
       // A store that cannot be read only costs the head start: the console boots the usual way.
       try {
-        const stop = authClient.$store.atoms.session.subscribe((value: { isPending: boolean }) => {
+        const session = authClient.$store.atoms.session;
+        if (!session) {
+          resolve();
+          return;
+        }
+        const stop = session.subscribe((value: { isPending: boolean }) => {
           if (value.isPending) return;
           resolve();
           queueMicrotask(() => stop());

@@ -84,8 +84,9 @@ export const landing = query({
         q.eq("authUserId", user._id).eq("state", "active"),
       )
       .take(2);
-    if (memberships.length !== 1) return null;
-    const org = await ctx.db.get("organizations", memberships[0].organizationId);
+    const [membership] = memberships;
+    if (memberships.length !== 1 || !membership) return null;
+    const org = await ctx.db.get("organizations", membership.organizationId);
     return org ? { slug: org.slug } : null;
   },
 });

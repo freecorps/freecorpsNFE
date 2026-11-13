@@ -53,7 +53,7 @@ async function organization(
   members: (Role | `removed-${Role}`)[],
   options: { closed?: boolean; accepted?: string } = {},
 ) {
-  return t.run(async (ctx) => {
+  const created = await t.run(async (ctx) => {
     const now = Date.now();
     const organizationId = await ctx.db.insert("organizations", {
       name,
@@ -93,16 +93,26 @@ async function organization(
         purgeBy: now + 37 * 86_400_000,
         generation: 1,
       });
-    if (options.accepted)
+    const [firstMember] = ids;
+    if (options.accepted) {
+      if (!firstMember) throw new Error("An accepted version needs a member");
       await ctx.db.insert("termsOfUseAcceptances", {
         organizationId,
-        membershipId: ids[0],
+        membershipId: firstMember,
         version: options.accepted,
         sha256: "a".repeat(64),
         createdAt: now,
       });
+    }
     return { organizationId, emails };
   });
+  /** The address of the member `<entry>-<index>`, failing the test when there is none. */
+  const email = (member: string) => {
+    const address = created.emails[member];
+    if (!address) throw new Error(`No member ${member} in ${name}`);
+    return address;
+  };
+  return { ...created, email };
 }
 
 const notices = (t: PlatformTest) =>
@@ -251,12 +261,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     ).toBe(false);
     // Each organization's owners and admins, and nobody else.
     expect(await mailbox(t)).toEqual(
-      [
-        open.emails["owner-0"],
-        open.emails["admin-1"],
-        other.emails["owner-0"],
-        older.emails["owner-0"],
-      ]
+      [open.email("owner-0"), open.email("admin-1"), other.email("owner-0"), older.email("owner-0")]
         .map((email) => ({ email, version: FIRST }))
         .sort((a, b) => a.email.localeCompare(b.email)),
     );
@@ -374,7 +379,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     const t = platformTest();
     const open = await organization(t, "Aberta", ["owner", "admin", "viewer"]);
     const outside = await organization(t, "Fora da lista", ["owner"]);
-    validationMail([open.emails["owner-0"], open.emails["admin-1"], open.emails["viewer-2"]]);
+    validationMail([open.email("owner-0"), open.email("admin-1"), open.email("viewer-2")]);
     const payloads: { to: string[]; subject: string; text: string }[] = [];
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
@@ -427,7 +432,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     // No message names another recipient.
     const byAddress = (a: string[], b: string[]) => a.join().localeCompare(b.join());
     expect(messages.map((message) => message.to).sort(byAddress)).toEqual(
-      [[open.emails["admin-1"]], [open.emails["owner-0"]]].sort(byAddress),
+      [[open.email("admin-1")], [open.email("owner-0")]].sort(byAddress),
     );
     for (const message of messages) {
       expect(message.subject).toContain("09/01/2027");
@@ -465,7 +470,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     publish(FIRST);
     await run(t);
     expect(sent.flat().sort()).toEqual(
-      [first.emails["owner-0"], first.emails["admin-1"], second.emails["owner-0"]].sort(),
+      [first.email("owner-0"), first.email("admin-1"), second.email("owner-0")].sort(),
     );
     expect(await notices(t)).toEqual(
       expect.arrayContaining([
@@ -500,7 +505,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     const part = await organization(t, "Em parte", ["owner", "admin", "admin"]);
     const listed = await organization(t, "Na lista", ["owner"]);
     // Only the first owner of three organizations is authorized; nobody of "Fora da lista".
-    validationMail([one.emails["owner-0"], part.emails["owner-0"], listed.emails["owner-0"]]);
+    validationMail([one.email("owner-0"), part.email("owner-0"), listed.email("owner-0")]);
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
       return Response.json({ id: "email-1" });
@@ -566,7 +571,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     const t = platformTest();
     const open = await organization(t, "Aberta", ["owner", "admin", "admin"]);
     validationMail(Object.values(open.emails));
-    const bounced = open.emails["admin-1"];
+    const bounced = open.email("admin-1");
     const fetch = vi.fn(async (_url: string, init: RequestInit) => {
       if (typeof init.body !== "string") throw new Error("Expected JSON request");
       const { to } = JSON.parse(init.body) as { to: string[] };
@@ -620,7 +625,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
       },
     ]);
     expect((await mailbox(t)).map(({ email }) => email).sort()).toEqual(
-      [large.emails["owner-1100"], large.emails["admin-1101"]].sort(),
+      [large.email("owner-1100"), large.email("admin-1101")].sort(),
     );
   });
 
@@ -639,7 +644,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     reset();
     const t = platformTest();
     const open = await organization(t, "Aberta", ["owner"]);
-    validationMail([open.emails["owner-0"]]);
+    validationMail([open.email("owner-0")]);
     const fetch = vi.fn(async () => Response.json({ success: true, result: {} }));
     vi.stubGlobal("fetch", fetch);
     publish(FIRST);
@@ -721,7 +726,7 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
       resumed: 1,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    expect(await mailbox(t)).toEqual([{ email: stalled.emails["owner-0"], version: FIRST }]);
+    expect(await mailbox(t)).toEqual([{ email: stalled.email("owner-0"), version: FIRST }]);
     expect(await t.mutation(internal.termsOfUseNotice.resumePending, {})).toEqual({
       version: FIRST,
       resumed: 0,
@@ -741,8 +746,8 @@ describe("Aviso por e-mail de versão nova dos termos de uso (#594)", () => {
     await t.mutation(internal.termsOfUseNotice.resumePending, { olderThanMinutes: 0 });
     await t.action(internal.termsOfUseNotice.deliver, { noticeId: ids.fresh });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    expect(
-      (await mailbox(t)).filter(({ email }) => email === fresh.emails["owner-0"]),
-    ).toHaveLength(1);
+    expect((await mailbox(t)).filter(({ email }) => email === fresh.email("owner-0"))).toHaveLength(
+      1,
+    );
   });
 });

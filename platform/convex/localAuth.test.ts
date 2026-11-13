@@ -51,7 +51,7 @@ async function sessions(t: ReturnType<typeof setup>, count = 1) {
     200,
   );
   const [mail] = await t.query(internal.mail.inbox, { email });
-  expect((await request(t, "/email-otp/verify-email", "", { email, otp: mail.otp })).status).toBe(
+  expect((await request(t, "/email-otp/verify-email", "", { email, otp: mail?.otp })).status).toBe(
     200,
   );
   const cookies: string[] = [];
@@ -101,7 +101,7 @@ it.each(routes)(
         t.fetch(`/api/auth${route}${i % 2 ? "?refresh=true" : ""}`, {
           headers: {
             Origin: origin,
-            "Better-Auth-Cookie": cookies[i % 4],
+            "Better-Auth-Cookie": cookies[i % 4] ?? "",
             "x-forwarded-for": `192.0.2.${i + 1}`,
           },
         }),

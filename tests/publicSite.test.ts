@@ -555,10 +555,11 @@ describe("distribuição pública estática", () => {
         expect(res.statusCode, path).toBe(404);
         expect(res.body, path).toContain("Página não encontrada");
       }
-      for (const [path, accept] of [
+      const nonPages: [path: string, accept: string][] = [
         ["/docs/inexistente.data", "*/*"],
         ["/docs/inexistente", "application/json"],
-      ]) {
+      ];
+      for (const [path, accept] of nonPages) {
         const res = get(path, accept);
         expect(res.statusCode, path).toBe(404);
         expect(res.type, path).toContain("text/plain");

@@ -208,8 +208,8 @@ describe("workflows de operação no repositório público", () => {
       expect(step.run).toContain("sha256sum -c -");
       const upload = job.steps.find((each) => each.uses?.startsWith("actions/upload-artifact@"))!;
       expect(
-        upload
-          .with!.path.trim()
+        (upload.with?.path ?? "")
+          .trim()
           .split("\n")
           .map((line) => line.trim()),
       ).toEqual([

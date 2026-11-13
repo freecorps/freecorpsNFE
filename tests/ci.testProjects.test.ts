@@ -99,7 +99,7 @@ it("finds a mock through every kind of local import of a tests/ helper", () => {
 it("assigns every test file to exactly one project and one report suite", () => {
   expect(testFiles.length).toBeGreaterThan(150);
   const wrong = testFiles
-    .map((file) => [file, owners(file).join(",") || "nenhum"])
+    .map((file): [string, string] => [file, owners(file).join(",") || "nenhum"])
     .filter(([, names]) => names.includes(",") || names === "nenhum");
   expect(wrong).toEqual([]);
   for (const file of testFiles) expect(reportSuites).toContain(suiteFor(file));

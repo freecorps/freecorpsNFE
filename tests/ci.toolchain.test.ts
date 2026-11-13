@@ -37,7 +37,7 @@ describe("ferramentas do Oxc na raiz", () => {
       );
       expect(manifestPath.startsWith(root + sep)).toBe(true);
       const installed = projectRequire(manifestPath) as { version: string };
-      expect(installed.version).toBe(vitePlus.dependencies[tool].replace(/^=/, ""));
+      expect(installed.version).toBe(vitePlus.dependencies[tool]?.replace(/^=/, ""));
       expect(dirname(manifestPath).endsWith(join("node_modules", tool))).toBe(true);
     });
   }

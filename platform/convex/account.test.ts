@@ -106,6 +106,7 @@ async function signup(t: ReturnType<typeof setup>) {
   const body = await response.json();
   expect(body.token).toBeNull();
   const [message] = await t.query(internal.mail.inbox, { email });
+  if (!message) throw new Error("No verification mail");
   expect(message.type).toBe("email-verification");
   expect(message.otp).toMatch(/^\d{8}$/);
   return message.otp;

@@ -260,6 +260,26 @@ de `convex/` e seus testes, e o grafo tinha as tarefas `ci:legacy-*` e
 `platform/convex/lib/` que ele reutilizava (`apiKeyCrypto.ts`, `webhookUrl.ts`
 e `publicAddress.ts`) passaram a ter só a plataforma como consumidora.
 
+Além de `strict`, o `tsconfig.json` da raiz liga `noUncheckedIndexedAccess` e
+`noImplicitOverride` (#140), e os projetos que o estendem herdam as duas. Os
+`tsconfig.json` de `fiscal-core`, `fiscal-nfe` e `fiscal-nfse`, que a build
+emite, ligam as mesmas duas. Com a primeira, índice de array e chave de
+`Record` valem `T | undefined`: código novo e correções tratam o vazio com
+guarda, `??`, desestruturação conferida ou tupla tipada, sem `!`, `as` ou
+`@ts-expect-error` para calar o compilador. Os `!` escritos antes da #140
+continuam onde estavam. A segunda exige `override` em membro que sobrescreve a
+classe base.
+
+`exactOptionalPropertyTypes` fica desligado. Na medição da #140 ele acusou 251
+erros em 104 arquivos, 174 fora de testes, quase todos `undefined` explícito
+numa propriedade opcional (TS2379 e TS2375): props de componentes do console e
+objetos passados ao Convex. O `ctx.db.patch` aceita `undefined`, que apaga o
+campo, mesmo com a flag; recusam o `undefined` o `patchFiscal` de
+`platform/convex/lib/capacityCore.ts`, tipado com `Partial<Doc<T>>`, os
+`ctx.db.insert` com campo `undefined` e os objetos aninhados de um `patch`.
+Ligar a flag pede uma frente própria, fatiada por diretório, que comece por
+tipar o `patchFiscal` como o `patch` do Convex.
+
 As checagens de tipos usam o TypeScript 7, o compilador nativo, instalado como
 `typescript-7` (`scripts/build/typecheck.mjs`). O pacote `typescript` continua no 6.0
 para o editor, as builds que emitem código e a prova do consumidor do SDK.

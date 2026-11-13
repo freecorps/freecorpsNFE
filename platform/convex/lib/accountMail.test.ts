@@ -34,10 +34,10 @@ it("renders invitation codes as a distinct purpose without weakening OTP validat
   vi.stubGlobal("fetch", fetch);
   const provider = remote();
   await provider.send({ ...message, type: "organization-invitation", otp: "a".repeat(64) });
-  expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
+  expect(JSON.parse(fetch.mock.calls[0]?.[1].body)).toMatchObject({
     subject: "Convite para uma organização na Freecorps Fiscal",
   });
-  expect(JSON.parse(fetch.mock.calls[0][1].body).text).toContain("72 horas");
+  expect(JSON.parse(fetch.mock.calls[0]?.[1].body).text).toContain("72 horas");
   await expect(provider.send({ ...message, otp: "a".repeat(64) })).rejects.toThrow(
     "Invalid account code",
   );
@@ -52,7 +52,7 @@ it("links the invitation with the code in the fragment, never in the query", asy
   const provider = remote({ siteUrl: "https://console.development.invalid/ignored/path?x=1" });
   const otp = "b".repeat(64);
   await provider.send({ ...message, type: "organization-invitation", otp });
-  const body = JSON.parse(fetch.mock.calls[0][1].body);
+  const body = JSON.parse(fetch.mock.calls[0]?.[1].body);
   const link = `https://console.development.invalid/accept-invitation#code=${otp}`;
   expect(body.text).toContain(link);
   expect(body.text).toContain(`Seu código de convite: ${otp}`);
@@ -60,7 +60,7 @@ it("links the invitation with the code in the fragment, never in the query", asy
   expect(body.text).not.toContain("?code=");
   // Account codes never carry a link.
   await provider.send(message);
-  expect(JSON.parse(fetch.mock.calls[1][1].body).text).not.toContain("accept-invitation");
+  expect(JSON.parse(fetch.mock.calls[1]?.[1].body).text).not.toContain("accept-invitation");
 });
 it("posts to the mail service with the deployment's key and explicit recipients", async () => {
   const fetch = vi.fn().mockImplementation(async () => accepted());
@@ -68,11 +68,11 @@ it("posts to the mail service with the deployment's key and explicit recipients"
   const provider = remote();
   await provider.send(message);
   expect(fetch).toHaveBeenCalledTimes(1);
-  expect(String(fetch.mock.calls[0][0])).toBe("https://mail.development.invalid/emails");
-  const headers = new Headers(fetch.mock.calls[0][1].headers);
+  expect(String(fetch.mock.calls[0]?.[0])).toBe("https://mail.development.invalid/emails");
+  const headers = new Headers(fetch.mock.calls[0]?.[1].headers);
   expect(headers.get("authorization")).toBe("Bearer synthetic-key");
   expect(headers.get("idempotency-key")).toBeTruthy();
-  expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
+  expect(JSON.parse(fetch.mock.calls[0]?.[1].body)).toMatchObject({
     to: [message.email],
     from: '"Freecorps Fiscal · Validação" <sender@development.invalid>',
   });

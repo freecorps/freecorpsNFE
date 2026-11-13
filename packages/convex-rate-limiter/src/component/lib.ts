@@ -119,8 +119,8 @@ export const getValue = query({
     for (let i = 0; i < samplesToTake; i++) {
       if (shardIndices.length === 0) break;
       const randomIndex = Math.floor(Math.random() * shardIndices.length);
-      selectedShards.push(shardIndices[randomIndex]);
-      shardIndices.splice(randomIndex, 1);
+      const [shard] = shardIndices.splice(randomIndex, 1);
+      if (shard !== undefined) selectedShards.push(shard);
     }
 
     const allShards = (
@@ -183,9 +183,10 @@ export const clearAll = mutation({
     for (const m of results) {
       await ctx.db.delete(m._id);
     }
-    if (results.length === 100) {
+    const last = results[99];
+    if (last) {
       await ctx.scheduler.runAfter(0, api.lib.clearAll, {
-        before: results[99]._creationTime,
+        before: last._creationTime,
       });
     }
   },

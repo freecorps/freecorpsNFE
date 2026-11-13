@@ -96,7 +96,7 @@ export const calibrate = internalAction({
       afterObjects,
       allocatedBytes: bytes.byteLength,
       objects: objects.length,
-      checksum: bytes[0] + objects[99999].i,
+      checksum: (bytes[0] ?? 0) + (objects.at(-1)?.i ?? 0),
     });
   },
 });
