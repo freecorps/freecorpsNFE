@@ -2,7 +2,8 @@ import { posix } from "node:path";
 
 /**
  * Classificação da mudança no início do job Validate
- * (docs/desenvolvimento/ci.md, "Mudança só de documentação").
+ * (docs/desenvolvimento/ci.md, "Mudança só de documentação" e "Grafo
+ * reduzido"; o segundo modo fica em `changeMode` e `optionalTasks`).
  *
  * Uma PR que só muda documentação roda a formatação (`vp fmt --check`), a
  * varredura de credenciais (`ci:secrets`) e os testes que leem toda a

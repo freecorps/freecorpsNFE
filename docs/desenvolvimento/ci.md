@@ -34,7 +34,10 @@ Não descrever o head como testado quando o runner executou outro commit.
 `Validate` começa classificando a mudança (`scripts/ci/ci-changes.mjs`). Numa PR
 que só muda documentação, confere formatação, credenciais e os testes que leem
 toda a documentação e termina aprovado, sem `tested_sha`
-([Mudança só de documentação](#mudança-só-de-documentação)). Nos demais casos,
+([Mudança só de documentação](#mudança-só-de-documentação)). Numa PR que fica
+dentro dos workspaces da plataforma, executa o grafo sem as provas dos pacotes
+publicados e sem a área de testes `packages`, também sem `tested_sha`
+([Grafo reduzido](#grafo-reduzido)). Nos demais casos,
 instala pelo lockfile, executa o grafo `validate` (formatação, lint, tipos,
 testes, provas de consumidor e empacotamento do console, sem publicar) e depois
 `vp run ci:boundaries`. Somente após esses checks o job produz `tested_sha`. Em seguida, o passo `Require successful checks for
@@ -90,24 +93,25 @@ na chave `run.tasks`; o Vite Task as executa em ordem de dependência, até quat
 ao mesmo tempo, e agrupa a saída de cada uma no log, com um resumo no final que
 diz, tarefa a tarefa, se executou ou repetiu um resultado e por quê.
 
-| Tarefa            | Comando                                                                | Depende de                         | Cache               |
-| ----------------- | ---------------------------------------------------------------------- | ---------------------------------- | ------------------- |
-| `ci:packages`     | `node scripts/build/build-fiscal-packages.mjs`                         |                                    | sim                 |
-| `ci:sdk`          | `bun run sdk:compat && bun run sdk:prove`                              | `ci:packages`                      | não: registro e Git |
-| `ci:contracts`    | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                      | sim, lê o Git       |
-| `ci:xml-prove`    | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                      | não: registro       |
-| `ci:distribution` | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`           | não: registro e Git |
-| `ci:check`        | `vp check`                                                             | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:secrets`      | `node scripts/public-copy/check-secrets.mjs`                           |                                    | não: índice do Git  |
-| `ci:knip`         | `bun run knip:check`                                                   |                                    | não: manifests      |
-| `ci:typecheck`    | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk`            | sim                 |
-| `ci:test:<área>`  | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                      | sim                 |
-| `ci:tests`        | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`              | não: revisão        |
-| `ci:tooling`      | `node .github/scripts/check-tooling.mjs`                               |                                    | sim                 |
-| `ci:docs`         | `node apps/docs/scripts/build.mjs`                                     |                                    | sim, só local       |
-| `ci:console`      | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk`, `ci:docs` | sim                 |
-| `ci:budget`       | `node scripts/ci/budget.mjs check`                                     | `ci:console`                       | sim                 |
-| `ci:auth-worker`  | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                    | não: Git            |
+| Tarefa            | Comando                                                                | Depende de                               | Cache               |
+| ----------------- | ---------------------------------------------------------------------- | ---------------------------------------- | ------------------- |
+| `ci:packages`     | `node scripts/build/build-fiscal-packages.mjs`                         |                                          | sim                 |
+| `ci:sdk:build`    | `bun run sdk:build`                                                    | `ci:packages`                            | sim                 |
+| `ci:sdk`          | `bun run sdk:compat && bun run sdk:prove`                              | `ci:check`, `ci:typecheck`, `ci:console` | não: registro e Git |
+| `ci:contracts`    | `bun scripts/contracts/check-contracts-ci.mjs`                         | `ci:packages`                            | sim, lê o Git       |
+| `ci:xml-prove`    | `node scripts/distribution/prove-xml-package.mjs`                      | `ci:packages`                            | não: registro       |
+| `ci:distribution` | `bun run licenses:check && bun run distribution:prove`                 | `ci:sdk`, `ci:xml-prove`                 | não: registro e Git |
+| `ci:check`        | `vp check`                                                             | `ci:packages`, `ci:sdk:build`            | sim                 |
+| `ci:secrets`      | `node scripts/public-copy/check-secrets.mjs`                           |                                          | não: índice do Git  |
+| `ci:knip`         | `bun run knip:check`                                                   |                                          | não: manifests      |
+| `ci:typecheck`    | `node scripts/build/typecheck.mjs -p tsconfig.platform.json`           | `ci:packages`, `ci:sdk:build`            | sim                 |
+| `ci:test:<área>`  | `node scripts/ci/ci.mjs test-area <área>`                              | `ci:packages`                            | sim                 |
+| `ci:tests`        | `node scripts/ci/ci.mjs collect-tests`                                 | cada `ci:test:<área>`                    | não: revisão        |
+| `ci:tooling`      | `node .github/scripts/check-tooling.mjs`                               |                                          | sim                 |
+| `ci:docs`         | `node apps/docs/scripts/build.mjs`                                     |                                          | sim, só local       |
+| `ci:console`      | `node scripts/console/console.mjs package`                             | `ci:packages`, `ci:sdk:build`, `ci:docs` | sim                 |
+| `ci:budget`       | `node scripts/ci/budget.mjs check`                                     | `ci:console`                             | sim                 |
+| `ci:auth-worker`  | `node --experimental-strip-types scripts/proofs/prove-auth-worker.mjs` |                                          | não: Git            |
 
 As tarefas sem cache têm um motivo cada uma. `ci:sdk`, `ci:xml-prove` e
 `ci:distribution` instalam os tarballs num consumidor limpo com dependências do
@@ -128,8 +132,11 @@ entradas dela, e uma repetição traz o pacote carimbado com o SHA do run que o
 compilou.
 
 `bun run build` equivale a `ci:packages`, `ci:typecheck`, `ci:docs` e à
-compilação do console. O que lê a árvore espera o SDK, porque os tsconfigs da
-raiz incluem `packages/sdk/dist`. Os testes resolvem os pacotes pelo
+compilação do console. O que lê a árvore espera o SDK compilado por
+`ci:sdk:build`, porque os tsconfigs da raiz incluem `packages/sdk/dist`. A prova
+do SDK (`ci:sdk`) apaga e recompila esse diretório, então roda depois de
+`ci:check`, `ci:typecheck` e `ci:console`. Até a #167 ela compilava o SDK para
+eles; separada, a compilação continua no grafo reduzido, que pula a prova. Os testes resolvem os pacotes pelo
 código-fonte e não leem o SDK compilado; cada `ci:test:<área>` espera só
 `ci:packages`, porque o teste de fronteiras inspeciona o `dist` fiscal quando
 ele existe e `ci:packages` o apaga e recria.
@@ -249,6 +256,51 @@ inline, referências locais existentes e nenhum chunk das telas de
 desenvolvimento (`apps/console/src/dev/`) no bundle.
 `tests/publicSite.test.ts` confere os links e o contrato da documentação
 pública, além do opt-in de indexação.
+
+### Grafo reduzido
+
+O cache do grafo decide arquivo a arquivo o que repete, mas não poupa as
+tarefas sem cache, e as áreas de testes leem mais do que importam: numa PR só
+de `platform/`, a área `packages` também executava. Por isso a mesma
+classificação (`scripts/lib/ci-changes.mjs`) tem um terceiro modo, `affected`,
+para PR deste repositório. Ela lê os workspaces de
+`scripts/build/package-boundaries.json` e os manifests deles, e marca como
+alcançados os workspaces com arquivo alterado e, por transitividade, os que
+dependem deles.
+
+| Grupo opcional                              | Workspaces que prova                                        |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `ci:sdk`, `ci:xml-prove`, `ci:distribution` | os cinco pacotes publicados (`kind` `pure` ou `node`)       |
+| `ci:test:packages`                          | todo workspace em `packages/`, onde ficam os testes da área |
+
+Um grupo sai do grafo quando nenhum workspace alcançado é dele. O passo
+`Classify the change` publica a lista em `skip`, o grafo a recebe em
+`CI_VALIDATE_SKIP`, e `vite.config.ts` tira essas tarefas das dependências de
+`validate` e de `ci:tests`. `ci:tests` registra a área pulada em `tests.json`
+como `skipped`; `approvedTests` nunca aprova um checkout com área pulada, e o
+job não emite `tested_sha` nesse modo, como no de documentação. As demais
+tarefas rodam sempre, com o cache decidindo o que repete; `ci:sdk:build` compila
+o SDK que `ci:check`, `ci:typecheck` e `ci:console` leem.
+
+O grafo inteiro roda quando um arquivo além da documentação fica fora dos
+workspaces (`package.json` e `bun.lock` da raiz, `vite.config.ts`, `tsconfig*`,
+`patches/`, `.github/`, `tests/setup/`, `tests/helpers/`, `tests/fixtures/`,
+`scripts/`, `tooling/`, `examples/`, `deploy/` e a documentação que algum
+teste lê), quando a PR muda um `package.json` de workspace e quando ela alcança
+um pacote publicado, o que faz todo grupo ser necessário. Também roda no push
+na `main`, nas execuções manuais e nas chamadas por `workflow_call` (o
+`GITHUB_WORKFLOW_REF` não é o do `ci.yml`), e quando o diff ou os manifestos não
+podem ser lidos. Uma PR que só apaga documentação roda o grafo reduzido.
+
+Na prática, PR só de `platform/`, `apps/console/` ou `apps/docs/` pula os dois
+grupos; PR que toca `packages/convex-rate-limiter/`, que não é publicado mas
+tem testes na área `packages`, pula só as provas. O push na `main` depois do
+merge roda o grafo inteiro e executa o que a PR pulou: uma regressão que só uma
+prova de distribuição veria aparece ali, não na PR. `tests/ci.changes.test.ts`
+confere os casos, a falha aberta e que nenhuma tarefa fora de um grupo depende
+de uma tarefa dele.
+
+MEDIÇÃO
 
 ### Tipos
 
@@ -1396,7 +1448,9 @@ total mensal. Um push novo numa PR cancela a validação anterior da mesma PR.
 
 Com o cache do grafo (04/11/2026), uma PR paga a instalação, a restauração do
 cache, as tarefas sem cache e as que a mudança alcança; uma PR só de
-documentação paga a instalação, a formatação e dois arquivos de teste. Cada
+documentação paga a instalação, a formatação e dois arquivos de teste. Desde a
+#167, uma PR que fica nos workspaces da plataforma não paga as provas de
+distribuição nem a área `packages` ([Grafo reduzido](#grafo-reduzido)). Cada
 merge na `main` passou a rodar o `CI` de novo, mas repetindo o que a PR
 aprovou. Medir os minutos cobrados dessas execuções antes de atualizar a
 estimativa acima.
