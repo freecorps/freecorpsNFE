@@ -67,6 +67,8 @@
       "id": "M0-hosted-email-and-trusted-edge-proof",
       "status": "delivered",
       "evidence": [
+        "apps/console/auth-proxy.test.ts",
+        "platform/convex/hostedAuth.test.ts",
         "docs/v1.0/evidence/63/README.md",
         "docs/v1.0/evidence/63/real-maintainer-confirmation.json",
         "docs/v1.0/evidence/63/real-recovery.json",

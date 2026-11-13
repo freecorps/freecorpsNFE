@@ -16,6 +16,10 @@ agentes e aponta para as referências abaixo.
 | [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                                              |
 | [`termos/`](termos/)                   | Termos da captura, termos de uso e política, com versão e hash, e o rascunho da captura                        |
 
+O status de uma ADR mora só no cabeçalho dela; os outros documentos linkam a
+ADR sem repeti-lo (prova: `scripts/repo/adr-status.test.ts` › "keeps every ADR
+status in its header and nowhere else").
+
 O estado tem uma fonte por pergunta. [ACCEPTANCE.md](v1.0/ACCEPTANCE.md)
 mantém as capacidades com seus limites, os critérios de aceite e as lacunas
 que bloqueiam o aceite, cada uma com sua condição de saída e issue;
@@ -150,4 +154,26 @@ só quando houver responsabilidade própria. Mudança de comportamento atualiza 
 referência atual na mesma PR; andamento vai para a issue; uma execução vai para
 o recibo, apontado no índice de evidências. A matriz de aceite só muda quando
 a execução altera uma capacidade, um limite, um critério, uma lacuna ou uma
-condição de saída. Não crie documentos de status paralelos.
+condição de saída. Não crie documentos de status paralelos. Esses acordos são
+convenção, sem verificação; o link relativo para arquivo ou âncora que não
+existe reprova (prova: `scripts/repo/doc-links.test.ts` › "keeps every
+relative link in the documentation pointing at something that exists").
+
+### Regra com prova citada
+
+Uma regra estrutural do [AGENTS.md](../AGENTS.md), deste índice ou da
+[arquitetura do backend](plataforma/arquitetura-backend.md) diz o que a
+garante. Ela termina com uma destas marcas:
+
+- `prova:` seguido do arquivo de teste, em código, e de `›` com o título exato
+  do `it`, `test` ou `describe` entre aspas;
+- `prova:` seguido da regra de lint, em código, como
+  `freecorps/no-float-fiscal-values` ou `import/no-cycle`, com link opcional
+  para [lint.md](desenvolvimento/lint.md);
+- "convenção, sem verificação", quando nenhum teste ou lint a confere.
+
+`scripts/repo/docs-claims.test.ts` reprova marca para arquivo ou título de
+teste que não existe, regra que não está no plugin `freecorps` ou na
+configuração do lint e regra do plugin sem linha e seção em `lint.md`, ou o
+contrário. Renomear um teste citado pede a mesma mudança no documento; uma
+regra sem prova nem marca é achado de revisão.

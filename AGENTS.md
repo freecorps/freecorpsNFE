@@ -21,9 +21,9 @@ Permissão, escopo de organização, projeto, empresa e ambiente, valores e
 transições se validam no Convex. O cliente envia a intenção; o servidor carrega
 o registro e confere quem pode agir. `organizationId`, `projectId`, `companyId`
 e ids de documentos são seletores, nunca prova de acesso. Validação no
-formulário é feedback; a proteção fica na função que lê ou escreve, e
-`freecorps/require-access-helper-in-convex-functions` exige um helper de acesso
-antes do primeiro toque em dado ([lint.md](docs/desenvolvimento/lint.md)).
+formulário é feedback; a proteção fica na função que lê ou escreve, com um
+helper de acesso antes do primeiro toque em dado (prova:
+[`freecorps/require-access-helper-in-convex-functions`](docs/desenvolvimento/lint.md#require-access-helper-in-convex-functions)).
 
 ### 2. Retentativa não pode duplicar efeito
 
@@ -36,8 +36,8 @@ e reconcilie antes de repetir.
 ### 3. Dinheiro e histórico fiscal exigem precisão
 
 Valores fiscais são texto decimal exato, com os helpers de
-`packages/fiscal-core` (`freecorps/no-float-fiscal-values`). Documento fiscal e
-auditoria preservam histórico, sem apagar o original
+`packages/fiscal-core` (prova: `freecorps/no-float-fiscal-values`). Documento
+fiscal e auditoria preservam histórico, sem apagar o original
 ([RETENTION.md](docs/plataforma/RETENTION.md)).
 
 ### 4. Pessoas, projetos e empresas têm escopos distintos
@@ -45,11 +45,14 @@ auditoria preservam histórico, sem apagar o original
 O papel de cada membro na organização define o que ele pode fazer; login sem
 membership não concede acesso. API keys pertencem a um projeto e exigem escopo,
 ambiente e concessão ativa da empresa. Reutilize os helpers dos
-`platform/convex/lib/*Access.ts`
-([lint.md](docs/desenvolvimento/lint.md#require-access-helper-in-convex-functions)).
-Uma chave não lê dados de outra organização nem de empresa fora da concessão,
-inclusive em downloads, respostas deduplicadas e webhooks. Cabeçalhos de proxy
-e IP vêm só do Worker, nunca do chamador.
+`platform/convex/lib/*Access.ts`, cada export classificado (prova:
+`tooling/oxlint-plugin-freecorps/access-helpers.test.ts` › "classifica cada
+função exportada dos lib/\*Access.ts como checagem ou utilitário"). Uma chave
+não lê dados de outra organização nem de empresa fora da concessão, inclusive
+em downloads, respostas deduplicadas e webhooks. Cabeçalhos de proxy e IP vêm
+só do Worker, nunca do chamador (prova: `apps/console/auth-proxy.test.ts` ›
+"overwrites forged forwarding headers and signs the actual edge IP, body,
+method and origin").
 
 ### 5. Sandbox, homologação e produção são ambientes diferentes
 
@@ -127,9 +130,11 @@ do dev: preserve processos, servidores, setup do editor e alterações locais.
 Bun na versão de `package.json` e Vite+; `vp install --frozen-lockfile`
 instala ([README.md](README.md)). `bun run help` lista os scripts com aplicação
 e ambiente; script novo, com atalho ou rodado pelo caminho, entra em
-`scripts/lib/commands.mjs`. `bun run dev` roda só em worktree, com Convex local
-e console; `vp dev` pula esse roteador. No
-Windows, passe temporários por `$TEMP` (o Python não vê o `/tmp` do Git Bash).
+`scripts/lib/commands.mjs` (prova: `scripts/repo/commands.test.ts` › "todo
+ponto de entrada de scripts/ tem chamador ou entra nos roteiros").
+`bun run dev` roda só em worktree, com Convex local e console; `vp dev` pula
+esse roteador. No Windows, passe temporários por `$TEMP` (o Python não vê o
+`/tmp` do Git Bash).
 Em worktree, crie a branch a partir de `origin/main`; `git switch main` falha.
 
 Leia [docs/worktrees.md](docs/worktrees.md) antes de criar, iniciar ou remover
@@ -180,10 +185,11 @@ mascarar com `sed` não protege.
   o caso negado e o isolamento entre organizações, projetos e empresas. O que
   testar, em que camada, como provar uma correção e como esperar trabalho
   assíncrono estão em [testes.md](docs/desenvolvimento/testes.md).
-- Cada teste fica ao lado do módulo, num projeto do Vitest por área; comandos,
-  cache e montagem da integração estão em
-  [ci.md#testes](docs/desenvolvimento/ci.md#testes).
-  `freecorps/no-wall-clock-in-tests` reprova relógio real e polling.
+- Cada teste fica ao lado do módulo, num projeto do Vitest por área (prova:
+  `tests/ci.testProjects.test.ts` › "assigns every test file to exactly one
+  project and one report suite"); comandos, cache e montagem da integração
+  estão em [ci.md#testes](docs/desenvolvimento/ci.md#testes). Teste não usa
+  relógio real nem polling (prova: `freecorps/no-wall-clock-in-tests`).
 - O hook `pre-commit` recusa o commit com arquivo staged mal formatado ou com
   erro ou aviso de lint ([detalhes](docs/desenvolvimento/ci.md#hook-pre-commit));
   corrija o achado, sem `--no-verify` nem `VP_GIT_HOOKS=0`.
@@ -222,6 +228,8 @@ captura, exportação e webhooks. O mapa de pastas está em
 
 ## Convenções e gosto
 
+Convenção, sem verificação, salvo onde o item cita a prova.
+
 - O console importa por caminhos relativos e pelos pacotes `@freecorps/*`;
   `platform/convex/` usa caminhos relativos.
 - Reutilize os tipos gerados pelo Convex e estreite valores desconhecidos;
@@ -234,8 +242,8 @@ captura, exportação e webhooks. O mapa de pastas está em
   com o fuso do navegador.
 - Integrações nas bordas, regras fiscais em helpers testáveis; comentários
   explicam decisões junto do código.
-- Supressão de lint e teste pulado dizem por quê
-  (`freecorps/require-suppression-reason`).
+- Supressão de lint e teste pulado dizem por quê (prova:
+  `freecorps/require-suppression-reason`).
 - A UI mostra o que aconteceu e qual ação está disponível, sem sugerir sucesso
   antes de a operação ou o fisco responderem.
 - Skills ficam em `.agents/skills/`: consulte
