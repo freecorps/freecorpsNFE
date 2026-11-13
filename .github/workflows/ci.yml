@@ -1,9 +1,11 @@
 name: CI
 
 # A pull request runs only what its change can affect: a documentation-only
-# change runs formatting and the credential scan, and any other change runs the
-# `validate` graph, where each task whose inputs match a passing result replays
-# it from the Vite Task cache. A push on main replays the merged pull request's
+# change runs formatting and the credential scan; a change inside the platform
+# workspaces runs the `validate` graph without the package distribution proofs
+# and package tests it cannot reach; any other change runs the whole graph. In
+# both graph modes each task whose inputs match a passing result replays it
+# from the Vite Task cache. A push on main replays the merged pull request's
 # results and saves the cache later pull requests start from. It does not gate
 # the production deploy, which deploy.yml runs on its own
 # (docs/desenvolvimento/ci.md).
@@ -72,10 +74,14 @@ jobs:
           # the Vite Task cache is restored, after the install.
           cache: false
       # mode: docs (a pull request that changes only documentation no task but
-      # formatting and the credential scan reads) or graph. cache: whether the
-      # graph uses the Vite Task cache (this workflow's own pull_request and
-      # push runs) or runs every task (manual runs and workflow_call
-      # publications). Fails open: a diff it cannot resolve runs the graph.
+      # formatting and the credential scan reads), affected (a pull request
+      # whose other files all sit inside workspaces: the graph runs without the
+      # tasks in `skip`, which prove only workspaces the change does not reach)
+      # or graph (everything else, and every run that is not this workflow's own
+      # pull_request). cache: whether the graph uses the Vite Task cache (this
+      # workflow's own pull_request and push runs) or runs every task (manual
+      # runs and workflow_call publications). Fails open: a diff or workspace
+      # list it cannot resolve runs the whole graph (scripts/lib/ci-changes.mjs).
       - name: Classify the change
         id: changes
         run: node scripts/ci/ci-changes.mjs
@@ -150,7 +156,7 @@ jobs:
       # variables Vite Task passes through. With CI=true a missing age fails
       # those tests instead of skipping them (tests/helpers/age.ts).
       - name: Install pinned age
-        if: steps.changes.outputs.mode == 'graph'
+        if: steps.changes.outputs.mode != 'docs'
         timeout-minutes: 2
         env:
           AGE_VERSION: v1.3.2
@@ -166,11 +172,14 @@ jobs:
       # order and side by side. With the cache, a task whose inputs match a
       # passing run replays it, and a failure is never cached. Without it
       # (--no-cache) every task runs. Output is grouped per task, with a summary
-      # at the end saying which tasks ran and which replayed.
+      # at the end saying which tasks ran and which replayed. In affected mode
+      # vite.config.ts drops the tasks in CI_VALIDATE_SKIP from validate and
+      # ci:tests; empty, the graph is the whole one.
       - name: Build, check and test
         id: graph
-        if: steps.changes.outputs.mode == 'graph'
+        if: steps.changes.outputs.mode != 'docs'
         env:
+          CI_VALIDATE_SKIP: ${{ steps.changes.outputs.skip }}
           CONTRACT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           # The flag is the truthy branch: Actions treats '' as false, so
           # `cache == 'true' && '' || '--no-cache'` would always disable it.
@@ -183,7 +192,7 @@ jobs:
           vp run $TASK_CACHE --verbose --log grouped validate
       # Inspects the built dist of the fiscal packages, so it follows the graph.
       - name: Check independent package boundaries
-        if: steps.changes.outputs.mode == 'graph'
+        if: steps.changes.outputs.mode != 'docs'
         run: vp run ci:boundaries
       - name: Locate the current SDK validation package
         id: sdk_artifact
@@ -210,7 +219,9 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/ci/budget.mjs compare --base HEAD^1
       # Requires a passing receipt for every test area under this checkout's
-      # revision (scripts/lib/ci.mjs, approvedTests).
+      # revision (scripts/lib/ci.mjs, approvedTests). Only the whole graph
+      # issues a tested SHA: affected mode skips the SDK package, this and the
+      # gate, as documentation mode does.
       - name: Approve the checked revision
         id: approve
         if: steps.changes.outputs.mode == 'graph'
@@ -251,6 +262,7 @@ jobs:
         if: always()
         env:
           CI_CHANGES_MODE: ${{ steps.changes.outputs.mode }}
+          CI_VALIDATE_SKIP: ${{ steps.changes.outputs.skip }}
         run: node scripts/ci/ci.mjs summary
       - name: Upload sanitized validation report
         if: always()

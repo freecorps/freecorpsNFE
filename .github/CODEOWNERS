@@ -35,6 +35,7 @@
 # The task runner config that `vp run ci:docs` loads, and what it imports.
 /vite.config.ts @wolf-stievano
 /scripts/lib/test-projects.mjs @wolf-stievano
+/scripts/lib/ci-changes.mjs @wolf-stievano
 /tests/setup/sequencer.ts @wolf-stievano
 /platform/installation.ts @wolf-stievano
 /scripts/lib/installation-headers.mjs @wolf-stievano

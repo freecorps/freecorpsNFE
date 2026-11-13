@@ -8,14 +8,18 @@ import {
   consumedDocumentation,
   documentationOnly,
   documentationTests,
+  optionalTasks,
+  validateSkip,
 } from "../scripts/lib/ci-changes.mjs";
 import { findPullRequestTaskCache, TASK_CACHE_ARTIFACT } from "../scripts/lib/ci-task-cache.mjs";
 import { areaFiles } from "../scripts/lib/test-projects.mjs";
+import config, { runTasks } from "../vite.config";
 
 /**
  * O job Validate escolhe no primeiro passo o que roda: só formatação e
- * credenciais numa PR só de documentação, ou o grafo `validate`, com o cache do
- * Vite Task em PR e push na `main` e sem ele nas publicações.
+ * credenciais numa PR só de documentação, o grafo `validate` sem as tarefas
+ * que uma PR dentro dos workspaces não alcança, ou o grafo inteiro, com o cache
+ * do Vite Task em PR e push na `main` e sem ele nas publicações.
  */
 const repository = "freecorps/freecorpsNFE";
 const sha = "a".repeat(40);
@@ -63,22 +67,190 @@ it("treats as documentation only the Markdown that no task but formatting reads"
     expect(documentationOnly(file), file).toBe(false);
 });
 
-it("runs the graph unless every changed file of a pull request is documentation", () => {
-  expect(changeMode({ eventName: "pull_request", files: ["docs/README.md", "DESIGN.md"] })).toEqual(
-    { mode: "docs", reason: "só documentação (2 arquivos)" },
-  );
-  for (const change of [
-    { eventName: "pull_request", files: ["docs/README.md", "vite.config.ts"] },
-    { eventName: "pull_request", files: ["docs/README.md", "AGENTS.md"] },
-    // A deleted or renamed document can break an existence check or a link.
-    { eventName: "pull_request", files: ["docs/README.md"], deleted: ["docs/README.md"] },
-    // Fails open: no diff, an empty diff, or not a pull request.
-    { eventName: "pull_request", files: null },
-    { eventName: "pull_request", files: [] },
-    { eventName: "push", files: ["docs/README.md"] },
-    { eventName: "workflow_dispatch", files: ["docs/README.md"] },
+/** The repository's workspaces, read as scripts/ci/ci-changes.mjs reads them. */
+const boundaries = JSON.parse(readFileSync("scripts/build/package-boundaries.json", "utf8")) as {
+  workspaces: Record<string, { kind: string }>;
+};
+const workspaces = Object.fromEntries(
+  Object.entries(boundaries.workspaces).map(([dir, { kind }]) => [
+    dir,
+    { kind, manifest: JSON.parse(readFileSync(`${dir}/package.json`, "utf8")) },
+  ]),
+);
+const pullRequest = (files: string[] | null, deleted: string[] = []) =>
+  changeMode({ eventName: "pull_request", ownWorkflow: true, files, deleted, workspaces });
+const proofs = ["ci:sdk", "ci:xml-prove", "ci:distribution"];
+const everyOptional = [...proofs, "ci:test:packages"];
+
+it("runs only formatting, secrets and documentation tests when every file is documentation", () => {
+  expect(pullRequest(["docs/README.md", "DESIGN.md"])).toEqual({
+    mode: "docs",
+    reason: "só documentação (2 arquivos)",
+    skip: [],
+  });
+  // A deleted or renamed document can break an existence check or a link,
+  // which the graph runs; nothing that only proves packages reads it.
+  expect(pullRequest(["docs/README.md"], ["docs/README.md"])).toMatchObject({
+    mode: "affected",
+    skip: everyOptional,
+  });
+});
+
+it("skips the package proofs and tests a change inside the platform workspaces cannot reach", () => {
+  for (const files of [
+    ["apps/console/src/routes.tsx"],
+    ["platform/convex/http.ts"],
+    ["platform/convex/http.ts", "apps/console/src/routes.tsx", "docs/README.md"],
+    ["apps/docs/content/docs/sdk.mdx"],
   ])
-    expect(changeMode(change).mode, JSON.stringify(change)).toBe("graph");
+    expect(pullRequest(files), files.join()).toMatchObject({
+      mode: "affected",
+      skip: everyOptional,
+    });
+  // Deleting a platform file breaks only what the graph still runs.
+  expect(pullRequest(["platform/convex/old.ts"], ["platform/convex/old.ts"]).mode).toBe("affected");
+  // The rate limiter is a platform package with tests in the packages area.
+  expect(pullRequest(["packages/convex-rate-limiter/src/index.ts"])).toMatchObject({
+    mode: "affected",
+    skip: proofs,
+  });
+});
+
+it("runs the whole graph when the change reaches a published package or leaves the workspaces", () => {
+  const consoleFile = "apps/console/src/routes.tsx";
+  for (const files of [
+    // A published package, directly or as a dependency of one.
+    ["packages/sdk/src/index.ts"],
+    ["packages/contracts/src/index.ts"],
+    ["packages/fiscal-core/src/index.ts", "platform/convex/http.ts"],
+    ["packages/fiscal-nfse/src/index.ts"],
+    // A manifest changes dependencies, inside a workspace too.
+    ["apps/console/package.json"],
+    // Outside every workspace, even next to a platform file.
+    ...[
+      "package.json",
+      "bun.lock",
+      "vite.config.ts",
+      "tsconfig.json",
+      "patches/convex@1.48.0.patch",
+      ".github/workflows/ci.yml",
+      "tests/setup/offline.ts",
+      "tests/helpers/platform.ts",
+      "tests/fixtures/nfe/4.00/a.xml",
+      "scripts/lib/ci-changes.mjs",
+      "tooling/oxlint-plugin-freecorps/index.mjs",
+      "examples/quickstart.ts",
+      "deploy/receipts.json",
+      // Documentation a test or build reads.
+      "AGENTS.md",
+      "docs/v1.0/API-REFERENCE.md",
+    ].map((file) => [consoleFile, file]),
+  ])
+    expect(pullRequest(files), files.join()).toMatchObject({ mode: "graph", skip: [] });
+  // Fails open: no diff, an empty diff, no workspace list, not a pull request,
+  // or ci.yml called by another workflow.
+  for (const change of [
+    { eventName: "pull_request", ownWorkflow: true, files: null, workspaces },
+    { eventName: "pull_request", ownWorkflow: true, files: [], workspaces },
+    { eventName: "pull_request", ownWorkflow: true, files: [consoleFile], workspaces: null },
+    { eventName: "pull_request", ownWorkflow: true, files: [consoleFile] },
+    { eventName: "pull_request", ownWorkflow: false, files: [consoleFile], workspaces },
+    { eventName: "pull_request", files: ["docs/README.md"], workspaces },
+    { eventName: "push", ownWorkflow: true, files: [consoleFile], workspaces },
+    { eventName: "workflow_dispatch", ownWorkflow: true, files: ["docs/README.md"], workspaces },
+  ])
+    expect(changeMode(change), JSON.stringify(change)).toMatchObject({ mode: "graph", skip: [] });
+});
+
+it("covers with each optional group exactly the workspaces its tasks prove", () => {
+  const covered = (tasks: string[]) => {
+    const group = optionalTasks.find((candidate) => candidate.tasks.join() === tasks.join())!;
+    return Object.entries(boundaries.workspaces)
+      .filter(([dir, { kind }]) => group.covers({ dir, kind }))
+      .map(([dir]) => dir)
+      .sort();
+  };
+  // The five packages scripts/distribution/prove-distribution.mjs packs.
+  expect(covered(proofs)).toEqual(
+    ["contracts", "fiscal-core", "fiscal-nfe", "fiscal-nfse", "sdk"].map(
+      (name) => `packages/${name}`,
+    ),
+  );
+  // Every workspace that holds a test of the packages area.
+  const dirs = Object.keys(boundaries.workspaces);
+  const holders = new Set(
+    areaFiles("packages").map((file) => dirs.find((dir) => file.startsWith(`${dir}/`))),
+  );
+  expect(holders.has(undefined)).toBe(false);
+  for (const dir of holders) expect(covered(["ci:test:packages"]), dir).toContain(dir);
+});
+
+it("reads the skip list strictly and never skips a task outside the optional groups", () => {
+  expect(validateSkip(undefined)).toEqual([]);
+  expect(validateSkip("")).toEqual([]);
+  expect(validateSkip(` ${proofs.join(",")},ci:test:packages ,ci:sdk`)).toEqual(everyOptional);
+  expect(() => validateSkip("ci:check")).toThrow("ci:check");
+  expect(() => validateSkip(`${proofs.join(",")},ci:sdk:build`)).toThrow("ci:sdk:build");
+  // Half a group would leave ci:sdk running as a dependency of ci:distribution,
+  // next to the tasks that then read the SDK built by ci:sdk:build.
+  for (const partial of ["ci:sdk", "ci:sdk,ci:xml-prove", "ci:distribution"])
+    expect(() => validateSkip(partial), partial).toThrow("grupo incompleto");
+});
+
+type Task = { command?: string; dependsOn?: string[] };
+/** The tasks vite.config.ts builds for a CI_VALIDATE_SKIP list. */
+const tasksWith = async (skip: string[]) =>
+  runTasks(validateSkip(skip.join(","))) as Record<string, Task>;
+/** Every task `validate` runs, its dependencies included. */
+const reached = (tasks: Record<string, Task>) => {
+  const seen = new Set<string>();
+  const visit = (name: string) => {
+    if (seen.has(name)) return;
+    seen.add(name);
+    for (const dependency of tasks[name]!.dependsOn ?? []) visit(dependency);
+  };
+  visit("validate");
+  return seen;
+};
+
+it("drops every skipped task from the validate graph, and builds the SDK without its proof", async () => {
+  const wholeTasks = await tasksWith([]);
+  // Without CI_VALIDATE_SKIP (tasks never receive it) the config is the whole graph.
+  expect(config.run!.tasks).toEqual(wholeTasks);
+  const whole = reached(wholeTasks);
+  for (const task of everyOptional) expect(whole, task).toContain(task);
+  // The whole graph is the one before #167: ci:sdk builds the SDK for its readers.
+  expect(whole.has("ci:sdk:build")).toBe(false);
+  const readers = ["ci:check", "ci:typecheck", "ci:console"];
+  for (const reader of readers) expect(wholeTasks[reader]!.dependsOn, reader).toContain("ci:sdk");
+  for (const skip of [proofs, everyOptional, ["ci:test:packages"]]) {
+    const tasks = await tasksWith(skip);
+    const reduced = reached(tasks);
+    // A task still reached never waits on a skipped one, or the skipped one
+    // would be reached too.
+    expect([...whole].filter((task) => !reduced.has(task)).sort(), skip.join()).toEqual(
+      [...skip].sort(),
+    );
+    expect(
+      [...reduced].filter((task) => !whole.has(task)),
+      skip.join(),
+    ).toEqual(skip.includes("ci:sdk") ? ["ci:sdk:build"] : []);
+    if (skip.includes("ci:sdk"))
+      for (const reader of readers)
+        expect(tasks[reader]!.dependsOn, reader).toEqual(expect.arrayContaining(["ci:sdk:build"]));
+  }
+  expect((await tasksWith(everyOptional))["ci:tests"]!.command).toBe(
+    "node scripts/ci/ci.mjs collect-tests --skip packages",
+  );
+  expect((await tasksWith(proofs))["ci:tests"]!.command).toBe(
+    "node scripts/ci/ci.mjs collect-tests",
+  );
+  // What licenses:check reads beyond the published packages runs in every graph.
+  for (const skip of [[], everyOptional])
+    expect(reached(await tasksWith(skip)), skip.join()).toContain("ci:first-party-licenses");
+  expect(wholeTasks["ci:first-party-licenses"]!.command).toBe(
+    "node scripts/licenses/check-first-party-licenses.mjs",
+  );
 });
 
 it("uses the task cache only in this workflow's own pull request and push runs", () => {
@@ -231,19 +403,27 @@ const named = (name: string) => {
   return step;
 };
 
-it("issues a tested SHA only after the whole graph, never in documentation mode", () => {
+it("issues a tested SHA only after the whole graph, never in documentation or affected mode", () => {
   const graph = "steps.changes.outputs.mode=='graph'";
+  const anyGraph = "steps.changes.outputs.mode!='docs'";
   expect(named("Classify the change").run).toBe("node scripts/ci/ci-changes.mjs");
   expect(named("Classify the change")).not.toHaveProperty("if");
-  for (const name of [
-    "Build, check and test",
-    "Check independent package boundaries",
-    "Approve the checked revision",
-    "Require successful checks for the same commit",
-  ]) {
-    expect(expression(named(name).if), name).toBe(graph);
+  for (const [name, condition] of [
+    ["Install pinned age", anyGraph],
+    ["Build, check and test", anyGraph],
+    ["Check independent package boundaries", anyGraph],
+    // The SDK package exists only when ci:sdk ran, and the approval needs
+    // every test area.
+    ["Locate the current SDK validation package", graph],
+    ["Approve the checked revision", graph],
+    ["Require successful checks for the same commit", graph],
+  ] as const) {
+    expect(expression(named(name).if), name).toBe(condition);
     expect(named(name), name).not.toHaveProperty("continue-on-error");
   }
+  // The affected mode's skip list reaches the graph and the summary.
+  for (const name of ["Build, check and test", "Summarize suites and pending coverage"])
+    expect(expression(named(name).env!.CI_VALIDATE_SKIP), name).toBe("steps.changes.outputs.skip");
   const docs = named("Check documentation");
   expect(expression(docs.if)).toBe("steps.changes.outputs.mode=='docs'");
   expect(docs.run!.trim().split("\n")).toEqual([

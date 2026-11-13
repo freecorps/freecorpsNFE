@@ -2,7 +2,8 @@ import { posix } from "node:path";
 
 /**
  * Classificação da mudança no início do job Validate
- * (docs/desenvolvimento/ci.md, "Mudança só de documentação").
+ * (docs/desenvolvimento/ci.md, "Mudança só de documentação" e "Grafo
+ * reduzido"; o segundo modo fica em `changeMode` e `optionalTasks`).
  *
  * Uma PR que só muda documentação roda a formatação (`vp fmt --check`), a
  * varredura de credenciais (`ci:secrets`) e os testes que leem toda a
@@ -64,41 +65,181 @@ export const documentationTests = [
 ];
 
 /**
- * O que o job executa: `docs` (formatação, credenciais e `documentationTests`)
- * ou `graph` (o grafo `validate` inteiro, com o cache decidindo o que repete).
- * Apagar ou renomear um Markdown roda o grafo: há testes que conferem a
- * existência de arquivos citados (tests/coverage-matrix.json) e links entre
- * documentos. Falha aberta: sem a lista de arquivos, ou fora de PR, roda o grafo.
- * @param {{ eventName?: string, files: string[] | null, deleted?: string[] }} change
+ * Tarefas do grafo `validate` que uma PR pula quando não alcança nenhum
+ * workspace que elas provam (docs/desenvolvimento/ci.md, "Grafo reduzido").
+ * `covers` recebe a pasta do workspace e o `kind` dele em
+ * scripts/build/package-boundaries.json. As provas de distribuição não usam
+ * cache e instalam do registro npm a cada run; a área `packages` testa só
+ * `packages/**` (scripts/lib/test-projects.mjs). Um grupo pula inteiro; sem
+ * `ci:sdk`, quem lê o SDK compilado espera `ci:sdk:build` (vite.config.ts), e
+ * `tests/ci.changes.test.ts` confere que o grafo reduzido perde exatamente as
+ * tarefas puladas. As demais tarefas rodam sempre, e o cache do Vite Task repete
+ * as que a mudança não alcança. As provas leem também o que não empacotam (o
+ * corpus interno de fixtures e certificados de todo o repositório); uma
+ * colisão com ele aparece no push na `main`, que roda o grafo inteiro.
  */
-export function changeMode({ eventName, files, deleted = [] }) {
-  if (eventName !== "pull_request") return { mode: "graph", reason: "não é PR: o grafo roda" };
-  if (files === null)
-    return { mode: "graph", reason: "não foi possível comparar com a base: o grafo roda" };
-  if (files.length === 0) return { mode: "graph", reason: "diff vazio: o grafo roda" };
-  if (deleted.length)
-    return {
-      mode: "graph",
-      reason: `${deleted.length} arquivos apagados ou renomeados: o grafo roda`,
-    };
-  const other = files.filter((file) => !documentationOnly(file));
-  if (other.length === 0)
-    return { mode: "docs", reason: `só documentação (${files.length} arquivos)` };
-  const shown = other.slice(0, 5).join(", ") + (other.length > 5 ? ", ..." : "");
-  return { mode: "graph", reason: `${other.length} arquivos além de documentação: ${shown}` };
+export const optionalTasks = [
+  {
+    // Os pacotes independentes (`pure` e `node`): os cinco que
+    // scripts/distribution/prove-distribution.mjs empacota. A parte de
+    // licenses:check que lê todo workspace roda sempre, em
+    // ci:first-party-licenses.
+    tasks: ["ci:sdk", "ci:xml-prove", "ci:distribution"],
+    covers: (/** @type {{ dir: string, kind: string }} */ { kind }) => kind !== "platform",
+  },
+  {
+    tasks: ["ci:test:packages"],
+    covers: (/** @type {{ dir: string, kind: string }} */ { dir }) => dir.startsWith("packages/"),
+  },
+];
+
+const optionalNames = optionalTasks.flatMap(({ tasks }) => tasks);
+
+/**
+ * Lê `CI_VALIDATE_SKIP` (nomes separados por vírgula), que o job passa ao grafo
+ * no modo `affected`. Vazio, o grafo é o inteiro. Reprova um nome fora de
+ * `optionalTasks`, para que um erro de digitação nunca pule outra tarefa, e um
+ * grupo pela metade: sem `ci:sdk` mas com `ci:distribution`, a prova do SDK
+ * rodaria como dependência ao lado de quem lê o SDK compilado.
+ * @param {string | undefined} value
+ */
+export function validateSkip(value) {
+  const names = (value ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const unknown = names.filter((name) => !optionalNames.includes(name));
+  if (unknown.length)
+    throw new Error(`CI_VALIDATE_SKIP: tarefa não opcional: ${unknown.join(", ")}`);
+  const partial = optionalTasks.filter(
+    ({ tasks }) =>
+      tasks.some((task) => names.includes(task)) && !tasks.every((task) => names.includes(task)),
+  );
+  if (partial.length)
+    throw new Error(
+      `CI_VALIDATE_SKIP: grupo incompleto: ${partial.map(({ tasks }) => tasks.join(", ")).join("; ")}`,
+    );
+  return [...new Set(names)];
 }
 
 /**
+ * Pacotes do workspace que contêm um arquivo alterado e, por transitividade,
+ * os que dependem deles (`@freecorps/*` nos manifests). `workspaces` são as
+ * pastas de scripts/build/package-boundaries.json; `manifests`, o package.json
+ * de cada uma.
+ * @param {string[]} files
+ * @param {string[]} workspaces
+ * @param {Record<string, { name: string, dependencies?: object, devDependencies?: object, peerDependencies?: object }>} manifests
+ */
+export function affectedWorkspaces(files, workspaces, manifests) {
+  const byName = Object.fromEntries(workspaces.map((dir) => [manifests[dir].name, dir]));
+  const dependents = Object.fromEntries(workspaces.map((dir) => [dir, []]));
+  for (const dir of workspaces) {
+    const { dependencies = {}, devDependencies = {}, peerDependencies = {} } = manifests[dir];
+    for (const name of Object.keys({ ...dependencies, ...devDependencies, ...peerDependencies }))
+      if (byName[name] && byName[name] !== dir) dependents[byName[name]].push(dir);
+  }
+  const direct = new Set(
+    files.map((file) => workspaceOf(file, workspaces)).filter((dir) => dir !== undefined),
+  );
+  const reached = new Set(direct);
+  const queue = [...direct];
+  while (queue.length)
+    for (const next of dependents[queue.shift()]) {
+      if (!reached.has(next)) {
+        reached.add(next);
+        queue.push(next);
+      }
+    }
+  return {
+    changed: [...direct].sort(byPath),
+    dependents: [...reached].filter((dir) => !direct.has(dir)).sort(byPath),
+  };
+}
+
+const byPath = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** A pasta de workspace mais longa que contém o arquivo, ou `undefined`. */
+const workspaceOf = (file, workspaces) =>
+  [...workspaces].sort((a, b) => b.length - a.length).find((dir) => file.startsWith(`${dir}/`));
+
+const shown = (list) => list.slice(0, 5).join(", ") + (list.length > 5 ? ", ..." : "");
+
+/**
+ * O que o job executa: `docs` (formatação, credenciais e `documentationTests`),
+ * `affected` (o grafo `validate` sem as tarefas de `skip`) ou `graph` (o grafo
+ * inteiro). O cache do Vite Task decide, nos dois últimos, o que repete.
+ *
+ * `docs` exige que nada seja apagado nem renomeado: há testes que conferem a
+ * existência de arquivos citados (tests/coverage-matrix.json) e links entre
+ * documentos, e eles rodam no grafo. `affected` exige que todo arquivo além de
+ * documentação esteja dentro de um workspace e não seja um `package.json`: o
+ * que fica fora (scripts, testes transversais, `.github/`, `patches/`,
+ * `bun.lock`, `vite.config.ts`, a documentação que algum teste lê) pode
+ * alimentar qualquer tarefa, e um manifesto muda dependências. Os workspaces
+ * alcançados são os alterados e os que dependem deles; um grupo de
+ * `optionalTasks` pula quando nenhum deles é coberto pelo grupo.
+ *
+ * Falha aberta: fora de PR, chamado por outro workflow, sem a lista de arquivos
+ * ou de workspaces, o grafo inteiro roda.
+ * @param {{
+ *   eventName?: string,
+ *   ownWorkflow?: boolean,
+ *   files: string[] | null,
+ *   deleted?: string[],
+ *   workspaces?: Record<string, { kind: string, manifest: { name: string } }> | null,
+ * }} change
+ * @returns {{ mode: "docs" | "affected" | "graph", reason: string, skip: string[] }}
+ */
+export function changeMode({ eventName, ownWorkflow, files, deleted = [], workspaces = null }) {
+  const graph = (reason) => ({
+    mode: "graph",
+    reason: `${reason}: o grafo inteiro roda`,
+    skip: [],
+  });
+  if (eventName !== "pull_request") return graph("não é PR");
+  if (!ownWorkflow) return graph("chamado por outro workflow");
+  if (files === null) return graph("não foi possível comparar com a base");
+  if (files.length === 0) return graph("diff vazio");
+  const other = files.filter((file) => !documentationOnly(file));
+  if (other.length === 0 && deleted.length === 0)
+    return { mode: "docs", reason: `só documentação (${files.length} arquivos)`, skip: [] };
+  if (!workspaces) return graph("workspaces não lidos");
+  const dirs = Object.keys(workspaces);
+  const outside = other.filter(
+    (file) => workspaceOf(file, dirs) === undefined || posix.basename(file) === "package.json",
+  );
+  if (outside.length)
+    return graph(`${outside.length} arquivos fora dos workspaces ou manifestos: ${shown(outside)}`);
+  const manifests = Object.fromEntries(dirs.map((dir) => [dir, workspaces[dir].manifest]));
+  const { changed, dependents } = affectedWorkspaces(other, dirs, manifests);
+  const reached = [...changed, ...dependents];
+  const skip = optionalTasks
+    .filter(({ covers }) => !reached.some((dir) => covers({ dir, kind: workspaces[dir].kind })))
+    .flatMap(({ tasks }) => tasks);
+  const scope = reached.length
+    ? `alcança ${reached.join(", ")}`
+    : `só documentação, com ${deleted.length} arquivos apagados ou renomeados`;
+  if (skip.length === 0) return graph(`${scope}, e toda tarefa opcional prova algum deles`);
+  return { mode: "affected", reason: `${scope}; pula ${skip.join(", ")}`, skip };
+}
+
+/**
+ * O run é do próprio `ci.yml` deste repositório. Numa chamada por
+ * `workflow_call` (publicação de validação e da produção fiscal),
+ * `GITHUB_WORKFLOW_REF` é o do chamador.
+ * @param {Record<string, string | undefined>} env
+ */
+export const ownWorkflow = (env) =>
+  typeof env.GITHUB_REPOSITORY === "string" &&
+  (env.GITHUB_WORKFLOW_REF ?? "").startsWith(`${env.GITHUB_REPOSITORY}/.github/workflows/ci.yml@`);
+
+/**
  * O cache do Vite Task vale só para o próprio CI em PR e push na `main`.
- * Disparo manual e chamadas por `workflow_call` (publicação de validação e da
- * produção fiscal, cujo `GITHUB_WORKFLOW_REF` é o do chamador) rodam o grafo sem
- * cache, como antes.
+ * Disparo manual e chamadas por `workflow_call` rodam o grafo sem cache, como
+ * antes.
  * @param {Record<string, string | undefined>} env
  */
 export function cacheAllowed(env) {
-  return (
-    ["pull_request", "push"].includes(env.GITHUB_EVENT_NAME ?? "") &&
-    typeof env.GITHUB_REPOSITORY === "string" &&
-    (env.GITHUB_WORKFLOW_REF ?? "").startsWith(`${env.GITHUB_REPOSITORY}/.github/workflows/ci.yml@`)
-  );
+  return ["pull_request", "push"].includes(env.GITHUB_EVENT_NAME ?? "") && ownWorkflow(env);
 }
