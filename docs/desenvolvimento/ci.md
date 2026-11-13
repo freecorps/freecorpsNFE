@@ -378,7 +378,8 @@ atravessa `.claude/worktrees/`).
 
 ### Rodar e escrever testes
 
-Durante o desenvolvimento, rode só a área alterada:
+O que testar, em que camada e como provar uma correção estão em
+[testes.md](testes.md). Durante o desenvolvimento, rode só a área alterada:
 
 | Comando                 | O que roda                                                 |
 | ----------------------- | ---------------------------------------------------------- |
