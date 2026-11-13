@@ -30,7 +30,7 @@ export type Claim = { line: number; target: string; title?: string };
 const start = /\bprova:\s+/g;
 const marker = /\[?`([^`\n]+)`\]?(?:\([^)\s]*\))?(?:\s+›\s+"([^"]+)")?/y;
 // Caminho ou regra sem crase depois de `prova:` é marca malformada, não prosa.
-const bare = /[\w.@-]+\/\S|\S+\.test\./y;
+const bare = /[\w.@-]+\/[\w.-]+\.[cm]?[jt]sx?\b|[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*-[a-z0-9-]+\b/y;
 const testFile = /\.test\.[cm]?[jt]sx?$/;
 const ruleName = /^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/;
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -68,7 +68,8 @@ const testFunctions = new Set(["it", "test", "describe", "suite"]);
 /**
  * Títulos dos testes que rodam num arquivo: `it`, `test`, `describe` e
  * `suite`, com `.each`, `.skipIf` e afins, lidos da árvore sintática. Teste em
- * comentário ou com `.skip` ou `.todo` não prova nada e fica de fora.
+ * comentário, com `.skip`, `.todo` ou `.fails` (que inverte a asserção), ou dentro
+ * de um `describe` pulado não prova nada e fica de fora.
  */
 export function testTitles(file: string, source: string) {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest);
@@ -83,23 +84,19 @@ export function testTitles(file: string, source: string) {
     if (ts.isCallExpression(node)) return callee(node.expression);
     return undefined;
   };
-  const visit = (node: ts.Node) => {
+  const visit = (node: ts.Node, skipped: boolean): void => {
+    let inside = skipped;
     if (ts.isCallExpression(node)) {
       const names = callee(node.expression);
-      const [title] = node.arguments;
-      if (
-        names &&
-        testFunctions.has(names[0]!) &&
-        !names.includes("skip") &&
-        !names.includes("todo") &&
-        title &&
-        ts.isStringLiteralLike(title)
-      )
-        titles.add(title.text);
+      if (names && testFunctions.has(names[0]!)) {
+        inside ||= names.some((name) => ["skip", "todo", "fails"].includes(name));
+        const [title] = node.arguments;
+        if (!inside && title && ts.isStringLiteralLike(title)) titles.add(title.text);
+      }
     }
-    ts.forEachChild(node, visit);
+    ts.forEachChild(node, (child) => visit(child, inside));
   };
-  visit(tree);
+  visit(tree, false);
   return titles;
 }
 
@@ -184,7 +181,7 @@ it("reads test, lint and malformed marks, with a title that wraps the line", () 
         'Regra (prova: `a/b.test.ts` › "keeps\n  the order"; prova:',
         "[`freecorps/x-y`](lint.md#x-y)). Outra (convenção, sem verificação).",
         "Prova: sem marca. prova: `solto`. prova: [link sem código](x.md).",
-        "Sem crase (prova: a/b.test.ts). A prova: o texto segue.",
+        "Sem crase (prova: a/b.test.ts). A prova: o texto segue, e/ou não.",
       ].join("\n"),
     ),
   ).toEqual([
@@ -205,6 +202,8 @@ it("takes titles only from tests that run", () => {
     "  test.skipIf(process.env.CI)(`condicional`, () => {});",
     '  it.skip("pulado", () => {});',
     '  it.todo("depois");',
+    '  it.fails("invertido", () => {});',
+    '  describe.skip("grupo pulado", () => { it("dentro do pulado", () => {}); });',
     '  // it("comentado", () => {});',
     '  expect(fn("chamada")).toBe(1);',
     "});",

@@ -218,8 +218,8 @@ fiscal e da emissão NFS-e (`FNFE_PROOF_FISCAL_ENV`, `FNFE_ISSUANCE_ENV`,
 cofre usam os campos do perfil validado (`fiscalTarget`, `issuanceEnv`,
 `restrictedCompanies`, `productionCompanies`, `deploymentUrl`) (prova:
 `platform/convex/environmentIsolation.test.ts` › "leaves the issuance gates to
-the validated profile, with no variable read of their own"). O console também, e
-uma combinação parcial é recusada em vez de passar por uma leitura solta
+the validated profile, with no variable read of their own"). O console também
+os usa, e uma combinação parcial é recusada em vez de passar por uma leitura solta
 (convenção, sem verificação). A captura e as rotinas ainda leem parte das
 variáveis direto ([#130](https://github.com/freecorps/freecorpsNFE/issues/130)).
 
@@ -234,7 +234,9 @@ Há dois eixos de ambiente, e toda operação conhece ambos:
   (`baseEnvironment`, o `PRODUCT_ENV`) é sempre atendido; empresa de
   demonstração, só em `sandbox` (prova:
   `platform/convex/environmentIsolation.test.ts` › "serves only sandbox on a
-  sandbox deployment while no company is released"). Um deployment de base
+  sandbox deployment while no company is released"; prova:
+  `platform/convex/environmentIsolation.test.ts` › "opens production for a
+  released company only for the capture and its documents"). Um deployment de base
   `production` (#50, produção fiscal da NFS-e) não atende outro (prova:
   `platform/convex/environmentIsolation.test.ts` › "keeps a production
   deployment fixed: production only, never per company"). Um de base `sandbox`
@@ -312,9 +314,10 @@ comuns da implementação:
   próxima página.
 - Valores fiscais são decimais em texto canônico com escala documentada
   (prova: `packages/fiscal-core/index.test.ts` › "preserves declared scale and
-  leading zeros across JSON"); inteiros ficam na faixa segura (prova:
+  leading zeros across JSON") e sem perda de precisão (prova:
   `packages/fiscal-core/index.test.ts` › "refuses precision loss, forged
-  decimals and unbounded exponents"). Nenhum cálculo os converte em número
+  decimals and unbounded exponents"); inteiros ficam na faixa segura
+  (convenção, sem verificação). Nenhum cálculo os converte em número
   (prova:
   [`freecorps/no-float-fiscal-values`](../desenvolvimento/lint.md#no-float-fiscal-values)).
   Ver [fiscal-core](../../packages/fiscal-core/README.md).
@@ -422,11 +425,12 @@ PFX e senha são cifrados com AES-256-GCM por envelope versionado, com contexto
 de organização, empresa e versão (prova:
 `platform/convex/lib/certificateCrypto.test.ts` › "encrypts both secrets and
 authenticates all context fields and every block"); o keyring vem de
-`FNFE_PLATFORM_CERT_KEYS`, fora do banco. O material só é aberto no runtime de
+`FNFE_PLATFORM_CERT_KEYS`, fora do banco (convenção, sem verificação). O
+material só é aberto no runtime de
 transporte, a API devolve metadados (validade, fingerprint, estado) e nunca o
 segredo (prova: `platform/convex/certificates.test.ts` › "uploads encrypted
 material, validates asynchronously and exposes metadata only"), e o uso é
-auditado. A decisão está na
+auditado (convenção, sem verificação). A decisão está na
 [ADR 0003](../adr/0003-cofre-de-certificados-da-plataforma.md); o contrato e a
 rotação, em [CERTIFICATES.md](CERTIFICATES.md); a recuperação das chaves, em
 [restauracao.md](../operacao/restauracao.md).

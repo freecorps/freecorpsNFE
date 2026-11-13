@@ -55,15 +55,19 @@ O papel de cada membro na organização define o que ele pode fazer; login sem
 membership não concede acesso (prova: `platform/convex/access.test.ts` ›
 "enforces operator, viewer and missing grant on the server"). API keys
 pertencem a um projeto e exigem escopo, ambiente e concessão ativa da empresa
-(prova: `platform/convex/operations.test.ts` › "HTTP recusa ID de outro
-cliente, ambiente errado e chave revogada"). Reutilize os helpers dos
+(prova: `platform/convex/keys.test.ts` › "separates scope and product
+environment without enabling production fiscal access"; prova:
+`platform/convex/keys.test.ts` › "current grant reductions apply to existing
+keys, and empty or malformed permissions fail"). Reutilize os helpers dos
 `platform/convex/lib/*Access.ts`, cada export classificado (prova:
 `tooling/oxlint-plugin-freecorps/access-helpers.test.ts` › "classifica cada
 função exportada dos lib/\*Access.ts como checagem ou utilitário"). Uma chave
 não lê dados de outra organização nem de empresa fora da concessão, inclusive
 em downloads, respostas deduplicadas e webhooks (prova:
 `platform/convex/documents.test.ts` › "rejects foreign documents, versions and
-artifacts without revealing their existence"). Cabeçalhos de proxy e IP vêm
+artifacts without revealing their existence"; prova:
+`platform/convex/publicSurface.test.ts` › "keeps every public function inside
+the caller's organization and company grants"). Cabeçalhos de proxy e IP vêm
 só do Worker, nunca do chamador (prova: `apps/console/auth-proxy.test.ts` ›
 "overwrites forged forwarding headers and signs the actual edge IP, body,
 method and origin").
@@ -75,7 +79,9 @@ tipo `prod` do Convex não muda isso (prova:
 `scripts/deploy/platform-release.test.ts` › "preserva HTTPS no release
 autorizado e mantém o bootstrap sem envio externo"). A única consulta à produção
 fiscal é a captura de NF-e liberada pela empresa, sob as condições de
-[CAPTURE.md](docs/plataforma/CAPTURE.md). `APP_ENV=installation` não quer dizer
+[CAPTURE.md](docs/plataforma/CAPTURE.md) (prova:
+`platform/convex/environmentIsolation.test.ts` › "opens production for a
+released company only for the capture and its documents"). `APP_ENV=installation` não quer dizer
 sandbox: a produção da emissão usará um deployment próprio, ainda inexistente,
 cujo gate só muda por workflow (ADR 0004, §8; prova:
 `scripts/deploy/issuance-gate.test.ts` › "só a publicação e o backup do segundo
@@ -83,7 +89,8 @@ alvo recebem a chave, e nenhum outro chama o gate"). Preserve os gates de
 ambiente de cada fluxo. Transporte simulado prova o comportamento local;
 autorização real exige evidência do fisco no ambiente correto. Certificados A1,
 senhas, CSC e chaves de integração ficam no cofre ou no ambiente, fora de
-código, logs e fixtures.
+código, logs e fixtures (prova: `scripts/public-copy/check-secrets.test.ts` ›
+"detecta tokens de serviço e chaves privadas pelo padrão compartilhado").
 
 ## Um recado do dono do projeto
 
