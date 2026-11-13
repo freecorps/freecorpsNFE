@@ -234,14 +234,11 @@ try {
       }
       if (process.env.CI_CHANGES_MODE === "docs")
         summary += `\nSó documentação mudou: o job conferiu formatação e credenciais e não executou o grafo \`validate\`; nenhum \`tested_sha\` foi emitido.\n`;
-      if (process.env.CI_CHANGES_MODE === "affected")
-        summary += `\nA mudança não alcança os workspaces que ${(process.env.CI_VALIDATE_SKIP ?? "")
-          .split(",")
-          .filter(Boolean)
-          .map((task) => `\`${task}\``)
-          .join(
-            ", ",
-          )} provam: o grafo \`validate\` rodou sem essas tarefas, e nenhum \`tested_sha\` foi emitido.\n`;
+      if (process.env.CI_CHANGES_MODE === "affected") {
+        const skippedTasks = (process.env.CI_VALIDATE_SKIP ?? "").split(",").filter(Boolean);
+        const list = skippedTasks.map((task) => `\`${task}\``).join(", ");
+        summary += `\nA mudança não alcança os workspaces que ${list} provam: o grafo \`validate\` rodou sem essas tarefas, e nenhum \`tested_sha\` foi emitido.\n`;
+      }
       summary += `\n## Cobertura progressiva da 1.0\n\n${matrix.modules.map((m) => `- ${m.id}: ${m.status}`).join("\n")}\n\nTestes remotos e fiscais reais não fazem parte deste CI.\n`;
       writeFileSync(join(output, "summary.md"), summary);
       if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

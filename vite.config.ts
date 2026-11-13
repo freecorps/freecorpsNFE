@@ -197,10 +197,9 @@ export default defineConfig({
           ],
         },
       },
-      // Compila o SDK em packages/sdk/dist, que o tsconfig da raiz inclui: o que
-      // lê a árvore espera por ele. A própria saída, inclusive o tarball e o
-      // metafile em .ci-results/74, não é entrada.
-      // Só no grafo reduzido, que pula ci:sdk (`sdkBuild`).
+      // No grafo reduzido, que pula ci:sdk, compila o SDK em packages/sdk/dist
+      // para quem lê a árvore (`sdkBuild`). A própria saída, inclusive o tarball
+      // e o metafile em .ci-results/74, não é entrada.
       "ci:sdk:build": {
         command: "bun run sdk:build",
         dependsOn: ["ci:packages"],
