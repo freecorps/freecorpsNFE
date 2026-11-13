@@ -113,7 +113,9 @@ export function parseLabels(text) {
  * @param {string[]} labels
  */
 export function budgetVerdict(base, head, labels) {
-  const increases = base === null ? [] : budgetIncreases(base, head);
+  // Sem base, compara com o vazio: nada aumenta, mas o arquivo novo passa pela
+  // mesma validação de tetos numéricos.
+  const increases = budgetIncreases(base ?? {}, head);
   const accepted = labels.includes(BUDGET_LABEL);
   return { increases, accepted, ok: increases.length === 0 || accepted };
 }

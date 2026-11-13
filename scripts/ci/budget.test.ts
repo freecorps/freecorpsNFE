@@ -53,6 +53,21 @@ describe("comparação com a base", () => {
     expect(budgetVerdict(null, head, []).ok).toBe(true);
   });
 
+  it("valida o arquivo novo mesmo sem base", () => {
+    expect(() => budgetVerdict(null, { console: { total: "grande" } }, [])).toThrow(
+      "console.total",
+    );
+  });
+
+  it("trata o arquivo apagado como todos os tetos removidos", () => {
+    expect(budgetVerdict(base, {}, []).increases.map(({ path }) => path)).toEqual([
+      "console.gzipBytes.assets/main.js",
+      "console.gzipBytes.total",
+      "benchmarks.home.bytesRead",
+      "benchmarks.home.documentsRead",
+    ]);
+  });
+
   it("recusa o que não é teto numérico", () => {
     expect(() => budgetIncreases(base, { ...base, nota: "texto" })).toThrow("nota");
     expect(() => budgetIncreases(base, { ...base, lista: [1] })).toThrow("lista");

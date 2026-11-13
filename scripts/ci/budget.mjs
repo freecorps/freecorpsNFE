@@ -96,26 +96,43 @@ async function pullRequestLabels() {
 async function compare(args) {
   const base = args[args.indexOf("--base") + 1];
   if (!args.includes("--base") || !base || base.startsWith("--")) throw new Error(usage);
-  let baseText = null;
-  try {
-    baseText = execFileSync("git", ["show", `${base}:${BUDGET_FILE}`], {
+  const labelsAt = args.indexOf("--labels");
+  const labelsArg = labelsAt === -1 ? null : args[labelsAt + 1];
+  if (labelsAt !== -1 && (!labelsArg || labelsArg.startsWith("--"))) throw new Error(usage);
+  const git = (...gitArgs) =>
+    execFileSync("git", gitArgs, {
       cwd: repoRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     });
+  // Uma ref que não resolve é erro, nunca "base sem arquivo", que aprovaria tudo.
+  try {
+    git("rev-parse", "--verify", `${base}^{commit}`);
   } catch {
+    throw new Error(`A base ${base} não é um commit deste checkout`);
+  }
+  let baseBudget = null;
+  try {
+    baseBudget = JSON.parse(git("show", `${base}:${BUDGET_FILE}`));
+  } catch (error) {
+    if (error instanceof SyntaxError) throw error;
     // A base anterior ao orçamento não tem o arquivo: não há teto a afrouxar.
     console.log(`${base} não tem ${BUDGET_FILE}; nada a comparar`);
   }
-  const head = readBudget();
-  const preliminary = budgetVerdict(baseText === null ? null : JSON.parse(baseText), head, []);
+  // A PR que apaga o arquivo remove todos os tetos: cada um aparece como removido.
+  let head = {};
+  try {
+    head = readBudget();
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  const preliminary = budgetVerdict(baseBudget, head, []);
   if (preliminary.ok) {
     console.log(`${BUDGET_FILE}: nenhum teto aumentou nem saiu em relação a ${base}`);
     return;
   }
-  const labelsAt = args.indexOf("--labels");
-  const labels = labelsAt === -1 ? await pullRequestLabels() : parseLabels(args[labelsAt + 1]);
-  const verdict = budgetVerdict(JSON.parse(baseText), head, labels);
+  const labels = labelsArg === null ? await pullRequestLabels() : parseLabels(labelsArg);
+  const verdict = budgetVerdict(baseBudget, head, labels);
   for (const { path, base: before, head: after } of verdict.increases)
     console.log(`${path}: ${before} -> ${after ?? "removido"}`);
   if (!verdict.ok)

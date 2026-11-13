@@ -321,10 +321,12 @@ Para aceitar um aumento de propósito:
 
 O passo não roda no push na `main` nem nas publicações manuais: o aumento é
 julgado uma vez, na PR. Tirar a label depois de o check passar não o reprova;
-quem revisa vê a label e o diff do arquivo. O build do console é
-determinístico na mesma máquina; se o runner Linux medir outro número que o
-Windows, `ci:budget` reprova a PR com os dois valores, e o número do runner é
-o que vale.
+quem revisa vê a label e o diff do arquivo. Na PR que criou o arquivo (#245),
+o runner Linux mediu o mesmo total que o Windows (756066 bytes). Se um dia os
+dois divergirem, `ci:budget` reprova com os dois valores, e o número do runner
+é o que vale. Uma base que não resolve num commit reprova o passo; só uma base
+sem `budget.json` passa sem comparar, e mesmo então o arquivo da PR precisa
+ter só tetos numéricos.
 
 ## Testes
 
