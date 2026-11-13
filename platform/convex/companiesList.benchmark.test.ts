@@ -9,6 +9,7 @@ import * as companies from "./companies";
 import { captureTask } from "./lib/captureValues";
 import { fixture, actor } from "../../tests/helpers/export-fixture";
 import { CAPTURE_TERMS_VERSION } from "./lib/fiscalCaptureRelease";
+import { benchmarkLimits } from "../../scripts/lib/budget.mjs";
 
 /**
  * Reads of `companies.list` with the fiscal capture badge (#433) at the page size the server
@@ -18,6 +19,14 @@ import { CAPTURE_TERMS_VERSION } from "./lib/fiscalCaptureRelease";
  */
 const NOW = Date.UTC(2026, 9, 23, 15);
 const PAGE = 50;
+// Tetos em budget.json: aumentar um pede a label budget-increase na PR.
+const LIMITS = benchmarkLimits("companiesList", [
+  "bytesRead",
+  "documentsRead",
+  "databaseQueries",
+  "captureDocumentsReadPerCompany",
+  "captureDatabaseQueriesPerCompany",
+] as const);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -190,9 +199,13 @@ it("measures the companies' page with the fiscal capture badge at the page limit
     all = results["todas com captura fiscal"];
   // Each company adds the release, the stream and its operation (and the general stop, read
   // only on the site): a fixed number of point reads, never a page of its own.
-  expect(all.documentsRead - base.documentsRead).toBeLessThanOrEqual(3 * PAGE);
-  expect(all.databaseQueries - base.databaseQueries).toBeLessThanOrEqual(3 * PAGE);
-  expect(all.bytesRead).toBeLessThan(16 * 2 ** 20);
-  expect(all.documentsRead).toBeLessThan(32_000);
-  expect(all.databaseQueries).toBeLessThan(4_096);
+  expect(all.documentsRead - base.documentsRead).toBeLessThanOrEqual(
+    LIMITS.captureDocumentsReadPerCompany * PAGE,
+  );
+  expect(all.databaseQueries - base.databaseQueries).toBeLessThanOrEqual(
+    LIMITS.captureDatabaseQueriesPerCompany * PAGE,
+  );
+  expect(all.bytesRead).toBeLessThan(LIMITS.bytesRead);
+  expect(all.documentsRead).toBeLessThan(LIMITS.documentsRead);
+  expect(all.databaseQueries).toBeLessThan(LIMITS.databaseQueries);
 });

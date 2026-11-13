@@ -154,6 +154,7 @@ export const rules = [
     "CONTRIBUICOES.md",
     "CHANGELOG.md",
     "DESIGN.md",
+    "budget.json",
     "skills-lock.json",
     "t3.json",
     ".gitattributes",

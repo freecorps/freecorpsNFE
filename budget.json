@@ -1,0 +1,32 @@
+{
+  "console": {
+    "gzipBytes": {
+      "assets/index.js": 1677,
+      "assets/main.js": 67026,
+      "assets/main.css": 14857,
+      "assets/app-shell.js": 7432,
+      "assets/console-shared.js": 138502,
+      "assets/rolldown-runtime.js": 429,
+      "landing.css": 25824,
+      "total": 756066
+    }
+  },
+  "benchmarks": {
+    "companiesList": {
+      "bytesRead": 16777216,
+      "documentsRead": 32000,
+      "databaseQueries": 4096,
+      "captureDocumentsReadPerCompany": 3,
+      "captureDatabaseQueriesPerCompany": 3
+    },
+    "consoleHome": {
+      "bytesRead": 16777216,
+      "documentsRead": 32000,
+      "databaseQueries": 4096
+    },
+    "exports": {
+      "maxReadRows": 91,
+      "batchedCallsPercentOfBaseline": 50
+    }
+  }
+}

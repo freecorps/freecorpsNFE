@@ -260,7 +260,20 @@ it("issues a tested SHA only after the whole graph, never in documentation mode"
   );
 });
 
-it("keys the task cache by runner and run, and passes the token only to push steps", () => {
+it("gates every pull request on budget.json against the base it merges into", () => {
+  const gate = named("Require the label for a budget increase");
+  expect(expression(gate.if)).toBe("github.event_name=='pull_request'");
+  expect(gate.run).toBe("node scripts/ci/budget.mjs compare --base HEAD^1");
+  expect(gate).not.toHaveProperty("continue-on-error");
+  expect(expression(gate.env!.PR_NUMBER)).toBe("github.event.pull_request.number");
+  const at = (name: string) => steps.findIndex((step) => step.name === name);
+  expect(at("Build, check and test")).toBeLessThan(at("Require the label for a budget increase"));
+  expect(at("Require the label for a budget increase")).toBeLessThan(
+    at("Approve the checked revision"),
+  );
+});
+
+it("keys the task cache by runner and run, and passes the token only to push steps and the budget gate", () => {
   const restore = named("Restore the task cache");
   expect(restore.uses).toMatch(/^actions\/cache\/restore@[a-f0-9]{40}$/);
   expect(restore.with!.path).toBe("node_modules/.vite/task-cache");
@@ -279,6 +292,7 @@ it("keys the task cache by runner and run, and passes the token only to push ste
   expect(tokenSteps.map((step) => step.name)).toEqual([
     "Find the merged pull request's task cache",
     "Download the merged pull request's task cache",
+    "Require the label for a budget increase",
   ]);
   expect(expression(named("Find the merged pull request's task cache").if)).toBe(
     "steps.changes.outputs.cache=='true'&&github.event_name=='push'",
