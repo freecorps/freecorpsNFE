@@ -21,7 +21,10 @@ class and refuses each one without credential"). Actions fazem o I/O externo;
 o Convex não lhes dá `ctx.db`, e elas leem ou efetivam estado por queries e
 mutations internas. Toda função tem validators, e resultados públicos usam
 DTOs que não expõem segredos, campos administrativos nem IDs internos de
-storage (convenção, sem verificação; cada domínio testa os DTOs que publica).
+storage (convenção, sem verificação). A projeção pública de documentos tem
+teste próprio (prova: `packages/contracts/documents.test.ts` › "public
+projection preserves specific NF-e fields and exact decimals without internal
+fields").
 
 Cada domínio segue o mesmo arranjo de arquivos:
 
@@ -36,12 +39,12 @@ Cada domínio segue o mesmo arranjo de arquivos:
 | `lib/<domínio>Core.ts`   | Regras do domínio que leem ou gravam com o `ctx` de quem chama        |
 | `lib/<domínio>Access.ts` | Autorização do domínio sobre organização, projeto, empresa e ambiente |
 
-A divisão em arquivos é convenção, sem verificação. Duas linhas da tabela
-são verificadas: `lib/*Schema`, `*Values` e `*Rules` não tocam o banco (prova:
-`platform/convex/moduleLayers.test.ts` › "lib/\*Schema, \*Values e \*Rules
-não tocam o banco"), e só `http.ts` monta os `*Rest.ts` (prova:
-`platform/convex/moduleLayers.test.ts` › "só http.ts referencia os módulos
-\*Rest").
+A divisão em arquivos é convenção, sem verificação. O que a tabela diz de
+`*Schema`, `*Values`, `*Rules` e `*Rest` é verificado: os três primeiros não
+tocam o banco (prova: `platform/convex/moduleLayers.test.ts` › "lib/\*Schema,
+\*Values e \*Rules não tocam o banco"), e só `http.ts` monta os `*Rest.ts`
+(prova: `platform/convex/moduleLayers.test.ts` › "só http.ts referencia os
+módulos \*Rest").
 
 `lib/organizationAccess.ts` (sessão e membership) e `lib/projectAccess.ts`
 (projeto e concessão) são a base das checagens dos demais `*Access.ts`
@@ -69,8 +72,8 @@ do app em `schema.ts`, `http.ts` e `crons.ts`), e reprova:
 - módulo sem domínio, ou em mais de um (prova:
   `platform/convex/moduleLayers.test.ts` › "todo módulo pertence a exatamente
   um domínio");
-- referência `internal.*` ou `api.*` que não aponta para um módulo (acesso por
-  índice) (prova: `platform/convex/moduleLayers.test.ts` › "toda referência
+- referência `internal.*` ou `api.*` por índice, que não aponta para um
+  módulo (prova: `platform/convex/moduleLayers.test.ts` › "toda referência
   internal.\* e api.\* aponta para um módulo");
 - referência `internal.*` a um domínio acima, ou import de valor para um
   domínio acima entre módulos da mesma altura (`lib/` com `lib/`, topo com
@@ -78,8 +81,8 @@ do app em `schema.ts`, `http.ts` e `crons.ts`), e reprova:
   `_generated/server`, direto ou por import) é importável de qualquer domínio
   (prova: `platform/convex/moduleLayers.test.ts` › "nem internal.\* nem import
   da mesma altura sobem de domínio");
-- `lib/` importando um módulo do topo fora de `topForLib` (`environment`,
-  `buildInfo`, `auth` e `schema`) (prova:
+- `lib/` importando um módulo do topo fora de `topForLib`, que tem
+  `environment`, `buildInfo`, `auth` e `schema` (prova:
   `platform/convex/moduleLayers.test.ts` › "lib/ só importa do topo os módulos
   combinados");
 - `*Rest.ts` referenciado fora de `http.ts`, salvo a action Node das leituras
@@ -99,13 +102,13 @@ proíbe ciclo de imports de valor entre módulos (prova:
 
 ## Pacotes e grafo de dependências
 
-O grafo permitido está em `scripts/build/package-boundaries.json` e é conferido por
-`bun run ci:boundaries` (dentro de `ci:local` e do CI) (prova:
+O grafo permitido está em `scripts/build/package-boundaries.json`, e o CI o
+confere com `bun run ci:boundaries` antes de aprovar (prova:
 `scripts/build/package-boundaries.test.ts` › "checks the real workspaces and
-connects the blocking command before CI approval"). Cada workspace precisa de
-classificação explícita; um workspace novo sem classificação é recusado
-(prova: `scripts/build/package-boundaries.test.ts` › "discovers new workspaces
-and rejects absent or stale classifications").
+connects the blocking command before CI approval"); `ci:local` roda o mesmo
+comando. Cada workspace precisa de classificação explícita; um workspace novo
+sem classificação é recusado (prova: `scripts/build/package-boundaries.test.ts`
+› "discovers new workspaces and rejects absent or stale classifications").
 
 | Pacote                | Tipo       | Depende de                                             |
 | --------------------- | ---------- | ------------------------------------------------------ |
@@ -118,28 +121,31 @@ and rejects absent or stale classifications").
 | `platform`, `apps/*`  | plataforma | pacotes acima                                          |
 | `convex-rate-limiter` | plataforma | `convex`; componente instalado por `platform`          |
 
-Nenhum pacote independente importa Convex, Better Auth, Clerk, React ou Cloudflare, nem lê
-`process`, variáveis de ambiente ou outro runtime ambiente; o verificador
-falha nesses casos (prova: `scripts/build/package-boundaries.test.ts` › "keeps
-Node packages independent from ambient configuration: %s").
+Nenhum pacote independente importa Convex, Better Auth, Clerk, React ou
+Cloudflare (prova: `scripts/build/package-boundaries.test.ts` › "rejects a
+direct dependency and passes again after removing it: %s"), nem lê `process`,
+variáveis de ambiente ou outro runtime ambiente (prova:
+`scripts/build/package-boundaries.test.ts` › "keeps Node packages independent
+from ambient configuration: %s").
 `convex-rate-limiter` é um componente Convex e por isso fica na classe da
 plataforma, sem as restrições dos independentes. Um subcaminho de export pode
 estreitar as regras do seu workspace, nunca ampliá-las (prova:
 `scripts/build/package-boundaries.test.ts` › "rejects an entry point absent
 from exports, without implementation or wider than its workspace").
 
-Convenção, sem verificação: pacotes não guardam estado. Conectores Node (distribuição em
-`fiscal-nfe/src/distribution.ts`, transporte ADN em `fiscal-nfse`) recebem
-transporte e credencial em tempo de execução e não armazenam cursor, agendam
-retry, giram certificados nem decidem permissões. Só o backend coordena
-certificados, checkpoints, tentativas e consumo. Os contratos públicos de
-`packages/contracts` mapeiam o domínio; o schema do banco não é a API.
+Convenção, sem verificação: pacotes não guardam estado. Conectores Node
+(distribuição em `fiscal-nfe/src/distribution.ts`, transporte ADN em
+`fiscal-nfse`) recebem transporte e credencial em tempo de execução e não
+armazenam cursor, agendam retry, giram certificados nem decidem permissões. Só o
+backend coordena certificados, checkpoints, tentativas e consumo. Os contratos
+públicos de `packages/contracts` mapeiam o domínio; o schema do banco não é a
+API.
 
-Convenção, sem verificação: `fiscal-core` contém só conceitos compartilhados comprovados, como a
-identificação fiscal e o decimal exato em texto. Cada modelo fiscal tem seu
-pacote (`fiscal-nfe` para NF-e 55, `fiscal-nfse` para emissão NFS-e); a
-importação de lotes NFS-e ABRASF foi retirada em 02/11/2026. Não se cria
-representação universal de documentos nem pacote vazio antecipadamente; uma
+Convenção, sem verificação: `fiscal-core` contém só conceitos compartilhados
+comprovados, como a identificação fiscal e o decimal exato em texto. Cada modelo
+fiscal tem seu pacote (`fiscal-nfe` para NF-e 55, `fiscal-nfse` para emissão
+NFS-e); a importação de lotes NFS-e ABRASF foi retirada em 02/11/2026. Não se
+cria representação universal de documentos nem pacote vazio antecipadamente; uma
 extração nova exige consumo ou responsabilidade demonstrados.
 
 ## Modelo de dados
@@ -168,21 +174,21 @@ Invariantes do modelo:
   `platform/convex/companies.test.ts` › "the same CNPJ belongs independently
   to two organizations and forged IDs never cross them").
 - Na captura, `captureStreams` tem um único stream por identidade fiscal
-  efetiva, ambiente e serviço (`by_identity_environment_service`) (prova:
-  `platform/convex/captures.test.ts` › "isolates the fiscal identity globally
-  and deduplicates concurrent manual activation"); a titularidade e a
+  efetiva, ambiente e serviço, no índice `by_identity_environment_service`
+  (prova: `platform/convex/captures.test.ts` › "isolates the fiscal identity
+  globally and deduplicates concurrent manual activation"); a titularidade e a
   transferência estão em [CAPTURE.md](CAPTURE.md).
 - A guarda de cada classe de dado, inclusive `accessRecords`, está em
   [RETENTION.md](RETENTION.md).
 
 ## Identidade, autorização e ambiente
 
-Better Auth é a fonte única de sessões humanas, com o componente Convex e
-e-mail OTP. Os plugins `organization` e `apiKey` do Better Auth não estão
-instalados: organizações, memberships, convites e API keys pertencem ao
-domínio do produto. `validationAccess` não concede membership. Organização,
-projeto e empresa são autorizados pelos helpers de domínio, sem confiar no
-`organizationId` enviado pelo cliente (prova:
+Better Auth é a fonte única de sessões humanas, com o componente Convex e e-mail
+OTP. Os plugins `organization` e `apiKey` do Better Auth não estão instalados:
+organizações, memberships, convites e API keys pertencem ao domínio do produto,
+e `validationAccess` não concede membership (convenção, sem verificação).
+Organização, projeto e empresa são autorizados pelos helpers de domínio, sem
+confiar no `organizationId` enviado pelo cliente (prova:
 `platform/convex/publicSurface.test.ts` › "keeps every public function inside
 the caller's organization and company grants").
 
@@ -194,48 +200,58 @@ papel delega (`developer` concede só leituras e `webhooks:manage`), e uma chave
 tem a interseção dos seus escopos com as empresas e ambientes concedidos ao
 projeto (prova: `platform/convex/keys.test.ts` › "a developer only delegates
 granted companies and role scopes, not another developer's project"). Uma API
-key não representa a sessão de um membro. Cookies de autenticação e headers
+key não representa a sessão de um membro, e cookies de autenticação e headers
 secretos nunca entram na telemetria (convenção, sem verificação).
 
 Cada deployment roda sob um perfil da plataforma (`APP_ENV`): `development`
-(stack local em loopback), `validation` (deployment controlado de validação)
-ou `installation` (instalação hospedada). `requirePlatformEnvironment`, em
+(stack local em loopback), `validation` (deployment controlado de validação) ou
+`installation` (instalação hospedada). `requirePlatformEnvironment`, em
 `platform/convex/environment.ts`, confere as variáveis do perfil e recusa
-qualquer outra combinação (prova: `platform/convex/captures.test.ts` › "fiscal
-production exists only on the marked validation target, with production
-data"). O perfil não escolhe o ambiente do produto nem o transporte fiscal. As
-variáveis do perfil fiscal e da emissão NFS-e (`FNFE_PROOF_FISCAL_ENV`,
-`FNFE_ISSUANCE_ENV`, `FNFE_NFSE_*` e `CONVEX_CLOUD_URL` nos gates) são lidas
-só ali: a emissão, o cofre e o console usam os campos do perfil validado
-(`fiscalTarget`, `issuanceEnv`, `restrictedCompanies`, `productionCompanies`,
-`deploymentUrl`), e uma combinação parcial é recusada em vez de passar por uma
-leitura solta (prova: `platform/convex/environmentIsolation.test.ts` › "leaves
-the issuance gates to the validated profile, with no variable read of their
-own"). A captura
-e as rotinas ainda leem parte das variáveis direto
-([#130](https://github.com/freecorps/freecorpsNFE/issues/130)).
+qualquer outra combinação (prova: `platform/convex/validation.test.ts` ›
+"rejects mutations before writing when %s is misconfigured"; prova:
+`platform/convex/installation.test.ts` › "refuses unsafe installation setting
+%s=%s"; prova: `platform/convex/captures.test.ts` › "fiscal production exists
+only on the marked validation target, with production data"). O perfil não
+escolhe o ambiente do produto nem o transporte fiscal. As variáveis do perfil
+fiscal e da emissão NFS-e (`FNFE_PROOF_FISCAL_ENV`, `FNFE_ISSUANCE_ENV`,
+`FNFE_NFSE_*` e `CONVEX_CLOUD_URL` nos gates) são lidas só ali: a emissão e o
+cofre usam os campos do perfil validado (`fiscalTarget`, `issuanceEnv`,
+`restrictedCompanies`, `productionCompanies`, `deploymentUrl`) (prova:
+`platform/convex/environmentIsolation.test.ts` › "leaves the issuance gates to
+the validated profile, with no variable read of their own"). O console também, e
+uma combinação parcial é recusada em vez de passar por uma leitura solta
+(convenção, sem verificação). A captura e as rotinas ainda leem parte das
+variáveis direto ([#130](https://github.com/freecorps/freecorpsNFE/issues/130)).
 
 Há dois eixos de ambiente, e toda operação conhece ambos:
 
 - Ambiente do produto: `sandbox` ou `production` (`integrationEnvironments`),
-  parte do escopo de chaves, empresas e documentos. Ele é resolvido por
-  pedido ([ADR 0007](../adr/0007-captura-fiscal-no-site.md)): a chave ou a
-  operação diz o ambiente, e `environmentServed`, em
+  parte do escopo de chaves, empresas e documentos. Ele é resolvido por pedido
+  ([ADR 0007](../adr/0007-captura-fiscal-no-site.md)): a chave ou a operação diz
+  o ambiente, e `environmentServed`, em
   `platform/convex/lib/environmentAccess.ts`, decide se o deployment o atende
   para aquela empresa e escopo. O ambiente base do deployment
   (`baseEnvironment`, o `PRODUCT_ENV`) é sempre atendido; empresa de
-  demonstração, só em `sandbox`. Um deployment de base `production` (#50,
-  produção fiscal da NFS-e) não atende outro. Um de base `sandbox` atende
-  `production` só para empresa com captura fiscal liberada
-  (`platform/convex/lib/fiscalCaptureRelease.ts`) e só para captura, documentos, webhooks e
-  monitores; importação, emissão, cadastro, referências e certificados nunca.
-  Depois de retirada a liberação, sobra só a leitura do que foi capturado
-  ([CAPTURE.md](CAPTURE.md#liberação-fiscal-no-site)). As
-  verificações de acesso não leem `PRODUCT_ENV` (prova:
+  demonstração, só em `sandbox` (prova:
+  `platform/convex/environmentIsolation.test.ts` › "serves only sandbox on a
+  sandbox deployment while no company is released"). Um deployment de base
+  `production` (#50, produção fiscal da NFS-e) não atende outro (prova:
+  `platform/convex/environmentIsolation.test.ts` › "keeps a production
+  deployment fixed: production only, never per company"). Um de base `sandbox`
+  atende `production` só para empresa com captura fiscal liberada
+  (`platform/convex/lib/fiscalCaptureRelease.ts`) e só para captura, documentos,
+  webhooks e monitores; importação, emissão, cadastro, referências e
+  certificados nunca (prova: `platform/convex/environmentIsolation.test.ts` ›
+  "opens production for a released company only for the capture and its
+  documents"). Depois de retirada a liberação, sobra só a leitura do que foi
+  capturado (prova: `platform/convex/environmentIsolation.test.ts` › "keeps only
+  reading, and processing what was received, after the release is withdrawn or
+  cut"; [CAPTURE.md](CAPTURE.md#liberação-fiscal-no-site)). As verificações de
+  acesso não leem `PRODUCT_ENV` (prova:
   `platform/convex/environmentIsolation.test.ts` › "reads PRODUCT_ENV only in
   the deployment gates, never in an access check").
 - Ambiente fiscal: `FISCAL_ENV`, `disabled` por padrão. Transporte real é
-  opt-in explícito por deployment (`platform/convex/environment.ts`) (prova:
+  opt-in explícito por deployment, em `platform/convex/environment.ts` (prova:
   `platform/convex/captures.test.ts` › "homologation requires explicit
   transport opt-in and rejects local synthetic mutation there"); na emissão, o
   modo de transporte é `simulated`, `producao-restrita` ou `producao`, com o
@@ -279,20 +295,27 @@ comuns da implementação:
   › "mapeia erros de domínio para o vocabulário público sem copiar texto
   livre"). Os status em uso são `400`, `401`, `403`, `404` (inexistente ou não
   visível), `409` (conflito ou idempotência divergente), `413`, `429` e `503`.
-- `Idempotency-Key` é obrigatória em pedidos assíncronos com efeito. A
+- `Idempotency-Key` é obrigatória em pedidos assíncronos com efeito
+  (convenção, sem verificação; cada rota a declara no contrato). A
   identidade é organização + projeto + operação lógica + chave, com hash do
   pedido: o mesmo pedido devolve o mesmo recurso, um pedido diferente devolve
   `409` (prova: `platform/convex/operations.test.ts` › "reserva equivalente
   recupera a mesma operação; conteúdo divergente retorna conflito 409"). A
-  reserva acontece antes do agendamento e dura 7 dias (`lib/operationCore.ts`);
-  a deduplicação documental é independente.
-- Paginação por cursor opaco, vinculado a filtros e escopo, com desempate
-  estável (prova: `platform/convex/documents.test.ts` › "bounded filters and
-  cursors reject changed context and malformed input"). O limite de página é
+  reserva acontece antes do agendamento e dura 7 dias, em
+  `lib/operationCore.ts` (convenção, sem verificação); a deduplicação
+  documental é independente.
+- Paginação por cursor opaco, vinculado a filtros e escopo (prova:
+  `platform/convex/documents.test.ts` › "bounded filters and cursors reject
+  changed context and malformed input"), com desempate estável (convenção, sem
+  verificação). O limite de página é
   definido por rota no contrato (em geral até 50). Uma lista vazia pode ter
   próxima página.
-- Valores fiscais são decimais em texto canônico com escala documentada;
-  inteiros ficam na faixa segura (prova:
+- Valores fiscais são decimais em texto canônico com escala documentada
+  (prova: `packages/fiscal-core/index.test.ts` › "preserves declared scale and
+  leading zeros across JSON"); inteiros ficam na faixa segura (prova:
+  `packages/fiscal-core/index.test.ts` › "refuses precision loss, forged
+  decimals and unbounded exponents"). Nenhum cálculo os converte em número
+  (prova:
   [`freecorps/no-float-fiscal-values`](../desenvolvimento/lint.md#no-float-fiscal-values)).
   Ver [fiscal-core](../../packages/fiscal-core/README.md).
 - `parserVersion`, `schemaVersion`, `normalizerVersion`, `importedAt`, hash do
@@ -312,8 +335,12 @@ comuns da implementação:
 | Documento   | Organização + empresa + ambiente + modelo + chave de acesso; pedidos diferentes podem apontar para a mesma nota          |
 | Artefato    | SHA-256 dos bytes originais; distingue XMLs da mesma nota, conservando origem e conflito                                 |
 
-O hash não concede acesso nem deduplica entre clientes. Um resumo que evolui
-para XML completo mantém a identidade documental.
+As identidades da tabela são convenção, sem verificação, salvo a da
+solicitação, provada acima. O hash não concede acesso nem deduplica entre
+clientes (convenção, sem verificação). Um resumo que evolui para XML completo
+mantém a identidade documental (prova: `platform/convex/documents.test.ts` ›
+"summary then full XML and repeated/out-of-order events preserve a
+reconstructible situation").
 
 ## Trabalho assíncrono e recuperação
 
@@ -322,6 +349,8 @@ A mutation grava a operação e agenda a execução na mesma transação (prova:
 operação e agendamento juntos"); Workpool limita a concorrência por domínio.
 A operação tem `generation` e lease (`leaseUntil`): o resultado de uma
 execução antiga não sobrescreve o de uma nova (prova:
+`platform/convex/operations.test.ts` › "callback perdido é recuperado;
+callback duplicado não rouba lease vigente"; prova:
 `platform/convex/operations.test.ts` › "lease vencida rejeita resposta mesmo
 antes de recuperar a geração"). Claim, lease, `generation`, estágio e
 resultado só se escrevem em `operations.ts` e `lib/operationCore.ts` (prova:
@@ -416,9 +445,9 @@ confere, e [testes.md](../desenvolvimento/testes.md) diz como.
 | Operação            | Falha em pontos de persistência, restore, rotação e reenvio                        |
 | Consumidor          | SDK e curl contra a API de teste                                                   |
 
-Os testes de integração ficam ao lado do módulo, em `platform/convex/`; um
-teste novo em `tests/` fica sem projeto do Vitest e reprova (prova:
-`tests/ci.testProjects.test.ts` › "classifies a new test file from the shared
-list"). A escolha dos checks está na seção "Verificando" do
-[AGENTS.md](../../AGENTS.md#verificando).
-Testes com transporte simulado não comprovam integração fiscal real.
+Os testes de integração ficam ao lado do módulo, em `platform/convex/`
+(convenção, sem verificação), e todo arquivo de teste cai em exatamente um
+projeto do Vitest (prova: `tests/ci.testProjects.test.ts` › "assigns every test
+file to exactly one project and one report suite"). A escolha dos checks está na
+seção "Verificando" do [AGENTS.md](../../AGENTS.md#verificando). Testes com
+transporte simulado não comprovam integração fiscal real.

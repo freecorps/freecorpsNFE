@@ -28,28 +28,42 @@ helper de acesso antes do primeiro toque em dado (prova:
 ### 2. Retentativa não pode duplicar efeito
 
 Importação, operações e webhooks podem ser repetidos. Preserve a deduplicação
-por organização, empresa e ambiente, as chaves de idempotência por projeto e
-operação, o XML original e o histórico de tentativas. Um reenvio de webhook não
-vira outro efeito no receptor. Timeout de transporte não prova falha: consulte
-e reconcilie antes de repetir.
+por organização, empresa e ambiente (prova: `platform/convex/imports.test.ts` ›
+"idempotências distintas e workers concorrentes convergem para uma nota
+lógica"), as chaves de idempotência por projeto e operação (prova:
+`platform/convex/operations.test.ts` › "mesma chave em outro projeto da
+organização reserva outra operação sem ampliar leitura"), o XML original e o
+histórico de tentativas. Um reenvio de webhook não vira outro efeito no
+receptor (prova: `platform/convex/webhooks.test.ts` › "retries a failed attempt
+with the same event bytes and identity, verifiable by the receiver"). Timeout
+de transporte não prova falha: consulte e reconcilie antes de repetir (prova:
+`platform/convex/operations.test.ts` › "falha transitória e ausência na
+reconciliação nunca liberam nova execução").
 
 ### 3. Dinheiro e histórico fiscal exigem precisão
 
 Valores fiscais são texto decimal exato, com os helpers de
 `packages/fiscal-core` (prova: `freecorps/no-float-fiscal-values`). Documento
-fiscal e auditoria preservam histórico, sem apagar o original
-([RETENTION.md](docs/plataforma/RETENTION.md)).
+fiscal e auditoria preservam histórico, sem apagar o original (prova:
+`platform/convex/imports.test.ts` › "duas versões reais do processador
+preservam original e resultado anterior";
+[RETENTION.md](docs/plataforma/RETENTION.md)).
 
 ### 4. Pessoas, projetos e empresas têm escopos distintos
 
 O papel de cada membro na organização define o que ele pode fazer; login sem
-membership não concede acesso. API keys pertencem a um projeto e exigem escopo,
-ambiente e concessão ativa da empresa. Reutilize os helpers dos
+membership não concede acesso (prova: `platform/convex/access.test.ts` ›
+"enforces operator, viewer and missing grant on the server"). API keys
+pertencem a um projeto e exigem escopo, ambiente e concessão ativa da empresa
+(prova: `platform/convex/operations.test.ts` › "HTTP recusa ID de outro
+cliente, ambiente errado e chave revogada"). Reutilize os helpers dos
 `platform/convex/lib/*Access.ts`, cada export classificado (prova:
 `tooling/oxlint-plugin-freecorps/access-helpers.test.ts` › "classifica cada
 função exportada dos lib/\*Access.ts como checagem ou utilitário"). Uma chave
 não lê dados de outra organização nem de empresa fora da concessão, inclusive
-em downloads, respostas deduplicadas e webhooks. Cabeçalhos de proxy e IP vêm
+em downloads, respostas deduplicadas e webhooks (prova:
+`platform/convex/documents.test.ts` › "rejects foreign documents, versions and
+artifacts without revealing their existence"). Cabeçalhos de proxy e IP vêm
 só do Worker, nunca do chamador (prova: `apps/console/auth-proxy.test.ts` ›
 "overwrites forged forwarding headers and signs the actual edge IP, body,
 method and origin").
@@ -57,15 +71,19 @@ method and origin").
 ### 5. Sandbox, homologação e produção são ambientes diferentes
 
 O perfil hospedado é sandbox, com `FISCAL_ENV=disabled` e crons desligados; o
-tipo `prod` do Convex não muda isso. A única consulta à produção fiscal é a
-captura de NF-e liberada pela empresa, sob as condições de
+tipo `prod` do Convex não muda isso (prova:
+`scripts/deploy/platform-release.test.ts` › "preserva HTTPS no release
+autorizado e mantém o bootstrap sem envio externo"). A única consulta à produção
+fiscal é a captura de NF-e liberada pela empresa, sob as condições de
 [CAPTURE.md](docs/plataforma/CAPTURE.md). `APP_ENV=installation` não quer dizer
 sandbox: a produção da emissão usará um deployment próprio, ainda inexistente,
-cujo gate só muda por workflow (ADR 0004, §8). Preserve os gates de ambiente de
-cada fluxo. Transporte simulado prova o comportamento local; autorização real
-exige evidência do fisco no ambiente correto. Certificados A1, senhas, CSC e
-chaves de integração ficam no cofre ou no ambiente, fora de código, logs e
-fixtures.
+cujo gate só muda por workflow (ADR 0004, §8; prova:
+`scripts/deploy/issuance-gate.test.ts` › "só a publicação e o backup do segundo
+alvo recebem a chave, e nenhum outro chama o gate"). Preserve os gates de
+ambiente de cada fluxo. Transporte simulado prova o comportamento local;
+autorização real exige evidência do fisco no ambiente correto. Certificados A1,
+senhas, CSC e chaves de integração ficam no cofre ou no ambiente, fora de
+código, logs e fixtures.
 
 ## Um recado do dono do projeto
 
@@ -101,8 +119,10 @@ do dev: preserve processos, servidores, setup do editor e alterações locais.
    variáveis ou escreva.
 2. **Editar o que é gerado.** `platform/convex/_generated/` sai da ferramenta;
    `docs/v1.0/openapi.json` e `API-REFERENCE.md` saem de
-   `bun run contracts:generate`. Corrija na fonte. As rotas do console são
-   escritas à mão em `apps/console/src/routes.tsx`.
+   `bun run contracts:generate` (prova:
+   `scripts/contracts/contract-drift.test.ts` › "rejects a hand-edited or
+   missing derived file while the contract is unchanged"). Corrija na fonte. As
+   rotas do console são escritas à mão em `apps/console/src/routes.tsx`.
 3. **Corromper acentos no PowerShell.** Use a ferramenta de edição ou UTF-8
    explícito; `Get-Content | Set-Content` regrava em ANSI. Commit e PR com
    acentos vão por arquivo (`-F`, `--body-file`).
@@ -127,15 +147,17 @@ do dev: preserve processos, servidores, setup do editor e alterações locais.
 
 ## Ambiente e worktrees
 
-Bun na versão de `package.json` e Vite+; `vp install --frozen-lockfile`
-instala ([README.md](README.md)). `bun run help` lista os scripts com aplicação
-e ambiente; script novo, com atalho ou rodado pelo caminho, entra em
-`scripts/lib/commands.mjs` (prova: `scripts/repo/commands.test.ts` › "todo
-ponto de entrada de scripts/ tem chamador ou entra nos roteiros").
-`bun run dev` roda só em worktree, com Convex local e console; `vp dev` pula
-esse roteador. No Windows, passe temporários por `$TEMP` (o Python não vê o
-`/tmp` do Git Bash).
-Em worktree, crie a branch a partir de `origin/main`; `git switch main` falha.
+Bun na versão de `package.json` e Vite+; `vp install --frozen-lockfile` instala
+([README.md](README.md)). `bun run help` lista os scripts com aplicação e
+ambiente; script novo, com atalho ou rodado pelo caminho, entra em
+`scripts/lib/commands.mjs` (prova: `scripts/repo/commands.test.ts` › "descreve
+cada script da raiz e só os que existem"; prova: `scripts/repo/commands.test.ts`
+› "todo ponto de entrada de scripts/ tem chamador ou entra nos roteiros").
+`bun run dev` roda só em worktree, com Convex local e console (prova:
+`scripts/repo/commands.test.ts` › "no checkout principal, dev recusa e aponta o
+worktree"); `vp dev` pula esse roteador. No Windows, passe temporários por
+`$TEMP` (o Python não vê o `/tmp` do Git Bash). Em worktree, crie a branch a
+partir de `origin/main`; `git switch main` falha.
 
 Leia [docs/worktrees.md](docs/worktrees.md) antes de criar, iniciar ou remover
 um worktree. Use `bun run worktree` e seus atalhos `worktree:*`; nunca
@@ -171,8 +193,10 @@ mascarar com `sed` não protege.
   [EVIDENCE-STORAGE.md](docs/v1.0/EVIDENCE-STORAGE.md#evidência-restrita).
 - **O hook `pre-push`** (`.vite-hooks/pre-push`) varre cada commit com as regras
   do `Public scan`, check obrigatório que repete a varredura na PR
-  ([ci.md](docs/desenvolvimento/ci.md#varredura-pública)). Push recusado é achado
-  a corrigir; não use `--no-verify` nem `VP_GIT_HOOKS=0`.
+  ([ci.md](docs/desenvolvimento/ci.md#varredura-pública); prova:
+  `scripts/public-copy/pre-push.test.ts` › "varre cada commit enviado uma vez e
+  ignora remoções"). Push recusado é achado a corrigir; não use `--no-verify`
+  nem `VP_GIT_HOOKS=0`.
 - **Texto do GitHub não passa por varredura.** Título e corpo de PR, issue,
   comentário e mensagem de commit vão para arquivo, passam por
   `node scripts/public-copy/scan-public-text.mjs <arquivos>` e são relidos.
@@ -185,14 +209,16 @@ mascarar com `sed` não protege.
   o caso negado e o isolamento entre organizações, projetos e empresas. O que
   testar, em que camada, como provar uma correção e como esperar trabalho
   assíncrono estão em [testes.md](docs/desenvolvimento/testes.md).
-- Cada teste fica ao lado do módulo, num projeto do Vitest por área (prova:
-  `tests/ci.testProjects.test.ts` › "assigns every test file to exactly one
-  project and one report suite"); comandos, cache e montagem da integração
-  estão em [ci.md#testes](docs/desenvolvimento/ci.md#testes). Teste não usa
-  relógio real nem polling (prova: `freecorps/no-wall-clock-in-tests`).
+- Cada teste fica ao lado do módulo (convenção, sem verificação), num projeto do
+  Vitest por área (prova: `tests/ci.testProjects.test.ts` › "assigns every test
+  file to exactly one project and one report suite"); comandos, cache e montagem
+  da integração estão em [ci.md#testes](docs/desenvolvimento/ci.md#testes).
+  Teste não usa relógio real nem polling (prova:
+  `freecorps/no-wall-clock-in-tests`).
 - O hook `pre-commit` recusa o commit com arquivo staged mal formatado ou com
-  erro ou aviso de lint ([detalhes](docs/desenvolvimento/ci.md#hook-pre-commit));
-  corrija o achado, sem `--no-verify` nem `VP_GIT_HOOKS=0`.
+  erro ou aviso de lint ([detalhes](docs/desenvolvimento/ci.md#hook-pre-commit);
+  convenção, sem verificação); corrija o achado, sem `--no-verify` nem
+  `VP_GIT_HOOKS=0`.
 - Antes de todo push, `bun run check:changed`
   ([detalhes](docs/desenvolvimento/ci.md#conferir-só-o-que-mudou)).
 - Antes de concluir, `vp test run` sem cache e, antes da PR, `bun run ci:local`

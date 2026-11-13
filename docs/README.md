@@ -7,14 +7,14 @@ agentes e aponta para as referências abaixo.
 
 ## Onde fica cada tipo de documento
 
-| Pasta                                  | Responde                                                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [`plataforma/`](plataforma/)           | Contrato atual de cada domínio e arquitetura do backend                                                        |
-| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI, lint e validação no navegador                                                           |
-| [`operacao/`](operacao/)               | Publicação, ambientes, backup, restauração e instalação própria                                                |
-| [`adr/`](adr/)                         | Decisões, com o status só no cabeçalho; mudança posterior entra em "Situação" datada, sem reescrever a decisão |
-| [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                                              |
-| [`termos/`](termos/)                   | Termos da captura, termos de uso e política, com versão e hash, e o rascunho da captura                        |
+| Pasta                                  | Responde                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`plataforma/`](plataforma/)           | Contrato atual de cada domínio e arquitetura do backend                                 |
+| [`desenvolvimento/`](desenvolvimento/) | Regras do console, CI, lint e validação no navegador                                    |
+| [`operacao/`](operacao/)               | Publicação, ambientes, backup, restauração e instalação própria                         |
+| [`adr/`](adr/)                         | Decisões; mudança posterior entra em "Situação" datada, sem reescrever a decisão        |
+| [`v1.0/`](v1.0/)                       | Contrato REST gerado, aceite, evidências e material de lançamento                       |
+| [`termos/`](termos/)                   | Termos da captura, termos de uso e política, com versão e hash, e o rascunho da captura |
 
 O status de uma ADR mora só no cabeçalho dela; os outros documentos linkam a
 ADR sem repeti-lo (prova: `scripts/repo/adr-status.test.ts` › "keeps every ADR
@@ -163,7 +163,8 @@ relative link in the documentation pointing at something that exists").
 
 Uma regra estrutural do [AGENTS.md](../AGENTS.md), deste índice ou da
 [arquitetura do backend](plataforma/arquitetura-backend.md) diz o que a
-garante. Ela termina com uma destas marcas:
+garante. Ela traz uma destas marcas, no fim da frase ou abrindo o parágrafo
+que ela cobre:
 
 - `prova:` seguido do arquivo de teste, em código, e de `›` com o título exato
   do `it`, `test` ou `describe` entre aspas;
@@ -172,8 +173,8 @@ garante. Ela termina com uma destas marcas:
   para [lint.md](desenvolvimento/lint.md);
 - "convenção, sem verificação", quando nenhum teste ou lint a confere.
 
-`scripts/repo/docs-claims.test.ts` reprova marca para arquivo ou título de
-teste que não existe, regra que não está no plugin `freecorps` ou na
-configuração do lint e regra do plugin sem linha e seção em `lint.md`, ou o
-contrário. Renomear um teste citado pede a mesma mudança no documento; uma
-regra sem prova nem marca é achado de revisão.
+`scripts/repo/docs-claims.test.ts` reprova marca para arquivo ou título de teste
+que não existe ou só roda com `.skip` ou `.todo`, regra que não está no plugin
+`freecorps` ou na configuração do lint e regra do plugin sem linha ou sem seção
+em `lint.md`, ou o contrário. Renomear um teste citado pede a mesma mudança no
+documento; uma regra sem prova nem marca é achado de revisão.
