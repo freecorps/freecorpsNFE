@@ -41,6 +41,55 @@ Com outro Bun global, instale com `bunx bun@1.4.0 install --frozen-lockfile`
 e use `bunx bun@1.4.0 run` nos comandos, como descrito acima; isso preserva a
 instalação global.
 
+O editor recomenda o pacote de extensões do Vite+ (`.vscode/extensions.json`),
+que traz Oxlint e Oxfmt, e desaconselha Biome e Prettier, que formatam
+diferente do `vp fmt`. As configurações do editor continuam suas: o
+repositório não versiona `.vscode/settings.json`.
+
+## Devcontainer
+
+O `.devcontainer/` dispensa instalar as ferramentas no host. A imagem traz
+Debian 13, Node 24, Bun 1.4.0, Vite+ e as bibliotecas do sistema que o
+Chromium exige. Na criação, o container prepara um worktree com banco Convex
+local, sem conta Convex nem credencial.
+
+1. Com Docker e a extensão Dev Containers no VS Code, rode **Dev Containers:
+   Clone Repository in Container Volume** com a URL do repositório.
+2. Aguarde `.devcontainer/on-create.sh` terminar. Ele cria o worktree
+   `devcontainer` a partir do `HEAD`, roda o setup e instala o Chromium do
+   Playwright.
+3. Abra `/home/node/worktrees/devcontainer` no editor e rode `bun run dev`.
+
+O clone aberto é o checkout principal, onde `bun run dev` recusa; o trabalho
+fica no worktree. `FNFE_WORKTREES_DIR` aponta para `/home/node/worktrees`, um
+volume que sobrevive ao rebuild, e `bun run worktree:create` no container
+também cria ali. Num rebuild com o volume preservado, o script repete o setup
+e a instalação do Chromium sobre o mesmo worktree e banco. Para começar do
+zero, remova o container, apague o volume `freecorpsnfe-worktrees-*` e a
+branch `devcontainer` do clone; com a branch, o `worktree:create` religa o
+worktree a ela e ignora o `--from HEAD`.
+
+O container encaminha a porta 5174 do console e as portas 3210 e 3211 do
+Convex local, nos mesmos números do host. O login só aceita a origem que o
+setup gravou (`http://localhost:5174`), e o console chama o Convex em
+`http://127.0.0.1:3210`. Se o editor encaminhar alguma delas para outra porta
+porque o host já a ocupa, o login falha ou, pior, o console fala sem aviso com
+o Convex local de um worktree do host. Libere as três portas no host e reabra.
+
+O container sobe com o IPv6 desligado
+(`net.ipv6.conf.all.disable_ipv6=1`). Com IPv6, o Vite resolve `localhost`
+para `::1` e escuta só ali, enquanto o `fetch` dos runners de navegador vai a
+`127.0.0.1` e é recusado. Forçar IPv4 só no Node não resolve: o Vite passa a
+anunciar `127.0.0.1`, e o `bun run dev` espera ver `localhost` na saída dele.
+Sem IPv6, Bun, Node e Vite resolvem `localhost` para `127.0.0.1`.
+
+Não abra no container, com **Reopen in Container**, um clone onde você também
+usa worktrees no host. Os dois lados registram worktrees no mesmo `.git`, cada
+um com caminhos que o outro não enxerga, e o `git worktree prune` que o setup
+e o `worktree:cleanup` rodam apaga o registro dos worktrees do outro lado. O
+próprio `on-create.sh` roda o setup, então o estrago acontece já na criação do
+container.
+
 ## Criar e executar
 
 Para a plataforma atual, use `main` como base e escolha o aplicativo:
@@ -198,6 +247,35 @@ O setup mantém apenas a allowlist definida em
 `scripts/lib/worktree/env-file.mjs` e força crons, transporte fiscal, e-mail
 e webhooks a permanecerem desligados. Não copia certificados A1, senhas,
 chaves de e-mail ou credenciais de serviços fiscais.
+
+O setup grava estas variáveis, e só estas. Não há `.env.example`: os dois
+arquivos são gerados e regravados a cada setup, e um `.env` escrito à mão na
+raiz entraria no ambiente de todo `bun run`, porque o Bun carrega esse arquivo
+sozinho.
+
+| Variável                  | Arquivo                | Valor                                                     |
+| ------------------------- | ---------------------- | --------------------------------------------------------- |
+| `CONVEX_DEPLOYMENT`       | `.env.local`           | `local:` ou `anonymous:` seguido do deployment local      |
+| `VITE_CONVEX_URL`         | `.env.local`           | backend local, `http://127.0.0.1:<porta cloud>`           |
+| `VITE_CONVEX_SITE_URL`    | `.env.local`           | HTTP actions locais, `http://127.0.0.1:<porta site>`      |
+| `VITE_API_URL`            | `.env.local`           | base da REST, a mesma das HTTP actions                    |
+| `VITE_SITE_URL`           | `.env.local`           | origem do console, `http://localhost:<porta do frontend>` |
+| `VITE_APP_SHA`            | `.env.local`           | `local`                                                   |
+| `VITE_APP_ENV`            | `.env.local`           | `development`                                             |
+| `APP_ENV`                 | `.convex/worktree.env` | `development`                                             |
+| `PRODUCT_ENV`             | `.convex/worktree.env` | `sandbox`                                                 |
+| `FISCAL_ENV`              | `.convex/worktree.env` | `disabled`                                                |
+| `FNFE_CRONS`              | `.convex/worktree.env` | `off`                                                     |
+| `EMAIL_MODE`              | `.convex/worktree.env` | `local`                                                   |
+| `WEBHOOK_MODE`            | `.convex/worktree.env` | `disabled`                                                |
+| `FNFE_WEBHOOK_MASTER_KEY` | `.convex/worktree.env` | aleatória, cifra os segredos dos destinos de webhook      |
+| `FNFE_PLATFORM_CERT_KEYS` | `.convex/worktree.env` | aleatória, chave do cofre de certificados                 |
+| `SITE_URL`                | `.convex/worktree.env` | a mesma origem de `VITE_SITE_URL`                         |
+| `BETTER_AUTH_SECRET`      | `.convex/worktree.env` | aleatório, assina as sessões                              |
+
+`tests/worktreeSafety.test.ts` › "a tabela de docs/worktrees.md lista as
+variáveis que o setup grava" falha quando a tabela e o setup divergem no
+nome ou no arquivo de uma variável.
 
 As variáveis do backend ficam no deployment Convex; as `VITE_*` do frontend
 entram no bundle durante o build. O runtime Node das actions do Convex não é o

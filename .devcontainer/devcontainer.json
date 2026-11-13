@@ -1,0 +1,26 @@
+{
+  "name": "freecorpsNFE",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "node",
+  "containerEnv": { "FNFE_WORKTREES_DIR": "/home/node/worktrees" },
+  "runArgs": ["--sysctl", "net.ipv6.conf.all.disable_ipv6=1"],
+  "mounts": [
+    {
+      "source": "freecorpsnfe-worktrees-${devcontainerId}",
+      "target": "/home/node/worktrees",
+      "type": "volume"
+    }
+  ],
+  "onCreateCommand": "bash .devcontainer/on-create.sh",
+  "forwardPorts": [5174, 3210, 3211],
+  "portsAttributes": {
+    "5174": { "label": "console" },
+    "3210": { "label": "Convex local" },
+    "3211": { "label": "Convex local (HTTP actions)" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["VoidZero.vite-plus-extension-pack"]
+    }
+  }
+}

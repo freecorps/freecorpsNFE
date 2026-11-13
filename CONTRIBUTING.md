@@ -7,9 +7,14 @@ base. A plataforma fica em `apps/console` e `platform/convex`, com pacotes em
 comportamento resultante, prova e limitações. Descreva textos visíveis em
 português do Brasil.
 
-Prepare o ambiente com [docs/worktrees.md](docs/worktrees.md): pré-requisitos,
+O caminho mais rápido é o [devcontainer](docs/worktrees.md#devcontainer):
+com Docker e a extensão Dev Containers do VS Code, clone o repositório num
+volume do container. Ele já traz Bun, Vite+ e um worktree preparado; abra
+esse worktree e rode `bun run dev`. Para preparar o ambiente na sua máquina,
+siga [docs/worktrees.md](docs/worktrees.md): pré-requisitos,
 instalação com `vp install --frozen-lockfile`, criação do worktree e conta de
-teste. Os testes usam dados sintéticos e transporte simulado. O repositório é
+teste. As variáveis de ambiente locais são geradas pelo setup, sem arquivo a
+preencher. Os testes usam dados sintéticos e transporte simulado. O repositório é
 público, inclusive issues, PRs, logs e artefatos do CI: use só dados
 fictícios em commits, screenshots, recibos e comentários. Não use produção
 como seed nem inclua segredos ou documentos reais.
