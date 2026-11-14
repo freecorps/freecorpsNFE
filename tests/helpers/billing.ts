@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { beforeEach, expect, vi } from "vite-plus/test";
+import { afterEach, beforeEach, expect, vi } from "vite-plus/test";
 import { api, internal } from "../../platform/convex/_generated/api";
 import { platformTest, person } from "./platform";
 import type { CatalogPrices } from "../../platform/convex/lib/billingStripe";
@@ -32,6 +32,7 @@ export function useStripeKeys() {
     vi.stubEnv("STRIPE_BILLING_SECRET_KEY", "rk_test_synthetic0000");
     vi.stubEnv("STRIPE_BILLING_WEBHOOK_SECRET", WEBHOOK_SECRET);
   });
+  afterEach(() => vi.unstubAllEnvs());
 }
 
 export type Json = Record<string, unknown>;
