@@ -168,6 +168,7 @@ import type * as lib_publicAddress from "../lib/publicAddress.js";
 import type * as lib_publicErrors from "../lib/publicErrors.js";
 import type * as lib_purge from "../lib/purge.js";
 import type * as lib_quotaPeriod from "../lib/quotaPeriod.js";
+import type * as lib_referenceDataset from "../lib/referenceDataset.js";
 import type * as lib_referenceRead from "../lib/referenceRead.js";
 import type * as lib_referenceSchema from "../lib/referenceSchema.js";
 import type * as lib_registryApply from "../lib/registryApply.js";
@@ -429,6 +430,7 @@ declare const fullApi: ApiFromModules<{
   "lib/publicErrors": typeof lib_publicErrors;
   "lib/purge": typeof lib_purge;
   "lib/quotaPeriod": typeof lib_quotaPeriod;
+  "lib/referenceDataset": typeof lib_referenceDataset;
   "lib/referenceRead": typeof lib_referenceRead;
   "lib/referenceSchema": typeof lib_referenceSchema;
   "lib/registryApply": typeof lib_registryApply;

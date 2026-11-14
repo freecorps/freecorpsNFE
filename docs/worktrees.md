@@ -197,7 +197,8 @@ backend. Se o worktree aparecer com `_generated/` alterado logo após o setup,
 a `main` estava desatualizada; commite a regeneração na PR que mudou a fonte.
 Não edite `_generated/` à mão para contornar um push que falhou.
 `platform/convex/generated.test.ts` falha quando o tipo `Env` de `server.d.ts`
-diverge das variáveis declaradas em `convex.config.ts`.
+diverge das variáveis declaradas em `convex.config.ts` e quando `api.d.ts` não
+lista exatamente os módulos de `platform/convex/`.
 
 Se o push recusar com `DeploymentNotConfiguredForNodeActions` ("Node.js v22 or
 24 is not installed"), o `node --version` do terminal não importa: o CLI e o

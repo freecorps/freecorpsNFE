@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import ts from "typescript";
 import { expect, it } from "vite-plus/test";
 
@@ -65,4 +65,27 @@ it("o Env de server.d.ts acompanha as variáveis declaradas em convex.config.ts"
   expect(generated, "Regenere com `bun run worktree sync` num worktree da plataforma.").toEqual(
     declaredEnv(),
   );
+});
+
+/**
+ * O Convex publica como módulo todo arquivo `.ts` de `platform/convex/` cujo nome não tem outro
+ * ponto (`foo.test.ts` e `auth.config.ts` ficam de fora), exceto `schema.ts`. Mover ou criar um
+ * módulo sem regenerar deixava `api.d.ts` sem ele, e nenhum typecheck reclamava (#221).
+ */
+it("api.d.ts lista exatamente os módulos de platform/convex", () => {
+  const root = new URL("./", import.meta.url);
+  const modules = readdirSync(root, { recursive: true, encoding: "utf8" })
+    .map((file) => file.split("\\").join("/"))
+    .filter((file) => !file.startsWith("_generated/") && !file.includes("node_modules/"))
+    .filter((file) => /^(?:[^/]+\/)*[^./]+\.ts$/.test(file))
+    .map((file) => file.replace(/\.ts$/, ""))
+    .filter((module) => module !== "schema");
+  const listed = [...read("./_generated/api.d.ts").matchAll(/^ {2}"?([^":\s]+)"?: typeof /gm)].map(
+    ([, module]) => module!,
+  );
+
+  expect(
+    listed.toSorted(),
+    "Regenere com `bun run worktree sync` num worktree da plataforma.",
+  ).toEqual(modules.toSorted());
 });
