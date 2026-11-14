@@ -1294,7 +1294,7 @@ diferente e com a admissão recusada sem mexer no termo. Da rescisão, em
 `platform/convex/lib/annualTerms.test.ts`, `platform/convex/planTerms.test.ts`,
 `platform/convex/billingAnnualRescission.test.ts`,
 `platform/convex/billingAnnualUpgrade.test.ts` e
-`platform/convex/closure.test.ts`: os
+`platform/convex/closureOperator.test.ts`: os
 exemplos de R$ 894 no 4º mês, com o acesso até o fim do mês do termo
 contado da âncora, de R$ 1.231,33 com o upgrade no 5º mês e rescisão no 8º,
 e do zero a partir do 10º mês; o reembolso integral nos 7 dias da compra e
