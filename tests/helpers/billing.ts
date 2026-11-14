@@ -396,7 +396,10 @@ export async function fixture() {
         .unique(),
     );
   const billing = () => owner.query(api.billing.overview, { asOf: Date.now(), organizationId });
-  return { t, org, organizationId, owner, fake, plan, billing };
+  // Ids of the events this database receives: the sequence lives in the fixture, not in the module.
+  let eventSeq = 0;
+  const eventId = () => `evt_${++eventSeq}`;
+  return { t, org, organizationId, owner, fake, plan, billing, eventId };
 }
 export type Fixture = Awaited<ReturnType<typeof fixture>>;
 export const code = (promise: Promise<unknown>) =>
@@ -413,14 +416,13 @@ export const refusal = (promise: Promise<unknown>) =>
 export function sign(body: string, secret = WEBHOOK_SECRET, at = s(Date.now())) {
   return `t=${at},v1=${createHmac("sha256", secret).update(`${at}.${body}`).digest("hex")}`;
 }
-let eventSeq = 0;
 /** `signature` is the header, or a signer of the exact body sent. */
 export async function deliver(
   f: Fixture,
   event: Json,
   signature?: string | ((body: string) => string),
 ) {
-  const body = JSON.stringify({ id: `evt_${++eventSeq}`, livemode: false, ...event });
+  const body = JSON.stringify({ id: f.eventId(), livemode: false, ...event });
   const header = typeof signature === "function" ? signature(body) : (signature ?? sign(body));
   const response = await f.t.fetch("/v1/billing/stripe/events", {
     method: "POST",

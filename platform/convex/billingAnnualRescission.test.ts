@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { api, internal } from "./_generated/api";
 import { person, usePlatformEnvironment } from "../../tests/helpers/platform";
 import { termEndsAt } from "./lib/annualTerms";
+import { annualCardSuite } from "../../tests/helpers/billingAnnualCard";
 import {
   OCT,
   BILLING_ENVIRONMENT,
@@ -10,18 +11,6 @@ import {
   type Fixture,
   code,
 } from "../../tests/helpers/billing";
-import {
-  YEAR,
-  annualCard,
-  annualStart,
-  annualRenewal,
-  sync,
-  terms,
-  grants,
-  runUntil,
-  DAY,
-  rescind,
-} from "../../tests/helpers/billingAnnualCard";
 
 /**
  * The support rescinds a card annual term (ADR 0010, decision 9).
@@ -31,6 +20,18 @@ usePlatformEnvironment(BILLING_ENVIRONMENT);
 useStripeKeys();
 
 describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 0012, fatia 2b)", () => {
+  const {
+    YEAR,
+    annualCard,
+    annualStart,
+    annualRenewal,
+    sync,
+    terms,
+    grants,
+    runUntil,
+    DAY,
+    rescind,
+  } = annualCardSuite();
   describe("rescisão pelo suporte", () => {
     /** The 4th term month of a term of 10/10 at 12:00 ends on 10/02 at 12:00 UTC. */
     const FEB_10 = Date.UTC(2027, 1, 10, 12);

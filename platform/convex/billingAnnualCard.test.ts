@@ -4,6 +4,7 @@ import { person, usePlatformEnvironment } from "../../tests/helpers/platform";
 import { addMonths, termEndsAt } from "./lib/annualTerms";
 import { activateCatalogPlan } from "./lib/planCore";
 import { insertTerm } from "./lib/planTerms";
+import { annualCardSuite } from "../../tests/helpers/billingAnnualCard";
 import {
   OCT,
   NOV,
@@ -20,24 +21,6 @@ import {
   processEvents,
   startCard,
 } from "../../tests/helpers/billing";
-import {
-  OCT_1,
-  YEAR,
-  LEGACY,
-  CUSTOMER,
-  invoiceId,
-  annualCard,
-  annualStart,
-  annualRenewal,
-  sync,
-  terms,
-  grants,
-  paid,
-  stock,
-  runUntil,
-  legacyTerm,
-  DAY,
-} from "../../tests/helpers/billingAnnualCard";
 
 /**
  * A paid card annual invoice becomes a term (ADR 0010, decision 9, and ADR 0012, slice 2b).
@@ -47,6 +30,24 @@ usePlatformEnvironment(BILLING_ENVIRONMENT);
 useStripeKeys();
 
 describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 0012, fatia 2b)", () => {
+  const {
+    OCT_1,
+    YEAR,
+    LEGACY,
+    CUSTOMER,
+    invoiceId,
+    annualCard,
+    annualStart,
+    annualRenewal,
+    sync,
+    terms,
+    grants,
+    paid,
+    stock,
+    runUntil,
+    legacyTerm,
+    DAY,
+  } = annualCardSuite();
   it("na contratação, cria um termo ativo da âncora e concede o plano até o fim dele, uma vez", async () => {
     const f = await fixture();
     const sub = await annualCard(f);

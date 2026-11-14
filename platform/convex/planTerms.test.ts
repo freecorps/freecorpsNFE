@@ -20,7 +20,8 @@ import * as plansModule from "./plans";
  * The annual term after it is paid (ADR 0010, decision 9, and ADR 0012): its scheduled start, the
  * grant it allows, the operator's rescission, withdrawn upgrade and refunds, the console's view of
  * it and the cold custody it holds. Terms are written as the card invoice writes them
- * (`startTerm`, `upgradeTerm`), without Stripe: `billing.test.ts` proves the invoices themselves.
+ * (`startTerm`, `upgradeTerm`), without Stripe: `billingAnnualCard.test.ts`,
+ * `billingAnnualUpgrade.test.ts` and `billingAnnualRescission.test.ts` prove the invoices themselves.
  */
 const OCT = Date.UTC(2026, 9, 10, 12);
 const OCT_1 = Date.UTC(2026, 9, 1);

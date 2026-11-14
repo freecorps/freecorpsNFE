@@ -1331,8 +1331,8 @@ antes do início que não é ativado e as recusas (`PLANS_DISABLED`,
 `TERM_ENDED`, `ORGANIZATION_ARCHIVING`) registradas para o operador repetir.
 
 Do mensal no cartão nos aniversários (fatia 2a), em
-`platform/convex/billingMonthly.test.ts` (o upgrade no meio do mês, em
-`platform/convex/billing.test.ts`), com Stripe simulado: o Checkout só com o
+`platform/convex/billingMonthly.test.ts` e
+`platform/convex/billing.test.ts`, com Stripe simulado: o Checkout só com o
 preço recorrente, sem âncora, item avulso nem cupom; a assinatura de 31/01 às
 10:00:07 concedida até 28/02 e renovada até 31/03 e 30/04 no mesmo horário,
 sem deriva, com as cotas virando nos aniversários e as faturas reenviadas
@@ -1345,9 +1345,10 @@ com `RENEWAL_BELOW_UPGRADE`; a assinatura anterior
 pelo mês civil; o upgrade no meio do mês pela diferença, com a mesma âncora
 e o mesmo fim, recusado a 45 minutos do fim com a data e bloqueado com
 `LATE_PAYMENT` se pago depois da virada; e as recusas com `availableAt`
-pelo termo anual (`platform/convex/billingAnnualTerm.test.ts`), pelo mensal
-do cartão com a renovação parada e, no anual no cartão, pelo mensal maior em
-vigor (`platform/convex/billingAnnualCheckout.test.ts`).
+pelo termo anual (`platform/convex/billingMonthly.test.ts` e
+`platform/convex/billingAnnualTerm.test.ts`), pelo mensal do cartão com a
+renovação parada e, no anual no cartão, pelo mensal maior em vigor
+(`platform/convex/billingAnnualCheckout.test.ts`).
 A tela, em `apps/console/src/plans-billing.test.tsx`, mostra a próxima
 cobrança e o fim do plano como instantes UTC, sem "dia 1".
 

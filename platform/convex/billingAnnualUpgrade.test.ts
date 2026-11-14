@@ -3,6 +3,7 @@ import { api, internal } from "./_generated/api";
 import { person, usePlatformEnvironment } from "../../tests/helpers/platform";
 import { activateCatalogPlan } from "./lib/planCore";
 import { insertTerm } from "./lib/planTerms";
+import { annualCardSuite } from "../../tests/helpers/billingAnnualCard";
 import {
   OCT,
   NOV,
@@ -18,24 +19,6 @@ import {
   refusal,
   processEvents,
 } from "../../tests/helpers/billing";
-import {
-  YEAR,
-  CUSTOMER,
-  invoiceId,
-  annualCard,
-  annualStart,
-  annualRenewal,
-  sync,
-  terms,
-  grants,
-  paid,
-  stock,
-  runUntil,
-  DAY,
-  rescind,
-  undoUpgrade,
-  switches,
-} from "../../tests/helpers/billingAnnualCard";
 
 /**
  * The upgrade of a card annual from Intermediário to Grande (ADR 0012, slice 2b).
@@ -45,6 +28,24 @@ usePlatformEnvironment(BILLING_ENVIRONMENT);
 useStripeKeys();
 
 describe("anual por cartão: a fatura vira termo (ADR 0010, decisão 9, e ADR 0012, fatia 2b)", () => {
+  const {
+    YEAR,
+    CUSTOMER,
+    invoiceId,
+    annualCard,
+    annualStart,
+    annualRenewal,
+    sync,
+    terms,
+    grants,
+    paid,
+    stock,
+    runUntil,
+    DAY,
+    rescind,
+    undoUpgrade,
+    switches,
+  } = annualCardSuite();
   describe("upgrade do Intermediário anual para o Grande anual", () => {
     /** Mid-February: the 5th term month, from 10/02 to 10/03 at 12:00 UTC. */
     const FEB = Date.UTC(2027, 1, 15, 12);
