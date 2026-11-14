@@ -125,14 +125,14 @@ relógio falso e laço com espera em qualquer teste; o relógio fixo e as
 substituições estão em [lint.md](lint.md#no-wall-clock-in-tests). Espere pelo
 evento, não pelo tempo:
 
-| Para esperar                                   | Use                                                                                                                                                                 |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Agendamentos e filas do Convex até esvaziarem  | `await t.finishAllScheduledFunctions(vi.runAllTimers)`, que executa todos, até os de prazo longo                                                                    |
-| Só os agendamentos que vencem agora            | `vi.advanceTimersByTime(0)` e `await t.finishInProgressScheduledFunctions()`, repetidos para as continuações, como `settleNow` em `platform/convex/closure.test.ts` |
-| Um prazo                                       | `vi.advanceTimersByTime(<ms>)` até o prazo vencer, e depois `finishInProgressScheduledFunctions()`                                                                  |
-| Uma promise que o teste controla               | Uma promise adiada resolvida dentro de `act` (`apps/console/src/async-action.test.tsx`)                                                                             |
-| Um efeito de outra tarefa, arquivo ou processo | `await vi.waitFor(() => expect(...), { timeout, interval })`                                                                                                        |
-| A fila de macrotasks                           | `setImmediate` de `node:timers/promises`                                                                                                                            |
+| Para esperar                                   | Use                                                                                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agendamentos e filas do Convex até esvaziarem  | `await t.finishAllScheduledFunctions(vi.runAllTimers)`, que executa todos, até os de prazo longo                                                             |
+| Só os agendamentos que vencem agora            | `vi.advanceTimersByTime(0)` e `await t.finishInProgressScheduledFunctions()`, repetidos para as continuações, como `settleNow` em `tests/helpers/closure.ts` |
+| Um prazo                                       | `vi.advanceTimersByTime(<ms>)` até o prazo vencer, e depois `finishInProgressScheduledFunctions()`                                                           |
+| Uma promise que o teste controla               | Uma promise adiada resolvida dentro de `act` (`apps/console/src/async-action.test.tsx`)                                                                      |
+| Um efeito de outra tarefa, arquivo ou processo | `await vi.waitFor(() => expect(...), { timeout, interval })`                                                                                                 |
+| A fila de macrotasks                           | `setImmediate` de `node:timers/promises`                                                                                                                     |
 
 `platform/test-setup.ts` liga timers falsos para o `setTimeout` que o
 `convex-test` usa nos agendamentos. Com eles:

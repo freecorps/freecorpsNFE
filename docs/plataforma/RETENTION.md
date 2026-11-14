@@ -526,7 +526,7 @@ usa as mutations internas, executadas pelo operador no painel do deployment:
 Uma retenção registrada depois de o expurgo começar não devolve o que já
 saiu; registre-a antes do fim da guarda. Os registros de acesso não entram
 nesse expurgo e seguem os 184 dias. A prova está em
-`platform/convex/closure.test.ts`: o expurgo só começa no prazo, a retenção
+`platform/convex/closureGuard.test.ts`: o expurgo só começa no prazo, a retenção
 segura as linhas mesmo depois da revisão, a liberação expurga todas as linhas
 das duas classes e os arquivos, outra organização fica intacta e um restore
 rearma a guarda perdida. Nenhum ensaio fora do `convex-test` foi executado.
@@ -661,7 +661,8 @@ guarda mais do que essa versão promete, nunca menos.
   acima e `by_organizationId_and_direction_and_tpAmb` de `fiscalDocuments`
   são preenchidos no deploy, que espera o preenchimento.
 
-A prova está em `platform/convex/closure.test.ts`: a organização só com
+A prova está em `platform/convex/closureSandboxOnly.test.ts` e
+`platform/convex/closureEarlyRemoval.test.ts`: a organização só com
 Sandbox perde os dados fiscais, inclusive as linhas sem ambiente, mas não os
 registros de planos, pagamentos e capacidade, sem tocar outra organização;
 uma linha de Produção em uso, importações ou emissões, uma liberação da
@@ -832,7 +833,8 @@ de publicar, `retentionRecovery:recover` a cria, e a primeira execução grava
 `decisionUntil` e reduz as linhas ao mesmo mínimo. `inspect` conta cada
 decisão sem job como `missing`.
 
-A prova está em `platform/convex/closure.test.ts`: o cálculo no fuso de
+A prova está em `platform/convex/closure.test.ts` e
+`platform/convex/closureGuard.test.ts`: o cálculo no fuso de
 Brasília, inclusive a virada do ano; nada sai antes do prazo ou antes do
 expurgo fiscal, nem com retenção ativa; a retenção liberada depois do prazo
 nominal adia a decisão; o expurgo no instante exato do prazo, em vários
