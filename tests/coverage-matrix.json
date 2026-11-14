@@ -161,6 +161,7 @@
       "status": "delivered",
       "evidence": [
         "platform/convex/imports.test.ts",
+        "platform/convex/importsUpload.test.ts",
         "apps/console/e2e/imports.mjs",
         "docs/plataforma/IMPORTS.md",
         "docs/v1.0/evidence/71/README.md"
@@ -172,6 +173,7 @@
       "evidence": [
         "platform/convex/operations.test.ts",
         "platform/convex/imports.test.ts",
+        "platform/convex/importsUpload.test.ts",
         "scripts/proofs/prove-operations.mjs",
         "docs/v1.0/evidence/70/README.md"
       ]
