@@ -480,9 +480,10 @@ validada: a empresa fica sem A1, e a próxima consulta para em atenção.
 `ACCESS_REVOKED`, retome como acima.
 
 Esse comportamento está em
-`platform/convex/lib/siteCaptureContinuity.test.ts`, bloco "continuidade da
-captura em Produção", em `platform/convex/lib/siteCaptureAuthorize.test.ts`
-(o A1 trocado entre `prepare` e `authorize`) e em
+`platform/convex/lib/siteCaptureContinuity.test.ts` (o A1 renovado, de outro
+CNPJ ou vencido, a retomada sozinha e o A1 renovado com a consulta já
+enviada), em `platform/convex/lib/siteCaptureAuthorize.test.ts` (o A1
+trocado ou vencido entre `prepare` e `authorize`) e em
 `platform/convex/certificates.test.ts`.
 
 ## Lacuna na captura (#419)
