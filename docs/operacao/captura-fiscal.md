@@ -479,10 +479,10 @@ validada: a empresa fica sem A1, e a próxima consulta para em atenção.
 `CERTIFICATE_UNAVAILABLE`, a empresa continua sem A1 próprio válido; com
 `ACCESS_REVOKED`, retome como acima.
 
-Esse comportamento está no bloco "continuidade da captura em Produção" de
-`platform/convex/lib/siteCaptureContinuity.test.ts`,
-`platform/convex/lib/siteCaptureCutoff.test.ts` e
-`platform/convex/lib/siteCaptureQuota.test.ts`, e em
+Esse comportamento está em
+`platform/convex/lib/siteCaptureContinuity.test.ts`, bloco "continuidade da
+captura em Produção", em `platform/convex/lib/siteCaptureAuthorize.test.ts`
+(o A1 trocado entre `prepare` e `authorize`) e em
 `platform/convex/certificates.test.ts`.
 
 ## Lacuna na captura (#419)
