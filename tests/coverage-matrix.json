@@ -153,6 +153,8 @@
         "scripts/fiscal/prove-nfe-runtime.mjs",
         "scripts/fiscal/prove-excluded-events.mjs",
         "platform/convex/documents.test.ts",
+        "platform/convex/documentsLayout.test.ts",
+        "platform/convex/documentsEvents.test.ts",
         "docs/v1.0/evidence/69/README.md"
       ]
     },
