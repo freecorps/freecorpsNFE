@@ -65,7 +65,7 @@ export function usePlatformEnvironment(env: {
 /**
  * An explicit plan with finite `captures` and `bytes` quotas, which every production capture
  * requires (#429). Suites that run that capture assign it in their fixture; the refusals
- * without it are proved in `platform/convex/lib/siteCapture.test.ts`. Synthetic limits, far above a test.
+ * without it are proved in `platform/convex/lib/siteCaptureQuota.test.ts`. Synthetic limits, far above a test.
  */
 export function capturePlan(
   t: Pick<PlatformTest, "mutation">,

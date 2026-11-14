@@ -1415,7 +1415,7 @@ consulta reservada. Também confere que sync, pausa/retomada, retry genérico e
 negação da política antes do IO preservam a janela da fonte; que o orçamento é
 consumido mesmo em falha; e que SHA, deployment, CNPJ, escopo, certificado,
 fingerprint, janela e limite divergentes negam o transporte.
-`platform/convex/lib/siteCapture.test.ts` cobre, com o cofre e a requisição mTLS
+`platform/convex/lib/siteCaptureAuthorize.test.ts` cobre, com o cofre e a requisição mTLS
 simulados, o 656 com `ultNSU` acima do checkpoint (cursor e modo intactos),
 cada recusa do cofre entre o `prepare` e a requisição (teto por hora, parada
 geral, A1 renovado ou vencido, empresa retirada: nenhuma requisição, nenhuma
