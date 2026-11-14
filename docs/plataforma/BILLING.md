@@ -1238,14 +1238,16 @@ mesmo expurgo de `purgePlanRecords`.
 
 ## O que está provado e o que não está
 
-Provado em `platform/convex/billing.test.ts` e
+Provado nos testes de cobrança de `platform/convex/` e em
 `apps/console/src/plans-billing.test.tsx`, com API do Stripe simulada por
-`fetch` e eventos sintéticos assinados: contratação, renovação, recusa e
+`fetch` e eventos sintéticos assinados. Em `platform/convex/billing.test.ts`
+e `platform/convex/lib/billingStripe.test.ts`: contratação, renovação, recusa e
 recuperação, upgrade, downgrade, cancelamento e retomada, duplicidade, evento
 repetido e atrasado, timeout
 com nova tentativa, reembolso e contestação só sinalizados, acesso negado por
 papel, sessão e organização, isolamento por Customer, modo e assinatura
-inválida, abandono do Checkout e encerramento. Da fatura anual: o termo da
+inválida, abandono do Checkout e encerramento. Da fatura anual, em
+`platform/convex/billingAnnualCard.test.ts`: o termo da
 âncora concedido na hora, com a admissão reservada na concessão, renovação
 sem intervalo entre os termos e sem nova reserva, a renovação paga no último
 mês agendada, fatura repetida e fora de ordem, preço anual ausente ou
@@ -1256,7 +1258,8 @@ desligado, recusa de admissão, a fatura mensal de um mês coberto, a retomada
 recusada com outro termo agendado, a primeira fatura bloqueada que cancela
 a assinatura sem reembolso automático, com a falha repetida e sinalizada
 até o operador repetir, os jobs do Checkout do dia 1 que só registram, e os
-anuais anteriores à fatia 2b, ancorados no dia 1, renovando. Do Checkout anual (fatia 2b): os parâmetros
+anuais anteriores à fatia 2b, ancorados no dia 1, renovando. Do Checkout anual
+(fatia 2b), em `platform/convex/billingAnnualCheckout.test.ts`: os parâmetros
 exatos da sessão, sem âncora nem `proration_behavior` e sem `period`; a
 assinatura de 31/01/2027 às 10:00:07 UTC cobrada na hora, com o termo até
 31/01/2028 no mesmo horário, as cotas virando em 28/02 e 31/03 e a
@@ -1274,7 +1277,7 @@ papel, membership, organização, interruptor, preço anual ausente, termo em
 vigor ou agendado com a data, acesso de um termo rescindido com a data,
 cartão mensal ou anual que renova, Checkout aberto, plano personalizado e
 admissão. Do upgrade do anual, em `platform/convex/planTerms.test.ts` e
-`platform/convex/billing.test.ts`: o
+`platform/convex/billingAnnualUpgrade.test.ts`: o
 preço pelos meses do termo restantes, contados da âncora, no 1º mês e no
 último, o segmento desde o início do mês do termo ou a troca de `tier`, o
 fim do termo mantido, a reserva dos R$ 172 de custódia, a confirmação e a
@@ -1289,7 +1292,9 @@ cartão, paga depois do mês do termo (`LATE_PAYMENT`), com um `period` que
 não é início de mês do termo, com assinatura de outro Customer, com valor
 diferente e com a admissão recusada sem mexer no termo. Da rescisão, em
 `platform/convex/lib/annualTerms.test.ts`, `platform/convex/planTerms.test.ts`,
-`platform/convex/billing.test.ts` e `platform/convex/closure.test.ts`: os
+`platform/convex/billingAnnualRescission.test.ts`,
+`platform/convex/billingAnnualUpgrade.test.ts` e
+`platform/convex/closure.test.ts`: os
 exemplos de R$ 894 no 4º mês, com o acesso até o fim do mês do termo
 contado da âncora, de R$ 1.231,33 com o upgrade no 5º mês e rescisão no 8º,
 e do zero a partir do 10º mês; o reembolso integral nos 7 dias da compra e
@@ -1317,15 +1322,17 @@ anual aberto, a próxima cobrança anual e o fim do plano como instantes UTC,
 o aviso de substituição do mensal e a recusa com a data, o termo em vigor,
 agendado, pendente e rescindido, o upgrade pelo Checkout, fechado nas
 últimas 72 horas, as pendências e as mensagens de cada código; a leitura do
-servidor, em `platform/convex/planTerms.test.ts` e
-`platform/convex/billing.test.ts`. Do início agendado, em
+servidor, em `platform/convex/planTerms.test.ts`,
+`platform/convex/billingAnnualCard.test.ts` e
+`platform/convex/billingAnnualCheckout.test.ts`. Do início agendado, em
 `platform/convex/planTerms.test.ts`: o termo pago antes do início que só
 troca o plano no início, a ativação repetida sem efeito, o termo rescindido
 antes do início que não é ativado e as recusas (`PLANS_DISABLED`,
 `TERM_ENDED`, `ORGANIZATION_ARCHIVING`) registradas para o operador repetir.
 
 Do mensal no cartão nos aniversários (fatia 2a), em
-`platform/convex/billing.test.ts`, com Stripe simulado: o Checkout só com o
+`platform/convex/billingMonthly.test.ts` (o upgrade no meio do mês, em
+`platform/convex/billing.test.ts`), com Stripe simulado: o Checkout só com o
 preço recorrente, sem âncora, item avulso nem cupom; a assinatura de 31/01 às
 10:00:07 concedida até 28/02 e renovada até 31/03 e 30/04 no mesmo horário,
 sem deriva, com as cotas virando nos aniversários e as faturas reenviadas
@@ -1338,8 +1345,9 @@ com `RENEWAL_BELOW_UPGRADE`; a assinatura anterior
 pelo mês civil; o upgrade no meio do mês pela diferença, com a mesma âncora
 e o mesmo fim, recusado a 45 minutos do fim com a data e bloqueado com
 `LATE_PAYMENT` se pago depois da virada; e as recusas com `availableAt`
-pelo termo anual, pelo mensal do cartão com a renovação parada e, no anual
-no cartão, pelo mensal maior em vigor.
+pelo termo anual (`platform/convex/billingAnnualTerm.test.ts`), pelo mensal
+do cartão com a renovação parada e, no anual no cartão, pelo mensal maior em
+vigor (`platform/convex/billingAnnualCheckout.test.ts`).
 A tela, em `apps/console/src/plans-billing.test.tsx`, mostra a próxima
 cobrança e o fim do plano como instantes UTC, sem "dia 1".
 
