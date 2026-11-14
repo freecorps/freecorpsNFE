@@ -204,8 +204,8 @@ O caminho depende de como a captura foi desligada. Confira antes no
    pular nem repetir nada; se a consulta em voo ficou incerta, ela confere
    antes o que a Receita respondeu.
 
-Esse comportamento está em `platform/convex/lib/siteCapture.test.ts`, bloco
-"corte geral por variável e religar (#425)".
+Esse comportamento está em `platform/convex/lib/siteCaptureCutoff.test.ts`,
+bloco "corte geral por variável e religar (#425)".
 
 ## Captura em atenção
 
@@ -479,8 +479,11 @@ validada: a empresa fica sem A1, e a próxima consulta para em atenção.
 `CERTIFICATE_UNAVAILABLE`, a empresa continua sem A1 próprio válido; com
 `ACCESS_REVOKED`, retome como acima.
 
-Esse comportamento está em `platform/convex/lib/siteCapture.test.ts`, bloco
-"continuidade da captura em Produção", e em
+Esse comportamento está em
+`platform/convex/lib/siteCaptureContinuity.test.ts` (o A1 renovado, de outro
+CNPJ ou vencido, a retomada sozinha e o A1 renovado com a consulta já
+enviada), em `platform/convex/lib/siteCaptureAuthorize.test.ts` (o A1
+trocado ou vencido entre `prepare` e `authorize`) e em
 `platform/convex/certificates.test.ts`.
 
 ## Lacuna na captura (#419)

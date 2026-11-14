@@ -784,7 +784,7 @@ aniversário com a liquidação no período da reserva, o Gratuito no mês civil
 a capacidade no período ancorado e o estoque em `stock`, a âncora das linhas
 dos termos anuais, as regras de `usage:assignPlan` com a política ligada e
 desligada e `usage:overview` com e sem `period` e `asOf`.
-`platform/convex/lib/siteCapture.test.ts` prova que a captura de um plano ancorado,
+`platform/convex/lib/siteCaptureQuota.test.ts` prova que a captura de um plano ancorado,
 parada pela cota, retoma no aniversário da âncora, e que a cota esgotada no sandbox não
 pausa a captura em produção e que a esgotada em produção não bloqueia o sandbox.
 Na cota de notas do Gratuito, prova que a consulta sai com 99 notas, pausa com
