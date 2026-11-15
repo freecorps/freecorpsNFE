@@ -379,7 +379,8 @@ const nodeProject = (project: VitestProject) => ({
  * headless, pelo Playwright. Não herda o `test` da raiz: os setups de lá
  * bloqueiam `node:http` e mocam o cache de consultas do console, e no
  * navegador o teste monta o cache real sobre um cliente Convex simulado
- * (apps/console/test/render.tsx). O Chromium vem de
+ * (apps/console/test/render.tsx). browser-offline.ts bloqueia a rede da
+ * página, como offline.ts faz em Node. O Chromium vem de
  * `vp exec playwright install chromium` (docs/desenvolvimento/testes.md).
  */
 const browserProject = (project: VitestProject) => ({
@@ -391,6 +392,7 @@ const browserProject = (project: VitestProject) => ({
     testTimeout: timeout(project.timeout),
     isolate: project.isolate,
     alias: fiscalSources,
+    setupFiles: ["./tests/setup/browser-offline.ts"],
     // O CSS importado passa pelo Vite, em vez de virar módulo vazio: o layout é o da tela.
     css: true,
     browser: {

@@ -195,7 +195,9 @@ chamada, que receberia a promise, sem `Symbol.asyncDispose`.
 
 A regra reconhece a chamada pelo nome: `root.render(...)`, um método de outro
 objeto, e funções como `renderShell` ficam de fora. Para montar a tela duas
-vezes no mesmo teste, feche a primeira num bloco `{ }`.
+vezes no mesmo teste, feche a primeira num bloco `{ }`. A regra não vê onde o
+bloco termina: `await using` dentro de um `beforeEach` ou de um helper desmonta
+a tela quando ele retorna, antes do teste; monte no próprio teste.
 
 ## Ciclo de imports no backend
 

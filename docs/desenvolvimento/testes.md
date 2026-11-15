@@ -196,6 +196,7 @@ evento, não pelo tempo:
 | Um prazo                                       | `vi.advanceTimersByTime(<ms>)` até o prazo vencer, e depois `finishInProgressScheduledFunctions()`                                                           |
 | Uma promise que o teste controla               | Uma promise adiada resolvida dentro de `act` (`apps/console/src/async-action.test.tsx`)                                                                      |
 | Um efeito de outra tarefa, arquivo ou processo | `await vi.waitFor(() => expect(...), { timeout, interval })`                                                                                                 |
+| A tela, num teste de navegador                 | `await expect.element(<locator>)...` e `await expect.poll(() => <valor>)...`, que tentam de novo até o limite ([jsdom ou navegador](#jsdom-ou-navegador))    |
 | A fila de macrotasks                           | `setImmediate` de `node:timers/promises`                                                                                                                     |
 
 `platform/test-setup.ts` liga timers falsos para o `setTimeout` que o
@@ -232,7 +233,8 @@ evento, não pelo tempo:
 - **Transporte injetado, não módulo mocado.** Fisco, e-mail e webhooks ficam
   simulados por transporte injetado ou `vi.spyOn`. Um `vi.mock` deixa o
   arquivo mais lento ([ci.md](ci.md#isolamento)), e `tests/setup/offline.ts`
-  reprova rede sem mock.
+  reprova rede sem mock (`tests/setup/browser-offline.ts`, nos testes de
+  navegador).
 - **Dados sintéticos.** `SYNTHETIC_ISSUER_CNPJ`, e-mails em
   `@development.invalid` e certificados gerados em memória. Nenhum CNPJ,
   chave de acesso, XML ou valor real.

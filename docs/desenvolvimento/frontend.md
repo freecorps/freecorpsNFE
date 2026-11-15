@@ -864,6 +864,10 @@ histórico, não como resultados medidos.
 - Componentes e fluxos: `apps/console/src/*.test.ts(x)`, projeto `console` do
   Vitest (`vp run test:console`), com Testing Library. Cache e consultas
   antecipadas em `query-cache.test.tsx` e `navigation.test.tsx`.
+- Foco, layout e eventos reais: `apps/console/src/*.browser.test.tsx`, projeto
+  `console-browser` (`vp run test:console-browser`), no Chromium headless, com
+  `render` de `apps/console/test/render.tsx`
+  ([testes.md](testes.md#jsdom-ou-navegador)).
 - Jornadas no navegador: `apps/console/e2e/` com Playwright e
   `@axe-core/playwright`; roteiros e recibos em
   [navegador.md](navegador.md).

@@ -506,8 +506,10 @@ numa página do Chromium headless, pelo provider Playwright
 (`@vitest/browser-playwright`, na versão do Vitest do Vite+). O projeto não
 herda o `test` da raiz (`extends: false`), porque `tests/setup/offline.ts`
 importa `node:http` e `tests/setup/console-query-cache.ts` substitui o cache
-de consultas que o teste de navegador usa de verdade; traz só o plugin React e
-os aliases dos pacotes fiscais. O job Validate instala o Chromium antes do
+de consultas que o teste de navegador usa de verdade; traz o plugin React, os
+aliases dos pacotes fiscais e `tests/setup/browser-offline.ts`, que bloqueia a
+rede da página. `ci.mjs test-area` repassa `PLAYWRIGHT_BROWSERS_PATH` e
+`XDG_CACHE_HOME`, onde o Playwright procura o Chromium. O job Validate instala o Chromium antes do
 grafo (`Install Chromium for the browser tests`: `vp exec playwright install
 --with-deps --only-shell chromium`), na revisão que o `playwright` travado no
 `bun.lock` espera. Quando escrever um teste de navegador está em
@@ -698,7 +700,8 @@ Regras para um teste novo, das falhas que suítes parecidas já tiveram:
 - **Rode a área inteira.** `vp run test:platform`, não `--project platform`.
 
 `tests/setup/offline.ts` bloqueia `fetch`, `http.request/get` e
-`https.request/get` sem mock explícito. Mesmo quando o código captura a falha,
+`https.request/get` sem mock explícito, e `tests/setup/browser-offline.ts`
+bloqueia `fetch` e `XMLHttpRequest` na página dos testes de navegador. Mesmo quando o código captura a falha,
 o teardown reprova o caso. Isso detecta chamadas acidentais nos transportes
 usados pelo projeto; **não é uma sandbox de rede para código hostil**, DNS
 direto, sockets próprios ou subprocessos. PRs externos não recebem credenciais

@@ -46,7 +46,11 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
  * e respondem pelo `handle` da função, ou com `null`.
  */
 export class FakeConvex {
-  /** Cada assinatura que a tela abriu, na ordem: nome da função e argumentos. */
+  /**
+   * Cada `watchQuery` do cliente, na ordem: nome da função e argumentos. O `convex/react` pede de
+   * novo a cada desenho e o cache pede mais uma vez, então a mesma assinatura se repete; afirme
+   * com `some`, não pela lista inteira.
+   */
   readonly subscriptions: Array<{ name: string; args: Args }> = [];
   /** Cada chamada avulsa (`convex.query`), mutation e action, na ordem. */
   readonly calls: Call[] = [];
@@ -106,8 +110,13 @@ export class FakeConvex {
       journal: () => undefined,
     };
   }
+  /**
+   * Os `usePaginatedQuery` do console (`convex/react` e o cache) chegam a `watchQuery` com
+   * `paginationOpts`, e `answer` dá a mesma página a todo cursor: responda uma página só, com
+   * `isDone: true`. Só o caminho `useQueries` com `paginationOptions` chega aqui.
+   */
   watchPaginatedQuery(query: FunctionReference<"query">): never {
-    throw new Error(`FakeConvex não responde consultas paginadas (${getFunctionName(query)})`);
+    throw new Error(`FakeConvex não responde watchPaginatedQuery (${getFunctionName(query)})`);
   }
   async query(query: FunctionReference<"query">, args: Args = {}) {
     const name = getFunctionName(query);

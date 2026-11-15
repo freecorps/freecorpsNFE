@@ -95,9 +95,9 @@ it("runs only the browser area in Chromium, without the Node setups of the root"
   expect(browser.map(({ test }) => test.name)).toEqual(["console-browser"]);
   expect(browser[0]!.test.browser!.instances).toEqual([{ browser: "chromium" }]);
   // tests/setup/offline.ts blocks node:http, which a page does not have; the root's
-  // setups reach a project only through `extends`.
+  // setups reach a project only through `extends`. The page's own guard blocks its network.
   expect(browser[0]!.extends).toBe(false);
-  expect(browser[0]!.test.setupFiles).toBeUndefined();
+  expect(browser[0]!.test.setupFiles).toEqual(["./tests/setup/browser-offline.ts"]);
   expect(config.test!.setupFiles).toContain("./tests/setup/offline.ts");
   for (const { extends: inherits, test } of declared)
     if (!test.browser?.enabled) expect(inherits, test.name).toBe(true);
