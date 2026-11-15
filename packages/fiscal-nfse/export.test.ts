@@ -133,8 +133,10 @@ it("DPS de exportação para o Canadá com PTAX de fixture", async () => {
  * Campinas exporta pelo Emissor Nacional (regra C6). O teste prova a rota nos
  * dois lados da data, o XSD oficial e a assinatura RSA-SHA256 para cada forma
  * de identificar o tomador no exterior (NIF, cNaoNIF 1 e 2; o 0 é vedado pelo
- * E0226 e pelo tipo). O conteúdo de negócio da DPS da plataforma é provado em
- * `platform/convex/issuance.test.ts`. Dados sintéticos; nada aqui prova autorização.
+ * E0226 e pelo tipo). O lado da plataforma é provado em
+ * `platform/convex/issuanceRestricted.test.ts` (rota C6 e produção restrita) e
+ * `platform/convex/issuanceDps.test.ts` (conteúdo da DPS). Dados sintéticos; nada aqui prova
+ * autorização.
  */
 describe("exportação de Simples de Campinas à Sefin Nacional (C6, desde 01/11/2026)", () => {
   const CAMPINAS = "3509502";
