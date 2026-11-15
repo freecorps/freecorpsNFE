@@ -20,11 +20,14 @@ import { syntheticCertificate } from "./certificates";
 import * as certificateTransport from "../../platform/convex/lib/certificateTransport";
 import { encryptCertificate } from "../../platform/convex/lib/certificateCrypto";
 
-// Fixtures of the NFS-e issuance suites: synthetic companies, takers and profiles, and the
-// synthetic A1 and authority of the restricted production. Nothing here reaches a tax authority.
+/**
+ * Fixtures of the NFS-e issuance suites: synthetic companies, takers and profiles, and the
+ * synthetic A1 and authority of the restricted production. Nothing here reaches a tax authority.
+ */
+
 /** Sefin produção restrita (and the simulated sandbox, tpAmb 2): NT 009 layout since 20/10/2026. */
 export const PRODREST = "nfse-1.01-prodrest-20261020" as const;
-export type T = PlatformTest;
+type T = PlatformTest;
 
 /** Organization, project, declared company with an NFS-e profile in São Paulo (Sefin Nacional). */
 export async function fixture(
@@ -173,7 +176,7 @@ export const campinasTaker = {
 // Phase 3: real transport to the restricted production. The certificate is synthetic, made in
 // memory, and every call to the network is replaced: nothing here reaches a tax authority.
 
-export const KEYRING = { active: "k1", keys: { k1: "ab".repeat(32) } };
+const KEYRING = { active: "k1", keys: { k1: "ab".repeat(32) } };
 
 /** Active synthetic A1 of the company, sealed in the vault envelope like an upload. */
 export async function installCertificate(f: Fixture) {

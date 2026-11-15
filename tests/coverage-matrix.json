@@ -295,6 +295,8 @@
         "platform/convex/issuance.test.ts",
         "platform/convex/issuanceDps.test.ts",
         "platform/convex/issuanceOutcomes.test.ts",
+        "platform/convex/issuanceAccess.test.ts",
+        "platform/convex/issuanceRestricted.test.ts",
         "platform/convex/issuanceRest.test.ts",
         "docs/plataforma/ISSUANCE.md"
       ]
