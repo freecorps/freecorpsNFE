@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
 import { validateSkip } from "./scripts/lib/ci-changes.mjs";
 import { areaCommand, testProjects, vitestProjects } from "./scripts/lib/test-projects.mjs";
 import { DurationSequencer } from "./tests/setup/sequencer";
@@ -337,6 +338,72 @@ export function runTasks(skipped: string[]) {
   };
 }
 
+// Nos testes, os pacotes fiscais do workspace resolvem pelo código-fonte:
+// nenhum `build-fiscal-packages` antes de testar e um único módulo por
+// pacote no processo (antes, a plataforma carregava o dist e os testes o
+// src). O dist continua provado no CI por ci:packages, ci:xml-prove e
+// ci:boundaries.
+const fiscalSources = [
+  {
+    find: /^@freecorps\/fiscal-nfse\/(pure|danfse)$/,
+    replacement: source("./packages/fiscal-nfse/src/$1.ts"),
+  },
+  ...["fiscal-core", "fiscal-nfe", "fiscal-nfse"].map((name) => ({
+    find: new RegExp(`^@freecorps/${name}$`),
+    replacement: source(`./packages/${name}/src/index.ts`),
+  })),
+];
+
+type VitestProject = ReturnType<typeof vitestProjects>[number];
+
+/** Um projeto em Node (ou jsdom, por arquivo), com a configuração de `test` da raiz. */
+const nodeProject = (project: VitestProject) => ({
+  extends: true,
+  test: {
+    name: project.name,
+    include: project.include,
+    ...(project.exclude ? { exclude: exclude(...project.exclude) } : {}),
+    testTimeout: timeout(project.timeout),
+    isolate: project.isolate,
+    // terms-of-use.ts: nos testes da plataforma, nenhuma versão dos termos de uso vigora;
+    // as suítes dos termos usam a própria (tests/setup/terms-of-use.ts).
+    setupFiles: [
+      ...(project.isolate ? [] : ["./tests/setup/file-isolation.ts"]),
+      ...(project.area === "platform" ? ["./tests/setup/terms-of-use.ts"] : []),
+    ],
+  },
+});
+
+/**
+ * Um projeto no modo browser do Vitest: cada arquivo numa página do Chromium
+ * headless, pelo Playwright. Não herda o `test` da raiz: os setups de lá
+ * bloqueiam `node:http` e mocam o cache de consultas do console, e no
+ * navegador o teste monta o cache real sobre um cliente Convex simulado
+ * (apps/console/test/render.tsx). O Chromium vem de
+ * `vp exec playwright install chromium` (docs/desenvolvimento/testes.md).
+ */
+const browserProject = (project: VitestProject) => ({
+  extends: false,
+  plugins: [react()],
+  test: {
+    name: project.name,
+    include: project.include,
+    testTimeout: timeout(project.timeout),
+    isolate: project.isolate,
+    alias: fiscalSources,
+    // O CSS importado passa pelo Vite, em vez de virar módulo vazio: o layout é o da tela.
+    css: true,
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      headless: true,
+      instances: [{ browser: "chromium" as const }],
+      // A falha se lê no relatório; uma captura por falha só enche o disco.
+      screenshotFailures: false,
+    },
+  },
+});
+
 export default defineConfig({
   plugins: [react()],
   test: {
@@ -349,21 +416,7 @@ export default defineConfig({
     ...(maxWorkers
       ? { maxWorkers: maxWorkers.endsWith("%") ? maxWorkers : Number(maxWorkers) }
       : {}),
-    // Nos testes, os pacotes fiscais do workspace resolvem pelo código-fonte:
-    // nenhum `build-fiscal-packages` antes de testar e um único módulo por
-    // pacote no processo (antes, a plataforma carregava o dist e os testes o
-    // src). O dist continua provado no CI por ci:packages, ci:xml-prove e
-    // ci:boundaries.
-    alias: [
-      {
-        find: /^@freecorps\/fiscal-nfse\/(pure|danfse)$/,
-        replacement: source("./packages/fiscal-nfse/src/$1.ts"),
-      },
-      ...["fiscal-core", "fiscal-nfe", "fiscal-nfse"].map((name) => ({
-        find: new RegExp(`^@freecorps/${name}$`),
-        replacement: source(`./packages/${name}/src/index.ts`),
-      })),
-    ],
+    alias: fiscalSources,
     // Threads iniciam mais rápido e gastam menos CPU que processos; nenhum
     // teste muda cwd, sinais ou a saída do próprio processo (os que precisam
     // disso iniciam um processo filho).
@@ -375,23 +428,11 @@ export default defineConfig({
     // test:<área>`), e o CI roda todos. Padrões, timeouts e a suíte do
     // relatório do CI vêm de scripts/lib/test-projects.mjs. Uma área `shared`
     // roda sem isolamento por arquivo, e os arquivos dela que usam vi.mock
-    // ficam em `<área>-isolated`, com worker novo por arquivo.
-    projects: vitestProjects().map((project) => ({
-      extends: true,
-      test: {
-        name: project.name,
-        include: project.include,
-        ...(project.exclude ? { exclude: exclude(...project.exclude) } : {}),
-        testTimeout: timeout(project.timeout),
-        isolate: project.isolate,
-        // terms-of-use.ts: nos testes da plataforma, nenhuma versão dos termos de uso vigora;
-        // as suítes dos termos usam a própria (tests/setup/terms-of-use.ts).
-        setupFiles: [
-          ...(project.isolate ? [] : ["./tests/setup/file-isolation.ts"]),
-          ...(project.area === "platform" ? ["./tests/setup/terms-of-use.ts"] : []),
-        ],
-      },
-    })),
+    // ficam em `<área>-isolated`, com worker novo por arquivo. Uma área
+    // `browser` roda no Chromium (`browserProject`).
+    projects: vitestProjects().map((project) =>
+      project.browser ? browserProject(project) : nodeProject(project),
+    ),
   },
   // Grafo de validação do CI (`vp run validate`). Em PR e push na `main`, o job
   // Validate o executa com o cache do Vite Task restaurado da `main` (ou da
@@ -485,6 +526,11 @@ export default defineConfig({
       {
         files: ["**/*.test.{ts,tsx,mts,mjs,js}"],
         rules: { "freecorps/no-wall-clock-in-tests": "error" },
+      },
+      // O render dos testes de navegador desmonta por `await using` (apps/console/test/render.tsx).
+      {
+        files: ["**/*.browser.test.{ts,tsx}"],
+        rules: { "freecorps/require-disposable-render": "error" },
       },
     ],
     options: { typeAware: true, typeCheck: true },

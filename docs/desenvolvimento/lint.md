@@ -11,12 +11,13 @@ Os plugins JS do oxlint recebem a AST sem informação de tipos. Por isso os
 critérios abaixo reconhecem valores e chamadas pelo nome e pela forma do
 código, não pelo tipo TypeScript.
 
-| Regra                                                                                     | Protege                                       | Escopo                                       |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------- |
-| [`no-float-fiscal-values`](#no-float-fiscal-values)                                       | AGENTS.md §3, decimal exato                   | Todo arquivo, exceto `packages/fiscal-core/` |
-| [`require-access-helper-in-convex-functions`](#require-access-helper-in-convex-functions) | AGENTS.md §1 e §4, servidor confere o acesso  | `platform/convex/`                           |
-| [`no-wall-clock-in-tests`](#no-wall-clock-in-tests)                                       | [ci.md](ci.md#isolamento), relógio nos testes | `*.test.*`, exceto benchmarks                |
-| [`require-suppression-reason`](#require-suppression-reason)                               | Toda supressão diz por quê                    | Todo arquivo                                 |
+| Regra                                                                                     | Protege                                                    | Escopo                                       |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------- |
+| [`no-float-fiscal-values`](#no-float-fiscal-values)                                       | AGENTS.md §3, decimal exato                                | Todo arquivo, exceto `packages/fiscal-core/` |
+| [`require-access-helper-in-convex-functions`](#require-access-helper-in-convex-functions) | AGENTS.md §1 e §4, servidor confere o acesso               | `platform/convex/`                           |
+| [`no-wall-clock-in-tests`](#no-wall-clock-in-tests)                                       | [ci.md](ci.md#isolamento), relógio nos testes              | `*.test.*`, exceto benchmarks                |
+| [`require-suppression-reason`](#require-suppression-reason)                               | Toda supressão diz por quê                                 | Todo arquivo                                 |
+| [`require-disposable-render`](#require-disposable-render)                                 | [testes.md](testes.md#jsdom-ou-navegador), tela desmontada | `*.browser.test.*`                           |
 
 Desligar uma dessas regras numa linha exige motivo, como qualquer supressão:
 `// oxlint-disable-next-line freecorps/<regra> -- <motivo>`.
@@ -181,6 +182,20 @@ Toda supressão diz por quê:
 `skipIf` e `runIf` ficam de fora: a condição já diz quando o teste não roda.
 `worker-configuration.d.ts`, gerado pelo wrangler com `/* eslint-disable */`,
 tem a regra desligada em `vite.config.ts`.
+
+## require-disposable-render
+
+Nos testes de navegador (`*.browser.test.ts(x)`), toda chamada `render(...)` é
+`await using <nome> = await render(...)`. O `render` de
+`apps/console/test/render.tsx` devolve um `AsyncDisposable`; com `await using`,
+a tela desmonta ao fim do bloco mesmo quando uma asserção falha, e a página
+não leva a tela de um teste para o seguinte. Reprovam `render(...)` solto,
+`const`, `let` ou `using` com o resultado, e `await using` sem o `await` da
+chamada, que receberia a promise, sem `Symbol.asyncDispose`.
+
+A regra reconhece a chamada pelo nome: `root.render(...)`, um método de outro
+objeto, e funções como `renderShell` ficam de fora. Para montar a tela duas
+vezes no mesmo teste, feche a primeira num bloco `{ }`.
 
 ## Ciclo de imports no backend
 

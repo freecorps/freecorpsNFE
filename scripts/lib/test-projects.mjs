@@ -42,11 +42,16 @@ const platform = [
   "tests/{publicSite,referenceCorpus}.test.ts",
 ];
 const packages = ["packages/**/*.test.ts"];
+// Testes de componente do console num Chromium de verdade, com layout, foco e
+// CSS reais (docs/desenvolvimento/testes.md, "jsdom ou navegador").
+const consoleBrowser = ["apps/console/src/**/*.browser.test.tsx"];
 
 /**
  * `timeout` é o limite por teste em ms antes dos ajustes de ambiente;
  * `report` é a suíte do relatório do CI (.ci-results/tests.json);
- * `shared` roda a área sem isolamento por arquivo (`vitestProjects`).
+ * `shared` roda a área sem isolamento por arquivo (`vitestProjects`);
+ * `browser` roda a área no modo browser do Vitest, com Playwright e Chromium
+ * headless (vite.config.ts).
  */
 export const testProjects = [
   {
@@ -61,8 +66,16 @@ export const testProjects = [
   {
     name: "console",
     include: ["apps/*/src/**/*.test.{ts,tsx}"],
+    exclude: consoleBrowser,
     timeout: 20_000,
     report: "platform",
+  },
+  {
+    name: "console-browser",
+    include: consoleBrowser,
+    timeout: 20_000,
+    report: "platform",
+    browser: true,
   },
   {
     name: "tooling",

@@ -464,6 +464,7 @@ local. `bun run ci:test` ainda roda a suíte inteira num processo só.
 | `platform-isolated` | Os arquivos de `platform` que usam `vi.mock`              | 20 s    |
 | `packages`          | `packages/`                                               | 20 s    |
 | `console`           | `apps/*/src/` (jsdom por arquivo)                         | 20 s    |
+| `console-browser`   | `*.browser.test.tsx` de `apps/console/src/` (Chromium)    | 20 s    |
 | `tooling`           | `scripts/`, `tooling/`, worktree, validação, CI e corpus  | 60 s    |
 | `repository`        | Os testes que leem a árvore inteira ou a história do Git  | 60 s    |
 | `benchmark`         | `*.benchmark.test.ts` de `platform/` e `tests/`           | 120 s   |
@@ -499,6 +500,18 @@ o resultado enquanto não muda o que ela lê.
 Todos usam o pool `threads`, que inicia mais rápido e gasta menos CPU que
 processos. Os testes que precisam de sinais ou de `process.exit` os
 exercitam num processo filho.
+
+A exceção é `console-browser`, no modo browser do Vitest: cada arquivo roda
+numa página do Chromium headless, pelo provider Playwright
+(`@vitest/browser-playwright`, na versão do Vitest do Vite+). O projeto não
+herda o `test` da raiz (`extends: false`), porque `tests/setup/offline.ts`
+importa `node:http` e `tests/setup/console-query-cache.ts` substitui o cache
+de consultas que o teste de navegador usa de verdade; traz só o plugin React e
+os aliases dos pacotes fiscais. O job Validate instala o Chromium antes do
+grafo (`Install Chromium for the browser tests`: `vp exec playwright install
+--with-deps --only-shell chromium`), na revisão que o `playwright` travado no
+`bun.lock` espera. Quando escrever um teste de navegador está em
+[testes.md](testes.md#jsdom-ou-navegador).
 
 O projeto `platform` roda sem isolamento por arquivo (`shared` em
 `test-projects.mjs`). Com isolamento, cada arquivo ganhava um worker novo e

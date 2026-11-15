@@ -863,36 +863,8 @@ it("says the chosen files are being read, not sent, while they are hashed (#526)
   });
 });
 
-it("keeps the focus on the file input before, during and after the reading (#535)", async () => {
-  let digested!: () => void;
-  vi.stubGlobal("crypto", {
-    randomUUID: () => "intent",
-    subtle: {
-      digest: () =>
-        new Promise<ArrayBuffer>((resolve) => {
-          digested = () => resolve(new Uint8Array(32).buffer);
-        }),
-    },
-  });
-  state.batch = undefined;
-  render(<ImportFlow scope={scope} writable organizationSlug="organization" />);
-  const file = new File(["<xml/>"], "a.xml", { type: "application/xml" });
-  Object.defineProperty(file, "arrayBuffer", { value: async () => new ArrayBuffer(6) });
-  dropInput().focus();
-  expect(document.activeElement).toBe(dropInput());
-  await act(async () => fireEvent.change(dropInput(), { target: { files: [file] } }));
-  // Blocked without leaving the tab order: a disabled input would drop the focus to the body.
-  expect(dropInput().disabled).toBe(false);
-  expect(dropInput().getAttribute("aria-disabled")).toBe("true");
-  expect(document.activeElement).toBe(dropInput());
-  // Activating it meanwhile opens no picker.
-  expect(fireEvent.click(dropInput())).toBe(false);
-  await act(async () => digested());
-  expect(dropInput().getAttribute("aria-disabled")).toBeNull();
-  expect(document.activeElement).toBe(dropInput());
-  expect(fireEvent.click(dropInput())).toBe(true);
-  expect(screen.getByRole("list", { name: "Arquivos escolhidos" }).textContent).toContain("a.xml");
-});
+// The focus on the file input during the reading (#535) runs in the browser, where a disabled
+// input really loses it (imports-review.browser.test.tsx).
 
 it("leaves the focus where the person took it during a slow cancel and announces the answer", async () => {
   const batch = await twoFileBatch();
