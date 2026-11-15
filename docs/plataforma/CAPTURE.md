@@ -1404,14 +1404,16 @@ do que a fonte devolver.
 
 ### Cobertura com transporte controlado
 
-`platform/convex/captures.test.ts` cobre, sem chamada fiscal, os desfechos que
-a prova real não deve provocar de propósito: crash antes e depois do bruto,
-crash entre o `describe` e os envelopes (sem outra consulta à fonte), lease
-antiga, lote parcial, envelope repetido na mesma posição (o arquivo da
-repetição é apagado), bruto tardio da mesma claim (não substitui o lote
-guardado), lacuna, NSU repetido, 589, 656, ativação
+`platform/convex/captures.test.ts` e, na mesma pasta,
+`capturesRecovery.test.ts`, `capturesAccess.test.ts`,
+`capturesSourceAnswers.test.ts` e `capturesFiscal.test.ts` cobrem, sem chamada
+fiscal, os desfechos que a prova real não deve provocar de propósito: crash
+antes e depois do bruto, crash entre o `describe` e os envelopes (sem outra
+consulta à fonte), lease antiga, lote parcial, envelope repetido na mesma
+posição (o arquivo da repetição é apagado), bruto tardio da mesma claim (não
+substitui o lote guardado), lacuna, NSU repetido, 589, 656, ativação
 concorrente, transferência durante IO incerto e revogação do certificado com
-consulta reservada. Também confere que sync, pausa/retomada, retry genérico e
+consulta reservada. Também conferem que sync, pausa/retomada, retry genérico e
 negação da política antes do IO preservam a janela da fonte; que o orçamento é
 consumido mesmo em falha; e que SHA, deployment, CNPJ, escopo, certificado,
 fingerprint, janela e limite divergentes negam o transporte.

@@ -213,7 +213,7 @@ const answersWithoutA: Record<string, string> = {
   "billing:overview": "cobrança desligada no ambiente da varredura",
   "captureRelease:status": flag,
   "captures:history":
-    "o fluxo gerado não tem histórico; captures.test.ts, 'the history obeys the capture's access and the stream's organization (#433)'",
+    "o fluxo gerado não tem histórico; capturesHistory.test.ts, 'the history obeys the capture's access and the stream's organization (#433)'",
   "companies:deletion": flag,
   "contentRead:documentVersionsToken": token,
   "contentRead:importDetailToken": token,

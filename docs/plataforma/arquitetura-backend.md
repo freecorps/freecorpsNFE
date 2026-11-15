@@ -210,7 +210,7 @@ Cada deployment roda sob um perfil da plataforma (`APP_ENV`): `development`
 qualquer outra combinação (prova: `platform/convex/validation.test.ts` ›
 "rejects mutations before writing when %s is misconfigured"; prova:
 `platform/convex/installation.test.ts` › "refuses unsafe installation setting
-%s=%s"; prova: `platform/convex/captures.test.ts` › "fiscal production exists
+%s=%s"; prova: `platform/convex/capturesFiscal.test.ts` › "fiscal production exists
 only on the marked validation target, with production data"). O perfil não
 escolhe o ambiente do produto nem o transporte fiscal. As variáveis do perfil
 fiscal e da emissão NFS-e (`FNFE_PROOF_FISCAL_ENV`, `FNFE_ISSUANCE_ENV`,
@@ -254,7 +254,7 @@ Há dois eixos de ambiente, e toda operação conhece ambos:
   the deployment gates, never in an access check").
 - Ambiente fiscal: `FISCAL_ENV`, `disabled` por padrão. Transporte real é
   opt-in explícito por deployment, em `platform/convex/environment.ts` (prova:
-  `platform/convex/captures.test.ts` › "homologation requires explicit
+  `platform/convex/capturesFiscal.test.ts` › "homologation requires explicit
   transport opt-in and rejects local synthetic mutation there"); na emissão, o
   modo de transporte é `simulated`, `producao-restrita` ou `producao`, com o
   gate por empresa descrito em [ISSUANCE.md](ISSUANCE.md).
