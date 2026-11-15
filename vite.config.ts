@@ -389,6 +389,7 @@ const browserProject = (project: VitestProject) => ({
   test: {
     name: project.name,
     include: project.include,
+    ...(project.exclude ? { exclude: exclude(...project.exclude) } : {}),
     testTimeout: timeout(project.timeout),
     isolate: project.isolate,
     alias: fiscalSources,
