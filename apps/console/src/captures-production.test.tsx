@@ -745,11 +745,6 @@ const live = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 describe("organização da tela (#432)", () => {
-  const manager = {
-    ...org,
-    role: "admin",
-    capabilities: { operateDocuments: true, manageOrganization: true },
-  } as typeof org;
   /**
    * The live regions of the page. A copy button's own "Copiado." (`ui/copy-button.tsx`) only
    * answers its click, so it is not a region of the capture's situation.
@@ -900,31 +895,8 @@ describe("organização da tela (#432)", () => {
     expect(document.querySelectorAll("[role='alert']")).toHaveLength(0);
   });
 
-  it("um passo só: depois de ativar, o foco vai a Iniciar captura fiscal, sem iniciar sozinho", async () => {
-    state.queries["captures:get:sandbox"] = null;
-    state.queries["captureRelease:status"] = { ...release("none"), canManage: true };
-    state.mutate.mockResolvedValue({ version: 1, revokedKeys: 0 });
-    const view = render(<Captures org={manager} companyId={"company" as never} />);
-    fireEvent.click(screen.getByLabelText("Li e aceito os termos da captura fiscal"));
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Ativar captura fiscal" }));
-    });
-    // The server answers through the subscriptions: released, no capture yet.
-    state.queries["captureRelease:status"] = { ...release("released"), canManage: true };
-    state.queries["captures:get:production"] = null;
-    view.rerender(<Captures org={manager} companyId={"company" as never} />);
-    const start = screen.getByRole("button", { name: "Iniciar captura fiscal" });
-    expect(document.activeElement).toBe(start);
-    expect(
-      screen.getByRole("heading", { name: "Falta um passo: Iniciar captura fiscal" }),
-    ).toBeTruthy();
-    // Starting is the person's click: real queries to the Receita.
-    expect(state.mutate.mock.calls.map((call) => call[0])).toEqual(["captureRelease:enable"]);
-    // Opening the tab later does not take the focus.
-    cleanup();
-    render(<Captures org={manager} companyId={"company" as never} />);
-    expect(document.activeElement).toBe(document.body);
-  });
+  // "um passo só", o foco depois de ativar, roda no navegador
+  // (captures-production.browser.test.tsx).
 
   it("depois de iniciar, o foco vai à próxima ação quando a captura chega", async () => {
     state.queries["captures:get:sandbox"] = null;

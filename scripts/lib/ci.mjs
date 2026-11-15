@@ -21,8 +21,16 @@ export function revision(env, event, checkedSha) {
   };
 }
 
+// Onde o Playwright procura o Chromium da área console-browser, quando não é o padrão.
+const browserPaths = ["PLAYWRIGHT_BROWSERS_PATH", "XDG_CACHE_HOME"];
+
 export function testEnvironment(env) {
-  return subprocessEnvironment(env);
+  return {
+    ...subprocessEnvironment(env),
+    ...Object.fromEntries(
+      browserPaths.filter((name) => env[name] !== undefined).map((name) => [name, env[name]]),
+    ),
+  };
 }
 
 export function sanitizeReport(raw, root, metadata, exitCode) {

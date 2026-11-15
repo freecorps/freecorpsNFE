@@ -854,28 +854,8 @@ describe("Início por tarefa (#510)", () => {
     expect(storedTask()).toBe("excluir");
   });
 
-  it("trocar de tarefa lembra a escolha e muda a ação do cabeçalho", async () => {
-    render(<OrganizationStart org={org("owner")} contextKey="k" />);
-    fireEvent.click(screen.getByRole("radio", { name: /Integrar meu sistema/ }));
-    await waitFor(() => expect(checked()).toBe("integrar"));
-    expect(storedTask()).toBe("integrar");
-    expect(headerAction()?.textContent).toBe("Abrir integrações");
-    // Without `?tarefa=`, the address stays as it is.
-    expect(state.navigate).not.toHaveBeenCalled();
-    cleanup();
-    state.search = { tarefa: "importar" };
-    render(<OrganizationStart org={org("owner")} contextKey="k" />);
-    fireEvent.click(screen.getByRole("radio", { name: /Capturar NF-e/ }));
-    await waitFor(() =>
-      expect(state.navigate).toHaveBeenCalledWith({
-        to: "/app/$organizationSlug",
-        params: { organizationSlug: "equipe" },
-        search: { tarefa: "capturar" },
-        replace: true,
-      }),
-    );
-    expect(storedTask()).toBe("capturar");
-  });
+  // Trocar de tarefa, com o endereço que o router de verdade guarda, roda no navegador
+  // (console-shell.browser.test.tsx).
 
   it("diz ao leitor quem pode importar, sem ação no cabeçalho", () => {
     state.queries["consoleHome:summary"] = {

@@ -410,6 +410,7 @@ it("issues a tested SHA only after the whole graph, never in documentation or af
   expect(named("Classify the change")).not.toHaveProperty("if");
   for (const [name, condition] of [
     ["Install pinned age", anyGraph],
+    ["Install Chromium for the browser tests", anyGraph],
     ["Build, check and test", anyGraph],
     ["Check independent package boundaries", anyGraph],
     // The SDK package exists only when ci:sdk ran, and the approval needs
@@ -435,6 +436,14 @@ it("issues a tested SHA only after the whole graph, never in documentation or af
   // Every check comes before the approval.
   const at = (name: string) => steps.findIndex((step) => step.name === name);
   expect(at("Build, check and test")).toBeLessThan(at("Approve the checked revision"));
+  // The console-browser area finds Chromium, installed by the locked playwright.
+  expect(named("Install Chromium for the browser tests").run).toBe(
+    "vp exec playwright install --with-deps --only-shell chromium",
+  );
+  expect(at("Install locked dependencies")).toBeLessThan(
+    at("Install Chromium for the browser tests"),
+  );
+  expect(at("Install Chromium for the browser tests")).toBeLessThan(at("Build, check and test"));
   expect(at("Approve the checked revision")).toBeLessThan(
     at("Require successful checks for the same commit"),
   );

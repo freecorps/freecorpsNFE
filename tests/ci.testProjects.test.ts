@@ -79,9 +79,31 @@ it("shares workers only in shared areas, and isolates every file that mocks a mo
 it("runs the platform tests without terms of use in effect, and only them", () => {
   // tests/setup/terms-of-use.ts: the organizations of the suites never accepted the terms.
   for (const project of projects)
-    expect(project.setupFiles?.includes("./tests/setup/terms-of-use.ts"), project.name).toBe(
-      project.name === "platform" || project.name === "platform-isolated",
-    );
+    expect(
+      project.setupFiles?.includes("./tests/setup/terms-of-use.ts") ?? false,
+      project.name,
+    ).toBe(project.name === "platform" || project.name === "platform-isolated");
+});
+
+it("runs only the browser area in Chromium, without the Node setups of the root", () => {
+  type Declared = {
+    extends?: boolean;
+    test: Project & { browser?: { enabled?: boolean; instances?: Array<{ browser: string }> } };
+  };
+  const declared = config.test!.projects as Declared[];
+  const browser = declared.filter(({ test }) => test.browser?.enabled);
+  expect(browser.map(({ test }) => test.name)).toEqual(["console-browser"]);
+  expect(browser[0]!.test.browser!.instances).toEqual([{ browser: "chromium" }]);
+  // tests/setup/offline.ts blocks node:http, which a page does not have; the root's
+  // setups reach a project only through `extends`. The page's own guard blocks its network.
+  expect(browser[0]!.extends).toBe(false);
+  expect(browser[0]!.test.setupFiles).toEqual(["./tests/setup/browser-offline.ts"]);
+  expect(config.test!.setupFiles).toContain("./tests/setup/offline.ts");
+  for (const { extends: inherits, test } of declared)
+    if (!test.browser?.enabled) expect(inherits, test.name).toBe(true);
+  // A browser test is the browser area's, never jsdom's.
+  expect(owners("apps/console/src/captures.browser.test.tsx")).toEqual(["console-browser"]);
+  expect(owners("apps/console/src/captures.test.tsx")).toEqual(["console"]);
 });
 
 it("finds a mock through every kind of local import of a tests/ helper", () => {

@@ -74,18 +74,82 @@ Escreva o teste na camada mais baixa em que o defeito aparece, e confira que
 ele falha na `main`. Se o teste passa na `main`, ou ele não reproduz o
 defeito, ou o defeito está numa camada acima.
 
-| Camada                | Onde                                                                   | O que ela vê                                                             |
-| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Função pura           | `packages/*/` e os núcleos de `platform/convex/lib/`                   | Regra, cálculo, parsing, validação e assinatura, sem banco               |
-| Integração Convex     | `platform/convex/<módulo>.test.ts`, com `convex-test`                  | Acesso, persistência, idempotência, agendamento e rotas HTTP (`t.fetch`) |
-| Componente do console | `apps/console/src/**/*.test.ts(x)`, jsdom por arquivo, Testing Library | Estado da tela, formulário e navegação, com dados simulados              |
-| Jornada no navegador  | `apps/console/e2e/`, com Playwright e Convex local                     | Console e backend juntos, acessibilidade e largura                       |
-| Comando e CI          | `scripts/<domínio>/*.test.ts` e `tooling/`                             | Saída, código de saída e arquivos de um comando                          |
+| Camada                 | Onde                                                                   | O que ela vê                                                             |
+| ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Função pura            | `packages/*/` e os núcleos de `platform/convex/lib/`                   | Regra, cálculo, parsing, validação e assinatura, sem banco               |
+| Integração Convex      | `platform/convex/<módulo>.test.ts`, com `convex-test`                  | Acesso, persistência, idempotência, agendamento e rotas HTTP (`t.fetch`) |
+| Componente do console  | `apps/console/src/**/*.test.ts(x)`, jsdom por arquivo, Testing Library | Estado da tela, formulário e navegação, com dados simulados              |
+| Componente no Chromium | `apps/console/src/**/*.browser.test.tsx`, modo browser do Vitest       | Foco, layout, CSS e eventos reais, com router e cache de consultas reais |
+| Jornada no navegador   | `apps/console/e2e/`, com Playwright e Convex local                     | Console e backend juntos, acessibilidade e largura                       |
+| Comando e CI           | `scripts/<domínio>/*.test.ts` e `tooling/`                             | Saída, código de saída e arquivos de um comando                          |
 
 A jornada no navegador exige Convex local e a trava do navegador
 ([navegador.md](navegador.md)); use-a para o que as camadas de baixo não
 enxergam. Um teste de camada alta não substitui as provas especializadas de
 parsing, assinatura XML, precisão decimal, isolamento e transições fiscais.
+
+## jsdom ou navegador
+
+Um teste de componente do console roda em jsdom, salvo quando o que ele afirma
+só existe num navegador. jsdom não calcula layout nem aplica CSS, e não tira o
+foco de um elemento que fica desabilitado ou escondido. Vai para o navegador o
+teste que afirma:
+
+- para onde o foco vai, ou que ele fica onde a pessoa o deixou;
+- o que está visível, escondido ou fora da área de clique;
+- a interação que depende do evento real: arquivo escolhido, teclado, clique
+  num controle estilizado;
+- o endereço que a navegação deixa, com o router de verdade.
+
+O resto (texto, papel acessível, estado da tela, a chamada que um botão faz)
+fica em jsdom, que começa mais rápido e não precisa do Chromium. Os testes em
+jsdom continuam; o navegador não é a camada padrão.
+
+O teste de navegador fica em `<módulo>.browser.test.tsx`, ao lado do
+`<módulo>.test.tsx`, no projeto `console-browser`: o Vitest roda cada arquivo
+numa página do Chromium headless, pelo Playwright. Na primeira vez em cada
+máquina, instale o Chromium que o `playwright` travado espera:
+
+```sh
+vp exec playwright install chromium
+vp run test:console-browser
+```
+
+O teste monta a tela por `render` de `apps/console/test/render.tsx`, sempre com
+`await using` (prova: `freecorps/require-disposable-render`):
+
+```tsx
+const convex = new FakeConvex();
+convex.answer(api.captureRelease.status, release("none"));
+await using screen = await render(<Captures org={org} companyId={id} />, { convex });
+await screen.getByRole("button", { name: "Ativar captura fiscal" }).click();
+convex.answer(api.captureRelease.status, release("released"));
+await expect.element(screen.getByRole("button", { name: "Iniciar captura fiscal" })).toHaveFocus();
+```
+
+- **Desmonta ao fim do bloco.** Mesmo quando uma asserção falha, a tela sai da
+  página antes do teste seguinte. Para montar de novo no mesmo teste, feche a
+  primeira num bloco `{ }`.
+- **Router de verdade.** A tela fica sob o TanStack Router numa história em
+  memória (`path` dá o endereço inicial); `screen.router.state.location` diz
+  para onde ela navegou.
+- **Convex simulado, cache real.** `FakeConvex` faz o papel do
+  `ConvexReactClient`: uma consulta sem resposta fica carregando, `answer`
+  responde pela assinatura (com `match`, só aos argumentos que têm aqueles
+  valores), e cada mutation e action fica em `convex.calls`, respondida por
+  `handle`. O cache de consultas do console roda de verdade por cima dele, sem
+  `vi.mock` de `convex/react` nem do router.
+- **Estilos do console.** Os CSS de `src/main.tsx` entram na página; só as
+  fontes ficam de fora.
+- **Espere pela tela.** Depois da montagem, cliques e respostas chegam como
+  chegariam à pessoa: afirme com `expect.element(...)`, que tenta de novo até
+  o limite, ou `expect.poll` para um valor fora da tela.
+
+Os três primeiros, um por arquivo de fluxo (`captures-production`,
+`console-shell` e `imports-review`), saíram de jsdom na #146. Medidos no
+Windows, cada um leva de 0,14 a 0,46 s no Chromium, contra 0,15 a 0,20 s em
+jsdom, e a área inteira roda em cerca de 4 s, com o Chromium aberto uma vez:
+o clique real espera o elemento ficar visível e estável.
 
 ## Provar uma correção
 
@@ -132,6 +196,7 @@ evento, não pelo tempo:
 | Um prazo                                       | `vi.advanceTimersByTime(<ms>)` até o prazo vencer, e depois `finishInProgressScheduledFunctions()`                                                           |
 | Uma promise que o teste controla               | Uma promise adiada resolvida dentro de `act` (`apps/console/src/async-action.test.tsx`)                                                                      |
 | Um efeito de outra tarefa, arquivo ou processo | `await vi.waitFor(() => expect(...), { timeout, interval })`                                                                                                 |
+| A tela, num teste de navegador                 | `await expect.element(<locator>)...` e `await expect.poll(() => <valor>)...`, que tentam de novo até o limite ([jsdom ou navegador](#jsdom-ou-navegador))    |
 | A fila de macrotasks                           | `setImmediate` de `node:timers/promises`                                                                                                                     |
 
 `platform/test-setup.ts` liga timers falsos para o `setTimeout` que o
@@ -168,7 +233,8 @@ evento, não pelo tempo:
 - **Transporte injetado, não módulo mocado.** Fisco, e-mail e webhooks ficam
   simulados por transporte injetado ou `vi.spyOn`. Um `vi.mock` deixa o
   arquivo mais lento ([ci.md](ci.md#isolamento)), e `tests/setup/offline.ts`
-  reprova rede sem mock.
+  reprova rede sem mock (`tests/setup/browser-offline.ts`, nos testes de
+  navegador).
 - **Dados sintéticos.** `SYNTHETIC_ISSUER_CNPJ`, e-mails em
   `@development.invalid` e certificados gerados em memória. Nenhum CNPJ,
   chave de acesso, XML ou valor real.

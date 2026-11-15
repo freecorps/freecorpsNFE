@@ -166,6 +166,14 @@ jobs:
           echo "$AGE_SHA256  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+      # The console-browser test area runs in headless Chromium through the
+      # Playwright provider of Vitest's browser mode. Only the headless shell,
+      # at the revision the locked playwright package pins, with its system
+      # libraries (docs/desenvolvimento/testes.md, jsdom ou navegador).
+      - name: Install Chromium for the browser tests
+        if: steps.changes.outputs.mode != 'docs'
+        timeout-minutes: 5
+        run: vp exec playwright install --with-deps --only-shell chromium
       # The graph in vite.config.ts: fiscal packages, REST contract, SDK and XML
       # consumer proofs, format/lint/types, tsc, one test task per area,
       # Wrangler tooling, validation console and auth proxy proof, in dependency

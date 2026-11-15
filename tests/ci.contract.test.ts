@@ -23,6 +23,16 @@ it("preserves Windows runtime path casing without admitting unknown variables", 
     }),
   ).toEqual({ Path: "bin", SystemRoot: "C:/Windows" });
 });
+it("passes where Playwright keeps Chromium, for the console-browser area", () => {
+  expect(
+    testEnvironment({
+      PATH: "bin",
+      PLAYWRIGHT_BROWSERS_PATH: "C:/browsers",
+      XDG_CACHE_HOME: "/cache",
+      PLAYWRIGHT_SECRET: "private",
+    }),
+  ).toEqual({ PATH: "bin", PLAYWRIGHT_BROWSERS_PATH: "C:/browsers", XDG_CACHE_HOME: "/cache" });
+});
 it("records the synthetic merge separately from the PR head, including draft PRs", () => {
   expect(
     revision(

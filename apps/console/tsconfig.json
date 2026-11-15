@@ -1,5 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": { "paths": {} },
-  "include": ["src", "vite.config.ts"]
+  // ESNext.Disposable: o `await using` dos testes de navegador (test/render.tsx).
+  "compilerOptions": {
+    "paths": {},
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "ESNext.Disposable"]
+  },
+  "include": ["src", "test", "vite.config.ts"]
 }
