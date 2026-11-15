@@ -1302,7 +1302,7 @@ it("prints only a bare refusal code when a run stops, never another message", ()
  * The executor's plan of the rehydration's cold stage (ADR 0010, C2), on package rows: it mirrors
  * the server's rule (`coldTier.notePlan` under the window), so it never defers a file the server
  * would keep hot. The end-to-end proof against the real functions is in
- * `platform/convex/coldArchiveRehydration.test.ts`.
+ * `platform/convex/coldArchiveRehydrationHotWindow.test.ts`.
  */
 it("plans the cold stage of a rehydration with the server's rule, in batches", async () => {
   const dir = scratch();
