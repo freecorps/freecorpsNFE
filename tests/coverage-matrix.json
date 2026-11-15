@@ -293,6 +293,8 @@
         "scripts/lib/nfse-consumer.mjs",
         "scripts/distribution/prove-xml-package.mjs",
         "platform/convex/issuance.test.ts",
+        "platform/convex/issuanceDps.test.ts",
+        "platform/convex/issuanceOutcomes.test.ts",
         "platform/convex/issuanceRest.test.ts",
         "docs/plataforma/ISSUANCE.md"
       ]
