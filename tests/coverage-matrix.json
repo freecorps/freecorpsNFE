@@ -186,6 +186,10 @@
       "status": "delivered",
       "evidence": [
         "platform/convex/captures.test.ts",
+        "platform/convex/capturesRecovery.test.ts",
+        "platform/convex/capturesAccess.test.ts",
+        "platform/convex/capturesSourceAnswers.test.ts",
+        "platform/convex/capturesFiscal.test.ts",
         "packages/fiscal-nfe/distribution.test.ts",
         "apps/console/e2e/captures.mjs",
         "docs/v1.0/evidence/78/review-browser.json",
@@ -251,6 +255,7 @@
       "evidence": [
         "platform/convex/usage.test.ts",
         "platform/convex/captures.test.ts",
+        "platform/convex/capturesRecovery.test.ts",
         "platform/convex/registry.test.ts",
         "platform/convex/webhooks.test.ts",
         "apps/console/e2e/usage.mjs",
