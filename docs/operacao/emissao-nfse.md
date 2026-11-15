@@ -548,9 +548,10 @@ da `main` de 03/11/2026 ainda não a exige
   oferece emitir (`canIssue` falso no `context`).
 
 Os testes com o plano e o ambiente substituídos estão em
-`platform/convex/lib/issuanceProduction.test.ts`. Os do console estão em
-`apps/console/src/issuances-production.test.tsx`, e as capturas, em
-console-ambiente-producao.
+`platform/convex/lib/issuanceProduction.test.ts` e, na mesma pasta, em
+`issuanceProductionReconciliation.test.ts` e `issuanceProductionProbe.test.ts`.
+Os do console estão em `apps/console/src/issuances-production.test.tsx`, e as
+capturas, em console-ambiente-producao.
 
 ### Publicação, backup e smokes
 
