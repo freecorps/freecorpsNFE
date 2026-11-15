@@ -341,7 +341,7 @@ comuns da implementação:
 As identidades da tabela são convenção, sem verificação, salvo a da
 solicitação, provada acima. O hash não concede acesso nem deduplica entre
 clientes (convenção, sem verificação). Um resumo que evolui para XML completo
-mantém a identidade documental (prova: `platform/convex/documents.test.ts` ›
+mantém a identidade documental (prova: `platform/convex/documentsEvents.test.ts` ›
 "summary then full XML and repeated/out-of-order events preserve a
 reconstructible situation").
 
@@ -397,7 +397,7 @@ em operations"). O ciclo, os estados e a recuperação estão em
 
 O XML original é imutável e passa por representações separadas, sem exigir
 quatro cópias no banco. O original servido confere com o hash gravado (prova:
-`platform/convex/documents.test.ts` › "refuses to serve a hot original whose
+`platform/convex/documentsDownloads.test.ts` › "refuses to serve a hot original whose
 stored file no longer matches the recorded hash (#110)"):
 
 ```text
@@ -414,7 +414,7 @@ parciais (prova: `platform/convex/documents.test.ts` › "reprocesses through
 HTTP 202 using one operation and keeps old versions and exact items"). A
 situação fiscal deriva de evidências preservadas por regra determinística,
 reproduzível diante de repetição e ordem diferente (prova:
-`platform/convex/documents.test.ts` › "summary then full XML and
+`platform/convex/documentsEvents.test.ts` › "summary then full XML and
 repeated/out-of-order events preserve a reconstructible situation"); não há
 event sourcing para os cadastros. Contratos em [IMPORTS.md](IMPORTS.md) e
 [DOCUMENTS.md](DOCUMENTS.md).
