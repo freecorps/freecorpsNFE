@@ -305,7 +305,7 @@ try {
       directory: join(scratch, "proof"),
       decrypt,
       // The real import and re-export into an isolated Convex is #691's proof; here the package
-      // itself stands for the re-export, as in platform/convex/coldArchiveRehydration.test.ts.
+      // itself stands for the re-export, as in tests/helpers/coldArchiveRehydration.ts.
       restoreAndExport: async (zip) => zip,
       verifierRunId: `proof-689-${randomUUID()}`,
     });

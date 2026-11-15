@@ -1048,12 +1048,14 @@ outras classes), a cerca com o mesmo ID, os bytes dos originais, o mapa e o
 inventário. Cobre a queda no meio das linhas e a retomada, a resposta perdida
 de `rows` e `check`, a repetição de cada passo e a recusa depois de `hot`,
 duas organizações sem vazamento (linha e arquivo da outra recusados, a outra
-continua arquivada e intocada e os IDs de uma não resolvem na outra), o
-órfão de um upload interrompido, coletado só depois da espera e sem tocar o
-arquivo igual guardado por outra organização, a conferência canônica que
-para com uma linha alterada, a admissão (plano pago vencido, capacidade com
-o plano que comporta, organização com encerramento) e a cobertura das
-referências reescritas pelas fontes quentes. Cobre também a restauração
+continua arquivada e intocada e os IDs de uma não resolvem na outra) e a
+cobertura das referências reescritas pelas fontes quentes.
+`platform/convex/coldArchiveRehydrationOperations.test.ts` cobre o órfão de
+um upload interrompido, coletado só depois da espera e sem tocar o arquivo
+igual guardado por outra organização, a conferência canônica que para com uma
+linha alterada e a admissão (plano pago vencido, capacidade com o plano que
+comporta, organização com encerramento).
+`platform/convex/coldArchiveRehydrationIsolation.test.ts` cobre a restauração
 isolada de organização aberta (`restoreIsolated`), com uma fonte que registra
 cada mutation e não recebe nenhuma. O teste restaura em `archived`, de novo
 com o mesmo resultado, e em `restoring`, no meio de uma reidratação, que
@@ -1061,10 +1063,11 @@ depois termina em `hot`. Em `hot`, a restauração recusa antes de ler o R2. A
 outra organização continua intocada e restaura só o próprio pacote. Num
 segundo ciclo, depois da reativação, o pacote traz os IDs do primeiro ciclo
 com `originId`, e o mapa continua na origem. A etapa fria da ADR 0010, C2,
-roda no mesmo arquivo com o bucket frio em memória atrás de `fetch`. O teste
-cobre a nota da janela quente, a nota antiga que vai fria com o resíduo
-inteiro, a nota já fria no pacote intocada, a listagem, a deduplicação e a
-leitura byte a byte do conteúdo e do original nas duas camadas. Cobre
+roda em `platform/convex/coldArchiveRehydrationHotWindow.test.ts`, com o bucket
+frio em memória atrás de `fetch`. O teste cobre a nota da janela quente, a
+nota antiga que vai fria com o resíduo inteiro, a nota já fria no pacote
+intocada, a listagem, a deduplicação e a leitura byte a byte do conteúdo e do
+original nas duas camadas. Cobre
 também a admissão dos arquivos quentes mais um lote, com a recusa de um byte
 a menos, e a nota de Produção sem ano de lock, que volta quente e entra quente
 na admissão. Sem gate ou com retenção legal antes da reidratação, tudo volta
