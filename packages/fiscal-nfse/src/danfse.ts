@@ -752,8 +752,10 @@ function fit(text: string, font: PDFFont, size: number, width: number): string {
   const capped = text.length > CELL_CHARS ? text.slice(0, CELL_CHARS) : text;
   if (capped === text && font.widthOfTextAtSize(text, size) <= width) return text;
   const head = wrap(capped, font, size, width - font.widthOfTextAtSize("...", size))[0];
-  // Célula mais estreita que um caractere e as reticências: nada cabe, nada sai.
-  return head ? `${head}...` : "";
+  // A quebra devolve ao menos um caractere por linha: numa célula mais estreita que um caractere
+  // e as reticências, nada cabe e nada sai.
+  const shown = head ? `${head}...` : "";
+  return font.widthOfTextAtSize(shown, size) <= width ? shown : "";
 }
 
 /**
