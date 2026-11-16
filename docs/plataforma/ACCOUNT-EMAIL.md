@@ -185,8 +185,11 @@ nas actions que conferem a sessão por conta própria; uma query, e a action que
 confere acesso por uma query, não lê o relógio e, com a sessão vencida, ainda
 responde até o JWT terminar, no máximo 15 minutos, porque o Better Auth só emite
 token para sessão viva (#43).
-Logout e mudanças de storage atualizam outras abas. Verificar também sessão
-removida/expirada no backend, não apenas o estado visual da SPA.
+Logout e mudanças de storage atualizam outras abas: o evento `storage` da
+chave `better-auth_cookie` pede a sessão de novo, e a aba sem sessão solta o
+token Convex e volta a pedir login, mesmo aberta com o token antecipado de
+`session-boot.ts` (prova: `apps/console/src/auth.test.tsx`; #250). Verificar
+também sessão removida/expirada no backend, não apenas o estado visual da SPA.
 
 ## Ativação após integração
 
