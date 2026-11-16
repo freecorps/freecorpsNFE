@@ -1500,7 +1500,10 @@ transmitido:
 Em 02/11/2026, a fase 3 provou a exportação na Sefin Nacional: uma NFS-e de
 exportação do Simples de Campinas (C6), com tomador sem NIF, foi autorizada e
 cancelada na produção restrita, com a DPS no leiaute da NT 009
-(evidência). Antes, em 09/10/2026,
+(evidência). Em 16/11/2026, outra, com tomador com NIF (`toma/NIF`), também
+foi autorizada e cancelada ali, pedida pela REST hospedada, e o probe leu o
+404 de DPS ausente com o JSON de ausência na Sefin restrita e na IMA
+([evidência](../v1.0/evidence/244/2026-11-16/README.md)). Antes, em 09/10/2026,
 a fase 3 provou uma nota doméstica de Simples sem retenção no
 canal de Campinas, autorizada e cancelada na homologação da IMA com o A1 do
 cofre (evidência): mTLS real na Sefin restrita e na
@@ -1526,13 +1529,17 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   primeira DPS (02/11/2026, série 2 nº 100000) voltou com E1235 porque seguia
   o pacote de produção v1.01-20260209; com o leiaute da NT 009
   ([XSD oficial antes de assinar](#transmissão-e-reconciliação)), a seguinte
-  foi autorizada e cancelada. Ficam sem prova o tomador com NIF e a
-  reconciliação depois de um timeout real na Sefin. A Sefin de produção (`tpAmb` 1)
+  foi autorizada e cancelada; em 16/11/2026, a exportação com tomador com NIF
+  também. Fica sem prova a reconciliação depois de um timeout real na Sefin:
+  o prazo do transporte é fixo no código, e induzir o timeout no deployment
+  hospedado pediria publicar código ou falhar a rede. As operações reais
+  terminaram na primeira tentativa, e a consulta de uma DPS existente na
+  Sefin, que a reconciliação usa, não foi exercida. A Sefin de produção (`tpAmb` 1)
   continua no pacote v1.01-20260209, o da Documentação Atual; se ela adotar a
   NT 009 antes da fase 4, a DPS de produção também precisa trocar de leiaute
   (pré-condição 6 do
   [runbook](../operacao/emissao-nfse.md#pré-condições-para-ligar-o-gate)).
-  Em 02/11/2026, o ADN de produção dava
+  Em 02/11 e em 16/11/2026, o ADN de produção dava
   `aderenteEmissorNacional` 0 para Campinas, como em 09/10; uma notícia do Portal NFS-e de
   28/09/2026 indica, como hipótese sem prova, que a partir de 01/11/2026 o
   Simples pode usar os emissores nacionais independentemente da opção do
@@ -1557,10 +1564,9 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   `RESPONSE_UNREADABLE` antes de existir o diagnóstico, e a tentativa não tem
   `diagnostic`. A reconciliação resolve o desfecho; o `diagnostic` da próxima
   emissão mostrará o formato.
-- O critério do 404 contra o fisco: os probes de 09/10/2026 rodaram antes dele,
-  e nenhuma consulta real voltou 404 depois. Os testes provam o 404 com e sem o
-  JSON de ausência com o fisco substituído; não se sabe se a IMA e a Sefin
-  trazem esse JSON no 404 de DPS ausente.
+- O critério do 404 na Sefin de produção: em 16/11/2026, a Sefin restrita e a
+  IMA responderam ao probe 404 com o JSON de ausência (`not-found`); falta a
+  Sefin de produção, que só o probe do deployment de produção fiscal consulta.
 - Outros perfis no canal de Campinas: os códigos IBS/CBS e a exigência de
   valores IBS/CBS de não optante não foram conferidos. A retenção também não
   foi autorizada: para 01.05.01.001, a L0009 diz que o serviço não está
@@ -1577,9 +1583,11 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   do arquivo do download pelo console têm só teste de componente.
 - REST, SDK e webhooks de emissão, inclusive o download do DANFSe pela REST e
   pelo SDK, foram provados com `convex-test`, transporte simulado e destinos
-  sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`);
-  nenhuma chamada passou pelo Worker hospedado nem entregou webhook de emissão
-  a um receptor real.
+  sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`).
+  Em 16/11/2026, a REST hospedada criou, consultou e cancelou uma emissão na
+  produção restrita e baixou o XML da DPS e da NFS-e; o SDK, o download do
+  DANFSe pela REST e a entrega de webhook de emissão a um receptor real
+  continuam sem prova.
 - O gate de produção diante de um chamador com acesso: nenhum deployment é
   `production`, e o teste simula um (substituindo
   `requirePlatformEnvironment`) para provar que o acesso vem antes do gate.

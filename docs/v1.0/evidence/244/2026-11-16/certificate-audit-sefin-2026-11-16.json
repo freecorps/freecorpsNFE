@@ -1,0 +1,32 @@
+[
+  {
+    "at": "2026-11-16T17:40:11.943Z",
+    "action": "nfse-probe",
+    "result": "authorized"
+  },
+  {
+    "at": "2026-11-16T17:40:17.915Z",
+    "action": "nfse-probe",
+    "result": "success"
+  },
+  {
+    "at": "2026-11-16T17:40:45.470Z",
+    "action": "nfse-transport",
+    "result": "authorized"
+  },
+  {
+    "at": "2026-11-16T17:40:50.491Z",
+    "action": "nfse-transport",
+    "result": "success"
+  },
+  {
+    "at": "2026-11-16T17:41:25.038Z",
+    "action": "nfse-transport",
+    "result": "authorized"
+  },
+  {
+    "at": "2026-11-16T17:41:27.147Z",
+    "action": "nfse-transport",
+    "result": "success"
+  }
+]
