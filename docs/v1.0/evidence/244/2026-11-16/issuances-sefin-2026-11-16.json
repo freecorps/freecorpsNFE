@@ -1,0 +1,116 @@
+{
+  "request": {
+    "market": "export",
+    "issueDate": "2026-11-16",
+    "competence": "2026-11",
+    "taker": {
+      "kind": "foreign",
+      "nif": "fictício, 9 dígitos",
+      "country": "US"
+    },
+    "amount": {
+      "currency": "USD",
+      "value": "1.00"
+    },
+    "issWithheld": false,
+    "channel": "REST hospedada (api.nfe.freecorps.com.br): POST /v1/issuances, GET /v1/issuances/{id}, POST /v1/issuances/{id}/cancellation e GET .../artifacts/{id}, chave de API sandbox"
+  },
+  "issuance": {
+    "environment": "sandbox",
+    "transport": "producao-restrita",
+    "target": "sefin-nacional",
+    "series": "2",
+    "number": 100002,
+    "dpsId": "DPS350950226311311900019000002000000000100002",
+    "accessKey": "35095022263113119000190000000000000226110005983797",
+    "nfseNumber": "2",
+    "state": "cancelled",
+    "operationState": "succeeded",
+    "code": null,
+    "rejections": [],
+    "exchange": {
+      "currency": "USD",
+      "rate": "5.651800",
+      "quoteDate": "2026-11-13",
+      "brlAmount": "5.65",
+      "source": "ptax-bcb"
+    },
+    "authorizedAt": "2026-11-16T17:40:50Z"
+  },
+  "attempts": [
+    {
+      "operation": "issue",
+      "mode": "execute",
+      "generation": 1,
+      "fence": 1,
+      "code": "SUCCEEDED",
+      "startedAt": "2026-11-16T17:40:44.556Z",
+      "finishedAt": "2026-11-16T17:40:50.877Z",
+      "diagnostic": null
+    },
+    {
+      "operation": "cancel",
+      "mode": "execute",
+      "generation": 1,
+      "fence": 1,
+      "code": "SUCCEEDED",
+      "startedAt": "2026-11-16T17:41:24.701Z",
+      "finishedAt": "2026-11-16T17:41:27.459Z",
+      "diagnostic": null
+    }
+  ],
+  "cancellation": {
+    "state": "registered",
+    "sequence": 1,
+    "reasonCode": "9",
+    "code": null,
+    "rejections": [],
+    "alreadyRegistered": false,
+    "registeredAt": "2026-11-16T17:41:27Z"
+  },
+  "artifacts": [
+    {
+      "kind": "cancel-event",
+      "sha256": "91865d14dae173badd245df0f5ab2a06786c5e388758a32e874c3fd295928a03",
+      "size": 8470,
+      "signed": true
+    },
+    {
+      "kind": "cancel-request",
+      "sha256": "c7f4c3922c0b0986f38aa8e10c3cbd7e1f1069a658fba201785748e53bd29e61",
+      "size": 4382,
+      "signed": true
+    },
+    {
+      "kind": "danfse",
+      "sha256": "6b4ed9911eb961288350f69a34d25bb7fd091618670725b50151aff4cbddae32",
+      "size": 7976,
+      "signed": false
+    },
+    {
+      "kind": "dps",
+      "sha256": "7f4095a81a6e4bb7a810ebc0a7dbe436131d0ff7d2ac7a828b33e833444d2389",
+      "size": 5368,
+      "signed": true
+    },
+    {
+      "kind": "nfse",
+      "sha256": "ad9384300681220dba4228d5aa9f4b2b0cb5662505aecf492a29111e7f214eac",
+      "size": 10066,
+      "signed": true
+    }
+  ],
+  "xmlChecks": {
+    "dps": {
+      "tomaNIF": true,
+      "cNaoNIF": false,
+      "tpAmb": 2
+    },
+    "nfse": {
+      "tomaNIF": true,
+      "cNaoNIF": false,
+      "ambGer": 2,
+      "cStat": "100"
+    }
+  }
+}

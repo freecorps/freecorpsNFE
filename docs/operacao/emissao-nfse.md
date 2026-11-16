@@ -89,7 +89,10 @@ fisco (homologação)"; as demais continuam no simulador.
 Em 09/10/2026, o probe deu `not-found` na Sefin restrita e na IMA e
 `aderenteEmissorNacional` 1 no ADN restrito e **0** no ADN de produção. Os
 probes rodaram antes do critério do 404 com JSON: provam o handshake mTLS, não
-o formato do 404 (evidência).
+o formato do 404 (evidência). Em 16/11/2026, já com o critério, o probe deu
+`not-found` de novo nas duas: a Sefin restrita e a IMA trazem o JSON de
+ausência no 404 de DPS ausente
+([evidência](../v1.0/evidence/244/2026-11-16/README.md)).
 
 ```sh
 bunx convex run issuanceProbe:verify '{"organizationId":"<organizationId>","companyId":"<companyId>","operator":"<login GitHub>","reason":"Fase 3 (#197): prova de mTLS e adesão antes da emissão"}'
@@ -366,8 +369,12 @@ Em 02/11/2026, a primeira janela terminou em E1235: a DPS seguia o leiaute
 de produção, e a produção restrita já valida o da NT 009. Com a #720
 publicada, a segunda janela autorizou e cancelou a exportação (série 2 nº
 100001); o critério da fase 3 está cumprido
-(registro). Uma nova janela continua
-a série 2 a partir de 100002.
+(registro). Em 16/11/2026, uma janela da
+[#244](https://github.com/freecorps/freecorpsNFE/issues/244) autorizou e cancelou a
+exportação com tomador com NIF (série 2 nº 100002), pedida pela REST
+hospedada com uma chave de API sandbox criada para a janela
+([registro](../v1.0/evidence/244/2026-11-16/README.md)). Uma nova janela
+continua a série 2 a partir de 100003.
 
 ## Fase 4, produção fiscal
 
