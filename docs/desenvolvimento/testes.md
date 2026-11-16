@@ -53,15 +53,15 @@ teste novo, e os testes existentes continuam passando.
 
 Antes de criar arquivo, helper ou fixture, procure o que já existe:
 
-| Precisa de                                    | Onde já existe                                                                                                                                                   |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Testar um módulo                              | O `<módulo>.test.ts` ao lado dele, onde entra um `it` novo                                                                                                       |
-| Banco, ambiente, pessoas, concessões e chaves | `tests/helpers/platform.ts`: `platformTest`, `usePlatformEnvironment`, `person`, `companyGrant`, `projectGrant`, `issuerScope`, `syntheticApiKey`, `capturePlan` |
-| Caso de borda de regra compartilhada          | `tests/helpers/ruleCases.ts`, cuja tabela roda contra a regra, a normalização do servidor e o formulário do console                                              |
-| XML de NF-e                                   | O corpus de `tests/fixtures/nfe/4.00/manifest.json`, por `tests/helpers/nfe-corpus.ts`                                                                           |
-| XML de NFS-e ABRASF                           | `nfseXml` e `legacyNfseImport` de `tests/helpers/nfse.ts`                                                                                                        |
-| Certificado A1                                | `syntheticCertificate` e afins de `tests/helpers/certificates.ts`, gerados em memória                                                                            |
-| Acesso de função pública ou rota nova         | `platform/convex/publicSurface.test.ts` e `httpSurface.test.ts` já alcançam o que é novo; o que exigem está em [ci.md](ci.md#rodar-e-escrever-testes)            |
+| Precisa de                                    | Onde já existe                                                                                                                                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Testar um módulo                              | O `<módulo>.test.ts` ao lado dele, onde entra um `it` novo                                                                                                                                 |
+| Banco, ambiente, pessoas, concessões e chaves | `tests/helpers/platform.ts`: `platformTest`, `usePlatformEnvironment`, `signedIn`, `membership`, `person`, `companyGrant`, `projectGrant`, `issuerScope`, `syntheticApiKey`, `capturePlan` |
+| Caso de borda de regra compartilhada          | `tests/helpers/ruleCases.ts`, cuja tabela roda contra a regra, a normalização do servidor e o formulário do console                                                                        |
+| XML de NF-e                                   | O corpus de `tests/fixtures/nfe/4.00/manifest.json`, por `tests/helpers/nfe-corpus.ts`                                                                                                     |
+| XML de NFS-e ABRASF                           | `nfseXml` e `legacyNfseImport` de `tests/helpers/nfse.ts`                                                                                                                                  |
+| Certificado A1                                | `syntheticCertificate` e afins de `tests/helpers/certificates.ts`, gerados em memória                                                                                                      |
+| Acesso de função pública ou rota nova         | `platform/convex/publicSurface.test.ts` e `httpSurface.test.ts` já alcançam o que é novo; o que exigem está em [ci.md](ci.md#rodar-e-escrever-testes)                                      |
 
 Crie arquivo de teste só para um módulo novo, ao lado dele. Um caminho que
 nenhum padrão de projeto alcança reprova o CI
@@ -220,12 +220,15 @@ evento, não pelo tempo:
   (`FISCAL_ENV=disabled`, crons e webhooks desligados, e-mail local), liga os
   timers falsos e desfaz tudo depois de cada teste. Variável específica do
   teste usa `vi.stubEnv`.
-- **Atores reais.** `person(t, organizationId, role, { companyId })` cria
-  usuário e sessão no Better Auth e a membership da organização, e devolve um
-  cliente `t.withIdentity`. Sem `companyId`, papéis abaixo de admin não
-  alcançam empresa. Concessões e chaves vêm de `companyGrant`, `projectGrant`
-  e `syntheticApiKey`, em vez de uma identidade ou um registro de acesso
-  montado à mão.
+- **Atores reais.** `signedIn(t)` cria usuário e sessão no Better Auth e
+  devolve `{ user, session, client }`, com `client` autenticado e sem
+  membership; as opções fixam nome, e-mail, e-mail não verificado e
+  vencimento da sessão. `membership(t, organizationId, user, role)` dá a esse
+  usuário a membership ativa. `person(t, organizationId, role, { companyId })`
+  junta os dois e devolve o cliente `t.withIdentity`. Sem `companyId`, papéis
+  abaixo de admin não alcançam empresa. Concessões e chaves vêm de
+  `companyGrant`, `projectGrant` e `syntheticApiKey`, em vez de uma
+  identidade ou um registro de acesso montado à mão.
 - **Monte o estado, aja como o chamador.** `t.run((ctx) => ctx.db.insert(...))`
   monta o que não está sob teste. A ação testada passa pela função ou rota
   que o chamador real usa (`query`, `mutation`, `action` ou `t.fetch`), e a

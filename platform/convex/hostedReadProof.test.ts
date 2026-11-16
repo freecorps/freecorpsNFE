@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
-import { register } from "../test-setup";
 import schema from "./schema";
 import { internal } from "./_generated/api";
 import { requirePlatformEnvironment } from "./environment";
 import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 // The throwaway preview of the pre-B5 read evaluation: no platform profile, only the marker.
 const preview = {
@@ -78,9 +78,8 @@ it("refuses the marker with a platform profile, credentials, crons, fiscal trans
 it("publishes and reads a synthetic version through the B4 scheduler without any platform profile", async () => {
   vi.useFakeTimers();
   try {
-    const t = convexTest(schema, modules);
     // Publication queues the content writer in its pool (`scheduleVersionContent`).
-    register(t);
+    const t = platformTest();
     const { keyId: _key, ...ids } = await prepare(t);
     const storageId = await t.action(internal.testing.coldArchiveProof.store, {
       xml: "<synthetic/>",

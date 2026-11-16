@@ -1,16 +1,13 @@
 import { consoleProjectFor } from "../../tests/helpers/console";
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { recordAudit, DAY } from "./lib/operationalAudit";
 import { defaultThresholds } from "./lib/operationalMetrics";
 import { OPERATION_SOURCES } from "./lib/operationSources";
 import { issueTask } from "./lib/issuanceValues";
 import { finishAttempt } from "./lib/operationCore";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn } from "../../tests/helpers/platform";
 beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -34,39 +31,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${"a".repeat(43)}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash,
     suffix: crypto.randomUUID(),
   });
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Teste",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + DAY,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
+  const { user, client } = await signedIn(t, { sessionExpiresAt: Date.now() + DAY });
   const ownerMembershipId = await t.run(async (ctx) => {
     const member = (await ctx.db
       .query("memberships")
@@ -77,7 +49,6 @@ async function fixture() {
     await ctx.db.patch("memberships", member._id, { authUserId: user._id });
     return member._id;
   });
-  const client = t.withIdentity({ subject: user._id, sessionId: session._id });
   const args = {
     organizationId: scope.organizationId,
     projectId: scope.projectId,

@@ -1,13 +1,10 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { lookupOpenCnpj } from "./lib/registryProvider";
 import { CACHE_TTL, RETENTION } from "./lib/registryValues";
 import { registryLookup } from "../../packages/contracts/src/registry";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn } from "../../tests/helpers/platform";
 const cnpj = "00000000000191";
 const raw = {
   cnpj,
@@ -52,8 +49,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${crypto.randomUUID().replaceAll("-", "").padEnd(43, "a")}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
@@ -105,30 +101,9 @@ async function fixture() {
   return { t, scope, secret, args, reserve, read, run, cache, calls, transport };
 }
 async function owner(f: Awaited<ReturnType<typeof fixture>>) {
-  const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Titular sintético",
-        email: "owner@development.invalid",
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
+  const { user, client } = await signedIn(f.t, {
+    name: "Titular sintético",
+    email: "owner@development.invalid",
   });
   await f.t.run(async (ctx) => {
     const member = await ctx.db
@@ -139,7 +114,7 @@ async function owner(f: Awaited<ReturnType<typeof fixture>>) {
       .first();
     await ctx.db.patch("memberships", member!._id, { authUserId: user._id });
   });
-  return f.t.withIdentity({ subject: user._id, sessionId: session._id });
+  return client;
 }
 
 it("liberar CNPJ sem bloqueio preserva o cache e não cria decisão nem altera sua versão", async () => {
@@ -619,32 +594,10 @@ it("dois executores não duplicam a chamada ao mesmo CNPJ", async () => {
 it("aplica só os campos confirmados, preserva origem/histórico e recusa versão antiga ou usuário sem gestão", async () => {
   const f = await fixture();
   await f.run();
-  const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa",
-        email: "registry@development.invalid",
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
+  const { user, client } = await signedIn(f.t, {
+    name: "Pessoa",
+    email: "registry@development.invalid",
   });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const client = f.t.withIdentity({ subject: user._id, sessionId: session._id });
   const memberId = await f.t.run(async (ctx) => {
     const member = (await ctx.db
       .query("memberships")

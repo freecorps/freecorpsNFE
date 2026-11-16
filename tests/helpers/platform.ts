@@ -97,23 +97,27 @@ export const syntheticApiKey = (fill = "b") =>
   `fnfe_${crypto.randomUUID().replaceAll("-", "").padEnd(43, fill)}`;
 
 /**
- * A Better Auth person with a live session and an active membership of `role`. Only `companyId`
- * adds a company grant; without it, members below admin reach no company.
+ * A Better Auth user with a live session, and `client` signed in as it, under the issuer the
+ * suite stubs in `CONVEX_SITE_URL`. It joins no organization: membership, company grant and
+ * platform role stay with the caller. `sessionExpiresAt` in the past gives an expired session.
  */
-export async function person(
+export async function signedIn(
   t: PlatformTest,
-  organizationId: Id<"organizations">,
-  role: Role,
-  options: { companyId?: Id<"companies"> } = {},
+  options: {
+    emailVerified?: boolean;
+    name?: string;
+    email?: string;
+    sessionExpiresAt?: number;
+  } = {},
 ) {
   const now = Date.now();
   const user = await t.mutation(components.betterAuth.adapter.create, {
     input: {
       model: "user",
       data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
+        name: options.name ?? "Pessoa sintética",
+        email: options.email ?? `${crypto.randomUUID()}@development.invalid`,
+        emailVerified: options.emailVerified ?? true,
         createdAt: now,
         updatedAt: now,
       },
@@ -124,14 +128,29 @@ export async function person(
       model: "session",
       data: {
         userId: user._id,
-        expiresAt: now + 3600_000,
+        expiresAt: options.sessionExpiresAt ?? now + 3600_000,
         token: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
       },
     },
   });
-  const membershipId = await t.run((ctx) =>
+  const client = t.withIdentity({
+    subject: user._id,
+    sessionId: session._id,
+    issuer: process.env.CONVEX_SITE_URL,
+  });
+  return { user, session, client };
+}
+
+/** An active membership of `role` for a signed-in `user`, under its name and e-mail. */
+export function membership(
+  t: PlatformTest,
+  organizationId: Id<"organizations">,
+  user: { _id: string; name: string; email: string },
+  role: Role,
+) {
+  return t.run((ctx) =>
     ctx.db.insert("memberships", {
       organizationId,
       authUserId: user._id,
@@ -140,17 +159,26 @@ export async function person(
       role,
       state: "active",
       version: 1,
-      joinedAt: now,
-      updatedAt: now,
+      joinedAt: Date.now(),
+      updatedAt: Date.now(),
     }),
   );
+}
+
+/**
+ * A signed-in person (`signedIn`) with an active membership of `role`. Only `companyId` adds a
+ * company grant; without it, members below admin reach no company.
+ */
+export async function person(
+  t: PlatformTest,
+  organizationId: Id<"organizations">,
+  role: Role,
+  options: { companyId?: Id<"companies"> } = {},
+) {
+  const { user, client } = await signedIn(t);
+  const membershipId = await membership(t, organizationId, user, role);
   if (options.companyId)
     await companyGrant(t, { organizationId, companyId: options.companyId, membershipId });
-  const client = t.withIdentity({
-    subject: user._id,
-    sessionId: session._id,
-    issuer: process.env.CONVEX_SITE_URL,
-  });
   return Object.assign(client, { membershipId });
 }
 

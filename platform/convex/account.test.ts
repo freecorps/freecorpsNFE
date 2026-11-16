@@ -1,9 +1,6 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest } from "../../tests/helpers/platform";
 
 const email = "account@development.invalid";
 const password = "synthetic-password-in-local-test";
@@ -25,13 +22,8 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
 it("replaces the previous local OTP for the same address and purpose", async () => {
-  const t = setup();
+  const t = platformTest();
   await t.mutation(internal.mail.capture, { email, otp: "11111111", type: "email-verification" });
   await t.mutation(internal.mail.capture, { email, otp: "22222222", type: "forget-password" });
   await t.mutation(internal.mail.capture, {
@@ -44,7 +36,7 @@ it("replaces the previous local OTP for the same address and purpose", async () 
   expect(await t.run((ctx) => ctx.db.query("developmentMail").collect())).toHaveLength(2);
 });
 it("normalizes collector addresses consistently on writes and indexed reads", async () => {
-  const t = setup();
+  const t = platformTest();
   await t.mutation(internal.mail.capture, {
     email: "  Account@Development.Invalid  ",
     otp: "12345678",
@@ -58,7 +50,7 @@ it("normalizes collector addresses consistently on writes and indexed reads", as
   );
 });
 it("preserves independent organization invitations while replacing OTPs", async () => {
-  const t = setup();
+  const t = platformTest();
   for (const otp of ["invitation-one", "invitation-two"])
     await t.mutation(internal.mail.capture, { email, otp, type: "organization-invitation" });
   expect((await t.query(internal.mail.inbox, { email })).map((mail) => mail.otp).sort()).toEqual([
@@ -67,7 +59,7 @@ it("preserves independent organization invitations while replacing OTPs", async 
   ]);
 });
 it("allows only the configured origin for auth GET and credentialed preflight", async () => {
-  const t = setup();
+  const t = platformTest();
   for (const origin of ["http://localhost:5182", "https://foreign.invalid"])
     for (const method of ["GET", "OPTIONS"]) {
       const response = await t.fetch("/api/auth/get-session", {
@@ -89,7 +81,7 @@ it("allows only the configured origin for auth GET and credentialed preflight", 
       } else expect(response.headers.get("access-control-allow-origin")).toBeNull();
     }
 });
-function post(t: ReturnType<typeof setup>, path: string, body: object) {
+function post(t: PlatformTest, path: string, body: object) {
   return t.fetch(`/api/auth${path}`, {
     method: "POST",
     headers: {
@@ -100,7 +92,7 @@ function post(t: ReturnType<typeof setup>, path: string, body: object) {
     body: JSON.stringify(body),
   });
 }
-async function signup(t: ReturnType<typeof setup>) {
+async function signup(t: PlatformTest) {
   const response = await post(t, "/sign-up/email", { email, password, name: "Conta sintética" });
   expect(response.status).toBe(200);
   const body = await response.json();
@@ -112,7 +104,7 @@ async function signup(t: ReturnType<typeof setup>) {
   return message.otp;
 }
 it("requires verification, consumes the code once, resets a password and revokes the existing session", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   expect((await post(t, "/sign-in/email", { email, password })).status).toBe(403);
   expect((await post(t, "/email-otp/verify-email", { email, otp: "invalid" })).status).toBe(400);
@@ -165,7 +157,7 @@ it("requires verification, consumes the code once, resets a password and revokes
   expect((await post(t, "/sign-in/email", { email, password: newPassword })).status).toBe(200);
 });
 it("rejects expired codes and prevents mailbox access in a hosted environment", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(Date.now() + 11 * 60_000);
@@ -181,8 +173,8 @@ it("rejects expired codes and prevents mailbox access in a hosted environment", 
   );
 });
 it("isolates local databases, checks origins and disables passwordless sign-in", async () => {
-  const a = setup(),
-    b = setup();
+  const a = platformTest(),
+    b = platformTest();
   await signup(a);
   expect(await b.query(internal.mail.inbox, { email })).toEqual([]);
   await expect(a.query(api.account.profile, {})).rejects.toThrow("UNAUTHENTICATED");
@@ -197,7 +189,7 @@ it("isolates local databases, checks origins and disables passwordless sign-in",
   await expect(a.query(api.account.capabilities, {})).rejects.toThrow("loopback");
 });
 it("offers registration, recovery, invitations and e-mail change in the local profile, whose mail is captured", async () => {
-  expect(await setup().query(api.account.capabilities, {})).toEqual({
+  expect(await platformTest().query(api.account.capabilities, {})).toEqual({
     registration: true,
     emailRecovery: true,
     invitationEmail: true,
@@ -205,7 +197,7 @@ it("offers registration, recovery, invitations and e-mail change in the local pr
   });
 });
 it("allows only one concurrent verification and bounds attempts", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   const attempts = await Promise.all([
     post(t, "/email-otp/verify-email", { email, otp }),
@@ -233,7 +225,7 @@ it("allows only one concurrent verification and bounds attempts", async () => {
   expect((await afterRateWindow.json()).code).toBe("TOO_MANY_ATTEMPTS");
 });
 it("denies removed accounts and expired sessions through the protected profile", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   await post(t, "/email-otp/verify-email", { email, otp });
   const login = await post(t, "/sign-in/email", { email, password });

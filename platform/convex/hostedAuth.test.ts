@@ -1,8 +1,5 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { signAuthRequest } from "../auth-transport";
 import {
   FREECORPS_CLOUDFLARE_ACCOUNT,
@@ -10,7 +7,7 @@ import {
   recipientAllowed,
 } from "../account-policy.mjs";
 import { accountSenderName } from "./lib/accountMail";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest } from "../../tests/helpers/platform";
 
 const origin = "https://freecorpsnfe-validation.freecorps.workers.dev";
 const site = "https://modest-seal-118.convex.site";
@@ -56,13 +53,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
 async function request(
-  t: ReturnType<typeof setup>,
+  t: PlatformTest,
   path: string,
   body?: object,
   ip = "203.0.113.1",
@@ -90,7 +82,7 @@ async function request(
 function code() {
   return messages.at(-1)!.text.match(/\b\d{8}\b/)![0];
 }
-async function signup(t: ReturnType<typeof setup>) {
+async function signup(t: PlatformTest) {
   const result = await request(t, "/sign-up/email", { email, password, name: "Controlled test" });
   expect(result.status).toBe(202);
   return code();
@@ -208,7 +200,7 @@ it("lifts the allowlist with * only in the installation profile (#428)", () => {
   expect(recipientAllowed(listed, "b@example.invalid")).toBe(false);
 });
 it("refuses unsigned calls, forged IPs and foreign origins before creating an account", async () => {
-  const t = setup();
+  const t = platformTest();
   expect(await t.query(api.account.capabilities, {})).toEqual({
     registration: true,
     emailRecovery: true,
@@ -254,7 +246,7 @@ it("refuses unsigned calls, forged IPs and foreign origins before creating an ac
   );
 });
 it("atomically limits parallel clients and shares an IPv6 /64 bucket", async () => {
-  const t = setup();
+  const t = platformTest();
   const attempts = await Promise.all(
     Array.from({ length: 12 }, () =>
       request(t, "/sign-in/email", { email, password }, "2001:db8:1:2::1"),
@@ -278,7 +270,7 @@ it.each(["validation", "installation"])(
   async (environment) => {
     vi.stubEnv("APP_ENV", environment);
     vi.stubEnv("API_URL", "https://api.example.invalid");
-    const t = setup();
+    const t = platformTest();
     const otp = await signup(t);
     expect((await request(t, "/email-otp/verify-email", { email, otp })).status).toBe(200);
     const startedAt = Date.now();
@@ -317,7 +309,7 @@ it.each(["validation", "installation"])(
 );
 
 it("verifies, recovers without account enumeration, and revokes the old password and session", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   expect((await request(t, "/sign-in/email", { email, password })).status).toBe(403);
   expect((await request(t, "/email-otp/verify-email", { email, otp })).status).toBe(200);
@@ -353,7 +345,7 @@ it("verifies, recovers without account enumeration, and revokes the old password
   expect((await request(t, "/sign-in/email", { email, password: replacement })).status).toBe(200);
 });
 it("rejects expired codes and reports provider failure without echoing provider data", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   vi.setSystemTime(Date.now() + 601_000);
   expect((await request(t, "/email-otp/verify-email", { email, otp })).status).toBe(400);
@@ -371,7 +363,7 @@ it("rejects expired codes and reports provider failure without echoing provider 
   expect(JSON.stringify(result)).not.toContain("private provider diagnostic");
 });
 it("limits delivery per recipient across IPs and refuses a removed account", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   expect((await request(t, "/email-otp/verify-email", { email, otp })).status).toBe(200);
   for (let i = 1; i <= 3; i++) {
@@ -396,7 +388,7 @@ it("limits delivery per recipient across IPs and refuses a removed account", asy
 });
 
 it("keeps unverified accounts blocked when mail is disabled and verifies only reserved fixtures internally", async () => {
-  const t = setup();
+  const t = platformTest();
   await signup(t);
   for (const name of [
     "MAIL_API_URL",
@@ -421,7 +413,7 @@ it("keeps unverified accounts blocked when mail is disabled and verifies only re
   expect(messages).toHaveLength(1);
 });
 it("rejects foreign redirects, exhausted codes and expired hosted sessions", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   for (let i = 1; i <= 3; i++) {
     expect(
@@ -462,7 +454,7 @@ it.each([
 ])(
   "does not expose membership or account existence under throttling/provider failure: %s %s",
   async (path, providerFailure) => {
-    const t = setup();
+    const t = platformTest();
     await signup(t);
     vi.setSystemTime(Date.now() + 61_000);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -495,7 +487,7 @@ it.each([
 it.each([false, true])(
   "does not disclose signup allowlist membership or claim account creation, provider failure=%s",
   async (providerFailure) => {
-    const t = setup();
+    const t = platformTest();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     if (providerFailure)
       vi.stubGlobal(
@@ -521,7 +513,7 @@ it.each([false, true])(
   },
 );
 it("makes invalid code outcomes generic and disables unused email-link/change flows", async () => {
-  const t = setup();
+  const t = platformTest();
   await signup(t);
   const results = [];
   for (const candidate of [email, missing, "outside@validation.invalid"]) {
@@ -537,7 +529,7 @@ it("makes invalid code outcomes generic and disables unused email-link/change fl
   expect((await request(t, "/send-verification-email", { email })).status).toBe(404);
 });
 it("records date, time and IP of authenticated access and purges them after six months", async () => {
-  const t = setup();
+  const t = platformTest();
   const otp = await signup(t);
   expect((await request(t, "/email-otp/verify-email", { email, otp })).status).toBe(200);
   const records = () => t.run((ctx) => ctx.db.query("accessRecords").collect());

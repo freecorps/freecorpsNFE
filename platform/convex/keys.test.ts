@@ -1,14 +1,16 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MembershipRole } from "../../packages/contracts/src/organizations";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { apiUsageExpiresAt } from "./lib/apiUsageRetention";
 import { signApiRequest } from "../auth-transport";
-import { modules } from "../../tests/helpers/convex-modules";
+import {
+  platformTest,
+  type PlatformTest,
+  signedIn,
+  membership,
+} from "../../tests/helpers/platform";
 const proxySecret = "a".repeat(64);
 const contextKey = "keys-proof",
   paginationOpts = { numItems: 50, cursor: null };
@@ -44,49 +46,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.useRealTimers();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-async function actor(t: ReturnType<typeof setup>, verified = true) {
-  const now = Date.now(),
-    email = `${crypto.randomUUID()}@development.invalid`;
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa de teste",
-        email,
-        emailVerified: verified,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    user,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3233",
-    }),
-  };
-}
-async function fixture(t = setup()) {
-  const owner = await actor(t);
+async function fixture(t = platformTest()) {
+  const owner = await signedIn(t);
   const org = await owner.client.mutation(api.organizations.create, {
     name: "Equipe sintética",
     slug: `org-${crypto.randomUUID()}`,
@@ -102,25 +63,9 @@ async function fixture(t = setup()) {
     scope: { organizationId: org.organizationId, companyId: created.companyId },
   };
 }
-async function member(
-  t: ReturnType<typeof setup>,
-  organizationId: Id<"organizations">,
-  role: MembershipRole,
-) {
-  const person = await actor(t);
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: person.user._id,
-      name: person.user.name,
-      email: person.user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: Date.now(),
-      updatedAt: Date.now(),
-    }),
-  );
+async function member(t: PlatformTest, organizationId: Id<"organizations">, role: MembershipRole) {
+  const person = await signedIn(t);
+  const membershipId = await membership(t, organizationId, person.user, role);
   // Denormalized membership count is part of the fixture, as in a real acceptance transaction.
   await t.run(async (ctx) => {
     const org = (await ctx.db.get("organizations", organizationId))!;
@@ -132,7 +77,7 @@ async function member(
   return { ...person, membershipId };
 }
 
-async function projectFixture(t = setup()) {
+async function projectFixture(t = platformTest()) {
   const f = await fixture(t);
   const { projectId } = await f.owner.client.mutation(api.projects.create, {
     organizationId: f.scope.organizationId,
@@ -170,7 +115,7 @@ async function projectFixture(t = setup()) {
   return { ...f, projectScope, keyArgs, key };
 }
 async function rest(
-  t: ReturnType<typeof setup>,
+  t: PlatformTest,
   secret: string,
   path = "/v1/companies",
   environment = "sandbox",
@@ -610,7 +555,7 @@ it("informa ao painel o único ambiente do deployment, só para quem gere o proj
   expect(project?.deploymentEnvironment).toBe("sandbox");
   const viewer = await member(t, org.organizationId, "viewer");
   await expect(viewer.client.query(api.projects.get, args)).rejects.toThrow();
-  const outsider = await actor(t);
+  const outsider = await signedIn(t);
   await expect(outsider.client.query(api.projects.get, args)).rejects.toThrow();
   const developer = await member(t, org.organizationId, "developer");
   // A developer outside the project's creator sees nothing, not even the environment.
@@ -639,7 +584,7 @@ it("informa o tipo de cada empresa concedida só a quem já lê as concessões d
   // No new reader: the same refusals as before the field existed.
   const viewer = await member(t, org.organizationId, "viewer");
   await expect(viewer.client.query(api.projects.companies, args)).rejects.toThrow();
-  await expect((await actor(t)).client.query(api.projects.companies, args)).rejects.toThrow();
+  await expect((await signedIn(t)).client.query(api.projects.companies, args)).rejects.toThrow();
   const developer = await member(t, org.organizationId, "developer");
   await expect(developer.client.query(api.projects.companies, args)).rejects.toThrow();
   // The owner of another organization gets nothing for this project, under either organization.

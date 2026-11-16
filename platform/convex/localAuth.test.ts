@@ -1,9 +1,6 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { components, internal } from "./_generated/api";
-import { register } from "../test-setup";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest } from "../../tests/helpers/platform";
 
 const origin = "http://localhost:5182";
 const minute = 1_800_000_000_000;
@@ -30,12 +27,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-function request(t: ReturnType<typeof setup>, route: string, cookie = "", body?: object) {
+function request(t: PlatformTest, route: string, cookie = "", body?: object) {
   return t.fetch(`/api/auth${route}`, {
     method: body ? "POST" : "GET",
     headers: {
@@ -46,7 +38,7 @@ function request(t: ReturnType<typeof setup>, route: string, cookie = "", body?:
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 }
-async function sessions(t: ReturnType<typeof setup>, count = 1) {
+async function sessions(t: PlatformTest, count = 1) {
   expect((await request(t, "/sign-up/email", "", { email, password, name: "Teste" })).status).toBe(
     200,
   );
@@ -67,7 +59,7 @@ async function sessions(t: ReturnType<typeof setup>, count = 1) {
 }
 
 it("renews four authenticated sessions continuously across fixed windows without a second limiter", async () => {
-  const t = setup();
+  const t = platformTest();
   const cookies = await sessions(t, 4);
   for (let i = 0; i < 45; i++) {
     vi.setSystemTime(minute + 1000 + i * 3000);
@@ -94,7 +86,7 @@ it("renews four authenticated sessions continuously across fixed windows without
 it.each(routes)(
   "atomically admits 30 shared requests to %s and recovers at the boundary despite traffic",
   async (route) => {
-    const t = setup();
+    const t = platformTest();
     const cookies = await sessions(t, 4);
     const responses = await Promise.all(
       Array.from({ length: 40 }, (_, i) =>
@@ -134,7 +126,7 @@ it.each(routes)(
 );
 
 it("does not charge preflight and does not authenticate absent, revoked or expired sessions", async () => {
-  const t = setup();
+  const t = platformTest();
   const [revoked, expired] = await sessions(t, 2);
   for (let i = 0; i < 35; i++) {
     const response = await t.fetch("/api/auth/get-session", {
@@ -160,7 +152,7 @@ it("does not charge preflight and does not authenticate absent, revoked or expir
 });
 
 it("preserves login and OTP inactivity windows when the session minute turns", async () => {
-  const t = setup();
+  const t = platformTest();
   vi.setSystemTime(minute + 59_000);
   for (let i = 0; i < 5; i++)
     expect((await request(t, "/sign-in/email", "", { email, password })).status).toBe(401);

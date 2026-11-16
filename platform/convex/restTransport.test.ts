@@ -1,14 +1,11 @@
-import { convexTest } from "convex-test";
 import { ConvexError } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { parseRequest } from "../../packages/contracts/src/external";
-import schema from "./schema";
 import { internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { jsonAnswer } from "./lib/externalHttp";
 import { publicError } from "./lib/publicErrors";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -32,8 +29,7 @@ afterEach(() => {
 });
 
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${"a".repeat(43)}`;
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash: await hashApiKey(secret),

@@ -1,18 +1,15 @@
 import { getFunctionName } from "convex/server";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { fixture, actor } from "../../tests/helpers/export-fixture";
 import { runExport } from "./exportWorker";
 import { readBatch } from "./exportSource";
 import { fixture as xmlFixture } from "../../tests/helpers/nfe-corpus";
 import { keepInline, writeContent } from "../../tests/helpers/document-footprint";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 beforeEach(() => {
   vi.useFakeTimers();
@@ -204,8 +201,7 @@ it("continues across batches without skipping items and replay cannot delete an 
   );
 });
 it("restore refuses storage or documents even when no organization exists", async () => {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   await expect(t.query(internal.testing.restoreProof.assertEmpty, {})).resolves.toBe(null);
   const storageId = await t.run((ctx) => ctx.storage.store(new Blob(["unrelated"])));
   await expect(t.query(internal.testing.restoreProof.assertEmpty, {})).rejects.toThrow(

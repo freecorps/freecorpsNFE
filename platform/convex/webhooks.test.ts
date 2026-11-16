@@ -2,8 +2,7 @@ import { randomBytes, createHash } from "node:crypto";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import { convexTest } from "convex-test";
 import schema from "./schema";
-import { register } from "../test-setup";
-import { internal, api, components } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { emitEvent } from "./lib/webhookOutbox";
 import { verifyWebhook, webhookEvents } from "../../packages/contracts/src/webhooks";
@@ -11,58 +10,7 @@ import { fixture as xmlFixture } from "../../tests/helpers/nfe-corpus";
 import { processNfe } from "../../packages/fiscal-nfe/src/index";
 import type { Id } from "./_generated/dataModel";
 import { modules } from "../../tests/helpers/convex-modules";
-async function human(
-  t: ReturnType<typeof testDatabase>,
-  organizationId: Id<"organizations">,
-  role: "owner" | "developer" | "viewer",
-) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return {
-    membershipId,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3245",
-    }),
-  };
-}
+import { person, platformTest } from "../../tests/helpers/platform";
 const post = vi.hoisted(() => vi.fn());
 vi.mock("./lib/webhookNetwork", () => ({
   postWebhook: post,
@@ -96,8 +44,7 @@ function testDatabase() {
   return convexTest(schema, modules);
 }
 async function fixture(database?: ReturnType<typeof testDatabase>) {
-  const t = database ?? convexTest(schema, modules);
-  if (!database) register(t);
+  const t = database ?? platformTest();
   const secret = `fnfe_${randomBytes(32).toString("base64url")}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
@@ -547,29 +494,29 @@ it("allows disabling after event access is revoked but rejects reactivation with
 it("authorizes humans at the backend and refuses viewers, unassigned developers and removed members", async () => {
   const f = await fixture(),
     e = await f.create();
-  const owner = await human(f.t, f.scope.organizationId, "owner"),
-    viewer = await human(f.t, f.scope.organizationId, "viewer"),
-    developer = await human(f.t, f.scope.organizationId, "developer");
+  const owner = await person(f.t, f.scope.organizationId, "owner"),
+    viewer = await person(f.t, f.scope.organizationId, "viewer"),
+    developer = await person(f.t, f.scope.organizationId, "developer");
   const args = {
     organizationId: f.scope.organizationId,
     projectId: f.scope.projectId,
     companyId: f.scope.companyId,
     environment: "sandbox" as const,
   };
-  expect(await owner.client.query(api.webhooks.list, args)).toHaveLength(1);
-  for (const client of [f.t, viewer.client, developer.client]) {
+  expect(await owner.query(api.webhooks.list, args)).toHaveLength(1);
+  for (const client of [f.t, viewer, developer]) {
     await expect(client.query(api.webhooks.list, args)).rejects.toThrow();
     await expect(
       client.mutation(api.webhooks.test, { endpointId: e.endpoint.id, key: "denied-synthetic" }),
     ).rejects.toThrow();
   }
   await f.t.run((ctx) => ctx.db.patch("memberships", owner.membershipId, { state: "removed" }));
-  await expect(owner.client.query(api.webhooks.list, args)).rejects.toThrow();
+  await expect(owner.query(api.webhooks.list, args)).rejects.toThrow();
 });
 it("refuses unauthorized event changes on an inactive edit through the direct human mutation", async () => {
   const f = await fixture(),
     e = await f.create(),
-    owner = await human(f.t, f.scope.organizationId, "owner");
+    owner = await person(f.t, f.scope.organizationId, "owner");
   const input = {
     endpointId: e.endpoint.id,
     expectedVersion: 1,
@@ -578,7 +525,7 @@ it("refuses unauthorized event changes on an inactive edit through the direct hu
     url: "https://receiver.example.com/webhook",
     events: ["document.received" as const],
   };
-  await owner.client.mutation(api.webhooks.update, input);
+  await owner.mutation(api.webhooks.update, input);
   await f.t.run(async (ctx) => {
     const grant = (await ctx.db
       .query("projectCompanies")
@@ -591,7 +538,7 @@ it("refuses unauthorized event changes on an inactive edit through the direct hu
     });
   });
   await expect(
-    owner.client.mutation(api.webhooks.update, {
+    owner.mutation(api.webhooks.update, {
       ...input,
       expectedVersion: 2,
       active: false,
@@ -601,7 +548,7 @@ it("refuses unauthorized event changes on an inactive edit through the direct hu
   const stored = await f.t.run((ctx) => ctx.db.get("webhookEndpoints", e.endpoint.id));
   expect(stored).toMatchObject({ active: true, version: 2, events: ["document.received"] });
   await expect(
-    owner.client.mutation(api.webhooks.update, { ...input, expectedVersion: 2, active: false }),
+    owner.mutation(api.webhooks.update, { ...input, expectedVersion: 2, active: false }),
   ).resolves.toMatchObject({ active: false });
 });
 it("fans document events to granted projects but isolates import events and delivery management", async () => {

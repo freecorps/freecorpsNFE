@@ -1,14 +1,11 @@
-import { convexTest } from "convex-test";
 import { expect, vi } from "vite-plus/test";
 import { createHash } from "node:crypto";
-import schema from "../../platform/convex/schema";
-import { internal, components } from "../../platform/convex/_generated/api";
-import { register } from "../../platform/test-setup";
+import { internal } from "../../platform/convex/_generated/api";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
 import { parseDistribution } from "../../packages/fiscal-nfe/src/distribution";
 import type { Claim } from "../../platform/convex/lib/operationCore";
 import type { Doc, Id } from "../../platform/convex/_generated/dataModel";
-import { modules } from "./convex-modules";
+import { platformTest, person } from "./platform";
 
 /**
  * Fixtures of the NF-e distribution capture suites (platform/convex/captures*.test.ts): a
@@ -16,62 +13,15 @@ import { modules } from "./convex-modules";
  * batch description, persistence), the expiry of a lease and the move of a stream to another
  * project. Each test file mocks `./buildInfo` and sets the environment and the clock itself.
  */
-export function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
+export const setup = () => platformTest();
+/** A signed-in member of `role` (`person`), with its membership. */
 export async function human(
   t: ReturnType<typeof setup>,
   organizationId: Id<"organizations">,
   role: "owner" | "admin" | "operator" | "developer" | "viewer",
 ) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return {
-    membershipId,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3245",
-    }),
-  };
+  const client = await person(t, organizationId, role);
+  return { membershipId: client.membershipId, client };
 }
 
 export async function fixture(t = setup()) {

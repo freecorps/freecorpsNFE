@@ -1,11 +1,13 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MembershipRole } from "../../packages/contracts/src/organizations";
-import { modules } from "../../tests/helpers/convex-modules";
+import {
+  platformTest,
+  type PlatformTest,
+  signedIn,
+  membership,
+} from "../../tests/helpers/platform";
 const contextKey = "company-proof",
   paginationOpts = { numItems: 50, cursor: null };
 const input = {
@@ -40,50 +42,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-async function actor(t: ReturnType<typeof setup>, verified = true) {
-  const now = Date.now(),
-    email = `${crypto.randomUUID()}@development.invalid`;
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa de teste",
-        email,
-        emailVerified: verified,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    user,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3233",
-    }),
-  };
-}
 async function fixture() {
-  const t = setup(),
-    owner = await actor(t);
+  const t = platformTest(),
+    owner = await signedIn(t);
   const org = await owner.client.mutation(api.organizations.create, {
     name: "Equipe sintética",
     slug: `org-${crypto.randomUUID()}`,
@@ -99,25 +60,9 @@ async function fixture() {
     scope: { organizationId: org.organizationId, companyId: created.companyId },
   };
 }
-async function member(
-  t: ReturnType<typeof setup>,
-  organizationId: Id<"organizations">,
-  role: MembershipRole,
-) {
-  const person = await actor(t);
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: person.user._id,
-      name: person.user.name,
-      email: person.user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: Date.now(),
-      updatedAt: Date.now(),
-    }),
-  );
+async function member(t: PlatformTest, organizationId: Id<"organizations">, role: MembershipRole) {
+  const person = await signedIn(t);
+  const membershipId = await membership(t, organizationId, person.user, role);
   // Denormalized membership count is part of the fixture, as in a real acceptance transaction.
   await t.run(async (ctx) => {
     const org = (await ctx.db.get("organizations", organizationId))!;
@@ -130,7 +75,7 @@ async function member(
 }
 it("requires verified live identity before validation or data access", async () => {
   const { t, scope } = await fixture();
-  const unverified = await actor(t, false);
+  const unverified = await signedIn(t, { emailVerified: false });
   await expect(
     t.query(api.companies.list, {
       organizationId: scope.organizationId,
@@ -200,7 +145,7 @@ it("concurrent creation returns one identity without replacing confirmed fields"
 });
 it("the same CNPJ belongs independently to two organizations and forged IDs never cross them", async () => {
   const { t, owner, scope } = await fixture();
-  const outsider = await actor(t);
+  const outsider = await signedIn(t);
   const org = await outsider.client.mutation(api.organizations.create, {
     name: "Outra equipe",
     slug: `other-${crypto.randomUUID()}`,
@@ -632,7 +577,7 @@ it("deletes a company registered by mistake, with its configuration, only for a 
       confirmation: input.cnpj,
     }),
   ).rejects.toThrow(/COMPANY_CHANGED/);
-  const outsider = await actor(t);
+  const outsider = await signedIn(t);
   await expect(
     outsider.client.mutation(api.companies.remove, {
       ...scope,
@@ -913,7 +858,7 @@ it("consulta antes do cadastro só para owner/admin da organização dona da con
     await expect(f.lookup(consulted, `lookup-key-${role}`, person.client)).rejects.toThrow();
     await expect(f.status(mine.lookupId, person.client)).rejects.toThrow();
   }
-  const outsider = await actor(f.t);
+  const outsider = await signedIn(f.t);
   await expect(f.lookup(consulted, "lookup-key-0102", outsider.client)).rejects.toThrow();
   await expect(f.status(mine.lookupId, outsider.client)).rejects.toThrow();
   // Another organization's owner: the lookup ID is not proof of access to its answer.

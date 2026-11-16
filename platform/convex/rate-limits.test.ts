@@ -1,15 +1,11 @@
-import { convexTest } from "convex-test";
 import { expect, it, vi, afterEach } from "vite-plus/test";
-import schema from "./schema";
 import { components } from "./_generated/api";
-import { register } from "../test-setup";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 afterEach(() => vi.useRealTimers());
 
 it("consome orçamentos existentes atomicamente e conserva o primeiro quando o último recusa", async () => {
   vi.useFakeTimers();
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const config = { kind: "token bucket" as const, rate: 1, capacity: 1, period: 60_000 };
   const actor = { name: "actor", key: "one", config };
   const org = { name: "organization", key: "one", config };
@@ -34,8 +30,7 @@ it("consome orçamentos existentes atomicamente e conserva o primeiro quando o �
 });
 
 it("recusa orçamento duplicado e lote vazio sem consumir tokens", async () => {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const budget = {
     name: "same",
     config: { kind: "fixed window" as const, rate: 1, period: 60_000, start: 0 },
@@ -51,8 +46,7 @@ it("recusa orçamento duplicado e lote vazio sem consumir tokens", async () => {
 
 it("migra o saldo restante, conserva cotas e permite leitores/escritores antigos", async () => {
   vi.useFakeTimers();
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const api = components.rateLimiter.lib;
   const budget = {
     name: "migration",
@@ -88,8 +82,7 @@ it("migra o saldo restante, conserva cotas e permite leitores/escritores antigos
 
 it("migração e recusa conjunta não recriam nem consomem cotas de outro orçamento", async () => {
   vi.useFakeTimers();
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const api = components.rateLimiter.lib;
   const config = { kind: "token bucket" as const, rate: 8, period: 60_000 };
   const actor = { name: "migration-actor", config };
@@ -111,8 +104,7 @@ it("migração e recusa conjunta não recriam nem consomem cotas de outro orçam
 it("preserva o saldo e a fronteira UTC da janela fixa de importações", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(55_000);
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const api = components.rateLimiter.lib;
   const budget = {
     name: "fixed-migration",
@@ -140,8 +132,7 @@ it("preserva o saldo e a fronteira UTC da janela fixa de importações", async (
 it("a faixa preferida só muda a ordem de leitura, nunca o saldo nem a recusa (#559)", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(60_000);
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const api = components.rateLimiter.lib;
   const window = (key: string) => ({
     name: "lane-window",

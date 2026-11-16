@@ -1,4 +1,3 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
 import {
   canManageRole,
@@ -6,10 +5,8 @@ import {
   organizationCapabilities,
   type MembershipRole,
 } from "../../packages/contracts/src/organizations";
-import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest, signedIn } from "../../tests/helpers/platform";
 const paginationOpts = { numItems: 50, cursor: null };
 const contextKey = "isolated-test";
 beforeEach(() => {
@@ -33,50 +30,11 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
+async function actor(t: PlatformTest, verified = true) {
+  const { user, session, client } = await signedIn(t, { emailVerified: verified });
+  return { email: user.email, userId: user._id, sessionId: session._id, client };
 }
-async function actor(t: ReturnType<typeof setup>, verified = true) {
-  const now = Date.now();
-  const email = `${crypto.randomUUID()}@development.invalid`;
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa de teste",
-        email,
-        emailVerified: verified,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    email,
-    userId: user._id,
-    sessionId: session._id,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3225",
-    }),
-  };
-}
-async function organization(t: ReturnType<typeof setup>) {
+async function organization(t: PlatformTest) {
   const owner = await actor(t);
   const org = await owner.client.mutation(api.organizations.create, {
     name: "Organização de teste",
@@ -85,7 +43,7 @@ async function organization(t: ReturnType<typeof setup>) {
   return { owner, ...org };
 }
 async function invite(
-  t: ReturnType<typeof setup>,
+  t: PlatformTest,
   owner: Awaited<ReturnType<typeof actor>>,
   org: Awaited<ReturnType<typeof organization>>,
   recipient: Awaited<ReturnType<typeof actor>>,
@@ -103,7 +61,7 @@ async function invite(
   return { ...result, token };
 }
 async function join(
-  t: ReturnType<typeof setup>,
+  t: PlatformTest,
   org: Awaited<ReturnType<typeof organization>>,
   role: MembershipRole,
 ) {
@@ -117,7 +75,7 @@ async function join(
   return { ...recipient, member: member! };
 }
 it("requires a live verified identity; validation grants do not grant product membership", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     unverified = await actor(t, false),
     outsider = await actor(t);
@@ -150,7 +108,7 @@ it("requires a live verified identity; validation grants do not grant product me
 it.each(membershipRoles)(
   "enforces %s product capabilities and denies forged organization/target IDs",
   async (role) => {
-    const t = setup(),
+    const t = platformTest(),
       org = await organization(t),
       other = await organization(t);
     const member =
@@ -225,7 +183,7 @@ it.each(membershipRoles)(
   },
 );
 it("checks the complete grant matrix in the server and shared contract", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t);
   const actors = {
     owner: org.owner,
@@ -247,7 +205,7 @@ it("checks the complete grant matrix in the server and shared contract", async (
     }
 });
 it("protects the last owner and uses versions to refuse stale membership edits", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t);
   const owner = (await org.owner.client.query(api.organizations.context, {
     slug: org.slug,
@@ -275,7 +233,7 @@ it("protects the last owner and uses versions to refuse stale membership edits",
   ).toBe(1);
 });
 it("consumes once, rejects wrong/unverified accounts, and stores only the hash in domain/audit", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     recipient = await actor(t),
     wrong = await actor(t),
@@ -309,7 +267,7 @@ it("consumes once, rejects wrong/unverified accounts, and stores only the hash i
 it.each(["expired", "revoked", "issuer-removed", "issuer-role-changed"] as const)(
   "rejects an invitation when %s",
   async (failure) => {
-    const t = setup(),
+    const t = platformTest(),
       org = await organization(t),
       issuer = await join(t, org, "admin"),
       recipient = await actor(t);
@@ -342,7 +300,7 @@ it.each(["expired", "revoked", "issuer-removed", "issuer-role-changed"] as const
   },
 );
 it("recusa o convite pendente de uma organização encerrada antes da revogação em lotes", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     recipient = await actor(t);
   const invitation = await invite(t, org.owner, org, recipient, "admin");
@@ -373,7 +331,7 @@ it("recusa o convite pendente de uma organização encerrada antes da revogaçã
   });
 });
 it("revokes all private queries and mutations on removal, including previously read contexts", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     member = await join(t, org, "admin");
   expect(
@@ -412,7 +370,7 @@ it("revokes all private queries and mutations on removal, including previously r
   ).rejects.toThrow("ACCESS_DENIED");
 });
 it("does not let another invitation overwrite an active membership", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     member = await join(t, org, "viewer");
   const invitation = await invite(t, org.owner, org, member, "owner");
@@ -433,7 +391,7 @@ it("does not let another invitation overwrite an active membership", async () =>
 });
 
 it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh send", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     recipient = await actor(t);
   for (const [key, value] of Object.entries({
@@ -496,7 +454,7 @@ it("keeps an ambiguous hosted delivery unusable and requires an explicit fresh s
 });
 
 it("cannot finalize a delivery after its invitation was revoked", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     recipient = await actor(t);
   const invitationId = await org.owner.client.mutation(internal.invitations.reserve, {
@@ -518,7 +476,7 @@ it("cannot finalize a delivery after its invitation was revoked", async () => {
 });
 
 it("checks the organization of invitation IDs and the role of existing member targets", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     other = await organization(t),
     admin = await join(t, org, "admin"),
@@ -555,7 +513,7 @@ it("checks the organization of invitation IDs and the role of existing member ta
 });
 
 it("paginates every owned organization without leaking another account's membership", async () => {
-  const t = setup(),
+  const t = platformTest(),
     user = await actor(t),
     outsider = await actor(t);
   await t.run(async (ctx) => {
@@ -600,7 +558,7 @@ it("paginates every owned organization without leaking another account's members
 });
 
 it("rejects duplicate pending invitations and lets a revoked member rejoin only by a new invitation", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     member = await join(t, org, "viewer");
   const invitation = await invite(t, org.owner, org, member, "viewer");
@@ -632,7 +590,7 @@ it("rejects duplicate pending invitations and lets a revoked member rejoin only 
 });
 
 it("keeps the native split metadata in organizations, members, activity and invitations pages", async () => {
-  const t = setup(),
+  const t = platformTest(),
     org = await organization(t),
     other = await organization(t);
   const now = Date.now();

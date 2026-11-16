@@ -1,8 +1,5 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
-import schema from "./schema";
 import { internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import {
   USAGE_LANES,
@@ -14,7 +11,7 @@ import {
 } from "./lib/usageCore";
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 /**
  * #559: an environment's balance is split in lanes so concurrent admissions of one organization
@@ -66,8 +63,7 @@ async function organization(t: Tester, secret: string) {
   });
 }
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   return t;
 }
 function planner(t: Tester, organizationId: Id<"organizations">) {

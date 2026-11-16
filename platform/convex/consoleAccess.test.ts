@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { api, components, internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { fixture } from "../../tests/helpers/export-fixture";
 import { consoleProjectFor } from "../../tests/helpers/console";
+import { signedIn } from "../../tests/helpers/platform";
 
 /**
  * "Console sem projeto" (ADR 0005): people work on the company with their membership, their
@@ -33,40 +34,12 @@ afterEach(() => {
 type F = Awaited<ReturnType<typeof fixture>>;
 type Role = "owner" | "admin" | "operator" | "viewer" | "developer";
 
-async function login(f: F) {
-  const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return { user, client: f.t.withIdentity({ subject: user._id, sessionId: session._id }) };
-}
 async function member(
   f: F,
   role: Role,
   options: { organizationId?: Id<"organizations">; company?: boolean } = {},
 ) {
-  const { user, client } = await login(f);
+  const { user, client } = await signedIn(f.t);
   const organizationId = options.organizationId ?? f.scope.organizationId;
   const ids = await f.t.run(async (ctx) => {
     const membershipId = await ctx.db.insert("memberships", {
@@ -136,7 +109,7 @@ async function actors(f: F) {
     /** Owner of another organization: its session has no membership here. */
     otherOrganization: otherOwner,
     /** Verified login with no membership at all. */
-    noMembership: await login(f),
+    noMembership: await signedIn(f.t),
     removed,
     revoked,
   };

@@ -7,8 +7,7 @@ import schema from "./schema";
 import http from "./http";
 import { httpAction } from "./_generated/server";
 import { refusal } from "./lib/publicErrors";
-import { register } from "../test-setup";
-import { usePlatformEnvironment } from "../../tests/helpers/platform";
+import { usePlatformEnvironment, platformTest } from "../../tests/helpers/platform";
 import { modulePath, modules } from "../../tests/helpers/convex-modules";
 
 // Varredura da superfície HTTP do Convex da plataforma: toda rota de
@@ -240,8 +239,7 @@ async function writes(t: ReturnType<typeof convexTest>) {
 
 async function probe(router: HttpRouter, path: string, method: string, expected: Expected) {
   const problems: string[] = [];
-  const t = convexTest(schema, { ...modules, [httpModule]: async () => ({ default: router }) });
-  register(t);
+  const t = platformTest({ [httpModule]: async () => ({ default: router }) });
   const body = method === "POST" || method === "PATCH" ? "{}" : undefined;
   const target = expected.probe ?? (path.endsWith("*") ? `${path.slice(0, -1)}x` : path);
   // A sonda precisa cair na rota conferida, não numa vizinha de prefixo mais longo.
