@@ -112,9 +112,12 @@ it("a aba aberta com sessão volta a pedir login quando outra aba sai", async ()
   await act(async () => otherTabWrites("{}"));
   await screen.findByText("sem sessão");
   expect(server.sessionsAsked).toBe(3);
-  // The transport dropped the token after its last authentication, instead of keeping it.
+  // The transport dropped the token after its last authentication, instead of keeping it. The
+  // drop runs in an effect cleanup, which may land after the screen changed: wait for it.
   const lastOrder = (calls: number[]) => Math.max(...calls);
-  expect(lastOrder(convex.clearAuth.mock.invocationCallOrder)).toBeGreaterThan(
-    lastOrder(convex.setAuth.mock.invocationCallOrder),
+  await vi.waitFor(() =>
+    expect(lastOrder(convex.clearAuth.mock.invocationCallOrder)).toBeGreaterThan(
+      lastOrder(convex.setAuth.mock.invocationCallOrder),
+    ),
   );
 });
