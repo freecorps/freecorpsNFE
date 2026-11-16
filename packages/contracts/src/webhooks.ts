@@ -16,22 +16,43 @@ export const webhookEvents = [
 ] as const;
 export type WebhookEventType = (typeof webhookEvents)[number];
 export type WebhookResourceType = "document" | "import" | "endpoint" | "connection" | "issuance";
-/** Resource carried by each event type; the receiver reads it back through the API. */
+/**
+ * Resource carried by each event type; the receiver reads it back through the API. A table, not
+ * a prefix rule: an event added to `webhookEvents` fails to compile until it names its resource.
+ */
+const resourceTypes: Record<WebhookEventType | "webhook.test", WebhookResourceType> = {
+  "document.received": "document",
+  "document.updated": "document",
+  "document.event_received": "document",
+  "import.completed": "import",
+  "connection.attention_required": "connection",
+  "connection.release_withdrawn": "connection",
+  "connection.history_limited": "connection",
+  "issuance.authorized": "issuance",
+  "issuance.rejected": "issuance",
+  "issuance.cancelled": "issuance",
+  "issuance.cancellation_rejected": "issuance",
+  "webhook.test": "endpoint",
+};
 export function webhookResourceType(type: WebhookEventType | "webhook.test"): WebhookResourceType {
-  if (type === "webhook.test") return "endpoint";
-  if (type === "import.completed") return "import";
-  if (type.startsWith("connection.")) return "connection";
-  if (type.startsWith("issuance.")) return "issuance";
-  return "document";
+  return resourceTypes[type];
 }
-/** Integration scope the endpoint's project (and key) needs to subscribe to the event. */
+/** Integration scope the endpoint's project (and key) needs to subscribe to each event. */
+const eventScopes = {
+  "document.received": "documents:read",
+  "document.updated": "documents:read",
+  "document.event_received": "documents:read",
+  "import.completed": "documents:import",
+  "connection.attention_required": "connections:read",
+  "connection.release_withdrawn": "connections:read",
+  "connection.history_limited": "connections:read",
+  "issuance.authorized": "documents:issue",
+  "issuance.rejected": "documents:issue",
+  "issuance.cancelled": "documents:cancel",
+  "issuance.cancellation_rejected": "documents:cancel",
+} as const satisfies Record<WebhookEventType, string>;
 export function webhookEventScope(type: WebhookEventType) {
-  if (type.startsWith("document.")) return "documents:read" as const;
-  if (type.startsWith("connection.")) return "connections:read" as const;
-  if (type === "issuance.cancelled" || type === "issuance.cancellation_rejected")
-    return "documents:cancel" as const;
-  if (type.startsWith("issuance.")) return "documents:issue" as const;
-  return "documents:import" as const;
+  return eventScopes[type];
 }
 export const webhookContractVersion = "1" as const;
 export const webhookToleranceMs = 300_000;

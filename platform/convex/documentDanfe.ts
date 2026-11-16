@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type ActionCtx, type MutationCtx } from "./_generated/server";
 import { chargeDownload } from "./lib/capacityCore";
 import { inCustody } from "./lib/coldArchiveCore";
-import { cardOf, type DocumentScope } from "./lib/documentCore";
+import { cardOf, modelHasDanfe, type DocumentScope } from "./lib/documentCore";
 import { sha256 } from "./lib/documentContent";
 import { originalAvailable, originalSourceOf } from "./lib/documentOriginalRead";
 import {
@@ -51,7 +51,7 @@ async function sources(
   doc: Doc<"fiscalDocuments">,
   version: Doc<"documentVersions">,
 ): Promise<Sources> {
-  if (doc.model !== "55" || version.kind !== "invoice") return deny("DANFE_UNAVAILABLE");
+  if (!modelHasDanfe[doc.model] || version.kind !== "invoice") return deny("DANFE_UNAVAILABLE");
   const original = await ctx.db.get("documentArtifacts", version.artifactId);
   if (
     !original ||

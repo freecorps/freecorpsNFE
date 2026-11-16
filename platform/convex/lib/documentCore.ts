@@ -2,6 +2,7 @@ import { insertFiscal, patchFiscal, deleteFiscal } from "./capacityCore";
 import {
   projectDocumentPayload,
   type PublicDocumentSummary,
+  type DocumentModel,
   type PublicDocumentVersion,
 } from "@freecorps/contracts";
 import { accessKeyNumber } from "@freecorps/fiscal-core";
@@ -117,6 +118,16 @@ export type DocumentCard = Pick<
   PublicDocumentSummary,
   "kind" | "issuedAt" | "number" | "issuer" | "total" | "source"
 > & { cancellation?: boolean };
+/**
+ * Whether a published version of the model has a DANFE (#402). The console ticket and the download
+ * both ask here, and a model added to `documentModels` fails to compile until it answers.
+ */
+export const modelHasDanfe: Record<DocumentModel, boolean> = { "55": true, nfse: false };
+/** The number a summary or an event reads from the key (#462); only the NF-e key carries one. */
+const numberFromKey: Record<DocumentModel, (key: string) => string | null> = {
+  "55": (key) => accessKeyNumber(key)?.number ?? null,
+  nfse: () => null,
+};
 /** The card of a version from its inline `result`, as the writer (B4) stores it. */
 export function cardOf(
   doc: Doc<"fiscalDocuments">,
@@ -133,9 +144,7 @@ export function cardOf(
     number:
       data.kind === "invoice" || data.kind === "service-invoice"
         ? data.number
-        : doc.model === "55"
-          ? (accessKeyNumber(doc.fiscalKey)?.number ?? null)
-          : null,
+        : numberFromKey[doc.model](doc.fiscalKey),
     issuer:
       data.kind === "invoice" || data.kind === "summary" || data.kind === "service-invoice"
         ? data.issuer.name

@@ -617,7 +617,7 @@ describe("Início", () => {
       page: [
         {
           id: "d1",
-          model: "nfe",
+          model: "55",
           key: "k1",
           kind: "nfe",
           importedAt: Date.UTC(2026, 10, 2, 15),

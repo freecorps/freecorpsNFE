@@ -7,6 +7,8 @@ import { keyEnvironmentServed, type EnvironmentPurpose } from "./lib/environment
 import { jsonRoute } from "./lib/externalHttp";
 import { apiVersion } from "@freecorps/contracts/external";
 import { webhookEvents } from "@freecorps/contracts/webhooks";
+import { documentModels, type DocumentModel } from "@freecorps/contracts";
+import { documentModel } from "./lib/documentValues";
 
 /**
  * Each implemented capability and the purpose its routes check with `environmentServed`. The key
@@ -25,6 +27,15 @@ const capabilityPurposes = [
   ["connections.write", "connections:write"],
   ["registry.read", "registry:read"],
 ] as const satisfies readonly (readonly [string, EnvironmentPurpose])[];
+/**
+ * The capability that brings each model in: NF-e 55 is read (imported or captured), NFS-e only
+ * arrives by issuance, which the site's production never serves. The ABRASF import that also
+ * brought it in was retired on 2026-11-02; its notes stay read-only.
+ */
+const modelCapabilities: Record<DocumentModel, (typeof capabilityPurposes)[number][0]> = {
+  "55": "documents.read",
+  nfse: "documents.issue",
+};
 
 /**
  * The key's environment and the models and capabilities it reaches there. Like the entry check of every
@@ -36,7 +47,7 @@ export const authorize = internalQuery({
   args: { keyHash: v.string(), environment: v.string() },
   returns: v.object({
     environment: v.union(v.literal("sandbox"), v.literal("production")),
-    models: v.array(v.union(v.literal("55"), v.literal("nfse"))),
+    models: v.array(documentModel),
     capabilities: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
@@ -50,12 +61,10 @@ export const authorize = internalQuery({
     const capabilities: string[] = [];
     for (const [capability, purpose] of capabilityPurposes)
       if (await keyEnvironmentServed(ctx, key, purpose)) capabilities.push(capability);
-    // A model exists where a capability brings it in: NF-e 55 is read (imported or captured),
-    // NFS-e only arrives by issuance, which the site's production never serves. The ABRASF import
-    // that also brought it in was retired on 2026-11-02; its notes stay read-only.
-    const models: ("55" | "nfse")[] = [];
-    if (capabilities.includes("documents.read")) models.push("55");
-    if (capabilities.includes("documents.issue")) models.push("nfse");
+    // A model exists where the capability that brings it in does.
+    const models = documentModels.filter((model) =>
+      capabilities.includes(modelCapabilities[model]),
+    );
     return { environment: key.environment, models, capabilities };
   },
 });

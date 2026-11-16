@@ -33,6 +33,7 @@ import { ensureConsoleProject, isConsoleProject } from "./lib/projectAccess";
 import { recordAudit, DAY } from "./lib/operationalAudit";
 import { requestCleanup } from "./lib/importCore";
 import { environment } from "./lib/projectValues";
+import { documentModel } from "./lib/documentValues";
 import {
   baseEnvironment,
   organizationEnvironmentServed,
@@ -228,7 +229,7 @@ const exportDescription = v.union(
   v.null(),
   v.object({
     companyName: v.string(),
-    model: v.union(v.literal("55"), v.literal("nfse")),
+    model: documentModel,
     fiscalKey: v.string(),
   }),
 );

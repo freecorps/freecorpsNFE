@@ -5,6 +5,7 @@ import { internalMutation, internalQuery, mutation, type MutationCtx } from "./_
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { ProcessedNfe } from "@freecorps/fiscal-nfe";
+import type { DocumentModel } from "@freecorps/contracts";
 import schema from "./schema";
 import { fiscalView, projectionState } from "./lib/documentValues";
 import { documentAccess, updateListings, type DocumentScope } from "./lib/documentCore";
@@ -107,6 +108,11 @@ export const evidencePage = internalQuery({
   },
 });
 
+/**
+ * Whether the model's fiscal situation is rebuilt from preserved evidence. An NFS-e has no
+ * situation consulted, so its projection is ready as soon as a version is published.
+ */
+const projectsSituation: Record<DocumentModel, boolean> = { "55": true, nfse: false };
 export async function requestProjection(
   ctx: MutationCtx,
   documentId: Id<"fiscalDocuments">,
@@ -114,7 +120,7 @@ export async function requestProjection(
 ) {
   const doc = await ctx.db.get("fiscalDocuments", documentId);
   if (!doc?.publishedVersionId) return;
-  if (doc.model === "nfse") {
+  if (!projectsSituation[doc.model]) {
     await patchFiscal(ctx, "fiscalDocuments", doc._id, { projectionState: "ready" });
     await updateListings(ctx, { ...doc, projectionState: "ready" });
     return;

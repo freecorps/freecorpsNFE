@@ -1,4 +1,5 @@
 import { v, type Infer } from "convex/values";
+import { documentModels } from "@freecorps/contracts";
 export const textOrNull = v.union(v.string(), v.null());
 const xmlEnvironment = v.union(v.literal("1"), v.literal("2"));
 const party = v.object({
@@ -128,7 +129,7 @@ export const nfsePayload = v.object({
   values: v.array(v.object({ name: v.string(), value: v.string() })),
 });
 export const documentPayload = v.union(nfePayload, nfsePayload);
-export const documentModel = v.union(v.literal("55"), v.literal("nfse"));
+export const documentModel = v.union(...documentModels.map((model) => v.literal(model)));
 export const nfeItem = v.object({
   item: v.string(),
   code: v.string(),

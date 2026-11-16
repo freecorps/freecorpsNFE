@@ -1,7 +1,14 @@
 import { createHmac } from "node:crypto";
 import { expect, it } from "vite-plus/test";
 import vectors from "./fixtures/webhooks.json";
-import { signWebhook, verifyWebhook, type WebhookEnvelope } from "./src/webhooks";
+import {
+  signWebhook,
+  verifyWebhook,
+  webhookEventScope,
+  webhookEvents,
+  webhookResourceType,
+  type WebhookEnvelope,
+} from "./src/webhooks";
 const timestamp = 1_800_000_000_000;
 const event: WebhookEnvelope = {
   eventId: "event-73",
@@ -55,6 +62,27 @@ it.each(vectors)("shared producer/consumer vector: $name", async (vector) => {
   }
   const result = await verifyWebhook({ ...vector, body: bytes });
   expect(result.ok ? "OK" : result.code).toBe(vector.expected);
+});
+it("names the resource and the subscription scope of every published event", () => {
+  const published = {
+    "document.received": ["document", "documents:read"],
+    "document.updated": ["document", "documents:read"],
+    "document.event_received": ["document", "documents:read"],
+    "import.completed": ["import", "documents:import"],
+    "connection.attention_required": ["connection", "connections:read"],
+    "connection.release_withdrawn": ["connection", "connections:read"],
+    "connection.history_limited": ["connection", "connections:read"],
+    "issuance.authorized": ["issuance", "documents:issue"],
+    "issuance.rejected": ["issuance", "documents:issue"],
+    "issuance.cancelled": ["issuance", "documents:cancel"],
+    "issuance.cancellation_rejected": ["issuance", "documents:cancel"],
+  };
+  expect(
+    Object.fromEntries(
+      webhookEvents.map((type) => [type, [webhookResourceType(type), webhookEventScope(type)]]),
+    ),
+  ).toEqual(published);
+  expect(webhookResourceType("webhook.test")).toBe("endpoint");
 });
 it("verifies issuance events only with the issuance resource", async () => {
   for (const [type, resource, expected] of [

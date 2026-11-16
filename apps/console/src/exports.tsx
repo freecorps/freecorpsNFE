@@ -8,6 +8,7 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../platform/convex/_generated/api";
 import type { Id } from "../../../platform/convex/_generated/dataModel";
 import type { Organization } from "./organizations";
+import { modelLabels } from "./document-labels";
 import { Button } from "./ui/button";
 import { ConfirmDialog } from "./ui/dialog";
 import { Disclosure } from "./ui/disclosure";
@@ -165,7 +166,7 @@ export function describeExport(job: ListedJob, organizationName: string) {
   const d = job.description;
   return d
     ? {
-        title: `${d.model === "55" ? "NF-e" : "NFS-e"} e histórico`,
+        title: `${modelLabels[d.model]} e histórico`,
         detail: `${d.companyName}, chave ${d.fiscalKey}.`,
       }
     : { title: "Documento e histórico", detail: "Um documento fiscal com versões e originais." };
