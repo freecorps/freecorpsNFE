@@ -39,7 +39,9 @@ export function decodeXml(bytes: Uint8Array): string {
 }
 /**
  * Every check of `decodeXml` that reads the text, without the byte limit. The limit applies to the
- * bytes received; XML re-serialized in memory from them (the signed reference) can grow.
+ * bytes received; XML re-serialized in memory from them (the signed reference) can grow, up to about
+ * six times when every character becomes an entity (`"` as `&quot;`). The depth and node limits
+ * below still bound its structure.
  */
 export function checkXml(xml: string): string {
   const encoding = /^\s*<\?xml\b[^?]*\bencoding\s*=\s*["']([^"']+)["']/i.exec(xml)?.[1];
