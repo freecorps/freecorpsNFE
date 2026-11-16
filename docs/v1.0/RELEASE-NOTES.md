@@ -261,8 +261,9 @@ linhas de auditoria sem lote, o painel deixa de mostrar a fila da fonte
 - Contrato REST `/v1` descrito em OpenAPI 3.1, versão do contrato 8.0.0,
   com envelope de erro estável (`code`, `message`, `retryable`, `requestId`).
   As mudanças do contrato estão em [SDK.md](SDK.md).
-- SDK TypeScript `@freecorps/sdk` 0.1.0 e verificador de webhook sem
-  dependências SaaS. Publicado no npm em 01/11/2026, com
+- SDK TypeScript `@freecorps/freecorpsnfe-sdk` 0.1.0 e verificador de webhook
+  sem dependências SaaS. Publicado no npm em 01/11/2026 como `@freecorps/sdk`,
+  nome que mudou em 03/11/2026 (#73), com
   `@freecorps/fiscal-core`, `@freecorps/fiscal-nfe` e `@freecorps/fiscal-nfse`.
 - Webhooks assinados com HMAC-SHA256, rotação de segredo com coexistência,
   retentativas limitadas, reenvio manual e histórico de tentativas. A entrega

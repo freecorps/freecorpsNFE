@@ -275,6 +275,24 @@ describe("distribuição pública estática", () => {
     expect(baseOptions().githubUrl).toBeUndefined();
   });
 
+  // The SDK is `@freecorps/freecorpsnfe-sdk` on npm since 03/11/2026 (#73); `@freecorps/sdk` is
+  // deprecated there. Whatever tells someone how to install or import it uses the current name;
+  // the old one may still appear as history ("antes `@freecorps/sdk`").
+  it("ensina a instalar e importar o SDK pelo nome publicado", () => {
+    const sources = {
+      ...guides,
+      "README.md": readFileSync("README.md", "utf8"),
+      "packages/sdk/README.md": readFileSync("packages/sdk/README.md", "utf8"),
+      "docs/v1.0/SDK.md": readFileSync("docs/v1.0/SDK.md", "utf8"),
+      landing: landing(),
+    };
+    for (const [name, source] of Object.entries(sources))
+      expect(source, `${name} instala ou importa o SDK pelo nome antigo`).not.toMatch(
+        /(?:npm (?:install|i)|bun add|pnpm add|yarn add|from (?:["']|&quot;|&#x27;))\s*@freecorps\/sdk\b/,
+      );
+    expect(sources["README.md"]).toContain("npm install @freecorps/freecorpsnfe-sdk");
+  });
+
   // #519: the general help channel and the access conditions have one owner page, reached from
   // the docs entry, the landing footer and the error guidance. It repeats only recorded decisions
   // (PUBLIC.md, "Ajuda e condições de acesso"): no price, response time or permanent free use, and
