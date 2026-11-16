@@ -1,10 +1,10 @@
 "use node";
 import {
+  NFSE_TARGET_IDS,
   SEFIN_HOSTS,
   buildDpsId,
   nacional,
   resolveEndpoint,
-  type NfseTargetId,
   type NfseTransport,
 } from "@freecorps/fiscal-nfse";
 import { ConvexError, v, type Infer } from "convex/values";
@@ -51,7 +51,8 @@ export const ADN_HOSTS = {
   producao: "adn.nfse.gov.br",
 } as const;
 const CAMPINAS = "3509502";
-const PROBE_TARGETS: readonly NfseTargetId[] = ["sefin-nacional", "campinas-adn"];
+// Every target of the package: one added there is probed here without another list.
+const PROBE_TARGETS = NFSE_TARGET_IDS;
 
 const consultation = v.object({
   target: v.string(),

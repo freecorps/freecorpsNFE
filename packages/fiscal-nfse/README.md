@@ -105,6 +105,8 @@ ROUTE_RULES: readonly RouteRule[]
 normalizeSubitem(subitem: string): string
 subitemFromCTribNac(cTribNac: string): string
 resolveEndpoint(target: NfseTarget): NfseEndpoint
+NFSE_TARGET_IDS: readonly NfseTargetId[]
+isNfseTargetId(value: string): value is NfseTargetId
 ibsCbsRequirement(input: IbsCbsInput, rules?: readonly IbsCbsRule[]): IbsCbsRequirement
 IBSCBS_RULES: readonly IbsCbsRule[]
 ```
