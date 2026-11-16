@@ -50,7 +50,7 @@ import { claimFields, outcome } from "./lib/operationValues";
  *   operation goes to `reconciling` and this module's reconciler consults before anything else.
  */
 type Outcome = Infer<typeof outcome>;
-/** `mark`: the "SEM VALOR FISCAL" stamp of the DANFSe; only real production goes without it. */
+/** `mark`: the test marks of the DANFSe ("NFS-e SEM VALIDADE JURÍDICA"); only real production goes without them. */
 type Io = NfseQueryContext & { signer: SignerKeys | null; mark: DanfseMark | null };
 
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");

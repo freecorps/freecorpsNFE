@@ -169,8 +169,8 @@ fisco). Uma emissão em reconciliação não é reenviada à mão: a reconcilia�
 consulta a DPS antes. Na IMA, espere o envio cair em reconciliação
 (`RESPONSE_UNREADABLE`): a resposta de sucesso ainda não é lida, e a consulta
 é que autoriza. Se a operação pausar com `RECONCILIATION_REQUIRED`, use
-"Retomar operação" no console. Autorizada, baixe XML e DANFSe (marca "SEM
-VALOR FISCAL — PRODUÇÃO RESTRITA") e cancele pelo console com o motivo `9`
+"Retomar operação" no console. Autorizada, baixe XML e DANFSe ("NFS-e SEM
+VALIDADE JURÍDICA" no cabeçalho) e cancele pelo console com o motivo `9`
 ("Teste de integração da plataforma, nota sem valor"). Espere `cancelled` **antes** de
 fechar a janela: depois dela, o cancelamento é recusado com
 `ISSUANCE_TRANSPORT_CHANGED`.

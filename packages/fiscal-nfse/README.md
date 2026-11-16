@@ -229,8 +229,7 @@ complementar no CNC do município emissor.
 ## DANFSe
 
 O subcaminho `@freecorps/fiscal-nfse/danfse` (Node) gera o DANFSe em PDF a
-partir do XML da NFS-e autorizada. Portado de `convex/engine/danfse.ts`, sem
-importar nada de `convex/`:
+partir do XML da NFS-e autorizada, sem importar nada de `convex/`:
 
 ```ts
 renderDanfse(nfseXml: string, options?: { mark?: "simulated" | "restricted" }): Promise<Uint8Array>
@@ -239,21 +238,101 @@ consultaPublicaUrl(chave: string): string
 formatDecimal(value: string, places?: number): string
 ```
 
+**Norma.** Nota Técnica SE/CGNFS-e nº 008, "Especificações Técnicas do
+DANFSe", versão 1.02, de 14/07/2026
+([PDF no Portal NFS-e](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/rtc/nt-008-se-cgnfse-danfse-20260714-v1-02.pdf),
+em Documentação técnica › Reforma Tributária, conferida em 16/11/2026 como a
+versão vigente). Desde 03/08/2026 a API de geração do DANFSe do ADN está
+suspensa, e o emissor gera o documento.
+
 - **Entrada.** O XML devolvido pelo fisco, não um resumo montado pelo
-  chamador. O PDF mostra chave de acesso (em grupos de 10) e QR de consulta
-  pública, número da NFS-e, data de autorização (`dhProc`), emissão da DPS,
-  competência, série e número da DPS, prestador (nome do grupo `emit`, CNPJ,
-  e-mail, município), tomador (CPF, CNPJ, NIF ou sem NIF, endereço nacional
-  ou no exterior), códigos do serviço (`cTribNac`, `cTribMun`, NBS),
-  descrição, valor do serviço, moeda de origem na exportação, tributação do
-  ISSQN, alíquota, retenção, `vISSQN` e `vLiq` quando a NFS-e os traz, e
-  `xOutInf`. XML sem `infNFSe`, sem a DPS ou sem a chave no `Id` é recusado
-  com `NfseError` `DANFSE_XML_INVALID`.
-- **Marca.** `mark: "simulated"` imprime "SEM VALOR FISCAL — SANDBOX/SIMULADO";
-  `"restricted"`, "SEM VALOR FISCAL — PRODUÇÃO RESTRITA". DPS com `tpAmb` 2
-  recebe a marca de produção restrita mesmo sem a opção: ela não pode ser
-  desligada. A marca aparece no cabeçalho, no rodapé de cada página e em
-  diagonal, em transparência.
+  chamador. `readNfseForDanfse` devolve cada campo do DANFSe já no formato da
+  norma, bloco a bloco, e é o que `renderDanfse` desenha. XML sem
+  `infNFSe`, sem a DPS, sem `tpAmb`, sem `prest` ou sem a chave no `Id` é
+  recusado com `NfseError` `DANFSE_XML_INVALID`.
+- **Modelo.** O do Anexo I, em uma página A4 retrato, com o corpo de 20,40 cm
+  a 0,30 cm da borda (as posições da tabela do item 2.4.5), borda de 1 pt, divisórias de 0,5 pt e sombreamento
+  cinza a 5% no cabeçalho, nos títulos de bloco, em "Emitente da NFS-e" e em
+  "Valor Líquido da NFS-e + IBS/CBS". Títulos de bloco em 7 pt, negrito e
+  caixa alta; rótulos em 6 pt negrito (7 pt e caixa alta na identificação);
+  conteúdo em 7 pt. Os blocos seguem a ordem do modelo: cabeçalho
+  ("DANFSe v2.0", "Documento Auxiliar da NFS-e", município do emitente,
+  ambiente gerador e tipo de ambiente), dados da NFS-e com a chave de 50
+  dígitos num bloco só e o QR, prestador/fornecedor, tomador/adquirente,
+  destinatário, intermediário, serviço prestado, tributação municipal
+  (ISSQN), federal (exceto CBS), IBS/CBS, valor total e informações
+  complementares.
+- **Campos.** Cada campo obrigatório dos itens 2.1.2 a 2.1.12 sai do caminho
+  do XML que a tabela do item 2.4.5 indica, com as descrições das opções do
+  leiaute (situação, emitente, finalidade, Simples Nacional, tributação e
+  retenção do ISSQN e de PIS/COFINS) e os formatos da tabela: datas
+  DD/MM/AAAA hh:mm:ss, CNPJ e CPF com pontuação, CEP nn.nnn-nnn, código
+  nacional nn.nn.nn / municipal, NBS n.nnnn.nn.nn. Campo sem informação no
+  XML sai com traço (nota 12); texto que não cabe na célula termina em
+  reticências. Sem tomador, destinatário ou intermediário, o bloco traz só a
+  frase do item 2.3 ("... NÃO IDENTIFICADO NA NFS-e"); com `indDest` 0, "O
+  DESTINATÁRIO É O PRÓPRIO TOMADOR/ADQUIRENTE DA OPERAÇÃO". A linha de
+  benefício municipal e deduções some quando os quatro campos faltam
+  (nota 5); a de PIS/COFINS de apuração própria só sai com competência até
+  2026 (nota 6). Com `tpRetPisCofins` 1, PIS e COFINS somam-se à CSLL em
+  "Contribuições Sociais - Retidas" e o débito próprio sai zero. Quando o
+  prestador é o emitente (`tpEmit` 1), o que a DPS não traz dele (nome,
+  endereço, telefone, IM, e-mail) vem do grupo `emit` que o fisco preenche;
+  com outro emitente, o `emit` é o tomador ou o intermediário e não é usado.
+  "Total Deduções/Reduções" e "Exclusões e Reduções da Base de Cálculo"
+  seguem as fórmulas do `vBC` no XSD de cada leiaute: no de 02/2026, o da
+  norma, `vDR` ou `vCalcDR` mais `vCalcReeRepRes`; no da NT 009,
+  `vAjusteBCISSQN` mais `vCalcAjusteBCISSQN`, e `vCalcAjusteBCIBSCBS` ou
+  `vCalcAjusteBCLocImoveis` no lugar de `vCalcReeRepRes`.
+- **Descrição e informações complementares** passam de 1.297 e 1.997
+  caracteres com reticências (campos de 1.300 e 2.000), e dividem o espaço livre da página; a linha
+  "Totais Aproximados dos Tributos cfe. Lei nº 12.741/2012" é fixa e nunca
+  sai cortada. As informações seguem a ordem e os prefixos da norma ("Inf.
+  Cont.:", "NFS-e Subst.:", "Doc. Ref.:", "Cod. Obra:", "Insc. Imob.:",
+  "Cod. Evt.:", "Doc. Tec.:", "Núm. Ped.:", "Item Ped.:", "Inf. A. T.
+  Mun.:"), separadas por `|`.
+- **QR** com a URL do item 2.4.3,
+  `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=` seguida da chave,
+  desenhado em vetor a partir da matriz de `qrcode` (`QRCode.create`), sem PNG
+  embutido, e a descrição complementar em três linhas embaixo. O lado é de
+  1,80 cm, centrado na posição sugerida (a norma fixa o mínimo de 1,52 cm).
+- **Teste e simulador.** `tpAmb` 2 imprime "NFS-e SEM VALIDADE JURÍDICA" em
+  vermelho, abaixo do título (item 2.4.3), mesmo sem a opção: a expressão não
+  pode ser desligada. `mark: "restricted"` faz o mesmo; `mark: "simulated"`
+  imprime a expressão e acrescenta a marca d'água "SIMULADA" em diagonal e
+  cinza, no estilo das de cancelamento (item 2.5): o documento do sandbox não
+  é NFS-e. Só produção (`tpAmb` 1 sem `mark`) sai sem elas.
+
+**Divergências da NT 008.** Conferidas campo a campo; cada uma é decisão
+desta entrega:
+
+- Fontes: Helvetica e Helvetica Bold (fontes padrão do PDF) no lugar de Arial
+  nos títulos e Microsoft Sans Serif no conteúdo, que não são redistribuíveis.
+  A Helvetica tem as métricas da Arial; os tamanhos são os da norma. Como as
+  fontes padrão só codificam WinAnsi, caractere fora dela vira `?`.
+- Logomarca: o quadro da esquerda do cabeçalho traz "NFS-e" em texto, sem a
+  imagem oficial do portal. O pacote é publicado no npm, e a imagem não tem
+  licença de redistribuição declarada.
+- Nome do município: a norma pede o nome dos códigos IBGE do prestador, do
+  tomador, do destinatário e do intermediário. O pacote não carrega a tabela
+  do IBGE; usa os nomes que o próprio XML traz (`xLocEmi`,
+  `xLocPrestacao`, `xLocIncid`, `xLocalidadeIncid`) para o mesmo código e
+  imprime "- / UF" nos demais, com a UF do prefixo do código e o código ao
+  lado, em "Código IBGE / CEP".
+- Canhoto: o bloco é opcional (item 2.1.13) e não sai.
+- Cancelada e substituída: a marca d'água do item 2.5 não sai. O DANFSe é
+  gerado uma vez, na autorização, e preservado com hash; o cancelamento não o
+  refaz ([ISSUANCE.md](../../docs/plataforma/ISSUANCE.md#documento-emitido-artefatos-uso-e-auditoria)).
+- Margem: o corpo fica a 0,30 cm da borda do papel, como nas posições da
+  tabela do item 2.4.5 e no Anexo I; o item 2.2.2 fala em margem de 0,15 a
+  0,20 cm. A norma se contradiz, e o pacote segue a tabela e o modelo.
+- QR: 1,80 cm de lado, centrado na posição sugerida para o de 1,52 cm (X
+  17,48 cm, Y 1,67 cm). O item 2.4.3 fixa só o mínimo; o maior cabe até a
+  descrição complementar e é lido com mais folga.
+- `tpRetPisCofins`: a regra da soma segue a letra da norma, que fala só do
+  código 1 (PIS/COFINS Retidos); os códigos 3 a 9, de retenção parcial, saem
+  como os demais, com "Contribuições Sociais - Retidas" igual a `vRetCSLL`.
+
 - **Valores** saem do texto decimal do XML (`formatDecimal`), sem ponto
   flutuante. O XML não tem limite de tamanho prévio, então valores,
   alíquota e quebra de linha custam tempo linear no tamanho do texto: o
@@ -262,15 +341,11 @@ formatDecimal(value: string, places?: number): string
   pacote) mede cada palavra uma vez, a junção com a anterior em poucos
   caracteres e, se a palavra for maior que a linha, cada caractere
   sozinho e com o anterior. As linhas são as mesmas de medir cada
-  candidata com o kerning do pdf-lib.
+  candidata com o kerning do pdf-lib. Uma célula corta o texto em 600
+  caracteres antes de medir, e a descrição e as informações, nos limites da
+  norma.
 - **Determinismo.** Sem data de criação nem produtor: o mesmo XML e as mesmas
   opções dão os mesmos bytes. O pacote não consulta o relógio.
-- **Texto.** A descrição longa continua em páginas seguintes, em vez de ser
-  truncada como no legado. As fontes padrão do PDF só codificam WinAnsi:
-  caracteres fora dela viram `?`.
-- **QR** desenhado em vetor a partir da matriz de `qrcode` (`QRCode.create`),
-  sem PNG embutido. A URL de consulta (`www.nfse.gov.br/consultapublica`) é a
-  do legado e não foi conferida no portal.
 
 **Dependências.** O ADR 0004 limita o pacote às dependências de `fiscal-nfe`.
 A validação no XSD usa o mesmo `libxml2-wasm` 0.7.2 (MIT) que `fiscal-nfe`, já
@@ -450,9 +525,11 @@ resposta Olinda sintética, e confere a ordem dos grupos por DOM.
   local só confere a própria assinatura.
 - Códigos e mensagens exatos de duplicidade: a detecção usa o padrão textual
   do legado.
-- O DANFSe contra uma NFS-e real: os testes usam XML sintético no formato
-  esperado do ADN. Conformidade com o leiaute oficial do DANFSe (NT da NFS-e
-  nacional) e a URL de consulta pública não foram conferidas.
+- O DANFSe do modelo da NT 008 contra uma NFS-e real: os testes usam XML
+  sintético no formato esperado do ADN, inclusive o grupo `IBSCBS` da NFS-e;
+  o grupo devolvido de verdade pela Sefin não foi visto. A leitura do QR é
+  provada por rasterização do PDF, não por câmera nem pela consulta pública
+  aberta.
 
 ## Testes
 
