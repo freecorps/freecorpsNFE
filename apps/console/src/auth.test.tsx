@@ -45,6 +45,7 @@ const sessionCookie = JSON.stringify({
 
 afterEach(() => {
   cleanup();
+  Object.assign(server, { alive: true, sessionsAsked: 0, tokensAsked: 0 });
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   localStorage.clear();
@@ -80,14 +81,24 @@ it("a aba aberta com sessão volta a pedir login quando outra aba sai", async ()
     ),
     clearAuth: vi.fn(),
   };
-  // The tab booted as main.tsx boots it with a session in this browser: with the early token.
+  // The tab boots as main.tsx boots it with a session in this browser: the session answered
+  // (session-boot.ts), then the provider renders with the early token.
+  const session = authClient.$store.atoms.session;
+  expect(session).toBeDefined();
+  await new Promise<void>((resolve) => {
+    const stop = session!.subscribe((value: { isPending: boolean }) => {
+      if (value.isPending) return;
+      resolve();
+      queueMicrotask(() => stop());
+    });
+  });
+  expect(server.sessionsAsked).toBe(1);
   render(
     <ConvexBetterAuthProvider client={convex} authClient={authClient} initialToken={convexToken}>
       <Probe />
     </ConvexBetterAuthProvider>,
   );
   await screen.findByText("autenticado");
-  await vi.waitFor(() => expect(server.sessionsAsked).toBe(1));
 
   // Another tab renewed the cookie: the session is asked again and this tab stays in.
   await act(async () => otherTabWrites(sessionCookie));

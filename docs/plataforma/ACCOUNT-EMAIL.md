@@ -188,8 +188,9 @@ token para sessão viva (#43).
 Logout e mudanças de storage atualizam outras abas: o evento `storage` da
 chave `better-auth_cookie` pede a sessão de novo, e a aba sem sessão solta o
 token Convex e volta a pedir login, mesmo aberta com o token antecipado de
-`session-boot.ts` (prova: `apps/console/src/auth.test.tsx`; #250). Verificar
-também sessão removida/expirada no backend, não apenas o estado visual da SPA.
+`session-boot.ts` (#250; prova: `apps/console/src/auth.test.tsx` › "a aba
+aberta com sessão volta a pedir login quando outra aba sai"). Verificar também
+sessão removida/expirada no backend, não apenas o estado visual da SPA.
 
 ## Ativação após integração
 

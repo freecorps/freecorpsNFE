@@ -52,8 +52,8 @@ O build do console no CI verifica a compatibilidade sem casts no aplicativo.
 A 0.13.0 do componente, publicada em 04/11/2026, já traz as três correções:
 o tipo `AuthClient` passa a ser estrutural, o token do provider fica por
 sessão, e o índice `lastRequest` está em `src` e `dist`. Ela exige
-`better-auth >=1.7.16 <1.8`, e a plataforma fixa a 1.6.33. Por decisão da #142, o patch fica até a migração para Better Auth 1.7;
-essa migração sobe o componente para a 0.13.0 e retira o patch na mesma PR,
+`better-auth >=1.7.16 <1.8`, e a plataforma fixa a 1.6.33. Por decisão da #142,
+o patch fica até a migração para Better Auth 1.7; essa migração sobe o componente para a 0.13.0 e retira o patch na mesma PR,
 depois do build do console, dos testes de autenticação e da consulta de
 limpeza de OBSERVABILITY.md.
 
