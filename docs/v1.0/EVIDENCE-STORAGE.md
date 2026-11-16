@@ -18,14 +18,14 @@ Medido sobre `d2c29bd` com `git ls-tree -l` (tamanho dos blobs, sem blocos
 do sistema de arquivos) e `git cat-file --batch-check` sobre os objetos
 alcançáveis da `main`.
 
-| Classe                               | Arquivos |        MiB | Uso                                                               |
-| ------------------------------------ | -------: | ---------: | ----------------------------------------------------------------- |
-| Capturas de tela (`.png`)            |      645 |      99,99 | Revisão visual; 76 MiB em `console-*` e `issuance-console`        |
-| Dados brutos (`.jsonl`)              |       20 |      21,57 | Carga hospedada; lidos pelo teste do resumo da rodada, no arquivo |
-| Recibos e resumos (`.json`)          |      594 |       8,06 | Resultado verificável; inclui os recibos de gate do publicador    |
-| Vídeos (`.webm`, `.mp4`)             |        8 |       7,77 | Jornadas de #71, #72, #81 e console                               |
-| Texto, tabelas e roteiros de captura |      218 |       1,12 | README, `.txt`, `.tsv`, `.mjs`                                    |
-| **Total em `docs/v1.0/evidence`**    | **1485** | **138,51** | De 154,13 MiB do checkout inteiro                                 |
+| Classe                               | Arquivos |        MiB | Uso                                                            |
+| ------------------------------------ | -------: | ---------: | -------------------------------------------------------------- |
+| Capturas de tela (`.png`)            |      645 |      99,99 | Revisão visual; 76 MiB em `console-*` e `issuance-console`     |
+| Dados brutos (`.jsonl`)              |       20 |      21,57 | Carga hospedada                                                |
+| Recibos e resumos (`.json`)          |      594 |       8,06 | Resultado verificável; inclui os recibos de gate do publicador |
+| Vídeos (`.webm`, `.mp4`)             |        8 |       7,77 | Jornadas de #71, #72, #81 e console                            |
+| Texto, tabelas e roteiros de captura |      218 |       1,12 | README, `.txt`, `.tsv`, `.mjs`                                 |
+| **Total em `docs/v1.0/evidence`**    | **1485** | **138,51** | De 154,13 MiB do checkout inteiro                              |
 
 Três medidas diferentes respondem a perguntas diferentes:
 
