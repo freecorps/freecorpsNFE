@@ -7,6 +7,11 @@
   (`packages/sdk/published.json`) e exige versão acima da publicada para
   mudança aditiva e minor acima (0.2.0) para quebra ou contrato num major
   novo. Quem publica é o mantenedor, por entrega aceita.
+- `processNfe` de `@freecorps/fiscal-nfe` aceita NF-e assinada até o último
+  byte de `LIMITS.bytes` (#226). A releitura do documento com a referência
+  assinada reaplicava o limite ao texto re-serializado, que pode ser maior que
+  o arquivo, e o resultado saía `XML_TOO_LARGE` com assinatura e identidade
+  conferidas. Uma falha de parsing agora descarta as outras etapas.
 - `@freecorps/fiscal-nfe` perde o extrator antigo `parseNfe(string)`, com
   `MAX_XML_BYTES` e `FiscalXmlError`, e a dependência `fast-xml-parser`
   (#119). A 0.1.0 publicada não muda; a próxima versão do pacote será minor.

@@ -164,23 +164,41 @@ describe("shared NF-e corpus", () => {
       value: { declared: "1.2345", coefficient: "12345", scale: 4 },
     });
   });
+  // Built in memory instead of a 2 MiB corpus file (#159): a well-formed invoice padded with one
+  // repeated text element, outside the signed reference, up to the exact size.
+  const padded = (id: string, size: number) => {
+    const xml = fixture(id).toString();
+    const shell = Buffer.byteLength(xml) + "<xPad></xPad>".length;
+    const bytes = Buffer.from(
+      xml.replace("</NFe>", `<xPad>${"x".repeat(size - shell)}</xPad></NFe>`),
+    );
+    expect(bytes.byteLength).toBe(size);
+    return bytes;
+  };
+  it("applies the size limit to the bytes received, not to the re-read signed reference (#226)", () => {
+    const signed = fixture("invoice-signed");
+    const result = processNfe(padded("invoice-signed", LIMITS.bytes), {
+      source: "synthetic",
+      evaluatedAt: corpus.evaluatedAt,
+    });
+    expect(result.checks).toMatchObject({
+      parsing: { status: "passed", code: "XML_PARSED" },
+      signature: { status: "passed", code: "SIGNATURE_INTEGRITY_VALID" },
+      identity: { status: "passed", code: "NFE_IDENTITY_VALID" },
+      xsd: { status: "failed" },
+    });
+    expect(result.signature.referenceSha256).toBe(
+      processNfe(signed, { source: "synthetic" }).signature.referenceSha256,
+    );
+    const over = processNfe(padded("invoice-signed", LIMITS.bytes + 1), { source: "synthetic" });
+    expect(over.checks.parsing).toEqual({ status: "failed", code: "XML_TOO_LARGE" });
+    expect(over.checks.signature).toEqual({ status: "not_checked", code: "NOT_CHECKED" });
+  });
   it("rejects a well-formed document one byte over the size limit before any other stage", () => {
-    // Built in memory instead of a 2 MiB corpus file (#159): a well-formed invoice padded with one
-    // repeated text element up to the exact size. Unsigned, so the at-limit case skips signature
-    // canonicalization, whose re-read XML would be larger than the padded input.
-    const padded = (size: number) => {
-      const xml = fixture("invoice-unsigned").toString();
-      const shell = Buffer.byteLength(xml) + "<xPad></xPad>".length;
-      const bytes = Buffer.from(
-        xml.replace("</NFe>", `<xPad>${"x".repeat(size - shell)}</xPad></NFe>`),
-      );
-      expect(bytes.byteLength).toBe(size);
-      return bytes;
-    };
     expect(LIMITS.bytes).toBe(2_097_152);
-    const atLimit = processNfe(padded(LIMITS.bytes), { source: "synthetic" });
+    const atLimit = processNfe(padded("invoice-unsigned", LIMITS.bytes), { source: "synthetic" });
     expect(atLimit.checks.parsing).toEqual({ status: "passed", code: "XML_PARSED" });
-    const bytes = padded(LIMITS.bytes + 1),
+    const bytes = padded("invoice-unsigned", LIMITS.bytes + 1),
       copy = Buffer.from(bytes),
       result = processNfe(bytes, { source: "synthetic", evaluatedAt: corpus.evaluatedAt });
     expect(bytes.equals(copy)).toBe(true);
