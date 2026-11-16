@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { decimal } from "@freecorps/fiscal-core";
 import {
   assertUniqueIds,
+  checkXml,
   child,
   children,
   decodeXml,
@@ -202,10 +203,24 @@ function receipt(node: Element): EventReceipt {
 }
 /** Parse supported NF-e structures; original bytes remain the complete source. No normalization here. */
 export function parseNfeModel(bytes: Uint8Array, source: Source = "imported-xml"): ParsedNfe {
+  checkSource(source);
+  return parseXml(decodeXml(bytes), source, createHash("sha256").update(bytes).digest("hex"));
+}
+/**
+ * Parse XML derived in memory from bytes that already passed `parseNfeModel`, such as the signed
+ * reference after verification. `originalSha256` stays the hash of the bytes received, and the size
+ * limit stays theirs: re-serialization can grow the text past it.
+ */
+export function parseDerivedNfe(xml: string, source: Source, originalSha256: string): ParsedNfe {
+  checkSource(source);
+  return parseXml(checkXml(xml), source, originalSha256);
+}
+function checkSource(source: Source) {
   if (!["imported-xml", "distribution-xml", "synthetic"].includes(source))
-    return fail("XML_SOURCE_INVALID");
-  const xml = decodeXml(bytes),
-    root = dom(xml).documentElement;
+    fail("XML_SOURCE_INVALID");
+}
+function parseXml(xml: string, source: Source, originalSha256: string): ParsedNfe {
+  const root = dom(xml).documentElement;
   if (root.namespaceURI !== NFE_NS) return fail("XML_NAMESPACE_UNSUPPORTED");
   assertUniqueIds(root);
   const unsupported = new Set<string>();
@@ -496,7 +511,7 @@ export function parseNfeModel(bytes: Uint8Array, source: Source = "imported-xml"
     metadata: {
       model: "55",
       source,
-      originalSha256: createHash("sha256").update(bytes).digest("hex"),
+      originalSha256,
       versions: {
         parser: PARSER_VERSION,
         normalizer: null,

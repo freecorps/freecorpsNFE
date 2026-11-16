@@ -43,8 +43,9 @@ um modelo universal, `br-documents` ou um pacote de fixtures sem consumidor.
 O extrator antigo `parseNfe(string)`, com `MAX_XML_BYTES` e `FiscalXmlError`,
 existe na 0.1.0 publicada e saiu do código-fonte; a próxima versão publicada
 será minor, por ser mudança incompatível. Quem o usava passa os bytes originais
-a `parseNfeModel` ou `processNfe`: o limite de tamanho fica em `LIMITS.bytes`,
-e a recusa vem como `NfeError`, com o código em `code`, ou em `checks.parsing`
+a `parseNfeModel` ou `processNfe`: o limite de tamanho fica em `LIMITS.bytes`
+e vale para os bytes recebidos, não para a releitura interna da referência
+assinada, e a recusa vem como `NfeError`, com o código em `code`, ou em `checks.parsing`
 do resultado de `processNfe`.
 
 ## Estruturas e etapas

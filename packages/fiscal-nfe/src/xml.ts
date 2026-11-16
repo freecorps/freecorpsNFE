@@ -35,6 +35,13 @@ export function decodeXml(bytes: Uint8Array): string {
   } catch {
     return fail("XML_ENCODING_INVALID");
   }
+  return checkXml(xml);
+}
+/**
+ * Every check of `decodeXml` that reads the text, without the byte limit. The limit applies to the
+ * bytes received; XML re-serialized in memory from them (the signed reference) can grow.
+ */
+export function checkXml(xml: string): string {
   const encoding = /^\s*<\?xml\b[^?]*\bencoding\s*=\s*["']([^"']+)["']/i.exec(xml)?.[1];
   if (encoding && !/^utf-8$/i.test(encoding)) return fail("XML_ENCODING_UNSUPPORTED");
   if (/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) return fail("XML_UNSAFE");

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { CheckResult } from "@freecorps/fiscal-core";
 import { decodeXml, NfeError } from "./xml.js";
-import { parseNfeModel } from "./parser.js";
+import { parseDerivedNfe, parseNfeModel } from "./parser.js";
 import { normalizeNfe } from "./normalize.js";
 import { validateIdentity } from "./identity.js";
 import { validateSchema } from "./schema.js";
@@ -14,7 +14,8 @@ export function processNfe(
   bytes: Uint8Array,
   options: { source?: Source; evaluatedAt?: string } = {},
 ): ProcessedNfe {
-  const result: ProcessedNfe = {
+  const evaluatedAt = options.evaluatedAt ?? null;
+  const empty = (): ProcessedNfe => ({
     metadata: null,
     parsing: null,
     normalized: null,
@@ -33,9 +34,10 @@ export function processNfe(
       referenceId: null,
       referenceSha256: null,
       certificateSha256: null,
-      evaluatedAt: options.evaluatedAt ?? null,
+      evaluatedAt,
     },
-  };
+  });
+  let result = empty();
   try {
     const parsed = parseNfeModel(bytes, options.source),
       xml = decodeXml(bytes);
@@ -44,7 +46,7 @@ export function processNfe(
     result.checks.parsing = { status: "passed", code: "XML_PARSED" };
     result.checks.xsd = validateSchema(xml, parsed);
     result.checks.identity = validateIdentity(xml, parsed);
-    const signature = verifyNfeSignature(xml, parsed, options.evaluatedAt ?? null);
+    const signature = verifyNfeSignature(xml, parsed, evaluatedAt);
     result.checks.signature = signature.integrity;
     result.checks.certificateTrust = signature.trust;
     result.checks.certificateTime = signature.time;
@@ -55,13 +57,12 @@ export function processNfe(
       evaluatedAt: signature.evaluatedAt,
     };
     if (signature.authenticatedXml) {
-      const authenticated = parseNfeModel(
-        new TextEncoder().encode(signature.authenticatedXml),
-        options.source,
-      );
       // Derived from the signed reference, while source provenance still identifies the original bytes.
-      authenticated.metadata.originalSha256 = parsed.metadata.originalSha256;
-      result.parsing = authenticated;
+      result.parsing = parseDerivedNfe(
+        signature.authenticatedXml,
+        options.source ?? "imported-xml",
+        parsed.metadata.originalSha256,
+      );
     }
     try {
       result.normalized = normalizeNfe(result.parsing!);
@@ -87,6 +88,8 @@ export function processNfe(
     return result;
   } catch (error) {
     const code = error instanceof NfeError ? error.code : "XML_PROCESSING_FAILED";
+    // A parsing failure discards every stage already computed: none of them read a valid model.
+    result = empty();
     result.checks.parsing = {
       status: code.includes("UNSUPPORTED") ? "unsupported" : "failed",
       code,
