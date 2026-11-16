@@ -1,19 +1,16 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
 import { ConvexError } from "convex/values";
-import schema from "./schema";
-import { internal, api, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { internal, api } from "./_generated/api";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { canonicalRequest, LEASE_MS, RECOVERY_BATCH } from "./lib/operationValues";
 import { publicError } from "./lib/publicErrors";
-import { modules } from "../../tests/helpers/convex-modules";
 import {
   abandonBeforeEffect,
   patchOperationDomain,
   RESPONSE_LIMIT_BYTES,
   setResult,
 } from "./lib/operationCore";
+import { platformTest, signedIn } from "../../tests/helpers/platform";
 beforeEach(() => {
   vi.useFakeTimers();
   for (const [k, value] of Object.entries({
@@ -42,8 +39,7 @@ const task = {
   checkpoint: "testing/operationProof:checkpoint",
 };
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${"a".repeat(43)}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
@@ -672,31 +668,10 @@ it("recuperação lê no máximo um lote indexado, sem alterar operações futur
 it("sessão humana permitida consulta; viewer não pausa, membro removido não consulta", async () => {
   const f = await fixture(),
     now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Teste",
-        email: "person@development.invalid",
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
+  const { user, client: actor } = await signedIn(f.t, {
+    name: "Teste",
+    email: "person@development.invalid",
   });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        token: crypto.randomUUID(),
-        expiresAt: now + 3600_000,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const actor = f.t.withIdentity({ subject: user._id, sessionId: session._id });
   const memberId = await f.t.run((ctx) =>
     ctx.db.insert("memberships", {
       organizationId: f.scope.organizationId,

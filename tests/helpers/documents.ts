@@ -2,13 +2,13 @@ import { createHash } from "node:crypto";
 import { convexTest } from "convex-test";
 import { expect } from "vite-plus/test";
 import schema from "../../platform/convex/schema";
-import { internal, components } from "../../platform/convex/_generated/api";
-import { register } from "../../platform/test-setup";
+import { internal } from "../../platform/convex/_generated/api";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
 import { fixture as xmlFixture } from "./nfe-corpus";
 import { processNfe } from "../../packages/fiscal-nfe/src/index";
 import type { Id } from "../../platform/convex/_generated/dataModel";
 import { modules } from "./convex-modules";
+import { person, platformTest } from "./platform";
 
 /**
  * Fixtures of the fiscal document suites: a database with the platform registered, people and keys
@@ -17,62 +17,18 @@ import { modules } from "./convex-modules";
 export function testDatabase() {
   return convexTest(schema, modules);
 }
+/** A signed-in member of `role` (`person`), with its membership. */
 export async function actor(
   t: ReturnType<typeof testDatabase>,
   organizationId: Id<"organizations">,
   role: "owner" | "admin" | "operator" | "developer" | "viewer" = "owner",
 ) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return {
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3239",
-    }),
-    membershipId,
-  };
+  const client = await person(t, organizationId, role);
+  return { client, membershipId: client.membershipId };
 }
 
 export async function fixture(database?: ReturnType<typeof testDatabase>) {
-  const t = database ?? convexTest(schema, modules);
-  if (!database) register(t);
+  const t = database ?? platformTest();
   const secret = `fnfe_${crypto.randomUUID().replaceAll("-", "")}${"b".repeat(11)}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {

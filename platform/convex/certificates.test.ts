@@ -1,15 +1,12 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { randomBytes } from "node:crypto";
-import schema from "./schema";
-import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import { syntheticCertificate } from "../../tests/helpers/certificates";
 import { consoleProjectFor } from "../../tests/helpers/console";
 import { certificateUsable } from "./lib/certificateAccess";
 import { abandonBeforeEffect, executionAllowed } from "./lib/operationCore";
 import { validatePendingCertificate } from "./certificateWorker";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn } from "../../tests/helpers/platform";
 const ring = {
   active: "v1",
   keys: { v1: randomBytes(32).toString("hex"), v2: randomBytes(32).toString("hex") },
@@ -34,49 +31,9 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-async function actor(t: ReturnType<typeof setup>) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Teste certificado",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    user,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3253",
-    }),
-  };
-}
 async function fixture(options?: Parameters<typeof syntheticCertificate>[0]) {
-  const t = setup(),
-    owner = await actor(t);
+  const t = platformTest(),
+    owner = await signedIn(t);
   const org = await owner.client.mutation(api.organizations.create, {
     name: "Certificados de teste",
     slug: `cert-${crypto.randomUUID()}`,
@@ -173,7 +130,7 @@ it("rejects wrong password and retains the previous active certificate", async (
 });
 it("isolates organizations and refuses viewer, removed member and anonymous writes", async () => {
   const f = await fixture(),
-    stranger = await actor(f.t),
+    stranger = await signedIn(f.t),
     id = await f.upload();
   const args = { ...f.scope, contextKey: "forged", paginationOpts: { numItems: 10, cursor: null } };
   await expect(stranger.client.query(api.certificates.list, args)).rejects.toThrow();
@@ -292,7 +249,7 @@ it("rewrap preserves certificate identity and records the new master key version
 it("rewrap recusa estranho, sessão ausente, operador sem gestão, certificado de outra empresa e revisão antiga sem regravar nem auditar (#134)", async () => {
   const f = await fixture(),
     id = await f.upload(),
-    operator = await actor(f.t);
+    operator = await signedIn(f.t);
   await f.t.action(internal.certificateWorker.validate, { id });
   // Another company of the same organization, with its own certificate.
   const sibling = await f.owner.client.mutation(api.companies.create, {
@@ -337,7 +294,7 @@ it("rewrap recusa estranho, sessão ausente, operador sem gestão, certificado d
       updatedAt: Date.now(),
     });
   });
-  const outsider = await actor(f.t);
+  const outsider = await signedIn(f.t);
   const effects = () =>
     f.t.run(async (ctx) => ({
       certificates: await Promise.all(

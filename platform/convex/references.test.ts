@@ -1,15 +1,12 @@
-import { convexTest } from "convex-test";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import { referenceCorpus } from "../../tests/helpers/reference-corpus";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { canonicalEntries, sha256 } from "./lib/referenceDataset";
 import { FreecorpsClient } from "../../packages/sdk/src/index";
 import { routes } from "../../packages/contracts/src/external";
 import { referencePage, referenceLookup } from "../../packages/contracts/src/references";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn } from "../../tests/helpers/platform";
 
 // Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
 // (freecorps/no-wall-clock-in-tests).
@@ -31,8 +28,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${"r".repeat(43)}`;
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash: await hashApiKey(secret),
@@ -299,34 +295,9 @@ it("consulta humana exige sessão e acesso à empresa, inclusive após remoção
   };
   await expect(f.t.query(api.references.search, input)).rejects.toThrow();
   const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Referências",
-        email: "references@development.invalid",
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const actor = f.t.withIdentity({
-    subject: user._id,
-    sessionId: session._id,
-    issuer: "http://127.0.0.1:3249",
+  const { user, client: actor } = await signedIn(f.t, {
+    name: "Referências",
+    email: "references@development.invalid",
   });
   await expect(actor.query(api.references.search, input)).rejects.toThrow();
   const member = await f.t.run((ctx) =>

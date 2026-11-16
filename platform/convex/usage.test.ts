@@ -1,8 +1,5 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, internal, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { api, internal } from "./_generated/api";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import {
   reserveUsage,
@@ -18,7 +15,7 @@ import { usagePeriod } from "./lib/usageValues";
 import { retryImportAdmission } from "./lib/importAdmission";
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn, person } from "../../tests/helpers/platform";
 
 it("admission retries a lost commit response with the same intent and never reserves twice", async () => {
   const f = await fixture();
@@ -78,8 +75,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${"b".repeat(43)}`;
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash: await hashApiKey(secret),
@@ -125,46 +121,8 @@ async function fixture() {
   return { t, scope, plan, reserve, total };
 }
 /** A Better Auth session of an active owner in the fixture's organization. */
-async function owner(f: Awaited<ReturnType<typeof fixture>>) {
-  const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  await f.t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId: f.scope.organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role: "owner",
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return f.t.withIdentity({ subject: user._id, sessionId: session._id });
+function owner(f: Awaited<ReturnType<typeof fixture>>) {
+  return person(f.t, f.scope.organizationId, "owner");
 }
 it("reserves the last commercial unit through HTTP, reuses intent and refuses the next request", async () => {
   const f = await fixture();
@@ -398,29 +356,9 @@ it("leases limit one organization's concurrency, expire, and do not block anothe
 it("only owners/admins read organization-wide consumption, and a removed membership loses access", async () => {
   const f = await fixture();
   const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Synthetic",
-        email: "usage@development.invalid",
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
+  const { user, client: human } = await signedIn(f.t, {
+    name: "Synthetic",
+    email: "usage@development.invalid",
   });
   const member = await f.t.run((ctx) =>
     ctx.db.insert("memberships", {
@@ -435,7 +373,6 @@ it("only owners/admins read organization-wide consumption, and a removed members
       updatedAt: now,
     }),
   );
-  const human = f.t.withIdentity({ subject: user._id, sessionId: session._id });
   const args = { organizationId: f.scope.organizationId, period: "2026-09", contextKey: "test" };
   await expect(human.query(api.usage.overview, args)).rejects.toThrow("ACCESS_DENIED");
   await f.t.run((ctx) => ctx.db.patch("memberships", member, { role: "admin" }));

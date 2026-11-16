@@ -1,10 +1,7 @@
-import { convexTest } from "convex-test";
 import { expect, vi } from "vite-plus/test";
-import schema from "../../platform/convex/schema";
 import { internal } from "../../platform/convex/_generated/api";
 import type { Id } from "../../platform/convex/_generated/dataModel";
-import { capturePlan } from "./platform";
-import { register } from "../../platform/test-setup";
+import { capturePlan, platformTest } from "./platform";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
 import { CAPTURE_TERMS_VERSION } from "../../platform/convex/lib/fiscalCaptureRelease";
 import * as certificateRuntime from "../../platform/convex/lib/certificateRuntime";
@@ -13,7 +10,6 @@ import { parseDistribution } from "../../packages/fiscal-nfe/src/distribution";
 import { createHash } from "node:crypto";
 import type { Claim } from "../../platform/convex/lib/operationCore";
 import { signApiRequest } from "../../platform/auth-transport";
-import { modules } from "./convex-modules";
 
 /**
  * Fixtures of the site capture suites (ADR 0007, phase 4): the development and site profiles, a
@@ -53,8 +49,7 @@ export const stub = (profile: Record<string, string | undefined>) => {
 };
 /** A released company with a production key, built locally, then served by the site profile. */
 export async function siteFixture(options: { released?: boolean; plan?: boolean } = {}) {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const secret = `fnfe_${crypto.randomUUID().replaceAll("-", "").padEnd(43, "a")}`;
   const keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {

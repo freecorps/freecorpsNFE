@@ -1,12 +1,14 @@
-import { convexTest } from "convex-test";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, components } from "./_generated/api";
-import { register } from "../test-setup";
+import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { MembershipRole } from "../../packages/contracts/src/organizations";
 import { normalizeNfseProfile } from "./lib/nfseProfile";
-import { modules } from "../../tests/helpers/convex-modules";
+import {
+  platformTest,
+  type PlatformTest,
+  signedIn,
+  membership,
+} from "../../tests/helpers/platform";
 
 // Relógio fixo: as fixtures são relativas a este instante, longe de virada de dia e de mês
 // (freecorps/no-wall-clock-in-tests).
@@ -63,43 +65,8 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 
-type T = ReturnType<typeof convexTest>;
-async function actor(t: T) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa de teste",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    user,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3233",
-    }),
-  };
-}
-async function organization(owner: Awaited<ReturnType<typeof actor>>) {
+type T = PlatformTest;
+async function organization(owner: Awaited<ReturnType<typeof signedIn>>) {
   const org = await owner.client.mutation(api.organizations.create, {
     name: "Equipe sintética",
     slug: `org-${crypto.randomUUID()}`,
@@ -111,26 +78,13 @@ async function organization(owner: Awaited<ReturnType<typeof actor>>) {
   return { organizationId: org.organizationId, companyId: created.companyId };
 }
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
-  const owner = await actor(t);
+  const t = platformTest();
+  const owner = await signedIn(t);
   return { t, owner, scope: await organization(owner) };
 }
 async function member(t: T, organizationId: Id<"organizations">, role: MembershipRole) {
-  const person = await actor(t);
-  const membershipId = await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: person.user._id,
-      name: person.user.name,
-      email: person.user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: Date.now(),
-      updatedAt: Date.now(),
-    }),
-  );
+  const person = await signedIn(t);
+  const membershipId = await membership(t, organizationId, person.user, role);
   return { ...person, membershipId };
 }
 function code(promise: Promise<unknown>) {
@@ -259,7 +213,7 @@ it.each(["developer", "operator", "viewer"] as const)(
 it("sessão sem membership, sem identidade ou de outra organização não lê nem grava", async () => {
   const { t, owner, scope } = await fixture();
   await owner.client.mutation(api.nfseProfiles.save, { ...scope, ...profile, expectedVersion: 0 });
-  const stranger = await actor(t);
+  const stranger = await signedIn(t);
   const save = { ...scope, ...profile, expectedVersion: 1 };
   expect(await code(stranger.client.query(api.nfseProfiles.get, { ...scope, contextKey }))).toBe(
     "ACCESS_DENIED",
@@ -270,7 +224,7 @@ it("sessão sem membership, sem identidade ou de outra organização não lê ne
   );
   expect(await code(t.mutation(api.nfseProfiles.save, save))).toBe("UNAUTHENTICATED");
   // Owner of another organization, with its own id as selector or the victim's.
-  const outsider = await actor(t);
+  const outsider = await signedIn(t);
   const other = await organization(outsider);
   for (const organizationId of [other.organizationId, scope.organizationId]) {
     const target = { organizationId, companyId: scope.companyId };
@@ -488,7 +442,7 @@ describe("número inicial da DPS", () => {
     return f;
   };
   const start = (
-    client: Awaited<ReturnType<typeof actor>>["client"],
+    client: Awaited<ReturnType<typeof signedIn>>["client"],
     scope: { organizationId: Id<"organizations">; companyId: Id<"companies"> },
     series: string,
     value: number,
@@ -558,7 +512,7 @@ describe("número inicial da DPS", () => {
       const person = await member(t, scope.organizationId, role);
       expect(await code(start(person.client, scope, "1", 10))).toBe("ACCESS_DENIED");
     }
-    const outsider = await actor(t);
+    const outsider = await signedIn(t);
     const other = await organization(outsider);
     for (const organizationId of [other.organizationId, scope.organizationId])
       expect(

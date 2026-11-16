@@ -1,9 +1,6 @@
 import { createHash } from "node:crypto";
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { components, internal, api } from "./_generated/api";
-import { register } from "../test-setup";
+import { internal, api } from "./_generated/api";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { DANFE_RENDERS_PER_MINUTE, DANFE_VERSION } from "./lib/danfeValues";
 import { serveDanfe } from "./documentDanfe";
@@ -13,7 +10,13 @@ import { errorResponse } from "../../packages/contracts/src/external";
 import { FreecorpsClient } from "../../packages/sdk/src/index";
 import type { Id } from "./_generated/dataModel";
 import { fixture as xmlFixture } from "../../tests/helpers/nfe-corpus";
-import { companyGrant } from "../../tests/helpers/platform";
+import {
+  companyGrant,
+  platformTest,
+  type PlatformTest,
+  signedIn,
+  person,
+} from "../../tests/helpers/platform";
 import { inspectPdf } from "../../tests/helpers/pdf";
 import { keepInline, writeContent } from "../../tests/helpers/document-footprint";
 import { modules } from "../../tests/helpers/convex-modules";
@@ -45,9 +48,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const database = (overrides: typeof modules = {}) =>
-  convexTest(schema, { ...modules, ...overrides });
-type Test = ReturnType<typeof database>;
+type Test = PlatformTest;
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 /** An organization with a key reading and importing documents of one company. */
@@ -135,9 +136,7 @@ async function organization(t: Test) {
   return { t, scope, secret, keyHash, request, importXml, danfe, rows };
 }
 async function setup(overrides: typeof modules = {}) {
-  const t = database(overrides);
-  register(t);
-  return organization(t);
+  return organization(platformTest(overrides));
 }
 async function pdfOf(response: Response) {
   expect(response.status).toBe(200);
@@ -151,60 +150,6 @@ async function textOf(bytes: Uint8Array) {
 async function errorOf(response: Response) {
   return { status: response.status, code: errorResponse.parse(await response.json()).error.code };
 }
-/** A member of the organization with a Better Auth session, as the console signs in. */
-async function member(
-  t: Test,
-  organizationId: Id<"organizations"> | null,
-  role: "owner" | "viewer" = "owner",
-) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const membershipId = organizationId
-    ? await t.run((ctx) =>
-        ctx.db.insert("memberships", {
-          organizationId,
-          authUserId: user._id,
-          name: user.name,
-          email: user.email,
-          role,
-          state: "active",
-          version: 1,
-          joinedAt: now,
-          updatedAt: now,
-        }),
-      )
-    : null;
-  const client = t.withIdentity({
-    subject: user._id,
-    sessionId: session._id,
-    issuer: "http://127.0.0.1:3239",
-  });
-  return Object.assign(client, { membershipId });
-}
-
 it("pins the platform's copy of the generator version to the package", () => {
   expect(DANFE_VERSION).toBe(DANFE_GENERATOR_VERSION);
 });
@@ -414,7 +359,7 @@ it("downloads the DANFE in the console with a one-minute ticket of a member", as
     companyId: f.scope.companyId,
     environment: "sandbox" as const,
   };
-  const owner = await member(f.t, f.scope.organizationId);
+  const owner = await person(f.t, f.scope.organizationId, "owner");
   const { token } = await owner.mutation(api.documentDownloads.danfeTicket, {
     ...scope,
     documentId: invoice.documentId,
@@ -432,7 +377,7 @@ it("downloads the DANFE in the console with a one-minute ticket of a member", as
   expect(await f.rows()).toHaveLength(1);
 
   // A login without membership, or a document without DANFE, gets no ticket.
-  const stranger = await member(f.t, null);
+  const stranger = (await signedIn(f.t)).client;
   await expect(
     stranger.mutation(api.documentDownloads.danfeTicket, {
       ...scope,
@@ -614,7 +559,7 @@ it("audits each DANFE download with its own action and the document as target", 
   const f = await setup();
   const invoice = await f.importXml(xmlFixture("invoice-authorized"));
   await pdfOf(await f.danfe(invoice.documentId));
-  const owner = await member(f.t, f.scope.organizationId);
+  const owner = await person(f.t, f.scope.organizationId, "owner");
   const { token } = await owner.mutation(api.documentDownloads.danfeTicket, {
     organizationId: f.scope.organizationId,
     companyId: f.scope.companyId,
@@ -654,7 +599,7 @@ it("gives a viewer the original and the DANFE only through a company grant", asy
     companyId: f.scope.companyId,
     environment: "sandbox" as const,
   };
-  const viewer = await member(f.t, f.scope.organizationId, "viewer");
+  const viewer = await person(f.t, f.scope.organizationId, "viewer");
   await expect(
     viewer.mutation(api.documentDownloads.ticket, { ...scope, artifactId: original._id }),
   ).rejects.toThrow();
@@ -667,7 +612,7 @@ it("gives a viewer the original and the DANFE only through a company grant", asy
   await companyGrant(f.t, {
     organizationId: f.scope.organizationId,
     companyId: f.scope.companyId,
-    membershipId: viewer.membershipId!,
+    membershipId: viewer.membershipId,
   });
   const download = (token: string) =>
     f.t.fetch("/v1/document-download", {

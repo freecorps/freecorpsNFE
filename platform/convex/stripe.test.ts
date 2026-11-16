@@ -1,10 +1,7 @@
-import { convexTest } from "convex-test";
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, components, internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { encryptCertificate } from "./lib/certificateCrypto";
 import { syntheticCertificate } from "../../tests/helpers/certificates";
@@ -20,7 +17,7 @@ import { splitStreet } from "./lib/stripeAddress";
 import { normalizeIssuanceInput } from "./lib/issuanceCore";
 import { canonicalEntries, sha256 } from "./lib/referenceDataset";
 import type { StripeCharge, StripeConnectionConfig } from "./lib/stripeValues";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest, person } from "../../tests/helpers/platform";
 
 /**
  * Stripe connection (ADR 0006). Every customer, id and secret is synthetic; the issuances run on
@@ -337,66 +334,11 @@ describe("leitura do evento do Stripe", () => {
   });
 });
 
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-type T = ReturnType<typeof setup>;
-
-async function human(
-  t: T,
-  organizationId: Id<"organizations">,
-  role: "owner" | "operator" | "developer",
-) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  await t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return t.withIdentity({
-    subject: user._id,
-    sessionId: session._id,
-    issuer: "http://127.0.0.1:3257",
-  });
-}
+type T = PlatformTest;
 
 /** Organization, integration project with a grant, company with an NFS-e profile, owner. */
 async function fixture(options: { cancelScope?: boolean } = {}) {
-  const t = setup();
+  const t = platformTest();
   const keyHash = await hashApiKey(
     `fnfe_${crypto.randomUUID().replaceAll("-", "").padEnd(43, "b")}`,
   );
@@ -443,7 +385,7 @@ async function fixture(options: { cancelScope?: boolean } = {}) {
       updatedAt: Date.now(),
     });
   });
-  const owner = await human(t, scope.organizationId, "owner");
+  const owner = await person(t, scope.organizationId, "owner");
   const where = {
     organizationId: scope.organizationId,
     projectId: scope.projectId,
@@ -500,7 +442,7 @@ async function drive(t: T, operationId: Id<"operations">, steps = 3) {
 describe("conexão Stripe", () => {
   it("só owner ou admin configura, e só com perfil, atividade e concessão de emissão", async () => {
     const f = await fixture();
-    const developer = await human(f.t, f.scope.organizationId, "developer");
+    const developer = await person(f.t, f.scope.organizationId, "developer");
     expect(
       await code(
         developer.mutation(api.stripe.createConnection, {
@@ -690,7 +632,7 @@ describe("conexão Stripe", () => {
       ),
     ).toBe("ISSUANCE_FIELD_INVALID");
     expect((await events(f))[0]!.state).toBe("pending_data");
-    const operator = await human(f.t, f.scope.organizationId, "operator");
+    const operator = await person(f.t, f.scope.organizationId, "operator");
     // An operator without access to the company cannot release it.
     expect(await code(operator.mutation(api.stripe.retryEvent, { eventId: held!._id }))).toBe(
       "NOT_FOUND",

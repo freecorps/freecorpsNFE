@@ -1,8 +1,5 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
-import schema from "./schema";
 import { internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { commitUsage, recordUsage } from "./lib/usageCore";
 import {
@@ -10,7 +7,7 @@ import {
   compareReceipts,
   summarize,
 } from "../../scripts/lib/usage-migration-status.mjs";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -37,8 +34,7 @@ type Metric = "imports" | "bytes";
 type State = "reserved" | "committed" | "released";
 
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash: await hashApiKey(`fnfe_${"m".repeat(43)}`),
     suffix: crypto.randomUUID(),

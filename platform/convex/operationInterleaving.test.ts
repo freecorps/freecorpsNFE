@@ -1,14 +1,11 @@
-import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import type { Infer } from "convex/values";
-import schema from "./schema";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { LEASE_MS, type outcome } from "./lib/operationValues";
 import { abandonBeforeEffect } from "./lib/operationCore";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 /**
  * The guarantees of OPERATIONS.md under interleaving (#122). Each seed drives one operation
@@ -77,8 +74,7 @@ const task = {
 };
 
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const keyHash = await hashApiKey(`fnfe_${"a".repeat(43)}`);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
     keyHash,

@@ -1,9 +1,6 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest, signedIn } from "../../tests/helpers/platform";
 
 const contextKey = "isolated-test";
 beforeEach(() => {
@@ -24,39 +21,10 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
-type T = ReturnType<typeof setup>;
+type T = PlatformTest;
 async function actor(t: T, verified = true) {
+  const { user, client } = await signedIn(t, { emailVerified: verified, name: "Pessoa de teste" });
   const now = Date.now();
-  const email = `${crypto.randomUUID()}@development.invalid`;
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa de teste",
-        email,
-        emailVerified: verified,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
   await t.mutation(components.betterAuth.adapter.create, {
     input: {
       model: "account",
@@ -70,15 +38,7 @@ async function actor(t: T, verified = true) {
       },
     },
   });
-  return {
-    email,
-    userId: user._id as string,
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: "http://127.0.0.1:3225",
-    }),
-  };
+  return { email: user.email, userId: user._id as string, client };
 }
 type Actor = Awaited<ReturnType<typeof actor>>;
 async function organization(owner: Actor) {
@@ -153,7 +113,7 @@ async function emailCode(t: T, email: string) {
 }
 
 it("corrects the name in the account and in every membership of the holder only", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t),
     other = await actor(t);
   const first = await organization(await actor(t)),
@@ -192,7 +152,7 @@ it("corrects the name in the account and in every membership of the holder only"
 });
 
 it("changes the e-mail only with the code sent to the new address and ends the sessions", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t);
   const org = await organization(await actor(t));
   await join(t, org, person);
@@ -229,7 +189,7 @@ it("changes the e-mail only with the code sent to the new address and ends the s
 });
 
 it("refuses an address of another account and an unverified or unchanged request", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t),
     taken = await actor(t),
     unverified = await actor(t, false);
@@ -276,7 +236,7 @@ it("refuses an address of another account and an unverified or unchanged request
 });
 
 it("bounds the attempts and the lifetime of an e-mail change code", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t);
   const next = `next-${crypto.randomUUID()}@development.invalid`;
   await person.client.action(api.account.requestEmailChange, { email: next });
@@ -305,7 +265,7 @@ it("bounds the attempts and the lifetime of an e-mail change code", async () => 
 });
 
 it("refuses the deletion while a membership is active and lists what is missing", async () => {
-  const t = setup();
+  const t = platformTest();
   const owner = await actor(t);
   const org = await organization(owner);
   expect(await owner.client.query(api.account.deletion, {})).toEqual({
@@ -334,7 +294,7 @@ it("refuses the deletion while a membership is active and lists what is missing"
 });
 
 it("deletes the account, anonymizes its memberships and revokes open invitations everywhere", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t),
     colleague = await actor(t);
   const first = await organization(await actor(t)),
@@ -413,7 +373,7 @@ it("deletes the account, anonymizes its memberships and revokes open invitations
 });
 
 it("lets a login without membership delete its own account", async () => {
-  const t = setup();
+  const t = platformTest();
   const person = await actor(t);
   await person.client.mutation(api.account.remove, { confirmation: person.email });
   expect(await findUser(t, person.userId)).toBeNull();
@@ -423,7 +383,7 @@ it("lets a login without membership delete its own account", async () => {
 });
 
 it("reapplies a deletion over a restored snapshot and stops at a sole owner", async () => {
-  const t = setup();
+  const t = platformTest();
   // The restored snapshot predates both the removal from the organization and the deletion.
   const person = await actor(t);
   const org = await organization(await actor(t));

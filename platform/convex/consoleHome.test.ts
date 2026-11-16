@@ -1,11 +1,8 @@
-import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
-import { api, components } from "./_generated/api";
+import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { register } from "../test-setup";
 import { CAPTURE_TERMS_VERSION } from "./lib/fiscalCaptureRelease";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, signedIn, type PlatformTest } from "../../tests/helpers/platform";
 
 /**
  * Início of the console (`consoleHome.summary`) and the landing after login
@@ -37,40 +34,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-type T = TestConvex<typeof schema>;
+type T = PlatformTest;
 type Role = "owner" | "admin" | "operator" | "viewer" | "developer";
-
-async function login(t: T) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Pessoa sintética",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  return {
-    userId: user._id,
-    client: t.withIdentity({ subject: user._id, sessionId: session._id }),
-  };
-}
 
 const address = {
   street: "Rua sintética",
@@ -141,7 +106,8 @@ async function member(
   role: Role,
   companies: Id<"companies">[] = [],
 ) {
-  const { userId, client } = await login(t);
+  const { user, client } = await signedIn(t);
+  const userId = user._id;
   const membershipId = await t.run(async (ctx) => {
     const id = await ctx.db.insert("memberships", {
       organizationId,
@@ -336,8 +302,7 @@ async function work(
 }
 
 async function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   const a = await organization(t, "alfa");
   const b = await organization(t, "beta");
   const owner = await member(t, a.organizationId, "owner");
@@ -361,7 +326,7 @@ async function setup() {
     viewer: await member(t, a.organizationId, "viewer", [a.first]),
     developer: await member(t, a.organizationId, "developer", [a.first]),
     outsider: await member(t, a.organizationId, "operator"),
-    stranger: await login(t),
+    stranger: await signedIn(t),
   };
 }
 const args = (organizationId: Id<"organizations">) => ({
@@ -577,7 +542,7 @@ describe("destino depois do login", () => {
   });
 });
 
-type Actor = { client: Awaited<ReturnType<typeof login>>["client"] };
+type Actor = { client: Awaited<ReturnType<typeof signedIn>>["client"] };
 const tasksOf = async (actor: Actor, organizationId: Id<"organizations">) =>
   (await actor.client.query(api.consoleHome.summary, args(organizationId))).tasks;
 type TaskView = {
@@ -897,8 +862,7 @@ describe("prontidão por tarefa", () => {
   });
 
   it("não conta empresa além do limite de 10, nem mostra o seu id", async () => {
-    const t = convexTest(schema, modules);
-    register(t);
+    const t = platformTest();
     const { organizationId, ids } = await t.run(async (ctx) => {
       const organizationId = await ctx.db.insert("organizations", {
         name: "Organização cheia",
@@ -983,8 +947,7 @@ describe("prontidão por tarefa", () => {
   });
 
   it("conclui a importação de uma organização só com a empresa de demonstração", async () => {
-    const t = convexTest(schema, modules);
-    register(t);
+    const t = platformTest();
     const empty = (slug: string) =>
       t.run((ctx) =>
         ctx.db.insert("organizations", {
@@ -1038,8 +1001,7 @@ describe("prontidão por tarefa", () => {
 
   /** One organization, one declared company, its owner and a reader of its `document` step. */
   async function singleCompany() {
-    const t = convexTest(schema, modules);
-    register(t);
+    const t = platformTest();
     const { organizationId, companyId } = await t.run(async (ctx) => {
       const organizationId = await ctx.db.insert("organizations", {
         name: "Organização emissora",

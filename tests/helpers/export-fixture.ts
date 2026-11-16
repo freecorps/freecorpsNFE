@@ -1,22 +1,19 @@
 import { createHash } from "node:crypto";
-import { convexTest } from "convex-test";
 import { expect } from "vite-plus/test";
-import schema from "../../platform/convex/schema";
-import { internal, components } from "../../platform/convex/_generated/api";
+import { internal } from "../../platform/convex/_generated/api";
 import type { Id } from "../../platform/convex/_generated/dataModel";
-import { register } from "../../platform/test-setup";
 import { fixture as xmlFixture } from "./nfe-corpus";
 import { processNfe } from "../../packages/fiscal-nfe/src/index";
 import { hashApiKey } from "../../platform/convex/lib/apiKeyCrypto";
 import { modules } from "./convex-modules";
+import { platformTest, person } from "./platform";
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 /** `bytes`: the XML imported, the corpus' authorized note unless given. */
 export async function fixture(
   overrides: typeof modules = {},
   bytes: Uint8Array = xmlFixture("invoice-authorized"),
 ) {
-  const t = convexTest(schema, { ...modules, ...overrides });
-  register(t);
+  const t = platformTest(overrides);
   const secret = `fnfe_${"a".repeat(43)}`,
     keyHash = await hashApiKey(secret);
   const scope = await t.mutation(internal.testing.operationProof.prepare, {
@@ -113,47 +110,11 @@ export async function fixture(
     (await (await request(`/v1/export-parts/${id}/ticket`, "POST")).json()).data.token as string;
   return { t, scope, request, create, finish, download, part, ticket, bytes, documentId };
 }
+/** A signed-in member of the fixture's organization (`person`), with its membership. */
 export async function actor(
   f: Awaited<ReturnType<typeof fixture>>,
   role: "owner" | "viewer" | "developer" = "owner",
 ) {
-  const now = Date.now();
-  const user = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Teste",
-        email: `${crypto.randomUUID()}@development.invalid`,
-        emailVerified: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await f.t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + 3600_000,
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const membershipId = await f.t.run((ctx) =>
-    ctx.db.insert("memberships", {
-      organizationId: f.scope.organizationId,
-      authUserId: user._id,
-      name: user.name,
-      email: user.email,
-      role,
-      state: "active",
-      version: 1,
-      joinedAt: now,
-      updatedAt: now,
-    }),
-  );
-  return { membershipId, client: f.t.withIdentity({ subject: user._id, sessionId: session._id }) };
+  const client = await person(f.t, f.scope.organizationId, role);
+  return { membershipId: client.membershipId, client };
 }

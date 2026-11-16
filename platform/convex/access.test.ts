@@ -1,10 +1,7 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { api, components, internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { validationTarget } from "../../scripts/lib/validation.mjs";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest, type PlatformTest, signedIn } from "../../tests/helpers/platform";
 
 beforeEach(() => {
   for (const [name, value] of Object.entries(validationTarget.environment))
@@ -16,17 +13,12 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup() {
-  const t = convexTest(schema, modules);
-  register(t);
-  return t;
-}
 it("rejects the sixth failed password login through the real HTTP router", async () => {
   // Keep all six attempts in one fixed window, regardless of the CI wall clock.
   vi.useFakeTimers({ toFake: ["Date"] });
   const now = 1_789_075_210_000;
   vi.setSystemTime(now);
-  const t = setup();
+  const t = platformTest();
   const login = () =>
     t.fetch("/api/auth/sign-in/email", {
       method: "POST",
@@ -52,48 +44,17 @@ it("rejects the sixth failed password login through the real HTTP router", async
   });
   expect(session.status).toBe(200);
 });
-async function identity(
-  t: ReturnType<typeof setup>,
-  role?: "operator" | "viewer",
-  expired = false,
-) {
-  const now = Date.now();
-  const user = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "user",
-      data: {
-        name: "Test account",
-        email: `test-${crypto.randomUUID()}@validation.invalid`,
-        emailVerified: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
-  });
-  const session = await t.mutation(components.betterAuth.adapter.create, {
-    input: {
-      model: "session",
-      data: {
-        userId: user._id,
-        expiresAt: now + (expired ? -1000 : 3600_000),
-        token: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-      },
-    },
+async function identity(t: PlatformTest, role?: "operator" | "viewer", expired = false) {
+  const { user, session, client } = await signedIn(t, {
+    emailVerified: false,
+    email: `test-${crypto.randomUUID()}@validation.invalid`,
+    sessionExpiresAt: Date.now() + (expired ? -1000 : 3600_000),
   });
   if (role) await t.mutation(internal.access.grant, { authUserId: user._id, role });
-  return {
-    client: t.withIdentity({
-      subject: user._id,
-      sessionId: session._id,
-      issuer: validationTarget.siteUrl,
-    }),
-    sessionId: session._id,
-  };
+  return { client, sessionId: session._id };
 }
 it("enforces operator, viewer and missing grant on the server", async () => {
-  const t = setup();
+  const t = platformTest();
   const operator = await identity(t, "operator");
   const viewer = await identity(t, "viewer");
   const outsider = await identity(t);
@@ -114,7 +75,7 @@ it("enforces operator, viewer and missing grant on the server", async () => {
   await expect(t.query(api.access.diagnostics, {})).rejects.toThrow("UNAUTHENTICATED");
 });
 it("rejects revoked sessions at once and expired ones outside queries (#43)", async () => {
-  const t = setup();
+  const t = platformTest();
   const expired = await identity(t, "operator", true);
   const active = await identity(t, "operator");
   // A query does not read the clock: the 15-minute JWT, only issued for a live session, bounds
@@ -132,7 +93,7 @@ it("rejects revoked sessions at once and expired ones outside queries (#43)", as
   await expect(active.client.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
 });
 it("refuses a session that belongs to another user than the token's subject", async () => {
-  const t = setup();
+  const t = platformTest();
   const operator = await identity(t, "operator");
   const viewer = await identity(t, "viewer");
   const viewerId = (await t.query(components.betterAuth.adapter.findOne, {
@@ -148,13 +109,13 @@ it("refuses a session that belongs to another user than the token's subject", as
   await expect(mixed.query(api.access.overview, {})).rejects.toThrow("UNAUTHENTICATED");
 });
 it("does not accept a user ID supplied by the caller", async () => {
-  const t = setup();
+  const t = platformTest();
   await expect(
     t.query(api.access.overview, { authUserId: "someone-else" } as never),
   ).rejects.toThrow();
 });
 it("rejects public signup and unrelated origins on the actual HTTP router", async () => {
-  const t = setup();
+  const t = platformTest();
   const signup = await t.fetch("/api/auth/sign-up/email", {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: validationTarget.consoleUrl },

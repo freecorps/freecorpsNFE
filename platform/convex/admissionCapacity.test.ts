@@ -1,14 +1,11 @@
-import { convexTest } from "convex-test";
 import { beforeEach, afterEach, it, expect, vi } from "vite-plus/test";
-import schema from "./schema";
 import { internal } from "./_generated/api";
-import { register } from "../test-setup";
 import { hashApiKey } from "./lib/apiKeyCrypto";
 import { totalFor } from "./lib/usageCore";
 import { reserveCapacity } from "./lib/capacityCore";
 import { uploadTicket } from "./imports";
 import type { Id } from "./_generated/dataModel";
-import { modules } from "../../tests/helpers/convex-modules";
+import { platformTest } from "../../tests/helpers/platform";
 
 /**
  * #559: concurrent admissions of one organization must not all rewrite the organization's stock
@@ -39,8 +36,7 @@ afterEach(() => {
 });
 
 async function fixture() {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   return t;
 }
 async function organization(t: Tester, secret: string) {

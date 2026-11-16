@@ -1,12 +1,9 @@
 import { isDeepStrictEqual } from "node:util";
-import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import schema from "./schema";
 import { action, mutation, query } from "./_generated/server";
 import { requireMembership } from "./lib/organizationAccess";
-import { register } from "../test-setup";
 import { validationTarget } from "../../scripts/lib/validation.mjs";
 import { modules } from "../../tests/helpers/convex-modules";
 import {
@@ -17,6 +14,7 @@ import {
   type Outcome,
   type PublicFunction,
 } from "../../tests/helpers/isolation-sweep";
+import { platformTest } from "../../tests/helpers/platform";
 
 // Varredura da superfície pública do Convex da plataforma: descobre toda
 // query, mutation e action pública de platform/convex, inclusive módulos
@@ -61,8 +59,7 @@ const argumentOverrides: Record<string, Record<string, unknown>> = {
 };
 
 async function callWithoutSession(fn: PublicFunction) {
-  const t = convexTest(schema, modules);
-  register(t);
+  const t = platformTest();
   type Args = Record<string, unknown>;
   const args: Args = { ...(sample(fn.args) as Args), ...argumentOverrides[fn.name] };
   try {
