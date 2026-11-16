@@ -751,8 +751,9 @@ function wrap(text: string, font: PDFFont, size: number, maxWidth: number): stri
 function fit(text: string, font: PDFFont, size: number, width: number): string {
   const capped = text.length > CELL_CHARS ? text.slice(0, CELL_CHARS) : text;
   if (capped === text && font.widthOfTextAtSize(text, size) <= width) return text;
-  const head = wrap(capped, font, size, width - font.widthOfTextAtSize("...", size))[0] ?? "";
-  return `${head}...`;
+  const head = wrap(capped, font, size, width - font.widthOfTextAtSize("...", size))[0];
+  // Célula mais estreita que um caractere e as reticências: nada cabe, nada sai.
+  return head ? `${head}...` : "";
 }
 
 /**
@@ -762,17 +763,22 @@ function fit(text: string, font: PDFFont, size: number, width: number): string {
 const clip = (text: string, limit: number) =>
   text.length > limit - 3 ? `${text.slice(0, limit - 3)}...` : text;
 
-/** Módulos do QR desenhados como retângulos: vetorial, sem PNG embutido. */
+/**
+ * Módulos do QR desenhados como retângulos: vetorial, sem PNG embutido. Fundo branco com zona de
+ * silêncio de dois módulos, que separa o símbolo da divisória do cabeçalho logo acima.
+ */
 function drawQr(page: PDFPage, text: string, x: number, y: number, size: number) {
   const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
   const count = qr.modules.size;
-  const cell = size / count;
+  const quiet = 2;
+  const cell = size / (count + 2 * quiet);
+  page.drawRectangle({ x, y, width: size, height: size, color: rgb(1, 1, 1) });
   for (let row = 0; row < count; row++)
     for (let col = 0; col < count; col++)
       if (qr.modules.get(row, col))
         page.drawRectangle({
-          x: x + col * cell,
-          y: y + size - (row + 1) * cell,
+          x: x + (col + quiet) * cell,
+          y: y + size - (row + quiet + 1) * cell,
           width: cell,
           height: cell,
           color: BLACK,
@@ -874,6 +880,8 @@ export async function renderDanfse(nfseXml: string, options: DanfseOptions = {})
     let col = 0;
     for (const cell of cells) {
       const span = cell.span ?? 1;
+      // Célula que passaria da última coluna não é desenhada: nada sai do corpo.
+      if (col + span > columns) break;
       const x = LEFT + col * COL;
       const width = span * COL;
       if (cell.shaded) shade(x, y, width, height);
@@ -890,20 +898,20 @@ export async function renderDanfse(nfseXml: string, options: DanfseOptions = {})
         );
       if (cell.value) text(cell.value, x + PAD, y + height - 3, 7, { width: width - 2 * PAD });
       col += span;
-      if (col > columns) break;
     }
     y += height;
   };
   /** Primeira linha de um bloco: título sombreado e caixa alta na primeira coluna (item 2.4.1). */
-  const titled = (title: string, cells: Cell[], height = ROW) => {
+  /** Primeira linha de um bloco: título na primeira coluna e até três células depois dele. */
+  const titled = (title: string, cells: [Cell, Cell?, Cell?], height = ROW) => {
     shade(LEFT, y, COL, height);
     text(title.toUpperCase(), LEFT + PAD, y + height / 2 + 2.5, 7, {
       font: bold,
       width: COL - 2 * PAD,
     });
-    const before = y;
-    row([{ label: "", value: "" }, ...cells], { height });
-    y = before + height;
+    row([{ label: "", value: "" }, ...cells.filter((cell): cell is Cell => cell !== undefined)], {
+      height,
+    });
   };
   /** Bloco suprimido: só o texto da norma, centralizado (item 2.3). */
   const note = (value: string) => {
@@ -936,8 +944,8 @@ export async function renderDanfse(nfseXml: string, options: DanfseOptions = {})
     { label: "Finalidade", value: id.finalidade },
   ]);
   // QR Code com o centro no da posição sugerida (X 17,48 cm e Y 1,67 cm da borda do papel, lado
-  // de 1,52 cm), mas com 1,80 cm de lado: a norma fixa só o mínimo, e o espaço até a descrição
-  // complementar (Y 3,36 cm) comporta o maior, que a leitura por câmera agradece.
+  // de 1,52 cm), num quadro de 1,80 cm com a zona de silêncio: o símbolo fica acima do mínimo da
+  // norma, e o espaço até a descrição complementar (Y 3,36 cm) comporta o quadro.
   const qrSize = 1.8 * CM;
   const qrCenter = { x: (17.48 + 0.76) * CM, top: (1.67 + 0.76) * CM };
   drawQr(

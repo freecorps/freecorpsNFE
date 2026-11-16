@@ -294,8 +294,10 @@ suspensa, e o emissor gera o documento.
 - **QR** com a URL do item 2.4.3,
   `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=` seguida da chave,
   desenhado em vetor a partir da matriz de `qrcode` (`QRCode.create`), sem PNG
-  embutido, e a descrição complementar em três linhas embaixo. O lado é de
-  1,80 cm, centrado na posição sugerida (a norma fixa o mínimo de 1,52 cm).
+  embutido, e a descrição complementar em três linhas embaixo. O quadro tem
+  1,80 cm, com fundo branco e zona de silêncio de dois módulos, e o símbolo
+  fica com cerca de 1,64 cm, centrado na posição sugerida (a norma fixa o
+  mínimo de 1,52 cm).
 - **Teste e simulador.** `tpAmb` 2 imprime "NFS-e SEM VALIDADE JURÍDICA" em
   vermelho, abaixo do título (item 2.4.3), mesmo sem a opção: a expressão não
   pode ser desligada. `mark: "restricted"` faz o mesmo; `mark: "simulated"`
@@ -326,7 +328,8 @@ desta entrega:
 - Margem: o corpo fica a 0,30 cm da borda do papel, como nas posições da
   tabela do item 2.4.5 e no Anexo I; o item 2.2.2 fala em margem de 0,15 a
   0,20 cm. A norma se contradiz, e o pacote segue a tabela e o modelo.
-- QR: 1,80 cm de lado, centrado na posição sugerida para o de 1,52 cm (X
+- QR: quadro de 1,80 cm (símbolo de cerca de 1,64 cm mais a zona de
+  silêncio), centrado na posição sugerida para o de 1,52 cm (X
   17,48 cm, Y 1,67 cm). O item 2.4.3 fixa só o mínimo; o maior cabe até a
   descrição complementar e é lido com mais folga.
 - `tpRetPisCofins`: a regra da soma segue a letra da norma, que fala só do
