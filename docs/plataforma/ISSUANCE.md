@@ -968,11 +968,12 @@ pedido em vez de consultar.
 - **DANFSe.** Gerado na mesma tentativa que recebe a NFS-e autorizada (envio
   ou recuperação por consulta), a partir do XML que será preservado, por
   `renderDanfse` de `@freecorps/fiscal-nfse/danfse`
-  ([README](../../packages/fiscal-nfse/README.md#danfse)), e gravado com
-  `recordAuthorization`, junto do XML. Transporte `simulated` sai com a marca
-  "SEM VALOR FISCAL — SANDBOX/SIMULADO"; `producao-restrita`, com "SEM VALOR
-  FISCAL — PRODUÇÃO RESTRITA" (que o pacote também impõe a todo `tpAmb` 2);
-  só `producao` sai sem marca. O PDF é melhor esforço: se a geração falhar, a
+  ([README](../../packages/fiscal-nfse/README.md#danfse)), no modelo da NT
+  SE/CGNFS-e nº 008 v1.02 (14/07/2026), e gravado com
+  `recordAuthorization`, junto do XML. `producao-restrita` sai com "NFS-e SEM
+  VALIDADE JURÍDICA" no cabeçalho (que o pacote também impõe a todo `tpAmb`
+  2); `simulated`, com a mesma expressão e a marca d'água "SIMULADA"; só
+  `producao` sai sem elas. O PDF é melhor esforço: se a geração falhar, a
   autorização segue, o evento `danfse_failed` registra o código e não há nova
   tentativa automática. Uma chamada repetida mantém o primeiro PDF. O PDF não
   é regenerado quando o cancelamento é registrado; o estado vigente é o da
@@ -1143,8 +1144,8 @@ um `production` forjado esbarra no acesso (`NOT_FOUND`), antes do gate.
   dois botões seguem sem passo a mais e com os rótulos de sempre.
 
 - **Transporte e DANFSe.** O transporte aparece como "Produção" e o DANFSe
-  sai sem a marca "SEM VALOR FISCAL" (`DanfseMark` nulo só em `producao`, no
-  worker).
+  sai sem "NFS-e SEM VALIDADE JURÍDICA" (`DanfseMark` nulo só em `producao`,
+  no worker).
 - **Página da emissão.** Com `?issuance=`, o detalhe ocupa a tela: "Voltar à
   lista de emissões" (a lista fica montada sob o detalhe aberto a partir dela,
   com filtros, páginas carregadas e rolagem), h1 da DPS ou NFS-e,
@@ -1578,9 +1579,16 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   `^` e `$`, que o XSD trata como caracteres; o catálogo de runtime tira as
   duas âncoras (registro no manifesto). Que o validador do fisco leia o padrão
   da mesma forma é inferência: a DPS real com série 20001 foi autorizada.
-- O leiaute do DANFSe frente à norma do DANFSe nacional não foi conferido. O
-  PDF da nota real foi gerado e tem o `sha256` na evidência; o rótulo e o nome
-  do arquivo do download pelo console têm só teste de componente.
+- O DANFSe no modelo da NT SE/CGNFS-e nº 008 v1.02 (14/07/2026): cada campo
+  obrigatório foi conferido contra a tabela da norma; o rótulo é provado pelo
+  texto do PDF e o valor pela leitura do XML, ambos de XML sintético
+  (`packages/fiscal-nfse/danfse.test.ts`), com as divergências registradas no
+  [README](../../packages/fiscal-nfse/README.md#danfse) (fontes, logomarca,
+  margem, tamanho do QR, nome de município fora do XML, canhoto e marca de
+  cancelada). Nenhuma NFS-e real passou pelo modelo novo: os PDFs das notas
+  reais já geradas são do leiaute anterior, e o grupo `IBSCBS` da NFS-e
+  devolvido pela Sefin não foi conferido no DANFSe. O rótulo e o nome do
+  arquivo do download pelo console têm só teste de componente.
 - REST, SDK e webhooks de emissão, inclusive o download do DANFSe pela REST e
   pelo SDK, foram provados com `convex-test`, transporte simulado e destinos
   sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`).

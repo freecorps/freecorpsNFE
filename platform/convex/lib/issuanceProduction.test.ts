@@ -310,7 +310,10 @@ describe("emissão em production", () => {
     });
     const [page] = await inspectPdf(new Uint8Array(buffer));
     expect(page!.text).toContain("Tomador Sintético Ltda");
-    expect(page!.text).not.toMatch(/SEM VALOR FISCAL|sem validade fiscal/i);
+    expect(page!.text).toContain("Tipo de Ambiente: Produção");
+    expect(page!.text).not.toMatch(
+      /SEM VALIDADE JURÍDICA|SIMULADA|SEM VALOR FISCAL|sem validade fiscal/i,
+    );
   });
 
   it("timeout no envio vai à reconciliação, que acha a nota sem reenviar", async () => {
