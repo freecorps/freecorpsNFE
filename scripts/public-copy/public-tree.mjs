@@ -62,14 +62,9 @@ export const DEFAULT_RESTRICTED_EDITS = "docs/v1.0/evidence/267/edicoes-restrita
  */
 export const rules = [
   // Decisão de 28/10: os recibos não vão para o público. Estes testes só
-  // conferem recibos (orçamento de docs/v1.0/evidence/, o script de
-  // observação da #64 e a rodada hospedada de 05/10); sem eles, não há o que
-  // provar.
-  ...[
-    "scripts/evidence-storage.test.ts",
-    "scripts/observe-worktree.test.ts",
-    "scripts/summarize-hosted-round.test.ts",
-  ].map((path) => ({
+  // conferem recibos (orçamento de docs/v1.0/evidence/ e o script de
+  // observação da #64); sem eles, não há o que provar.
+  ...["scripts/evidence-storage.test.ts", "scripts/observe-worktree.test.ts"].map((path) => ({
     path,
     class: "sai",
     reason: "Teste que só confere recibos, que ficam no repositório privado",

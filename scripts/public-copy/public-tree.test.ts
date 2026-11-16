@@ -82,11 +82,7 @@ describe("classificação da auditoria de 25/10", () => {
   });
 
   it("deixa de fora os testes que só conferem recibos", () => {
-    for (const path of [
-      "scripts/evidence-storage.test.ts",
-      "scripts/observe-worktree.test.ts",
-      "scripts/summarize-hosted-round.test.ts",
-    ])
+    for (const path of ["scripts/evidence-storage.test.ts", "scripts/observe-worktree.test.ts"])
       expect(classify(path)?.class).toBe("sai");
     expect(classify("scripts/deploy/platform-release.test.ts")?.class).toBe("entra");
   });
