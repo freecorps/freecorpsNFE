@@ -12,10 +12,10 @@ mantenedor de 20/10/2026, cada patch é o aviso de modificação exigido pela
 cláusula 4(b): ele lista os arquivos alterados, e esta tabela registra autoria
 e data.
 
-| Pacote                           | Arquivos alterados pelo patch                                                  | Desde      |
-| -------------------------------- | ------------------------------------------------------------------------------ | ---------- |
-| `@convex-dev/better-auth@0.12.5` | `dist/react/index.d.ts`, `src/component/schema.ts`, `dist/component/schema.js` | 09/09/2026 |
-| `convex-test@0.0.60`             | `dist/index.js`                                                                | 03/11/2026 |
+| Pacote                           | Arquivos alterados pelo patch                                                                         | Desde      |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- |
+| `@convex-dev/better-auth@0.12.5` | `dist/react/index.d.ts`, `dist/react/index.js`, `src/component/schema.ts`, `dist/component/schema.js` | 16/11/2026 |
+| `convex-test@0.0.60`             | `dist/index.js`                                                                                       | 03/11/2026 |
 
 Alterar um patch atualiza a data nesta tabela.
 
@@ -23,8 +23,21 @@ Alterar um patch atualiza a data nesta tabela.
 
 `@convex-dev/better-auth@0.12.5` declara as opções do cliente React com um tipo
 de plugin. A inferência de sessão resulta em `never` com Better Auth recente.
-O patch corrige `dist/react/index.d.ts`, preservando o JavaScript
-publicado do cliente e os tipos específicos dos plugins.
+O patch corrige `dist/react/index.d.ts`, preservando os tipos específicos
+dos plugins.
+
+## Token do provider React por sessão
+
+Em `dist/react/index.js` da 0.12.5, o hook que o `ConvexBetterAuthProvider`
+entrega ao Convex é memoizado uma vez e guarda o `initialToken` do primeiro
+render. Uma aba aberta com esse token continuava autenticada no Convex depois
+que a sessão acabava, por exemplo quando outra aba saía: o evento `storage`
+pedia a sessão de novo, o Better Auth respondia `null`, e o provider seguia
+devolvendo o token antigo (#250). O patch troca `useUseAuthFromBetterAuth`
+pelo da 0.13.0, que guarda o token em ref, associado ao `sessionId` do JWT, e
+deixa de considerar a aba autenticada quando a sessão some. O resto do arquivo
+é igual nas duas versões. `apps/console/src/auth.test.tsx` abre o provider
+com o token antecipado, simula a saída em outra aba e falha sem o patch.
 
 O mesmo patch acrescenta o índice `lastRequest` à tabela `rateLimit` do
 componente, em `src/component/schema.ts` e `dist/component/schema.js`, usado
@@ -36,11 +49,11 @@ Mantemos Better Auth `1.6.33` fixado, sem retornar a versões anteriores para
 contornar o erro. Bun aplica o patch pelo `patchedDependencies` e pelo lockfile.
 O build do console no CI verifica a compatibilidade sem casts no aplicativo.
 
-A 0.13.0 do componente, publicada em 04/11/2026, já traz as duas correções:
-o tipo `AuthClient` passa a ser estrutural, e o índice `lastRequest` está em
-`src` e `dist`. Ela exige `better-auth >=1.7.16 <1.8`, e a plataforma fixa a
-1.6.33. Por decisão da #142, o patch fica até a migração para Better Auth 1.7;
-essa migração sobe o componente para a 0.13.0 e retira o patch na mesma PR,
+A 0.13.0 do componente, publicada em 04/11/2026, já traz as três correções:
+o tipo `AuthClient` passa a ser estrutural, o token do provider fica por
+sessão, e o índice `lastRequest` está em `src` e `dist`. Ela exige
+`better-auth >=1.7.16 <1.8`, e a plataforma fixa a 1.6.33. Por decisão da #142,
+o patch fica até a migração para Better Auth 1.7; essa migração sobe o componente para a 0.13.0 e retira o patch na mesma PR,
 depois do build do console, dos testes de autenticação e da consulta de
 limpeza de OBSERVABILITY.md.
 
@@ -81,10 +94,10 @@ data, o rate-limiter deixou de ser patch: o código, com as mudanças, foi para
 [packages/convex-rate-limiter](../packages/convex-rate-limiter/README.md),
 que também guarda as regras de mudança e rollback dos contadores.
 
-| Pacote                    | Por que permanece                                                                | Próxima revisão                                            | Prova antes de retirar ou portar                                                              |
-| ------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `@convex-dev/better-auth` | Tipos do cliente React sem `never` e índice `rateLimit.lastRequest` da limpeza   | Migração para Better Auth 1.7 com o componente 0.13.0      | `bun run build`, testes de autenticação e a consulta de limpeza de OBSERVABILITY.md sem aviso |
-| `convex-test`             | O arquivo guardado por uma action entra na transação de outra função concorrente | Versão publicada com convex/convex-test#189 ou equivalente | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`              |
+| Pacote                    | Por que permanece                                                                                            | Próxima revisão                                            | Prova antes de retirar ou portar                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@convex-dev/better-auth` | Tipos do cliente React sem `never`, token do provider por sessão e índice `rateLimit.lastRequest` da limpeza | Migração para Better Auth 1.7 com o componente 0.13.0      | `bun run build`, testes de autenticação (incluindo `apps/console/src/auth.test.tsx`) e a consulta de limpeza de OBSERVABILITY.md sem aviso |
+| `convex-test`             | O arquivo guardado por uma action entra na transação de outra função concorrente                             | Versão publicada com convex/convex-test#189 ou equivalente | `platform/convex/convexTestStorage.test.ts` sem o patch e `vp run test:platform`                                                           |
 
 Ao retirar o patch do Better Auth, confira que o índice `lastRequest` continua
 no schema publicado: a rotina de limpeza o consulta, e ele nunca pode sumir

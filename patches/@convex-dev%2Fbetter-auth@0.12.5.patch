@@ -65,14 +65,145 @@ index 652857c519c97b92f4819cbb8f25bea33be20982..d5ffd81da8f6cd7c04d49884d2f1bf7a
      renderFallback?: () => React.ReactNode;
      getAuthUserFn: FunctionReference<"query", "public", EmptyObject>;
      isAuthError: (error: unknown) => boolean;
+diff --git a/dist/react/index.js b/dist/react/index.js
+index a90d81c765fa0c1dd929a58425e73d1f35094fe8..6f895a75ef6d213036332a2f3017ea34decbde3c 100644
+--- a/dist/react/index.js
++++ b/dist/react/index.js
+@@ -40,9 +40,19 @@ export function ConvexBetterAuthProvider({ children, client, authClient, initial
+     return (_jsx(ConvexProviderWithAuth, { client: client, useAuth: useBetterAuth, children: _jsx(_Fragment, { children: children }) }));
+ }
+ let initialTokenUsed = false;
++// Convex JWTs minted by the convex plugin carry the Better Auth session id.
++const getTokenSessionId = (token) => {
++    try {
++        const payload = token.split(".")[1];
++        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
++        const { sessionId } = JSON.parse(json);
++        return typeof sessionId === "string" ? sessionId : undefined;
++    }
++    catch {
++        return undefined;
++    }
++};
+ function useUseAuthFromBetterAuth(authClient, initialToken) {
+-    const [cachedToken, setCachedToken] = useState(initialTokenUsed ? null : (initialToken ?? null));
+-    const pendingTokenRef = useRef(null);
+     useEffect(() => {
+         if (!initialTokenUsed) {
+             initialTokenUsed = true;
+@@ -50,47 +60,72 @@ function useUseAuthFromBetterAuth(authClient, initialToken) {
+     }, []);
+     return useMemo(() => function useAuthFromBetterAuth() {
+         const { data: session, isPending: isSessionPending } = authClient.useSession();
+-        const sessionId = session?.session?.id;
++        // The SSR token stands in for the session until it first loads.
++        const [ssrToken, setSsrToken] = useState(() => {
++            const token = initialTokenUsed ? null : initialToken;
++            return token ? { sessionId: getTokenSessionId(token), token } : null;
++        });
+         useEffect(() => {
+-            if (!session && !isSessionPending && cachedToken) {
+-                setCachedToken(null);
++            if (!isSessionPending && ssrToken) {
++                setSsrToken(null);
+             }
+-        }, [session, isSessionPending]);
++        }, [isSessionPending, ssrToken]);
++        // Tokens are cached per session, so a token is never reused for a
++        // different session. Refs, not state in the enclosing hook: that
++        // state was captured once by this memoized hook and never updated.
++        const cachedTokenRef = useRef(ssrToken);
++        const pendingTokenRef = useRef(null);
++        const isSsrTokenActive = isSessionPending && ssrToken !== null;
++        const isAuthenticated = Boolean(session?.session) || isSsrTokenActive;
++        const sessionId = isSsrTokenActive
++            ? ssrToken.sessionId
++            : session?.session?.id;
+         const fetchAccessToken = useCallback(async ({ forceRefreshToken = false, } = {}) => {
+-            if (cachedToken && !forceRefreshToken) {
+-                return cachedToken;
+-            }
+-            if (!forceRefreshToken && pendingTokenRef.current) {
+-                return pendingTokenRef.current;
++            if (!forceRefreshToken) {
++                // Prefer an in-flight request, which may be refreshing a
++                // rejected token, over the cached token.
++                const pending = pendingTokenRef.current;
++                if (pending && pending.sessionId === sessionId) {
++                    return pending.promise;
++                }
++                const cached = cachedTokenRef.current;
++                if (cached && cached.sessionId === sessionId) {
++                    return cached.token;
++                }
+             }
+-            pendingTokenRef.current = authClient.convex
++            const promise = authClient.convex
+                 .token({ fetchOptions: { throw: false } })
+-                .then(({ data }) => {
+-                const token = data?.token || null;
+-                setCachedToken(token);
++                .then(({ data }) => data?.token || null)
++                .catch(() => null)
++                .then((token) => {
++                if (pendingTokenRef.current?.promise === promise) {
++                    pendingTokenRef.current = null;
++                }
++                if (token) {
++                    cachedTokenRef.current = { sessionId, token };
++                }
++                else if (cachedTokenRef.current &&
++                    cachedTokenRef.current.sessionId === sessionId) {
++                    cachedTokenRef.current = null;
++                }
+                 return token;
+-            })
+-                .catch(() => {
+-                setCachedToken(null);
+-                return null;
+-            })
+-                .finally(() => {
+-                pendingTokenRef.current = null;
+             });
+-            return pendingTokenRef.current;
++            pendingTokenRef.current = { sessionId, promise };
++            return promise;
+         }, 
+-        // Build a new fetchAccessToken to trigger setAuth() whenever the
+-        // session changes.
+-        // eslint-disable-next-line react-hooks/exhaustive-deps
++        // Build a new fetchAccessToken, which makes Convex call setAuth(),
++        // only when the authenticated session changes. Hydrating the
++        // session behind an SSR token keeps the same one.
+         [sessionId]);
+         return useMemo(() => ({
+-            isLoading: isSessionPending && !cachedToken,
+-            isAuthenticated: Boolean(session?.session) || cachedToken !== null,
++            isLoading: isSessionPending && !isAuthenticated,
++            isAuthenticated,
+             fetchAccessToken,
+-        }), 
+-        // eslint-disable-next-line react-hooks/exhaustive-deps
+-        [isSessionPending, sessionId, fetchAccessToken, cachedToken]);
+-    }, [authClient]);
++        }), [isSessionPending, isAuthenticated, fetchAccessToken]);
++    }, 
++    // initialToken is only read when the hook first mounts.
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++    [authClient]);
+ }
+ class ErrorBoundary extends Component {
+     constructor(props) {
 diff --git a/src/component/schema.ts b/src/component/schema.ts
 index 8b5ecc1c7e8dd615461290459f147e9c07813a3f..593b1373d94945ff87b60c2fc7425e1edc3bd2b2 100644
 --- a/src/component/schema.ts
 +++ b/src/component/schema.ts
-@@ -131,5 +131,5 @@ export const tables = {
+@@ -131,7 +131,7 @@ export const tables = {
      count: v.number(),
      lastRequest: v.number(),
    })
 -    .index("key", ["key"]),
 +    .index("key", ["key"]).index("lastRequest", ["lastRequest"]),
  };
+ 
+ const schema = defineSchema(tables);

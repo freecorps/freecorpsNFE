@@ -299,8 +299,9 @@ não faz parte das origens confiáveis. Para desenvolvimento local da nova
 plataforma, usar o perfil `platform` dos [scripts de worktree](../worktrees.md).
 
 Better Auth `1.6.33` e `@convex-dev/better-auth` `0.12.5` estão fixados no lockfile.
-Um [patch de declarações TypeScript](../../patches/README.md) corrige a inferência
-do provider React. Nenhum JavaScript do fornecedor é alterado.
+Um [patch](../../patches/README.md) corrige a inferência de tipos do provider
+React, traz da 0.13.0 o cache de token por sessão desse provider e acrescenta
+um índice ao schema do componente.
 
 `baseURL` usa `https://modest-seal-118.convex.site`. `trustedOrigins`, CORS e
 callbacks relativos aceitam apenas o painel indicado acima. Login usa e-mail e
