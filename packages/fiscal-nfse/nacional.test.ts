@@ -7,7 +7,9 @@ import {
   extractRejections,
   gunzipB64,
   gzipB64,
+  isNfseTargetId,
   nacional,
+  NFSE_TARGET_IDS,
   nfseUrl,
   resolveEndpoint,
   submitUrl,
@@ -131,6 +133,17 @@ describe("alvos", () => {
     expect(() =>
       resolveEndpoint({ id: "sefin-nacional", environment: "homologacao" as "producao" }),
     ).toThrow(/Ambiente/);
+  });
+
+  it("reconhece só os alvos com endpoint, e cada um resolve nos dois ambientes", () => {
+    expect(NFSE_TARGET_IDS).toEqual(["sefin-nacional", "campinas-adn"]);
+    for (const id of NFSE_TARGET_IDS) {
+      expect(isNfseTargetId(id)).toBe(true);
+      for (const environment of ["producao", "producao-restrita"] as const)
+        expect(resolveEndpoint({ id, environment })).toMatchObject({ id, environment });
+    }
+    for (const value of ["abrasf", "", "toString", "__proto__", "SEFIN-NACIONAL"])
+      expect(isNfseTargetId(value)).toBe(false);
   });
 });
 

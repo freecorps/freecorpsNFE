@@ -61,41 +61,60 @@ export const CAMPINAS_HOSTS = {
 // existe: a IMA respondeu 404 e a reconciliação reenviou a DPS (#197).
 const CAMPINAS_BASE_PATH = "/notafiscal-ws/nfse";
 
+type EndpointSpec = Pick<
+  NfseEndpoint,
+  "basePath" | "submitPath" | "dpsPath" | "nfsePath" | "signature"
+> & { hosts: Readonly<Record<NfseEnvironment, string>> };
+
+/**
+ * Fonte dos alvos: um `NfseTargetId` sem entrada aqui não compila, e
+ * `isNfseTargetId` e `NFSE_TARGET_IDS` derivam destas chaves.
+ */
+const ENDPOINTS: Readonly<Record<NfseTargetId, EndpointSpec>> = {
+  "sefin-nacional": {
+    hosts: { producao: SEFIN_HOSTS.producao, "producao-restrita": SEFIN_HOSTS.producaoRestrita },
+    basePath: "/SefinNacional",
+    submitPath: "/nfse",
+    dpsPath: "/dps",
+    nfsePath: "/nfse",
+    signature: "rsa-sha256",
+  },
+  "campinas-adn": {
+    hosts: { producao: CAMPINAS_HOSTS.producao, "producao-restrita": CAMPINAS_HOSTS.homologacao },
+    basePath: CAMPINAS_BASE_PATH,
+    submitPath: "",
+    dpsPath: "/dps",
+    nfsePath: "",
+    // O validador da IMA rejeitou SHA-256 com E0714 no homolog antigo
+    // (29/08/2026). Na homologação nova (preprod-nfseapi), em 09/10/2026, a
+    // DPS assinada em RSA-SHA1 foi autorizada e o pedido de cancelamento
+    // registrado (docs/v1.0/evidence/197/README.md). A produção da IMA não
+    // foi exercitada pela plataforma.
+    signature: "rsa-sha1",
+  },
+};
+
+/** Estreita um id persistido ou recebido como texto; só chaves próprias de `ENDPOINTS` contam. */
+export const isNfseTargetId = (value: string): value is NfseTargetId =>
+  Object.hasOwn(ENDPOINTS, value);
+
+// O literal de `ENDPOINTS` não admite chave fora de `NfseTargetId` e o
+// `Record` exige todas, então as chaves são exatamente os alvos.
+export const NFSE_TARGET_IDS = Object.freeze(Object.keys(ENDPOINTS)) as readonly NfseTargetId[];
+
 export function resolveEndpoint(target: NfseTarget): NfseEndpoint {
   const { id, environment } = target;
   if (environment !== "producao" && environment !== "producao-restrita")
     return fail("TARGET_INVALID", "Ambiente deve ser producao ou producao-restrita.");
-  const tpAmb = environment === "producao" ? 1 : 2;
-  if (id === "sefin-nacional")
-    return {
-      id,
-      environment,
-      host: environment === "producao" ? SEFIN_HOSTS.producao : SEFIN_HOSTS.producaoRestrita,
-      basePath: "/SefinNacional",
-      submitPath: "/nfse",
-      dpsPath: "/dps",
-      nfsePath: "/nfse",
-      signature: "rsa-sha256",
-      tpAmb,
-    };
-  if (id === "campinas-adn")
-    return {
-      id,
-      environment,
-      host: environment === "producao" ? CAMPINAS_HOSTS.producao : CAMPINAS_HOSTS.homologacao,
-      basePath: CAMPINAS_BASE_PATH,
-      submitPath: "",
-      dpsPath: "/dps",
-      nfsePath: "",
-      // O validador da IMA rejeitou SHA-256 com E0714 no homolog antigo
-      // (29/08/2026). Na homologação nova (preprod-nfseapi), em 09/10/2026, a
-      // DPS assinada em RSA-SHA1 foi autorizada e o pedido de cancelamento
-      // registrado (docs/v1.0/evidence/197/README.md). A produção da IMA não
-      // foi exercitada pela plataforma.
-      signature: "rsa-sha1",
-      tpAmb,
-    };
-  return fail("TARGET_INVALID", "Alvo NFS-e desconhecido.");
+  if (!isNfseTargetId(id)) return fail("TARGET_INVALID", "Alvo NFS-e desconhecido.");
+  const { hosts, ...paths } = ENDPOINTS[id];
+  return {
+    id,
+    environment,
+    host: hosts[environment],
+    ...paths,
+    tpAmb: environment === "producao" ? 1 : 2,
+  };
 }
 
 export const endpointUrl = (endpoint: NfseEndpoint, path: string) =>

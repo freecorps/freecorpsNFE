@@ -8,6 +8,7 @@ import {
   dpsUrl,
   gunzipB64,
   gzipB64,
+  isNfseTargetId,
   nacional,
   nfseUrl,
   previousDay,
@@ -21,7 +22,6 @@ import {
   type NfseEndpoint,
   type NfseQueryContext,
   type NfseTarget,
-  type NfseTargetId,
   type NfseTransport,
   type SignerKeys,
 } from "@freecorps/fiscal-nfse";
@@ -120,10 +120,9 @@ async function withIo<T>(
   targetId: string,
   use: (io: Io) => Promise<T>,
 ): Promise<T> {
-  if (targetId !== "sefin-nacional" && targetId !== "campinas-adn")
-    throw new Error("ISSUANCE_TARGET_INVALID");
+  if (!isNfseTargetId(targetId)) throw new Error("ISSUANCE_TARGET_INVALID");
   const target: NfseTarget = {
-    id: targetId as NfseTargetId,
+    id: targetId,
     environment: mode === "producao" ? "producao" : "producao-restrita",
   };
   if (mode === "simulated")
@@ -181,8 +180,8 @@ async function withIo<T>(
  */
 function originPinned(mode: string, targetId: string) {
   if (mode !== "producao") return true;
-  if (targetId !== "sefin-nacional" && targetId !== "campinas-adn") return false;
-  const host = resolveEndpoint({ id: targetId as NfseTargetId, environment: "producao" }).host;
+  if (!isNfseTargetId(targetId)) return false;
+  const host = resolveEndpoint({ id: targetId, environment: "producao" }).host;
   return PRODUCTION_ORIGINS.includes(`https://${host}`);
 }
 

@@ -80,9 +80,11 @@ export {
 } from "./route.js";
 export {
   CAMPINAS_HOSTS,
+  NFSE_TARGET_IDS,
   SEFIN_HOSTS,
   dpsUrl,
   eventsUrl,
+  isNfseTargetId,
   nfseUrl,
   resolveEndpoint,
   submitUrl,
