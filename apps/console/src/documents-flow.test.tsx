@@ -557,6 +557,29 @@ it("titles a document without a number by its issuer and date, like its list lin
   ).toBeTruthy();
 });
 
+it("offers the rebuild from evidence only on an NF-e, and names each model", () => {
+  state.search = { ...state.search, document: "document" };
+  state.queries["documents:canProcess"] = true;
+  state.queries["documents:detail"] = detailFixture;
+  const view = render(<Documents org={org} contextKey="test" />);
+  expect(screen.getByRole("heading", { level: 1, name: "NF-e 7" })).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "Reconstruir a situação pelos originais" }),
+  ).toBeTruthy();
+  expect(screen.getByText(/não realiza uma nova consulta à SEFAZ/)).toBeTruthy();
+  state.queries["documents:detail"] = {
+    ...detailFixture,
+    model: "nfse",
+    summary: { ...captured, model: "nfse" },
+  };
+  view.rerender(<Documents org={org} contextKey="test" />);
+  expect(screen.getByRole("heading", { level: 1, name: "NFS-e 7" })).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: "Reconstruir a situação pelos originais" }),
+  ).toBeNull();
+  expect(screen.getByText(/A situação fiscal desta NFS-e não foi consultada/)).toBeTruthy();
+});
+
 it("exports a production document in its own environment", async () => {
   state.environment = "production";
   state.queries["captureRelease:status"] = { state: "released" };

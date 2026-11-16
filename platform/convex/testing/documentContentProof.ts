@@ -1,8 +1,10 @@
 import { v } from "convex/values";
 import { decimal } from "@freecorps/fiscal-core";
+import type { DocumentModel } from "@freecorps/contracts";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { requireLocalProof, requireReadProof } from "./operationProof";
 import { decodeDocumentContent, sha256 } from "../lib/documentContent";
+import { documentModel } from "../lib/documentValues";
 import { internal } from "../_generated/api";
 
 // Synthetic post-parser fixtures. Only publication and the real scheduler are under test.
@@ -12,7 +14,7 @@ export const seed = internalMutation({
     projectId: v.id("projects"),
     companyId: v.id("companies"),
     storageId: v.id("_storage"),
-    model: v.union(v.literal("55"), v.literal("nfse")),
+    model: documentModel,
   },
   returns: v.object({ operationId: v.id("operations"), versionId: v.id("documentVersions") }),
   handler: async (ctx, args) => {
@@ -40,31 +42,32 @@ export const seed = internalMutation({
       recipient: null,
       total: "1.00",
     };
-    const document =
-      args.model === "55"
-        ? {
-            ...common,
-            total: decimal("1.00"),
-            kind: "invoice",
-            key: "35260911222333000181550010000000691123456787",
-            environment: "2",
-            series: "1",
-            operation: "Venda sintética",
-            protocol: null,
-            totals: [],
-          }
-        : {
-            ...common,
-            kind: "service-invoice",
-            key: "nfse:3509502:00000000000191::1",
-            municipality: "3509502",
-            municipalRegistration: null,
-            verificationCode: "SYNTHETIC",
-            competence: "2026-10-01",
-            serviceCode: "1.07",
-            description: "Serviço sintético",
-            values: [],
-          };
+    const documents = {
+      "55": {
+        ...common,
+        total: decimal("1.00"),
+        kind: "invoice",
+        key: "35260911222333000181550010000000691123456787",
+        environment: "2",
+        series: "1",
+        operation: "Venda sintética",
+        protocol: null,
+        totals: [],
+      },
+      nfse: {
+        ...common,
+        kind: "service-invoice",
+        key: "nfse:3509502:00000000000191::1",
+        municipality: "3509502",
+        municipalRegistration: null,
+        verificationCode: "SYNTHETIC",
+        competence: "2026-10-01",
+        serviceCode: "1.07",
+        description: "Serviço sintético",
+        values: [],
+      },
+    } as const satisfies Record<DocumentModel, unknown>;
+    const document = documents[args.model];
     const scope = {
       organizationId: args.organizationId,
       projectId: args.projectId,
@@ -122,7 +125,7 @@ export const seed = internalMutation({
       documentId,
       state: "complete",
       code: "SYNTHETIC",
-      kind: args.model === "55" ? "invoice" : "service-invoice",
+      kind: document.kind,
       completeness: 1,
       schema: null,
       parserVersion: "synthetic/1",

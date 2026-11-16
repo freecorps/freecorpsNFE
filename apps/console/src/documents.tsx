@@ -8,6 +8,7 @@ import type { FunctionReturnType } from "convex/server";
 import {
   fiscalStatuses,
   nfePaymentMeansLabelsSource,
+  type DocumentModel,
   type FiscalStatus,
 } from "@freecorps/contracts";
 import { api } from "../../../platform/convex/_generated/api";
@@ -728,6 +729,28 @@ function DocumentList({
 }
 const tabIds = ["dados", "itens", "eventos", "arquivos", "json"] as const;
 type TabId = (typeof tabIds)[number];
+/**
+ * What the detail offers for each model: the DANFE and the rebuild from evidence exist only for
+ * NF-e 55, as on the server. A model added to `documentModels` fails to compile here until it
+ * answers.
+ */
+const modelDetail: Record<
+  DocumentModel,
+  { danfe: boolean; rebuild: boolean; situationHelp: string }
+> = {
+  "55": {
+    danfe: true,
+    rebuild: true,
+    situationHelp:
+      "Essa situação vem das evidências preservadas. Reprocessar o XML não realiza uma nova consulta à SEFAZ.",
+  },
+  nfse: {
+    danfe: false,
+    rebuild: false,
+    situationHelp:
+      "A situação fiscal desta NFS-e não foi consultada. Reprocessar relê o lote original completo.",
+  },
+};
 function DocumentDetail({
   org,
   scope,
@@ -800,7 +823,7 @@ function DocumentDetail({
           </div>
         </dl>
         <div className="fiscal-record-actions">
-          {detail.model === "55" &&
+          {modelDetail[detail.model].danfe &&
           detail.payload.kind === "invoice" &&
           detail.version.originalAvailable &&
           !search.version ? (
@@ -815,7 +838,7 @@ function DocumentDetail({
           {canProcess ? (
             <span className="fiscal-record-actions__divider" aria-hidden="true" />
           ) : null}
-          {canProcess && detail.model !== "nfse" ? (
+          {canProcess && modelDetail[detail.model].rebuild ? (
             <div className="fiscal-action">
               <Button
                 disabled={rebuildPending}
@@ -845,11 +868,7 @@ function DocumentDetail({
             <p>{rebuildError}</p>
           </Callout>
         ) : null}
-        <p className="ui-help">
-          {detail.model === "nfse"
-            ? "A situação fiscal desta NFS-e não foi consultada. Reprocessar relê o lote original completo."
-            : "Essa situação vem das evidências preservadas. Reprocessar o XML não realiza uma nova consulta à SEFAZ."}
-        </p>
+        <p className="ui-help">{modelDetail[detail.model].situationHelp}</p>
         {detail.summary.projectionState !== "ready" ? (
           <Callout tone="info" role="status">
             <p>

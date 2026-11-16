@@ -5,7 +5,12 @@ import { observedAction } from "./lib/externalHttp";
 import { recordAudit } from "./lib/operationalAudit";
 import { internal } from "./_generated/api";
 import { companyScopeFields } from "./lib/operationValues";
-import { documentAccess, loadScopedDocument, type DocumentScope } from "./lib/documentCore";
+import {
+  documentAccess,
+  loadScopedDocument,
+  modelHasDanfe,
+  type DocumentScope,
+} from "./lib/documentCore";
 import { findCompany } from "./lib/companyAccess";
 import { projectAccess } from "./lib/operationAccess";
 import { readTask } from "./lib/documentCore";
@@ -113,7 +118,7 @@ export const danfeTicket = mutation({
   handler: async (ctx, args) => {
     const access = (await documentAccess(ctx, args))!;
     const { doc, version } = await loadScopedDocument(ctx, args, args.documentId);
-    if (doc.model !== "55" || version.kind !== "invoice") return deny("DANFE_UNAVAILABLE");
+    if (!modelHasDanfe[doc.model] || version.kind !== "invoice") return deny("DANFE_UNAVAILABLE");
     return issueTicket(ctx, args, access, version.artifactId, true);
   },
 });

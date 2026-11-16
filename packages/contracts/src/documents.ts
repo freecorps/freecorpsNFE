@@ -13,9 +13,12 @@ import {
   nfePayload,
   nfsePayload,
   nfeItem,
+  documentModel,
 } from "./external.js";
 export const fiscalStatuses = fiscalStatus.options;
 export type FiscalStatus = z.infer<typeof fiscalStatus>;
+export const documentModels = documentModel.options;
+export type DocumentModel = z.infer<typeof documentModel>;
 export type PublicFiscalSituation = z.infer<typeof fiscalSituation>;
 export type PublicDocumentSummary = z.infer<typeof documentSummary>;
 export type PublicDocumentVersion = z.infer<typeof documentVersion>;

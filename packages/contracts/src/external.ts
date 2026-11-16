@@ -258,6 +258,10 @@ export const nfsePayload = object({
 });
 export const documentPayload = z.union([nfePayload, nfsePayload]);
 export const documentKey = z.union([key, nfseKey]);
+/**
+ * The fiscal models the platform stores. The single source: Convex validators and the console
+ * derive from it, and each consumer that decides by model keys a `Record` on it (#136).
+ */
 export const documentModel = z.enum(["55", "nfse"]);
 /**
  * The first ID of a resource that came back from the cold archive under a new ID (ADR 0009, §6).

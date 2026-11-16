@@ -1,17 +1,6 @@
 import { v } from "convex/values";
-const subscribable = [
-  v.literal("document.received"),
-  v.literal("document.updated"),
-  v.literal("document.event_received"),
-  v.literal("import.completed"),
-  v.literal("connection.attention_required"),
-  v.literal("connection.release_withdrawn"),
-  v.literal("connection.history_limited"),
-  v.literal("issuance.authorized"),
-  v.literal("issuance.rejected"),
-  v.literal("issuance.cancelled"),
-  v.literal("issuance.cancellation_rejected"),
-] as const;
+import { webhookEvents } from "@freecorps/contracts";
+const subscribable = webhookEvents.map((event) => v.literal(event));
 export const eventType = v.union(...subscribable, v.literal("webhook.test"));
 export const subscriptionType = v.union(...subscribable);
 export const deliveryState = v.union(

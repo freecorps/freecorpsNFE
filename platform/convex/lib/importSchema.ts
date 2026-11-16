@@ -5,6 +5,7 @@ import { scopeFields } from "./operationValues";
 import {
   DOCUMENT_CONTENT_FORMAT,
   documentCard,
+  documentModel,
   fiscalView,
   projectionState,
 } from "./documentValues";
@@ -75,7 +76,7 @@ export const importTables = {
     organizationId: v.id("organizations"),
     companyId: v.id("companies"),
     environment: scopeFields.environment,
-    model: v.union(v.literal("55"), v.literal("nfse")),
+    model: documentModel,
     // Absent: received (imported or captured). `emitted`: NFS-e authorized by the platform,
     // linked from `issuances.documentId`. It has no published `documents/1` version yet, so
     // listings, detail and downloads do not show it until the contract exposes the direction.
