@@ -1593,8 +1593,6 @@ a:hover > .arrow {
   background: #121d0c;
   color: var(--glow-hi);
   font-size: 14px;
-  /* Wraps instead of scrolling: a scroll region would need its own tab stop (axe
-     scrollable-region-focusable) only to show a short proof line. */
   overflow-wrap: anywhere;
 }
 
