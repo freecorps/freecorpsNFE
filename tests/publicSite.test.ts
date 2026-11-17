@@ -121,6 +121,19 @@ describe("distribuição pública estática", () => {
     }
   });
 
+  // #4: on a 390px phone, axe found four scroll regions out of the keyboard's reach
+  // (scrollable-region-focusable). The four stations scroll sideways where the browser lacks
+  // scroll-driven animations, so the track is a named tab stop; the proof lines wrap instead.
+  it("deixa o teclado rolar a landing no telefone", () => {
+    const track = parse(landing()).querySelector(".pipeline-track");
+    expect(track?.getAttribute("tabindex")).toBe("0");
+    expect(track?.getAttribute("aria-labelledby")).toBe("pipeline-title");
+    const css = readFileSync("apps/console/src/site/landing/landing.css", "utf8");
+    const proof = /\.stack-card code \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(proof).not.toMatch(/overflow(?:-x)?:\s*(?:auto|scroll)/);
+    expect(proof).not.toMatch(/white-space:\s*nowrap/);
+  });
+
   // #452: the phone layout lost "Entrar". Header, footer and the docs side menu
   // each keep a way to the login; m0.mjs checks the header in a 390px browser.
   it("leva ao login pelo cabeçalho e pelo rodapé da landing e pelo menu dos guias", () => {

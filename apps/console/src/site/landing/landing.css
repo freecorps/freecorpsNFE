@@ -1587,14 +1587,15 @@ a:hover > .arrow {
 .stack-card code {
   justify-self: start;
   max-width: 100%;
-  overflow-x: auto;
   padding: 8px 14px;
   border: 1px solid rgba(212, 243, 110, 0.3);
   border-radius: 10px;
   background: #121d0c;
   color: var(--glow-hi);
   font-size: 14px;
-  white-space: nowrap;
+  /* Wraps instead of scrolling: a scroll region would need its own tab stop (axe
+     scrollable-region-focusable) only to show a short proof line. */
+  overflow-wrap: anywhere;
 }
 
 /* Closing */
