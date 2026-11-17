@@ -20,6 +20,7 @@ import { assertLinkedWorktree } from "../../../scripts/lib/worktree/state.mjs";
 import { processNfe } from "../../../packages/fiscal-nfe/dist/index.js";
 import { usageJourney } from "./usage.mjs";
 import { termsAcceptance } from "../../../scripts/lib/organization-terms.mjs";
+import { allowTypeScriptSourceImports } from "./ts-source-imports.mjs";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 await withLocalBrowser(root, "imports", async () => {
@@ -386,20 +387,42 @@ await withLocalBrowser(root, "imports", async () => {
     const proof = JSON.parse(
       await rpc("query", "testing/importProof:inspect", { fileId: fromUi.files[0].id }, true),
     );
-    const processed = JSON.parse(fromUi.files[0].result),
+    // The console's batch carries no result (ADR 0010, B6): it reads each one on demand, as
+    // "Resultado do processamento" does, through the content token and its action.
+    const detail = await rpc("action", "documentContentNode:importDetailRead", {
+      fileId: fromUi.files[0].id,
+      versionId: fromUi.files[0].versionId,
+      expectedScope: scope,
+    });
+    assert.equal(fromUi.files[0].result, null);
+    assert.equal(detail?.versionId, fromUi.files[0].versionId);
+    const processed = JSON.parse(detail.result),
       expected = processNfe(bytes, {
         source: "imported-xml",
         evaluatedAt: processed.signature.evaluatedAt,
       });
     assert.deepEqual(processed.checks, expected.checks);
     assert.deepEqual(processed.metadata, expected.metadata);
-    assert.deepEqual(
-      {
-        ...processed.document,
-        products: proof.versions[0].items.map((item) => JSON.parse(item.data)),
-      },
-      expected.normalized.document,
-    );
+    // The items live in the version's content since ADR 0010 (B5), not in `documentItems`: the
+    // console reads them as the document's "Itens" does, projected for the screen.
+    assert.equal(proof.versions[0].items.length, 0);
+    const items = [];
+    for (let cursor = null; ;) {
+      const page = await rpc("action", "documentContentNode:documentItemsRead", {
+        ...scope,
+        documentId: fromUi.files[0].documentId,
+        versionId: fromUi.files[0].versionId,
+        cursor,
+        limit: 25,
+      });
+      items.push(...page.page);
+      if (!(cursor = page.nextCursor)) break;
+    }
+    allowTypeScriptSourceImports();
+    const { projectNfeItem } = await import("../../../packages/contracts/src/documents.ts");
+    const { products, ...document } = expected.normalized.document;
+    assert.deepEqual({ ...processed.document, products: [] }, { ...document, products: [] });
+    assert.deepEqual(items, products.map(projectNfeItem));
     report.scenarios.push(
       "real-browser-upload-partial-success",
       "package-panel-normalized-items-equivalent",

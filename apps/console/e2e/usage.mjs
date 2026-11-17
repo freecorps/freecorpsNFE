@@ -28,9 +28,10 @@ export async function usageJourney({
   await page.getByRole("heading", { name: "Uso e limites", exact: true }).waitFor();
   await capture("usage-before-plan");
   const before = await get();
-  // Committed at each confirmation: pendente.xml, the two files of the panel batch, the API
-  // duplicate and the historical v1 file (reprocessing commits nothing).
-  assert.equal(before.environments.sandbox.find((r) => r.metric === "imports").committed, 5);
+  // Committed at each confirmation: pendente.xml, the two files of the panel batch, the example
+  // imported in one step, the API duplicate and the historical v1 file (reprocessing commits
+  // nothing).
+  assert.equal(before.environments.sandbox.find((r) => r.metric === "imports").committed, 6);
   assert.equal(before.environments.sandbox.find((r) => r.metric === "documents").committed, 2);
   assert.ok(before.environments.sandbox.find((r) => r.metric === "attempts").committed >= 5);
   assert.equal(before.environments.sandbox.find((r) => r.metric === "imports").reserved, 0);
@@ -39,8 +40,8 @@ export async function usageJourney({
     name: "Plano assistido de teste",
     startsAt: Date.now() - 60000,
     endsAt: Date.now() + 3600000,
-    // One unit above the five committed: of 20 parallel reservations, exactly one fits.
-    limits: { imports: 6, captures: 1, registry: 1, bytes: 1024 * 1024, deliveries: 1 },
+    // One unit above the six committed: of 20 parallel reservations, exactly one fits.
+    limits: { imports: 7, captures: 1, registry: 1, bytes: 1024 * 1024, deliveries: 1 },
     concurrency: 2,
     actor: "native-proof",
     reason: "Jornada sintética de limite",
@@ -100,8 +101,9 @@ export async function usageJourney({
         sidebarVisibility: sidebar.visibility,
         sidebarTransform: sidebar.transform,
         running: document.getAnimations().length,
-        tabsScrollWidth: document.querySelector(".ui-tabs__list").scrollWidth,
-        tabsClientWidth: document.querySelector(".ui-tabs__list").clientWidth,
+        // Tabs, when the page has them: the environment is now the sidebar's, not a tab.
+        tabsScrollWidth: document.querySelector(".ui-tabs__list")?.scrollWidth ?? 0,
+        tabsClientWidth: document.querySelector(".ui-tabs__list")?.clientWidth ?? 0,
       };
     });
   async function both(name) {
