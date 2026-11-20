@@ -6,10 +6,10 @@
       "assets/main.js": 66816,
       "assets/main.css": 14739,
       "assets/app-shell.js": 7427,
-      "assets/console-shared.js": 138569,
+      "assets/console-shared.js": 138759,
       "assets/rolldown-runtime.js": 429,
       "landing.css": 25824,
-      "total": 755802
+      "total": 755992
     }
   },
   "benchmarks": {
