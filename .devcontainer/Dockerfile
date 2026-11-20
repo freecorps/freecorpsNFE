@@ -5,7 +5,7 @@
 FROM mcr.microsoft.com/devcontainers/javascript-node:24-trixie@sha256:375f1ba34dab874ae487acb0b2bb3e9fd1b67fe3ea6e80c16e35713487f47c6a
 
 ARG BUN_VERSION=1.4.0
-ARG VP_VERSION=1.4.0
+ARG VP_VERSION=1.5.1
 ARG PLAYWRIGHT_VERSION=1.64.1
 
 # Bibliotecas do sistema que o Chromium do Playwright exige. O navegador em si

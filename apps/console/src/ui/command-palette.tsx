@@ -15,10 +15,7 @@ export type Command = {
 };
 
 const normalize = (text: string) =>
-  text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLocaleLowerCase("pt-BR");
+  text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("pt-BR");
 export function filterCommands(commands: Command[], query: string) {
   const terms = normalize(query).split(/\s+/).filter(Boolean);
   if (!terms.length) return commands;
