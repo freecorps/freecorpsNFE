@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lockSha256": "0e756b4b84ea053c2dc710406f7edb3d62ab402b1a80ad4f0d600dd340518598",
+  "lockSha256": "aad1d2bb1e08688ca06c0105013cd475e1e9236ba2ee7f2e5d526fcd9b6d836b",
   "method": "Exact registry manifests matched to every locked tarball integrity, including optional platforms and development tools. License declarations require the review in LICENSING.md; this is not a compatibility verdict.",
   "packages": [
     {
@@ -3943,10 +3943,10 @@
       ]
     },
     {
-      "id": "convex@1.48.0",
+      "id": "convex@1.49.0",
       "declaredLicense": "Apache-2.0",
-      "source": "https://registry.npmjs.org/convex/1.48.0",
-      "integrity": "sha512-M9jEgTvCN8ziP/VgQQUH+j0ijM7g+NmQd8tFlvETK8/HMC/aaqHZwcu4hBO30X5DV2VIyYK4mOoLQGIb1766ew==",
+      "source": "https://registry.npmjs.org/convex/1.49.0",
+      "integrity": "sha512-mkr9oXF8/arkCI1kvYyGytWd62oVXNABh4uwLeI4UQVN6Zuudm4DlmSzNUJKF63djk6f/uUXC+6ffuVSkPLvzA==",
       "repository": "git+https://github.com/convex/convex-backend.git",
       "direct": [
         {

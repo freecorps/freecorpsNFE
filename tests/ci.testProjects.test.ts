@@ -57,6 +57,15 @@ it("builds the Vitest projects from the shared list", () => {
     );
 });
 
+it("reads the test files once per module load and shares a frozen result", () => {
+  // vite.config.ts asks for the projects once for Vitest and once per area
+  // command; each call used to walk platform/ and read every test file again.
+  const first = vitestProjects();
+  expect(vitestProjects()).toBe(first);
+  expect(Object.isFrozen(first)).toBe(true);
+  for (const project of first) expect(Object.isFrozen(project), project.name).toBe(true);
+});
+
 it("shares workers only in shared areas, and isolates every file that mocks a module", () => {
   // Um vi.mock não substitui um módulo que outro arquivo do worker já
   // carregou; quem moca, direto ou por um helper de tests/, roda isolado.
