@@ -957,13 +957,14 @@ describe("ambientes do seletor do console (ADR 0007, §1)", () => {
     vi.stubEnv("FNFE_CAPTURE_FISCAL", "disabled");
     expect(await offered(viewer, s.organizationId)).toEqual(["sandbox", "production"]);
   });
-  it("uma liberação de outra organização não abre Produção, e quem não é membro é recusado", async () => {
+  it("uma liberação de outra organização não abre Produção, e quem não é membro não recebe nada", async () => {
     const s = await scope();
     await s.enable();
     const other = await scope({ t: s.t });
     const viewer = await person(s.t, other.organizationId, "viewer");
     expect(await offered(viewer, other.organizationId)).toEqual(["sandbox"]);
-    await expect(offered(other.member, s.organizationId)).rejects.toThrow();
+    // Like `organizations.context`: the shell of a removed member reads null, not a failure (#4).
+    expect(await offered(other.member, s.organizationId)).toBeNull();
     await expect(
       s.t.query(api.deployment.environments, { organizationId: s.organizationId }),
     ).rejects.toThrow();

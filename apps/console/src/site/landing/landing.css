@@ -1587,14 +1587,13 @@ a:hover > .arrow {
 .stack-card code {
   justify-self: start;
   max-width: 100%;
-  overflow-x: auto;
   padding: 8px 14px;
   border: 1px solid rgba(212, 243, 110, 0.3);
   border-radius: 10px;
   background: #121d0c;
   color: var(--glow-hi);
   font-size: 14px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Closing */

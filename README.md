@@ -31,11 +31,11 @@ Crie uma conta em [nfe.freecorps.com.br/signup](https://nfe.freecorps.com.br/sig
 crie um projeto no console e gere uma API key. Depois instale o SDK:
 
 ```bash
-npm install @freecorps/sdk
+npm install @freecorps/freecorpsnfe-sdk
 ```
 
 ```ts
-import { FreecorpsClient } from "@freecorps/sdk";
+import { FreecorpsClient } from "@freecorps/freecorpsnfe-sdk";
 
 const client = new FreecorpsClient({
   baseUrl: "https://api.nfe.freecorps.com.br",

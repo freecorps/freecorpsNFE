@@ -149,7 +149,9 @@ export function Pipeline() {
         <div className="section-head">
           <h2 id="pipeline-title">Do XML ao seu sistema, em quatro estações.</h2>
         </div>
-        <ol className="pipeline-track">
+        {/* Without scroll-driven animations the track scrolls sideways; the tab stop lets the
+            keyboard scroll it too (axe scrollable-region-focusable). */}
+        <ol className="pipeline-track" tabIndex={0} aria-labelledby="pipeline-title">
           {stations.map((station, i) => (
             <li key={station.name} className="station">
               <Iso figure={station.figure} label={station.label} className="station-figure" />

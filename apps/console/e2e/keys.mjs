@@ -162,7 +162,7 @@ await withLocalBrowser(root, "keys", async () => {
       await page.getByRole("button", { name: "Gerar chave", exact: true }).waitFor();
     if (name === "quickstart-desktop")
       await page
-        .getByRole("heading", { name: "Primeira chamada em três passos", exact: true })
+        .getByRole("heading", { name: "Importar e consultar a NF-e de demonstração", exact: true })
         .waitFor();
     assert.equal(
       await page.getByLabel("Segredo da chave", { exact: true }).count(),
@@ -305,7 +305,12 @@ await withLocalBrowser(root, "keys", async () => {
         .isChecked(),
       true,
     );
-    assert.equal(await page.getByRole("option", { name: /^Produção/ }).isDisabled(), true);
+    // The key is born in the environment chosen in the sidebar (Sandbox here); the field only
+    // shows it, locked, and offers no Produção.
+    const keyEnvironment = page.getByLabel("Ambiente da chave", { exact: true });
+    assert.equal(await keyEnvironment.isDisabled(), true);
+    assert.equal(await keyEnvironment.inputValue(), "sandbox");
+    assert.equal(await keyEnvironment.getByRole("option", { name: /^Produção/ }).count(), 0);
     await capture(owner, "key-create-desktop");
     await page.getByRole("button", { name: "Gerar chave", exact: true }).click();
     const secretField = page.getByLabel("Segredo da chave", { exact: true });
@@ -363,14 +368,24 @@ await withLocalBrowser(root, "keys", async () => {
     await noSecret(owner, secret);
     await capture(owner, "keys-created-desktop");
     await projectTab(page, "Primeira chamada").click();
-    await page.getByRole("heading", { name: "Primeira chamada em três passos" }).waitFor();
+    await page
+      .getByRole("heading", { name: "Importar e consultar a NF-e de demonstração", exact: true })
+      .waitFor();
     await noSecret(owner, secret);
-    const curlExample = await page.getByRole("region", { name: "Comando curl" }).textContent();
-    assert.ok(curlExample.includes("COLE_O_SEGREDO_NO_SEU_AMBIENTE"));
-    assert.ok(curlExample.includes('-H "X-Environment: sandbox"'));
-    assert.equal(curlExample.includes("\n+"), false);
+    // The variables ask for the key without echo in the terminal; the page never holds it.
+    const variables = await page
+      .getByRole("region", { name: "Variáveis no PowerShell" })
+      .textContent();
+    assert.ok(variables.includes("FREECORPS_API_KEY"));
+    assert.equal(variables.includes(secret), false);
+    assert.equal(
+      await page.getByRole("region", { name: "Comando de importação" }).textContent(),
+      "node quickstart-curl.mjs",
+    );
     await capture(owner, "quickstart-desktop");
-    passed("quickstart uses placeholders and secret is absent from DOM, URL and browser storage");
+    passed(
+      "quickstart asks for the key in the terminal and secret is absent from DOM, URL and browser storage",
+    );
     await projectTab(page, "Chaves de API").click();
     await noSecret(owner, secret);
     await page.getByRole("button", { name: "Rotacionar Exemplo sandbox", exact: true }).click();

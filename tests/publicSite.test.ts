@@ -121,6 +121,19 @@ describe("distribuição pública estática", () => {
     }
   });
 
+  // #4: on a 390px phone, axe found four scroll regions out of the keyboard's reach
+  // (scrollable-region-focusable). The four stations scroll sideways where the browser lacks
+  // scroll-driven animations, so the track is a named tab stop; the proof lines wrap instead.
+  it("deixa o teclado rolar a landing no telefone", () => {
+    const track = parse(landing()).querySelector(".pipeline-track");
+    expect(track?.getAttribute("tabindex")).toBe("0");
+    expect(track?.getAttribute("aria-labelledby")).toBe("pipeline-title");
+    const css = readFileSync("apps/console/src/site/landing/landing.css", "utf8");
+    const proof = /\.stack-card code \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(proof).not.toMatch(/overflow(?:-x)?:\s*(?:auto|scroll)/);
+    expect(proof).not.toMatch(/white-space:\s*nowrap/);
+  });
+
   // #452: the phone layout lost "Entrar". Header, footer and the docs side menu
   // each keep a way to the login; m0.mjs checks the header in a 390px browser.
   it("leva ao login pelo cabeçalho e pelo rodapé da landing e pelo menu dos guias", () => {
@@ -273,6 +286,24 @@ describe("distribuição pública estática", () => {
       expect("text" in link && link.text).toBe("GitHub");
     }
     expect(baseOptions().githubUrl).toBeUndefined();
+  });
+
+  // The SDK is `@freecorps/freecorpsnfe-sdk` on npm since 03/11/2026 (#73); `@freecorps/sdk` is
+  // deprecated there. Whatever tells someone how to install or import it uses the current name;
+  // the old one may still appear as history ("antes `@freecorps/sdk`").
+  it("ensina a instalar e importar o SDK pelo nome publicado", () => {
+    const sources = {
+      ...guides,
+      "README.md": readFileSync("README.md", "utf8"),
+      "packages/sdk/README.md": readFileSync("packages/sdk/README.md", "utf8"),
+      "docs/v1.0/SDK.md": readFileSync("docs/v1.0/SDK.md", "utf8"),
+      landing: landing(),
+    };
+    for (const [name, source] of Object.entries(sources))
+      expect(source, `${name} instala ou importa o SDK pelo nome antigo`).not.toMatch(
+        /(?:npm (?:install|i)|bun add|pnpm add|yarn add|from (?:["']|&quot;|&#x27;))\s*@freecorps\/sdk\b/,
+      );
+    expect(sources["README.md"]).toContain("npm install @freecorps/freecorpsnfe-sdk");
   });
 
   // #519: the general help channel and the access conditions have one owner page, reached from
