@@ -173,16 +173,31 @@ export function mocks(file, seen = new Set()) {
  * usa vi.mock ou vi.doMock, direto ou por um helper de `tests/`: um mock não
  * substitui um módulo que outro arquivo do worker já carregou. A lista vem da
  * leitura dos arquivos e não fica desatualizada. `area` é o nome da área.
+ *
+ * A leitura acontece uma vez por carga do módulo: vite.config.ts pede os
+ * projetos uma vez para o Vitest e outra para o comando de cada área
+ * (`areaCommand`), e cada pedido lia de novo todo teste da plataforma. Um
+ * processo novo, ou uma recarga do vite.config.ts, lê a árvore de novo. O
+ * resultado é compartilhado: a lista e cada projeto ficam congelados, mas não
+ * as listas `include` e `exclude` dentro deles; quem precisa mudar algo copia.
  */
 export function vitestProjects() {
+  projects ??= Object.freeze(buildVitestProjects());
+  return projects;
+}
+
+/** @type {Readonly<ReturnType<typeof buildVitestProjects>> | undefined} */
+let projects;
+
+function buildVitestProjects() {
   return testProjects.flatMap((project) => {
     const base = { ...project, area: project.name };
-    if (!project.shared) return [{ ...base, isolate: true }];
+    if (!project.shared) return [Object.freeze({ ...base, isolate: true })];
     const isolated = filesOf(project).filter((file) => mocks(file));
     return [
       { ...base, exclude: [...(project.exclude ?? []), ...isolated], isolate: false },
       { ...base, name: `${project.name}-isolated`, include: isolated, isolate: true },
-    ];
+    ].map((entry) => Object.freeze(entry));
   });
 }
 
