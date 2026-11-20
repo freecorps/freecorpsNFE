@@ -2,6 +2,14 @@
 
 ## Não publicado
 
+- O DANFSe de `@freecorps/fiscal-nfse/danfse` segue o modelo da NT
+  SE/CGNFS-e nº 008 v1.02 (#243): página A4 única com os blocos do Anexo I,
+  rótulos e formatos da norma, traço no campo vazio e QR para
+  `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=`. Produção restrita
+  imprime "NFS-e SEM VALIDADE JURÍDICA" no lugar de "SEM VALOR FISCAL", e o
+  simulador ganha a marca d'água "SIMULADA". `DanfseData`, devolvido por
+  `readNfseForDanfse`, muda de forma: a próxima versão do pacote será minor.
+  As divergências da norma estão no README do pacote.
 - O SDK ganha gate de compatibilidade (#135): `bun run sdk:compat`, em
   `ci:sdk`, compara a API TypeScript com as declarações da 0.1.0 publicada
   (`packages/sdk/published.json`) e exige versão acima da publicada para

@@ -2,14 +2,14 @@
   "console": {
     "gzipBytes": {
       "theme.js": 702,
-      "assets/index.js": 1601,
+      "assets/index.js": 1627,
       "assets/main.js": 66816,
       "assets/main.css": 14739,
       "assets/app-shell.js": 7427,
-      "assets/console-shared.js": 138569,
+      "assets/console-shared.js": 138748,
       "assets/rolldown-runtime.js": 429,
       "landing.css": 25831,
-      "total": 755809
+      "total": 756011
     }
   },
   "benchmarks": {

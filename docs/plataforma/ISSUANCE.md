@@ -968,11 +968,12 @@ pedido em vez de consultar.
 - **DANFSe.** Gerado na mesma tentativa que recebe a NFS-e autorizada (envio
   ou recuperação por consulta), a partir do XML que será preservado, por
   `renderDanfse` de `@freecorps/fiscal-nfse/danfse`
-  ([README](../../packages/fiscal-nfse/README.md#danfse)), e gravado com
-  `recordAuthorization`, junto do XML. Transporte `simulated` sai com a marca
-  "SEM VALOR FISCAL — SANDBOX/SIMULADO"; `producao-restrita`, com "SEM VALOR
-  FISCAL — PRODUÇÃO RESTRITA" (que o pacote também impõe a todo `tpAmb` 2);
-  só `producao` sai sem marca. O PDF é melhor esforço: se a geração falhar, a
+  ([README](../../packages/fiscal-nfse/README.md#danfse)), no modelo da NT
+  SE/CGNFS-e nº 008 v1.02 (14/07/2026), e gravado com
+  `recordAuthorization`, junto do XML. `producao-restrita` sai com "NFS-e SEM
+  VALIDADE JURÍDICA" no cabeçalho (que o pacote também impõe a todo `tpAmb`
+  2); `simulated`, com a mesma expressão e a marca d'água "SIMULADA"; só
+  `producao` sai sem elas. O PDF é melhor esforço: se a geração falhar, a
   autorização segue, o evento `danfse_failed` registra o código e não há nova
   tentativa automática. Uma chamada repetida mantém o primeiro PDF. O PDF não
   é regenerado quando o cancelamento é registrado; o estado vigente é o da
@@ -1143,8 +1144,8 @@ um `production` forjado esbarra no acesso (`NOT_FOUND`), antes do gate.
   dois botões seguem sem passo a mais e com os rótulos de sempre.
 
 - **Transporte e DANFSe.** O transporte aparece como "Produção" e o DANFSe
-  sai sem a marca "SEM VALOR FISCAL" (`DanfseMark` nulo só em `producao`, no
-  worker).
+  sai sem "NFS-e SEM VALIDADE JURÍDICA" (`DanfseMark` nulo só em `producao`,
+  no worker).
 - **Página da emissão.** Com `?issuance=`, o detalhe ocupa a tela: "Voltar à
   lista de emissões" (a lista fica montada sob o detalhe aberto a partir dela,
   com filtros, páginas carregadas e rolagem), h1 da DPS ou NFS-e,
@@ -1500,7 +1501,10 @@ transmitido:
 Em 02/11/2026, a fase 3 provou a exportação na Sefin Nacional: uma NFS-e de
 exportação do Simples de Campinas (C6), com tomador sem NIF, foi autorizada e
 cancelada na produção restrita, com a DPS no leiaute da NT 009
-(evidência). Antes, em 09/10/2026,
+(evidência). Em 16/11/2026, outra, com tomador com NIF (`toma/NIF`), também
+foi autorizada e cancelada ali, pedida pela REST hospedada, e o probe leu o
+404 de DPS ausente com o JSON de ausência na Sefin restrita e na IMA
+([evidência](../v1.0/evidence/244/2026-11-16/README.md)). Antes, em 09/10/2026,
 a fase 3 provou uma nota doméstica de Simples sem retenção no
 canal de Campinas, autorizada e cancelada na homologação da IMA com o A1 do
 cofre (evidência): mTLS real na Sefin restrita e na
@@ -1526,13 +1530,17 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   primeira DPS (02/11/2026, série 2 nº 100000) voltou com E1235 porque seguia
   o pacote de produção v1.01-20260209; com o leiaute da NT 009
   ([XSD oficial antes de assinar](#transmissão-e-reconciliação)), a seguinte
-  foi autorizada e cancelada. Ficam sem prova o tomador com NIF e a
-  reconciliação depois de um timeout real na Sefin. A Sefin de produção (`tpAmb` 1)
+  foi autorizada e cancelada; em 16/11/2026, a exportação com tomador com NIF
+  também. Fica sem prova a reconciliação depois de um timeout real na Sefin:
+  o prazo do transporte é fixo no código, e induzir o timeout no deployment
+  hospedado pediria publicar código ou falhar a rede. As operações reais
+  terminaram na primeira tentativa, e a consulta de uma DPS existente na
+  Sefin, que a reconciliação usa, não foi exercida. A Sefin de produção (`tpAmb` 1)
   continua no pacote v1.01-20260209, o da Documentação Atual; se ela adotar a
   NT 009 antes da fase 4, a DPS de produção também precisa trocar de leiaute
   (pré-condição 6 do
   [runbook](../operacao/emissao-nfse.md#pré-condições-para-ligar-o-gate)).
-  Em 02/11/2026, o ADN de produção dava
+  Em 02/11 e em 16/11/2026, o ADN de produção dava
   `aderenteEmissorNacional` 0 para Campinas, como em 09/10; uma notícia do Portal NFS-e de
   28/09/2026 indica, como hipótese sem prova, que a partir de 01/11/2026 o
   Simples pode usar os emissores nacionais independentemente da opção do
@@ -1557,10 +1565,9 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   `RESPONSE_UNREADABLE` antes de existir o diagnóstico, e a tentativa não tem
   `diagnostic`. A reconciliação resolve o desfecho; o `diagnostic` da próxima
   emissão mostrará o formato.
-- O critério do 404 contra o fisco: os probes de 09/10/2026 rodaram antes dele,
-  e nenhuma consulta real voltou 404 depois. Os testes provam o 404 com e sem o
-  JSON de ausência com o fisco substituído; não se sabe se a IMA e a Sefin
-  trazem esse JSON no 404 de DPS ausente.
+- O critério do 404 na Sefin de produção: em 16/11/2026, a Sefin restrita e a
+  IMA responderam ao probe 404 com o JSON de ausência (`not-found`); falta a
+  Sefin de produção, que só o probe do deployment de produção fiscal consulta.
 - Outros perfis no canal de Campinas: os códigos IBS/CBS e a exigência de
   valores IBS/CBS de não optante não foram conferidos. A retenção também não
   foi autorizada: para 01.05.01.001, a L0009 diz que o serviço não está
@@ -1572,14 +1579,23 @@ gerado de uma NFS-e real. O que segue continua sem prova real:
   `^` e `$`, que o XSD trata como caracteres; o catálogo de runtime tira as
   duas âncoras (registro no manifesto). Que o validador do fisco leia o padrão
   da mesma forma é inferência: a DPS real com série 20001 foi autorizada.
-- O leiaute do DANFSe frente à norma do DANFSe nacional não foi conferido. O
-  PDF da nota real foi gerado e tem o `sha256` na evidência; o rótulo e o nome
-  do arquivo do download pelo console têm só teste de componente.
+- O DANFSe no modelo da NT SE/CGNFS-e nº 008 v1.02 (14/07/2026): cada campo
+  obrigatório foi conferido contra a tabela da norma; o rótulo é provado pelo
+  texto do PDF e o valor pela leitura do XML, ambos de XML sintético
+  (`packages/fiscal-nfse/danfse.test.ts`), com as divergências registradas no
+  [README](../../packages/fiscal-nfse/README.md#danfse) (fontes, logomarca,
+  margem, tamanho do QR, nome de município fora do XML, canhoto e marca de
+  cancelada). Nenhuma NFS-e real passou pelo modelo novo: os PDFs das notas
+  reais já geradas são do leiaute anterior, e o grupo `IBSCBS` da NFS-e
+  devolvido pela Sefin não foi conferido no DANFSe. O rótulo e o nome do
+  arquivo do download pelo console têm só teste de componente.
 - REST, SDK e webhooks de emissão, inclusive o download do DANFSe pela REST e
   pelo SDK, foram provados com `convex-test`, transporte simulado e destinos
-  sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`);
-  nenhuma chamada passou pelo Worker hospedado nem entregou webhook de emissão
-  a um receptor real.
+  sintéticos (`platform/convex/issuanceRest.test.ts`, `packages/sdk/index.test.ts`).
+  Em 16/11/2026, a REST hospedada criou, consultou e cancelou uma emissão na
+  produção restrita e baixou o XML da DPS e da NFS-e; o SDK, o download do
+  DANFSe pela REST e a entrega de webhook de emissão a um receptor real
+  continuam sem prova.
 - O gate de produção diante de um chamador com acesso: nenhum deployment é
   `production`, e o teste simula um (substituindo
   `requirePlatformEnvironment`) para provar que o acesso vem antes do gate.

@@ -505,7 +505,7 @@ nome. O comportamento POSIX foi provado só em Linux; macOS usa o mesmo
 contrato de `ps -g` e de grupos, sem execução real registrada.
 
 O backend temporário de setup e sync carrega o preload privado
-`bootstrap-parent.mjs`. O entrypoint do CLI do Convex 1.48 chama
+`bootstrap-parent.mjs`. O entrypoint do CLI do Convex (conferido na 1.49) chama
 `process.exit()` ao concluir `--skip-push`, o que no Windows derrubou o backend
 logo depois de ele responder. O preload anula só a saída com sucesso desse
 subprocesso; erros continuam encerrando, e sem filho vivo o CLI sai sozinho. Ele

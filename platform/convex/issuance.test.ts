@@ -139,13 +139,14 @@ describe("emissão em sandbox", () => {
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(danfse.sha256);
     const [page] = await inspectPdf(bytes);
     for (const piece of [
-      "SEM VALOR FISCAL — SANDBOX/SIMULADO",
-      done.accessKey!.slice(0, 10),
-      "CNPJ 11.222.333/0001-81",
+      "NFS-e SEM VALIDADE JURÍDICA",
+      "SIMULADA",
+      done.accessKey!,
+      "11.222.333/0001-81",
       "Tomador Sintético Ltda",
       "R$ 1.000,00",
-      "Alíquota 2,50%",
-      "sem validade fiscal",
+      "2,50%",
+      "Inf. A. T. Mun.: NFS-e simulada pelo sandbox da freecorpsNFE, sem validade fiscal.",
     ])
       expect(page!.text).toContain(piece);
     expect(page!.qr).toContain(done.accessKey!);

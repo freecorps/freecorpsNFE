@@ -1089,7 +1089,7 @@ Limites:
 
 ## Instalação reproduzível e cache
 
-Bun `1.4.0`, Node `24.22.1`, Vite+ `1.4.0` e dependências resolvidas pelo
+Bun `1.4.0`, Node `24.22.1`, Vite+ `1.5.1` e dependências resolvidas pelo
 `bun.lock`. Actions são fixadas por SHA; upload de artifacts usa v7.0.2. O CI
 não usa cache de dependências e executa `vp install --frozen-lockfile` em runner
 novo. O único cache é o do Vite Task ([Cache do grafo](#cache-do-grafo)). Um

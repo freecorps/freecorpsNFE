@@ -1,0 +1,55 @@
+{
+  "ranAt": "2026-11-16T17:40:08Z",
+  "deployment": "prod:elated-possum-295 (perfil sandbox)",
+  "buildSha": "0b7d6b0a77adadc6ee299ef8cf60635a0bc6db79",
+  "environment": "producao-restrita",
+  "certificateVersion": 1,
+  "dpsId": "DPS350950226311311900019099999999999999999999",
+  "consultations": [
+    {
+      "code": null,
+      "diagnostic": null,
+      "host": "sefin.producaorestrita.nfse.gov.br",
+      "httpStatus": 404,
+      "outcome": "not-found",
+      "target": "sefin-nacional",
+      "transportError": null
+    },
+    {
+      "code": null,
+      "diagnostic": null,
+      "host": "preprod-nfseapi.ima.sp.gov.br",
+      "httpStatus": 404,
+      "outcome": "not-found",
+      "target": "campinas-adn",
+      "transportError": null
+    }
+  ],
+  "adhesion": [
+    {
+      "aderenteAmbienteNacional": null,
+      "aderenteEmissorNacional": null,
+      "code": null,
+      "host": "sefin.producaorestrita.nfse.gov.br",
+      "httpStatus": 404,
+      "source": "sefin-producao-restrita"
+    },
+    {
+      "aderenteAmbienteNacional": 1,
+      "aderenteEmissorNacional": 1,
+      "code": null,
+      "host": "adn.producaorestrita.nfse.gov.br",
+      "httpStatus": 200,
+      "source": "adn-producao-restrita"
+    },
+    {
+      "aderenteAmbienteNacional": 1,
+      "aderenteEmissorNacional": 0,
+      "code": null,
+      "host": "adn.nfse.gov.br",
+      "httpStatus": 200,
+      "source": "adn-producao"
+    }
+  ],
+  "parameters": []
+}

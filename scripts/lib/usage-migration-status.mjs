@@ -376,7 +376,7 @@ export function localCheckout(root, run = spawnSync) {
 
 /**
  * Uma página pela CLI oficial do Convex (`convex run --deployment <nome>`,
- * conferido no `--help` da 1.48), em `platform/`. O ambiente do processo leva
+ * conferido no `--help` da 1.49), em `platform/`. O ambiente do processo leva
  * só caminhos de runtime: nenhuma `CONVEX_DEPLOY_KEY` nem `CONVEX_DEPLOYMENT`
  * herdada escolhe outro alvo, e a CLI usa o login da pessoa.
  * `--codegen disable` e `--typecheck disable` impedem que a leitura regrave
