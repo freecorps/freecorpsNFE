@@ -1,4 +1,4 @@
-// O entrypoint do CLI do Convex 1.48 chama process.exit() depois de --skip-push.
+// O entrypoint do CLI do Convex (conferido na 1.49) chama process.exit() depois de --skip-push.
 // No Windows isso pode derrubar o backend antes de a configuração do ambiente
 // terminar. Só o spawn privado do bootstrap carrega este módulo; saídas de erro
 // continuam encerrando normalmente.

@@ -165,7 +165,9 @@ O [texto fixado do servidor Convex](https://github.com/get-convex/convex-backend
 é FSL-1.1-Apache-2.0. Restringe uso concorrente conforme a definição do texto
 e concede Apache-2.0 a cada versão no segundo aniversário de sua disponibilização.
 Esta entrega não presume que a conversão já ocorreu. A licença do cliente npm
-`convex@1.46.0`, Apache-2.0, é distinta da licença do servidor.
+`convex`, Apache-2.0 na versão que o
+[inventário](docs/licenses/dependencies.json) registra, é distinta da licença
+do servidor.
 O operador deve conferir o uso pretendido contra a licença fixada e seguir
 [instalacao-propria.md](docs/operacao/instalacao-propria.md). A prova local de instalação não concede
 permissão para redistribuir imagens ou oferecer um serviço concorrente.
