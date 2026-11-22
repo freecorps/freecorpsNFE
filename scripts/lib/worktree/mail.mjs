@@ -2,6 +2,7 @@ import { readLocalConfig, localUrls } from "./deployment.mjs";
 import { assertLinkedWorktree } from "./state.mjs";
 import { assertPrivateDirectories } from "./operation.mjs";
 import { currentLocalSiteUrl } from "./env-file.mjs";
+import { assertBackendPortOwnedByCurrentUser } from "./port-owner.mjs";
 
 /** Operator-only local collector. Never accepts a URL or credential from the caller. */
 export async function readMailbox(paths, email) {
@@ -13,6 +14,7 @@ export async function readMailbox(paths, email) {
     throw new Error("Uso: bun run worktree mail <email>");
   const config = readLocalConfig(paths);
   if (!config) throw new Error("Rode worktree:setup --app platform e worktree:dev primeiro.");
+  assertBackendPortOwnedByCurrentUser(config.ports.cloud);
   const response = await fetch(`${localUrls(config).cloud}/api/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Convex ${config.adminKey}` },

@@ -12,6 +12,7 @@ import { join, posix, win32 } from "node:path";
 
 import { readProcessIdentity, stopRecordedProcesses } from "./process-identity.mjs";
 import { localUrls, readLocalConfig } from "./deployment.mjs";
+import { assertBackendPortOwnedByCurrentUser } from "./port-owner.mjs";
 import { PLATFORM_BACKEND_ENV } from "./env-file.mjs";
 import { commandResult, fail, processIsRunning } from "./exec.mjs";
 import {
@@ -143,11 +144,23 @@ export async function waitForBackend(paths, child, options = {}) {
     const bound =
       !ports || (config?.ports.cloud === ports.cloud && config?.ports.site === ports.site);
     if (config && bound) {
+      let named = false;
       try {
+        // Sem reaproveitar conexão: um ouvinte alheio que já saiu da porta
+        // poderia manter esta aberta e receber a chave no pedido seguinte.
         const response = await fetch(`${localUrls(config).cloud}/instance_name`, {
+          headers: { Connection: "close" },
           signal: AbortSignal.timeout(1_500),
         });
-        if (response.ok && (await response.text()).trim() === config.deploymentName) {
+        named = response.ok && (await response.text()).trim() === config.deploymentName;
+      } catch {
+        // O backend ainda está subindo.
+      }
+      if (named) {
+        // O nome sai de quem estiver na porta. Fora do `try`: porta de outro
+        // usuário encerra a espera em vez de parecer backend subindo.
+        assertBackendPortOwnedByCurrentUser(config.ports.cloud);
+        try {
           // Deployments anônimos podem ter o mesmo nome. A chave local
           // distingue este banco de outro processo que tenha tomado a porta.
           const identity = await fetch(`${localUrls(config).cloud}/api/query`, {
@@ -155,6 +168,7 @@ export async function waitForBackend(paths, child, options = {}) {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Convex ${config.adminKey}`,
+              Connection: "close",
             },
             body: JSON.stringify({
               path: "_system/frontend/listCronJobs",
@@ -164,9 +178,9 @@ export async function waitForBackend(paths, child, options = {}) {
             signal: AbortSignal.timeout(1500),
           });
           if (identity.ok && (await identity.json()).status === "success") return config;
+        } catch {
+          // O backend ainda está subindo.
         }
-      } catch {
-        // O backend ainda está subindo.
       }
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));

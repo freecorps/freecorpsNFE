@@ -61,7 +61,7 @@ assert.ok(
 );
 const output = join(repoRoot, ".ci-results/hosted-79-80");
 mkdirSync(output, { recursive: true });
-mkdirSync(dirname(privatePath), { recursive: true });
+mkdirSync(dirname(privatePath), { recursive: true, mode: 0o700 });
 const physicalRelative = relative(
   realpathSync(repoRoot),
   join(realpathSync(dirname(privatePath)), basename(privatePath)),

@@ -33,6 +33,8 @@ import {
 } from "../lib/worktree/state.mjs";
 import { readLocalConfig } from "../lib/worktree/deployment.mjs";
 import { readProcessIdentity, stopRecordedProcesses } from "../lib/worktree/process-identity.mjs";
+import { assertBackendPortOwnedByCurrentUser } from "../lib/worktree/port-owner.mjs";
+import { WorktreeError } from "../lib/worktree/exec.mjs";
 
 vi.mock("node:child_process", async (original) => {
   const actual = await original<typeof import("node:child_process")>();
@@ -46,6 +48,10 @@ vi.mock("../lib/worktree/deployment.mjs", async (original) => {
   const actual = await original<typeof import("../lib/worktree/deployment.mjs")>();
   return { ...actual, readLocalConfig: vi.fn(actual.readLocalConfig) };
 });
+// A posse real da porta tem teste próprio em port-owner.test.ts.
+vi.mock("../lib/worktree/port-owner.mjs", () => ({
+  assertBackendPortOwnedByCurrentUser: vi.fn(),
+}));
 vi.mock("../lib/worktree/process-identity.mjs", async (original) => {
   const actual = await original<typeof import("../lib/worktree/process-identity.mjs")>();
   return { ...actual, stopRecordedProcesses: vi.fn(actual.stopRecordedProcesses) };
@@ -697,6 +703,29 @@ it("prontidão do backend repete descritor parcial sem aceitar configuração in
     throw new SyntaxError("partial fixture");
   });
   await expect(waitForBackend(paths, runner.child, { timeoutMs: 10 })).rejects.toThrow(/Esgotou/);
+});
+
+it("prontidão do backend não envia a chave quando a porta não é do usuário", async () => {
+  const paths = fixture();
+  const runner = childScript("setTimeout(() => {}, 3000)");
+  vi.mocked(readLocalConfig).mockReturnValue({
+    deploymentName: "local-fixture",
+    ports: { cloud: 3210, site: 3211 },
+    adminKey: "synthetic",
+  });
+  const fetchSpy = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(async () => new Response("local-fixture"));
+  vi.mocked(assertBackendPortOwnedByCurrentUser).mockImplementationOnce(() => {
+    throw new WorktreeError("SYNTHETIC_FOREIGN_PORT");
+  });
+  await expect(waitForBackend(paths, runner.child)).rejects.toThrow("SYNTHETIC_FOREIGN_PORT");
+  expect(assertBackendPortOwnedByCurrentUser).toHaveBeenCalledWith(3210);
+  expect(fetchSpy).toHaveBeenCalledTimes(1);
+  const [url, init] = fetchSpy.mock.calls[0]!;
+  expect(url).toBe("http://127.0.0.1:3210/instance_name");
+  // Conexão mantida viva levaria o pedido com a chave ao ouvinte antigo.
+  expect(new Headers(init?.headers).get("connection")).toBe("close");
 });
 
 it.each([undefined, "original-generation"])(

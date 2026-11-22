@@ -119,7 +119,11 @@ worktree, mantendo `bun run dev` aberto, use o código mais recente em
 `/forgot-password` e termina em `/reset-password`. Verificação e recuperação
 usam códigos de oito dígitos, com dez minutos de validade. O coletor recebe a
 mensagem sem envio à internet e só atende à credencial administrativa do
-banco local; não existe endpoint público para consultar mensagens. Ele guarda
+banco local; não existe endpoint público para consultar mensagens. Antes de
+enviar essa credencial, o `mail` e a espera do backend no `dev` e no setup
+conferem que a porta do backend local tem ouvinte e que todo ouvinte é do seu
+usuário do sistema (no macOS, todo ouvinte que o `lsof` enxerga sem root); se
+não for, param sem enviar a chave. O coletor guarda
 mensagens por até dez minutos, remove até 100 expiradas em cada envio e não
 executa cron; registros expirados podem permanecer até outro envio ou a
 remoção do banco descartável. Nenhum código ou senha é colocado em URL ou
