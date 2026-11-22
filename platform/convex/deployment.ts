@@ -3,7 +3,7 @@ import { query } from "./_generated/server";
 import { requirePlatformEnvironment } from "./environment";
 import { baseEnvironment } from "./lib/environmentAccess";
 import { fiscalCaptureEnabled } from "./lib/fiscalCaptureRelease";
-import { requireMembership } from "./lib/organizationAccess";
+import { findMembership, requireMembership, requireUser } from "./lib/organizationAccess";
 import { environment } from "./lib/projectValues";
 
 /**
@@ -35,11 +35,18 @@ export const current = query({
  * Before that, only to an owner or admin while the deployment offers the fiscal capture: the
  * release is made inside Produção, never from the Sandbox. Only a view: every function checks
  * the environment against the company again.
+ *
+ * `null` for a signed-in person who is not an active member, as `organizations.context` answers:
+ * the console's shell asks this beside the organization's context, and a member removed with the
+ * page open must see "Organização indisponível.", not a failed shell (#4).
  */
 export const environments = query({
   args: { organizationId: v.id("organizations") },
-  returns: v.array(environment),
+  returns: v.union(v.null(), v.array(environment)),
   handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const member = await findMembership(ctx, args.organizationId, user._id);
+    if (!member || member.state !== "active") return null;
     const { membership } = await requireMembership(ctx, args.organizationId, {
       archived: "allowed",
     });
